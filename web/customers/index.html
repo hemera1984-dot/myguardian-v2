@@ -31,7 +31,7 @@
             <button class="tab-button active" type="button" id="btn-connect">고객 폴더 연결</button>
             <button class="tab-button" type="button" id="btn-new" hidden>신규 고객 등록</button>
           </p>
-          <div id="new-form" hidden style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <div id="new-form" hidden style="margin-top:14px;flex-wrap:wrap;gap:8px;align-items:center;display:flex">
             <input type="text" id="new-name" placeholder="고객 이름" aria-label="고객 이름" style="font:inherit;font-size:0.9rem;border:1px solid var(--platform-line);border-radius:8px;padding:8px 12px">
             <select id="new-cat" aria-label="카테고리" style="font:inherit;font-size:0.9rem;border:1px solid var(--platform-line);border-radius:8px;padding:8px 12px">
               <option value="referral">지인</option>
@@ -245,7 +245,7 @@
         rows.innerHTML = list.map(function (c) {
           var o = v1(c);
           var n = (c.policies.policies || []).length;
-          return '<div class="case-row' + (c.code === state.sel ? " active" : "") + '" data-code="' + esc(c.code) + '">'
+          return '<div class="case-row' + (c.code === state.sel ? " active" : "") + '" tabindex="0" role="button" data-code="' + esc(c.code) + '">'
             + "<h4>" + esc(o.customerName || "이름 미기재") + "</h4>"
             + '<div class="case-meta"><span>' + esc(c.code) + "</span>"
             + '<span class="badge-result">' + esc(CAT[o.category] || o.category || "미분류") + "</span>"
@@ -336,16 +336,32 @@
       $("new-cancel").addEventListener("click", function () {
         $("new-form").hidden = true;
       });
+      function localDate() {
+        var d = new Date();
+        return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+      }
+
       $("new-save").addEventListener("click", async function () {
+        var saveBtn = this;
+        if (saveBtn.disabled) return;
         var name = $("new-name").value.trim();
         if (!name) { $("new-msg").textContent = "이름을 입력하세요."; return; }
         if (!ROOT_HANDLE || !CAN_CREATE) { $("new-msg").textContent = "쓰기 가능한 고객 저장소 폴더를 연결하세요."; return; }
+        saveBtn.disabled = true;
+        // 코드 충돌 방지: 화면에 안 보이는 폴더(profile 손상 등)가 있어도 덮어쓰지 않는다
         var code = nextCode();
         try {
+          for (var guard = 0; guard < 999; guard++) {
+            try {
+              await ROOT_HANDLE.getDirectoryHandle(code); // create 없이 — 존재하면 다음 번호
+              var m = code.match(/^(C-\d{4}-)(\d{3})$/);
+              code = m[1] + String(Number(m[2]) + 1).padStart(3, "0");
+            } catch (e) { break; }
+          }
           var dir = await ROOT_HANDLE.getDirectoryHandle(code, { create: true });
           var profile = {
             "고객코드": code,
-            "등록일": new Date().toISOString().slice(0, 10),
+            "등록일": localDate(),
             "customerName": name,
             "category": $("new-cat").value,
             "phone": $("new-phone").value.trim() || null
@@ -365,10 +381,19 @@
           $("new-name").value = ""; $("new-phone").value = "";
           $("new-msg").textContent = "";
           renderList();
-          $("connect-box").querySelector("span").textContent = "고객 " + ALL.length + "명. " + code + " 등록됨. 커밋·push는 별도로 진행하세요.";
+          $("connect-box").querySelector("span").textContent = "고객 " + ALL.length + "명. " + code + " 등록됨.";
         } catch (e) {
           $("new-msg").textContent = "등록 실패: 폴더 쓰기 권한을 확인하세요.";
+        } finally {
+          saveBtn.disabled = false;
         }
+      });
+
+      // 키보드 접근: 목록 행 Enter/Space 선택
+      $("rows").addEventListener("keydown", function (e) {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        var row = e.target.closest(".case-row");
+        if (row) { e.preventDefault(); row.click(); }
       });
 
       $("q").addEventListener("input", function (e) { state.q = e.target.value.trim(); renderList(); });

@@ -10,7 +10,7 @@
   --platform-line-strong: #d0d5dd;
   --platform-paid: #15803d;
   --platform-denied: #dc2626;
-  --platform-partial: #d97706;
+  --platform-partial: #b45309; /* 작은 배지 텍스트 대비 4.5:1 확보 */
   --platform-radius: 12px;
   --platform-sidebar: 252px;
   --platform-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 12px rgba(16, 24, 40, 0.03);
@@ -1212,4 +1212,40 @@ body.platform {
   padding: 14px 12px;
   font-size: 0.9rem;
   color: var(--platform-muted);
+}
+
+/* 검수 반영 폴리시 */
+[hidden] {
+  display: none !important;
+}
+
+.tab-button {
+  cursor: pointer;
+}
+
+/* 목록 스크롤 신호: 하단 안쪽 그림자 (subtle) */
+.case-rows {
+  box-shadow: inset 0 -14px 12px -14px rgba(26, 39, 68, 0.28);
+}
+
+/* 빈 상세의 사각형 마크는 깨진 이미지처럼 읽혀 제거 */
+.detail-empty-mark {
+  display: none;
+}
+
+/* 모바일 터치 타겟 44px 확보 */
+@media (max-width: 719px) {
+  .filter-chip {
+    padding: 11px 18px;
+  }
+  .tab-button {
+    padding: 11px 18px;
+  }
+  .mobile-menu {
+    width: 44px;
+    height: 44px;
+  }
+  .search-suggest .suggest-item {
+    padding: 12px;
+  }
 }

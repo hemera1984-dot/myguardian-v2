@@ -108,11 +108,12 @@
         rows.innerHTML = list.map(function (c) {
           var badge = c.decision_result && c.decision_result !== "기타"
             ? '<span class="badge-result ' + resultClass(c.decision_result) + '">' + esc(c.decision_result) + "</span>" : "";
-          return '<div class="case-row' + (c.id === state.sel ? " active" : "") + '" data-id="' + esc(c.id) + '">'
+          return '<div class="case-row' + (c.id === state.sel ? " active" : "") + '" tabindex="0" role="button" data-id="' + esc(c.id) + '">'
             + "<h4>" + esc(c.title) + "</h4>"
             + '<div class="case-meta"><span>' + esc(c.publisher || "출처 미기재") + "</span>"
             + "<span>" + esc(c.case_number) + "</span>"
             + (c.decision_date ? "<span>" + esc(c.decision_date) + "</span>" : "")
+            + '<span class="badge-grade">' + esc(c.verification_grade || "미검증-참고용") + "</span>"
             + badge + "</div></div>";
         }).join("");
       }
@@ -233,15 +234,20 @@
         $("q").value = ""; $("f-result").value = ""; $("f-issue").value = ""; $("f-publisher").value = "";
         renderList();
       });
-      document.querySelectorAll(".tab-button").forEach(function (btn) {
+      document.querySelectorAll(".tab-button[data-tab]").forEach(function (btn) {
         btn.addEventListener("click", function () {
-          document.querySelectorAll(".tab-button").forEach(function (b) {
+          document.querySelectorAll(".tab-button[data-tab]").forEach(function (b) {
             b.classList.toggle("active", b === btn);
             b.setAttribute("aria-selected", String(b === btn));
           });
           state.tab = btn.dataset.tab;
           renderList();
         });
+      });
+      $("rows").addEventListener("keydown", function (e) {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        var row = e.target.closest(".case-row");
+        if (row) { e.preventDefault(); row.click(); }
       });
       document.getElementById("rows").addEventListener("click", function (e) {
         var row = e.target.closest(".case-row");

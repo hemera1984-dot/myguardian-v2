@@ -133,7 +133,8 @@
         btn.textContent = "생성 중";
         html2canvas($("kcard"), { scale: 2, useCORS: true, backgroundColor: null }).then(function (canvas) {
           var a = document.createElement("a");
-          a.download = "카톡카드-" + new Date().toISOString().slice(0, 10) + ".png";
+          var d = new Date();
+          a.download = "카톡카드-" + d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0") + ".png";
           a.href = canvas.toDataURL("image/png");
           a.click();
           btn.disabled = false;

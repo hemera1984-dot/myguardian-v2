@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -48,7 +48,12 @@
       var state = { tab: "term", q: "", sel: null };
       var $ = function (id) { return document.getElementById(id); };
       var RISK = { high: ["분쟁 잦음", "denied"], medium: ["분쟁 주의", "partial"], low: ["분쟁 드묾", "paid"] };
-      var DETAIL_EMPTY = '<div><div class="detail-empty-mark"></div><strong>항목을 선택하세요</strong><p>용어를 선택하면 정의, 실무 안내, 분쟁 유의점과 필요 서류를 확인할 수 있습니다.</p></div>';
+      function detailEmpty() {
+        var msg = state.tab === "term"
+          ? "용어를 선택하면 정의, 실무 안내, 분쟁 유의점과 필요 서류를 확인할 수 있습니다."
+          : "질병을 선택하면 치료 방법, 수술 분류, 관련 특약을 확인할 수 있습니다.";
+        return '<div><div class="detail-empty-mark"></div><strong>항목을 선택하세요</strong><p>' + msg + "</p></div>";
+      }
 
       function esc(s) {
         return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
@@ -76,7 +81,7 @@
         $("result-count").textContent = "결과 " + list.length + "건";
         if (state.sel != null && !list.some(function (x) { return x.id === state.sel; })) {
           state.sel = null;
-          $("detail").innerHTML = DETAIL_EMPTY;
+          $("detail").innerHTML = detailEmpty();
         }
         var rows = $("rows");
         if (!list.length) {
@@ -88,7 +93,7 @@
           var sub = state.tab === "term" ? (x.termNameEn || x.bodyPart || "") : (x.insuranceRiders || "");
           var risk = state.tab === "term" && RISK[x.disputeRisk]
             ? '<span class="badge-result ' + RISK[x.disputeRisk][1] + '">' + RISK[x.disputeRisk][0] + "</span>" : "";
-          return '<div class="case-row' + (x.id === state.sel ? " active" : "") + '" data-id="' + x.id + '">'
+          return '<div class="case-row' + (x.id === state.sel ? " active" : "") + '" tabindex="0" role="button" data-id="' + x.id + '">'
             + "<h4>" + esc(name) + "</h4>"
             + '<div class="case-meta"><span>' + esc(String(sub).slice(0, 46)) + "</span>" + risk + "</div></div>";
         }).join("");
@@ -168,7 +173,7 @@
           });
           state.tab = btn.dataset.tab;
           state.sel = null;
-          $("detail").innerHTML = DETAIL_EMPTY;
+          $("detail").innerHTML = detailEmpty();
           renderList();
         });
       });
@@ -182,6 +187,11 @@
           state.sel = x.id;
           renderDetail(x);
         }
+      });
+      $("rows").addEventListener("keydown", function (e) {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        var row = e.target.closest(".case-row");
+        if (row) { e.preventDefault(); row.click(); }
       });
     })();
   </script>

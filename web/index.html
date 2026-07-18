@@ -39,12 +39,12 @@
       <section class="page-heading">
         <p class="eyebrow">통합 업무 검색</p>
         <h1>오늘 필요한 보험 업무를<br>빠르게 찾으세요</h1>
-        <p>사례와 판례, 보험 용어, 지급사례 카드를 한곳에서 검색할 수 있도록 준비하고 있습니다.</p>
+        <p>사례와 판례, 보험 용어, 질병 정보를 한곳에서 검색합니다.</p>
       </section>
 
       <div class="global-search">
         <input type="search" id="global-q" aria-label="통합 검색" placeholder="사례, 용어, 질병을 검색하세요" autocomplete="off">
-        <span class="search-state" id="global-state">용어 418 · 질병 275 · 사례 726</span>
+        <span class="search-state" id="global-state"></span>
         <div class="search-suggest" id="suggest" hidden></div>
       </div>
 
@@ -89,6 +89,8 @@
           document.getElementById("stat-cases").textContent = s["사례"].toLocaleString();
           document.getElementById("stat-terms").textContent = s["용어"].toLocaleString();
           document.getElementById("stat-diseases").textContent = s["질병"].toLocaleString();
+          document.getElementById("global-state").textContent =
+            "용어 " + s["용어"] + " · 질병 " + s["질병"] + " · 사례 " + s["사례"];
           var by = s["사례_출처별"] || {};
           document.getElementById("stat-cases-sub").textContent =
             Object.keys(by).slice(0, 3).map(function (k) { return k + " " + by[k]; }).join(" · ");
@@ -121,7 +123,7 @@
       "use strict";
       var input = document.getElementById("global-q");
       var panel = document.getElementById("suggest");
-      var TERMS = null, DISEASES = null, loading = false;
+      var TERMS = null, DISEASES = null, dictsPromise = null, dictsFailed = false;
 
       function esc(s) {
         return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
@@ -130,15 +132,19 @@
       }
 
       function loadDicts() {
-        if (TERMS || loading) return Promise.resolve();
-        loading = true;
-        return Promise.all([
-          fetch("../data/dictionary/terms.json").then(function (r) { return r.json(); }),
-          fetch("../data/dictionary/diseases.json").then(function (r) { return r.json(); })
-        ]).then(function (res) {
-          TERMS = res[0].data || [];
-          DISEASES = res[1].data || [];
-        }).catch(function () { TERMS = []; DISEASES = []; });
+        // 진행 중인 로드를 공유해 로딩 경합 시 빈 결과 오표시를 막는다
+        if (!dictsPromise) {
+          dictsPromise = Promise.all([
+            fetch("../data/dictionary/terms.json").then(function (r) { return r.json(); }),
+            fetch("../data/dictionary/diseases.json").then(function (r) { return r.json(); })
+          ]).then(function (res) {
+            TERMS = res[0].data || [];
+            DISEASES = res[1].data || [];
+          }).catch(function () {
+            TERMS = []; DISEASES = []; dictsFailed = true;
+          });
+        }
+        return dictsPromise;
       }
 
       function suggest() {
@@ -170,7 +176,7 @@
           });
         }
         if (!terms.length && !diseases.length) {
-          html.push('<p class="suggest-empty">사전에 일치하는 항목이 없습니다.</p>');
+          html.push('<p class="suggest-empty">' + (dictsFailed ? "사전 데이터를 불러오지 못했습니다." : "사전에 일치하는 항목이 없습니다.") + "</p>");
         }
         html.push('<button type="button" class="suggest-more" id="suggest-cases">사례·판례에서 "' + esc(q) + '" 검색</button>');
         panel.innerHTML = html.join("");

@@ -1683,3 +1683,8 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
     break-inside: avoid;
   }
 }
+
+/* 안전망: hidden 속성은 어떤 display 지정보다 우선한다 (검수 지적: 인라인 flex가 hidden을 덮던 버그) */
+[hidden] {
+  display: none !important;
+}
