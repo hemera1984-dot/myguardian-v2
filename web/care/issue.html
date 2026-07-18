@@ -75,7 +75,9 @@
         cover.push('<h1 class="mag-masthead">' + masthead + "</h1>");
         cover.push('<p class="mag-issue-line">' + esc(meta["주차라벨"]) + " · 통권 " + esc(meta["호수"]) + "호</p>");
         if (meta["커버이미지"]) cover.push('<img class="mag-cover-img" src="../../' + esc(meta["커버이미지"]) + '" alt="표지">');
-        cover.push('<p class="mag-editor">편집장 ' + esc(pub) + " FC</p>");
+        // 편집장은 항상 안창민. 팀원 호에는 발행자를 병기한다.
+        var editorLine = "편집장 안창민 FC" + (pub !== "안창민" ? " · 발행 " + esc(pub) + " FC" : "");
+        cover.push('<p class="mag-editor">' + editorLine + "</p>");
         cover.push("</header>");
         cover.push('<nav class="mag-toc"><p class="mag-toc-title">이번 호</p><ol>');
         arts.forEach(function (a, i) {
@@ -87,7 +89,7 @@
         if (note.length) {
           cover.push('<section class="mag-note"><p class="mag-note-label">편집장의 말</p>');
           note.forEach(function (p) { cover.push("<p>" + esc(p) + "</p>"); });
-          cover.push('<p class="mag-note-sign">편집장 ' + esc(pub) + "</p></section>");
+          cover.push('<p class="mag-note-sign">편집장 안창민</p></section>');
         }
         cover.push('<button class="page-next" type="button" data-goto="1">첫 기사 읽기</button>');
         pages.push({ cls: "cover-page", html: cover.join("") });
@@ -123,7 +125,7 @@
           } else {
             h.push('<footer class="mag-colophon">');
             h.push('<p class="mag-colophon-title">' + esc(meta["채널"]) + " " + esc(pub) + "</p>");
-            h.push("<p>" + esc(meta["주차라벨"]) + " · 통권 " + esc(meta["호수"]) + "호 · 편집장 " + esc(pub) + " FC</p>");
+            h.push("<p>" + esc(meta["주차라벨"]) + " · 통권 " + esc(meta["호수"]) + "호 · " + editorLine + "</p>");
             h.push("<p>본 콘텐츠는 정보 제공 목적이며 개별 상품 권유가 아닙니다. 문의는 담당 설계사에게 연락해 주십시오.</p>");
             h.push('<button class="page-next" type="button" data-goto="0" style="margin-top:20px">표지로 돌아가기</button>');
             h.push("</footer>");
