@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "claim-card.schema.json",
+  "title": "지급사례 카드",
+  "description": "청구·지급 화면의 지급사례 검색기에 표시되는 카드. 근거사례는 반드시 data/cases/의 실데이터 id를 참조한다.",
+  "type": "object",
+  "required": ["케이스id", "상황명", "관련담보", "지급조건", "근거사례", "면책문구"],
+  "properties": {
+    "케이스id": {
+      "type": "string",
+      "description": "카드 고유 ID (예: claim-card-0001)",
+      "pattern": "^claim-card-[0-9]{4}$"
+    },
+    "상황명": {
+      "type": "string",
+      "description": "고객이 처한 상황명 (예: 대장 용종 제거 후 수술비 청구)"
+    },
+    "관련담보": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "관련 담보 목록 (예: 질병수술비, 암진단비)"
+    },
+    "지급조건": {
+      "type": "string",
+      "description": "지급이 인정되는 조건 요약"
+    },
+    "분쟁포인트": {
+      "type": ["string", "null"],
+      "description": "실무에서 자주 다투어지는 지점"
+    },
+    "근거사례": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^case-[0-9]{4}-[0-9]{4}$"
+      },
+      "description": "근거가 되는 사례 id 목록 (case.schema.json의 id). 실데이터에 없는 id 금지."
+    },
+    "체크리스트": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "청구 전 확인 사항 목록"
+    },
+    "면책문구": {
+      "type": "string",
+      "description": "고정 면책 문구. 기본값: 본 자료는 공개된 분쟁 사례 정보 제공이며 개별 지급 여부 판단이 아닙니다"
+    }
+  }
+}

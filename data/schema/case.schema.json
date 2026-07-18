@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "case.schema.json",
+  "title": "사례·판례",
+  "description": "보험 분쟁 사례 및 판례. data/cases/ 하위 JSON은 이 스키마를 따른다. 사건번호 없는 판례는 화면에 표시하지 않는다.",
+  "type": "object",
+  "required": ["id", "제목", "출처", "쟁점분류", "결과", "신뢰도등급", "수집일"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "사례 고유 ID (예: case-2026-0001)",
+      "pattern": "^case-[0-9]{4}-[0-9]{4}$"
+    },
+    "제목": {
+      "type": "string",
+      "description": "사례 제목 (한 줄 요약)"
+    },
+    "사건번호": {
+      "type": ["string", "null"],
+      "description": "법원 사건번호 또는 조정 사건번호. 판례인데 사건번호가 없으면 화면 미표시 대상."
+    },
+    "출처": {
+      "type": "string",
+      "enum": ["대법원", "금감원", "소비자원", "자체", "커뮤니티제보"],
+      "description": "사례의 출처 기관"
+    },
+    "쟁점분류": {
+      "type": "string",
+      "description": "핵심 쟁점 분류 (예: 알릴의무위반, 재해사망인정, 암진단확정)"
+    },
+    "결과": {
+      "type": "string",
+      "enum": ["지급", "부지급", "일부지급", "화해조정"],
+      "description": "분쟁의 최종 결과"
+    },
+    "조력자": {
+      "type": ["string", "null"],
+      "enum": ["개인단독", "설계사조력", "손해사정사", "소송", null],
+      "description": "청구인이 받은 조력의 형태"
+    },
+    "상대보험사": {
+      "type": ["string", "null"],
+      "description": "상대 보험사명. 공식 출처(대법원·금감원·소비자원)에서 확인된 경우에만 기재."
+    },
+    "결정근거": {
+      "type": ["string", "null"],
+      "description": "결정 근거 한 줄 요약"
+    },
+    "준비서류": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "해당 사례에서 실제 제출·요구된 서류 목록"
+    },
+    "금액규모": {
+      "type": ["string", "null"],
+      "description": "분쟁 금액 규모 (예: 1천만원 미만, 1억원 이상)"
+    },
+    "원문링크": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "description": "원문 확인 가능한 공개 URL"
+    },
+    "신뢰도등급": {
+      "type": "string",
+      "enum": ["검증완료", "부분검증", "미검증-참고용"],
+      "description": "검증완료: 공식 출처 원문 대조 완료 / 부분검증: 출처 확인, 세부 미대조 / 미검증-참고용: 커뮤니티 제보 등"
+    },
+    "수집일": {
+      "type": "string",
+      "format": "date",
+      "description": "수집 일자 (YYYY-MM-DD)"
+    }
+  }
+}

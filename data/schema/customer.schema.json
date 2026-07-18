@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "customer.schema.json",
+  "title": "고객",
+  "description": "고객 규격 정의. 실데이터는 이 저장소가 아닌 별도 clients 저장소에 둔다. 실명·연락처 등 개인정보는 어떤 필드에도 저장 금지. 폴더명 = 고객코드(예: C-2026-005 폴더)가 진짜 코드다.",
+  "type": "object",
+  "required": ["코드", "담당FC", "카테고리"],
+  "properties": {
+    "코드": {
+      "type": "string",
+      "description": "고객 코드. 폴더명과 동일해야 한다 (예: C-2026-005).",
+      "pattern": "^C-[0-9]{4}-[0-9]{3}$"
+    },
+    "담당FC": {
+      "type": "string",
+      "description": "담당 FC 식별자 (실명 아닌 FC 코드 권장)"
+    },
+    "카테고리": {
+      "type": "string",
+      "enum": ["이관", "밸류업", "계약", "지인"],
+      "description": "v1 체계 계승: 이관(transfer)/밸류업(valueup)/계약(contract)/지인(referral)"
+    },
+    "상담일": {
+      "type": "array",
+      "items": { "type": "string", "format": "date" },
+      "description": "상담 일자 이력 (YYYY-MM-DD)"
+    },
+    "조인웍참여": {
+      "type": "boolean",
+      "description": "조인웍(팀 협업) 참여 여부",
+      "default": false
+    }
+  }
+}
