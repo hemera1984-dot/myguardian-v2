@@ -139,7 +139,7 @@
           + '<div class="detail-badges"><span class="badge-grade">' + esc(c.verification_grade || "미검증-참고용") + "</span>" + badge + "</div>"
           + "<h3>" + esc(c.title) + "</h3>"
           + '<dl class="detail-fields">'
-          + "<dt>사건번호</dt><dd>" + esc(c.case_number) + "</dd>"
+          + "<dt>" + (c.source_type === "금감원" ? "자료 번호" : "사건번호") + "</dt><dd>" + esc(c.case_number) + "</dd>"
           + "<dt>기관</dt><dd>" + esc(c.publisher || "미기재") + "</dd>"
           + "<dt>유형</dt><dd>" + esc(tabOf(c)) + "</dd>"
           + (c.decision_date ? "<dt>결정일</dt><dd>" + esc(c.decision_date) + "</dd>" : "")

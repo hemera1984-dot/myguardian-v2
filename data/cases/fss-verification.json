@@ -1,0 +1,911 @@
+{
+ "검증일": "2026-07-19",
+ "기준": "원문 접근 + 제목 앞 20자 대조. 금감원 사례는 공식 조정번호가 없어 최고 등급은 부분검증",
+ "부분검증": 128,
+ "미검증": 1,
+ "결과": [
+  {
+   "id": "7eoAR4uy3G9M48fOfKX3g",
+   "표시번호": "금감원 치매보험 약관 개선 행정지도 (2019.7)",
+   "url": null,
+   "판정": "미검증-참고용",
+   "사유": "원문 URL 없음"
+  },
+  {
+   "id": "cda6cd58-8dcc-4148-9872-4879eb1d312a",
+   "표시번호": "금감원-분쟁조정-22",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=22&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "cee52802-803f-41e4-8a20-b83b9feccf4a",
+   "표시번호": "금감원-분쟁조정-24",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=24&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "ad9095be-c930-408c-bde9-9ea5e05127c7",
+   "표시번호": "금감원-분쟁조정-25",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=25&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "f0d2920d-1c22-4a98-8d10-e6bf3798c40a",
+   "표시번호": "금감원-분쟁조정-27",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=27&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "92da0776-76dc-49ec-9d97-ef285afe9ca3",
+   "표시번호": "금감원-분쟁조정-35",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=35&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "fe245fce-f817-4a39-ab53-2156010b019e",
+   "표시번호": "금감원-분쟁조정-37",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=37&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "74e22462-75c2-4d0b-864d-d64c55ca97f0",
+   "표시번호": "금감원-분쟁조정-45",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=45&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "a4b9f842-4942-4bac-88ac-54f8f0da00f3",
+   "표시번호": "금감원-분쟁조정-46",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=46&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "dad8ed2a-f1c0-4381-a64a-87745ba3c5a1",
+   "표시번호": "금감원-분쟁조정-48",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=48&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "f8b1fb51-176d-4fa4-b200-163c1ea73367",
+   "표시번호": "금감원-분쟁조정-49",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=49&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "6fca95b3-7c16-439d-8fae-8dde37c4a151",
+   "표시번호": "금감원-분쟁조정-50",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=50&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "fb11c502-3bb1-4ca4-86ed-f4a15fc0fb50",
+   "표시번호": "금감원-분쟁조정-54",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=54&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "6d6f4f02-f1f9-428f-b5c2-0a75662a1d24",
+   "표시번호": "금감원-분쟁조정-61",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=61&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "afb40779-3340-4935-a120-682ba202c8bc",
+   "표시번호": "금감원-분쟁조정-73",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=73&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "3a101fdb-ed24-4dfd-bc61-08b1c5e8d5a6",
+   "표시번호": "금감원-분쟁조정-74",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=74&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "abe036a6-d5b7-4330-bc49-9e8731144186",
+   "표시번호": "금감원-분쟁조정-76",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=76&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "c99c157c-8ac9-4357-aff3-dfcb0ef035df",
+   "표시번호": "금감원-분쟁조정-78",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=78&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "a705793d-47ae-4717-b93d-40aad7f6a901",
+   "표시번호": "금감원-분쟁조정-82",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=82&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "940f6e0c-9cf9-4519-977c-7f0cc4069bd9",
+   "표시번호": "금감원-분쟁조정-85",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=85&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "90ff5289-de37-4194-a564-e054a0ad711e",
+   "표시번호": "금감원-분쟁조정-86",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=86&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "ec11aa62-d44a-478f-9256-eb82b9c91f9e",
+   "표시번호": "금감원-분쟁조정-89",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=89&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "80eb12c1-954a-44a0-8cd9-e034a9cfa4d2",
+   "표시번호": "금감원-분쟁조정-93",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=93&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "b5208b8d-edbb-455f-9167-45cc185f6a67",
+   "표시번호": "금감원-분쟁조정-97",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=98&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "9c9b71a7-502e-46c6-8d14-d9bac999a66c",
+   "표시번호": "금감원-분쟁조정-99",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=100&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "1ca6a4d4-971d-42e2-8d74-b1df7d241dec",
+   "표시번호": "금감원-분쟁조정-100",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=101&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "84c962c5-e67f-495f-b0c4-c8f64812b504",
+   "표시번호": "금감원-분쟁조정-103",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=104&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "7b1c24e3-f934-403a-b63f-df18072cacb8",
+   "표시번호": "금감원-분쟁조정-118",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=119&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "77617684-055f-4ce2-a0a7-604c07b652de",
+   "표시번호": "금감원-분쟁조정-122",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=123&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "9c1edd56-9fe7-4fe8-a685-939a5698899c",
+   "표시번호": "금감원-분쟁조정-121",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=122&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "c4ff0c6a-6630-4473-8ca6-32b5530897d5",
+   "표시번호": "금감원-분쟁조정-125",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=131&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "8fa50e5d-90da-4e0c-9438-31b8008d3e8f",
+   "표시번호": "금감원-분쟁조정-129",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=135&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "fabe6fdd-988f-4bc7-82f7-cc251e731f6e",
+   "표시번호": "금감원-분쟁조정-136",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=142&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "a5b4b3fe-6d12-47e1-813d-c48b345fc979",
+   "표시번호": "금감원-분쟁조정-148",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=154&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "c2406bf8-f355-4f5a-a021-a05399b18ca6",
+   "표시번호": "금감원-분쟁조정-150",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=156&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "c98c9a99-91a0-41b0-ab94-412add0eae64",
+   "표시번호": "금감원-분쟁조정-155",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=161&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "b343c051-fb77-4314-9af0-c9927f0afd5b",
+   "표시번호": "금감원-분쟁조정-162",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=168&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "4c1326fc-b213-40b5-b4b8-53f5e1e9a96b",
+   "표시번호": "금감원-분쟁조정-164",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=170&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "e4e4d669-418c-452b-98a8-7bca52206c63",
+   "표시번호": "금감원-분쟁조정-170",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=176&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "dd9d0002-36d7-4a64-a4e5-a1a85c96363a",
+   "표시번호": "금감원-분쟁조정-171",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=177&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "c544e6bf-d95d-4af8-a660-930df6b90c39",
+   "표시번호": "금감원-분쟁조정-172",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=178&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "d094a9b2-db22-4720-a093-ec05b54726e5",
+   "표시번호": "금감원-분쟁조정-174",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=180&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "d2372f02-b4d3-4a37-af86-f23e887cf6f2",
+   "표시번호": "금감원-분쟁조정-175",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=181&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "a19baea7-bce9-41d0-857a-d73bd7775472",
+   "표시번호": "금감원-분쟁조정-177",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=183&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "e9d106ad-7d4a-4e11-a9a5-3a31f2db8167",
+   "표시번호": "금감원-분쟁조정-190",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=196&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "e1f01746-81bc-46a6-8abe-3ece3962d0a8",
+   "표시번호": "금감원-분쟁조정-193",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=199&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "fb8d226f-c312-4a3c-9e1d-714bab5bf2a6",
+   "표시번호": "금감원-분쟁조정-194",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=200&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "c5c5010e-a149-44eb-8161-2f0c427c13f6",
+   "표시번호": "금감원-분쟁조정-199",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=125&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "6b115ab2-9ad7-4da7-9fc4-6c9df570142f",
+   "표시번호": "금감원-분쟁조정-15",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=15&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "fbca2828-b75c-40ec-b21a-a0309e974311",
+   "표시번호": "금감원-분쟁조정-16",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=16&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "34edfe90-85aa-4cb7-93c2-3bc59df58631",
+   "표시번호": "금감원-분쟁조정-18",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=18&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "c5b9c38d-3005-42e4-8675-02b8da28bbaa",
+   "표시번호": "금감원-분쟁조정-26",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=26&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "4780fd8c-5f74-4329-b41b-ff4909b1db5b",
+   "표시번호": "금감원-분쟁조정-28",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=28&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "85fe2be7-c7b1-4ebe-a636-78059baac2cb",
+   "표시번호": "금감원-분쟁조정-29",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=29&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "b403b1f8-f5c6-426f-8feb-b82a8e731f56",
+   "표시번호": "금감원-분쟁조정-38",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=38&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "b22aad81-df88-40d5-8b8b-d91f9d980e15",
+   "표시번호": "금감원-분쟁조정-39",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=39&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "c4d7b12b-ba12-4f45-b345-bcd82453e005",
+   "표시번호": "금감원-분쟁조정-47",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=47&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "86f4a542-66d2-4ca9-8361-8c08fe14f302",
+   "표시번호": "금감원-분쟁조정-55",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=55&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "e51cdc26-1fc8-4fb9-98e7-20b5c9c8750f",
+   "표시번호": "금감원-분쟁조정-56",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=56&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "4f71737a-e6bf-4864-a087-c3e59885d01b",
+   "표시번호": "금감원-분쟁조정-58",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=58&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "f5923481-f928-473e-a5f8-c8756c34966e",
+   "표시번호": "금감원-분쟁조정-59",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=59&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "879171be-acf2-46c8-9dec-73b7c24ddc4e",
+   "표시번호": "금감원-분쟁조정-60",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=60&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "108c2d54-1935-401e-b20f-109eb0082750",
+   "표시번호": "금감원-분쟁조정-62",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=62&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "d6fbcaf0-5bad-486f-b167-c709e4a9e831",
+   "표시번호": "금감원-분쟁조정-63",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=63&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "a509fb3a-6ee2-4ae0-9130-1eff0ec322a1",
+   "표시번호": "금감원-분쟁조정-64",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=64&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "22b8e7ed-caa4-4150-94a0-d8eec8fbc577",
+   "표시번호": "금감원-분쟁조정-65",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=65&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "8159953a-99de-4296-958d-616b13c1aa2b",
+   "표시번호": "금감원-분쟁조정-72",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=72&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "9ee27b5c-db8d-4d41-99d4-fedef4f534a7",
+   "표시번호": "금감원-분쟁조정-75",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=75&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "eff67f08-8327-464e-aa88-0729c86b9b65",
+   "표시번호": "금감원-분쟁조정-79",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=79&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "3cf28990-48bd-49db-b18f-2984858ee0c9",
+   "표시번호": "금감원-분쟁조정-80",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=80&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "f282aa20-fdae-45ac-ae1a-47ba4fe7e6a3",
+   "표시번호": "금감원-분쟁조정-81",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=81&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "b75cd2a5-41f9-47bc-b0fb-370dc2da6388",
+   "표시번호": "금감원-분쟁조정-87",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=87&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "8305e06e-3ff9-4b88-b070-83cb887a2906",
+   "표시번호": "금감원-분쟁조정-94",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=94&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "b9130ab7-0129-4a12-8b9a-9993f4d914fe",
+   "표시번호": "금감원-분쟁조정-95",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=96&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "c3d9f12f-3e8d-40ab-94ee-105709650181",
+   "표시번호": "금감원-분쟁조정-98",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=99&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "65f283e8-d741-4c64-8801-da7f0e33faab",
+   "표시번호": "금감원-분쟁조정-109",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=110&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "913fefbd-8a4f-499a-bbec-bb70f541c0b0",
+   "표시번호": "금감원-분쟁조정-110",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=111&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "fe97083b-737e-4030-bf35-6c474b7e94fe",
+   "표시번호": "금감원-분쟁조정-112",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=113&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "c7a0fd30-d24f-45ea-a8ce-9b20779915b0",
+   "표시번호": "금감원-분쟁조정-123",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=129&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "737fb3d5-9d50-456d-9c2e-b3e58b63b52e",
+   "표시번호": "금감원-분쟁조정-124",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=130&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "efdb89c9-69f8-4726-be14-82abf5619b80",
+   "표시번호": "금감원-분쟁조정-127",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=133&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "3f8acff4-dd9c-48b5-84ae-c3c35ddf7d72",
+   "표시번호": "금감원-분쟁조정-132",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=138&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "fee4c536-4a61-4ff5-9c9f-6b295e2000ec",
+   "표시번호": "금감원-분쟁조정-133",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=139&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "c2959624-fbf3-4d4c-9093-465a5c4a3006",
+   "표시번호": "금감원-분쟁조정-137",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=143&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "e9385cab-08be-417f-830f-1122285f5194",
+   "표시번호": "금감원-분쟁조정-138",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=144&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "f405f48b-e2c2-4b8a-a682-79c46e4cbc8f",
+   "표시번호": "금감원-분쟁조정-142",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=148&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "eb074765-cf62-423f-9c48-9f85e2c38caa",
+   "표시번호": "금감원-분쟁조정-144",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=150&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "f57e385f-7509-44f0-ba0d-c412bd6ab946",
+   "표시번호": "금감원-분쟁조정-145",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=151&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "f642149d-2da5-40f4-bebf-1bb2e26318ae",
+   "표시번호": "금감원-분쟁조정-146",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=152&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "c7956dcd-4f79-4c72-8da9-3ee8d81c21b7",
+   "표시번호": "금감원-분쟁조정-149",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=155&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "c8d3756b-a3f9-46c4-b18d-17c8177f09aa",
+   "표시번호": "금감원-분쟁조정-151",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=157&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "6dfb8ad6-e35f-4e71-9472-6f2425d37387",
+   "표시번호": "금감원-분쟁조정-152",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=158&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "e2b44fd1-a31c-4115-b16c-79249c0a1788",
+   "표시번호": "금감원-분쟁조정-154",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=160&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "d4503bb6-532b-4700-9575-3d1ae03fb8f8",
+   "표시번호": "금감원-분쟁조정-157",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=163&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "90b30c44-0772-4b34-aedf-5cfd02bc17d6",
+   "표시번호": "금감원-분쟁조정-160",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=166&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "90522653-e140-4e30-9c80-a691e5a358d4",
+   "표시번호": "금감원-분쟁조정-161",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=167&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "9ebadde7-9873-418c-9f6d-d59a29c7c355",
+   "표시번호": "금감원-분쟁조정-163",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=169&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "ffa8e1be-af48-4d05-8cb5-d415778cac31",
+   "표시번호": "금감원-분쟁조정-166",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=172&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "f0935a8e-b41c-4841-ab83-9efce840ef14",
+   "표시번호": "금감원-분쟁조정-168",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=174&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "aea1259c-cfd3-4a51-949a-93f44b40b0aa",
+   "표시번호": "금감원-분쟁조정-173",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=179&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "5aa5ce6d-a81a-422c-882c-d45618b5a207",
+   "표시번호": "금감원-분쟁조정-178",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=184&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "94016437-e925-41b7-b7c4-bacafd817ee0",
+   "표시번호": "금감원-분쟁조정-191",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=197&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "a0d908e1-6d73-47b4-8030-8f45390ee0f8",
+   "표시번호": "금감원-분쟁조정-192",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=198&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "fb02efea-49be-45f3-b4cf-2ddc093638cd",
+   "표시번호": "금감원-분쟁조정-196",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=202&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "d94a8c84-3c3e-42bf-9a9f-1683f2d10d51",
+   "표시번호": "금감원-분쟁조정-197",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=203&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "feefc151-1542-4bcd-9f32-def94f6bb3a4",
+   "표시번호": "금감원-분쟁조정-201",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=128&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "ee7a67a0-f9bc-492b-8ca5-98878c11bac4",
+   "표시번호": "금감원-분쟁조정-126",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=132&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "9e709407-6965-4a1d-ade4-1f7d1f62c3aa",
+   "표시번호": "금감원-분쟁조정-128",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=134&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "b8e09886-c34d-4c71-971e-a60a4522b666",
+   "표시번호": "금감원-분쟁조정-130",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=136&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "f9f5f10c-9546-4d0c-86f5-dfce2b6b4be5",
+   "표시번호": "금감원-분쟁조정-131",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=137&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "4fae843b-306f-4c6c-a8ea-24eb230618dc",
+   "표시번호": "금감원-분쟁조정-134",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=140&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "cd6cedeb-b070-457f-864f-a34162fb5766",
+   "표시번호": "금감원-분쟁조정-135",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=141&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "6626a5ca-ac60-4f9f-b993-4a18f53022ab",
+   "표시번호": "금감원-분쟁조정-139",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=145&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "817dc0f4-2fde-4720-a265-a6692b362c33",
+   "표시번호": "금감원-분쟁조정-140",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=146&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "f46249f4-91cb-4531-bdab-cd7dc1e0e8d2",
+   "표시번호": "금감원-분쟁조정-141",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=147&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "72aea0b0-bb8d-48de-a645-10fa92c91bf5",
+   "표시번호": "금감원-분쟁조정-143",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=149&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "71570d3e-7d0a-47b1-b657-173fb12b2227",
+   "표시번호": "금감원-분쟁조정-147",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=153&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "deff1777-abcb-4963-8f87-f97db90cdaf5",
+   "표시번호": "금감원-분쟁조정-153",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=159&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "c9b26ca2-5ae4-46f9-b73e-76098340d9e4",
+   "표시번호": "금감원-분쟁조정-156",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=162&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "98d54c3f-d69b-4a67-b081-15733983274a",
+   "표시번호": "금감원-분쟁조정-159",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=165&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "9062db10-33fc-4571-a96a-80d7d44db773",
+   "표시번호": "금감원-분쟁조정-158",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=164&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "ef599792-8d5c-4613-85cc-b1998bf6f796",
+   "표시번호": "금감원-분쟁조정-165",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=171&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "ce2398b5-419f-46d7-8bd0-cfd9d5adaf6a",
+   "표시번호": "금감원-분쟁조정-167",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=173&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "9a0645d5-6afb-45d6-a660-035bff88cdfa",
+   "표시번호": "금감원-분쟁조정-169",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=175&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "c337381a-7f10-40a3-b30b-5545a257d8f5",
+   "표시번호": "금감원-분쟁조정-181",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=187&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "def358bc-ead2-4d6c-bbc0-5a15619c73ec",
+   "표시번호": "금감원-분쟁조정-183",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=189&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "c0192992-4f10-4148-b567-b855a549cd85",
+   "표시번호": "금감원-분쟁조정-185",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=191&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "a193871c-5618-4771-8109-e62aea902eaf",
+   "표시번호": "금감원-분쟁조정-195",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=201&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  },
+  {
+   "id": "fa15fb4c-782c-4bca-8275-129b96581b36",
+   "표시번호": "금감원-분쟁조정-198",
+   "url": "https://www.fss.or.kr/fss/job/fncCnflCase/view.do?caseSlno=124&menuNo=201195",
+   "판정": "부분검증",
+   "사유": "원문 접근·제목 일치 (공식 조정번호 부재로 검증완료 불가)"
+  }
+ ]
+}

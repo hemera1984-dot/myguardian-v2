@@ -51,6 +51,22 @@ def main() -> None:
                 "원본id": [m["id"] for m in members],
             })
 
+    # 검증 반영 (원본 무변형 — 색인의 등급만 조정)
+    ver_path = ROOT / "data" / "cases" / "fss-verification.json"
+    if ver_path.exists():
+        with open(ver_path, encoding="utf-8") as f:
+            ver = {v["id"]: v for v in json.load(f)["결과"]}
+        for e in index:
+            v = ver.get(e["id"])
+            if v:
+                e["verification_grade"] = v["판정"]
+                e["검증메모"] = v["사유"]
+    for e in index:
+        has_url = e.get("case_source_url") or e.get("source_url")
+        if not has_url and e.get("verification_grade") == "검증완료":
+            e["verification_grade"] = "미검증-참고용"
+            e["검증메모"] = "원문 URL 없음"
+
     with open(ROOT / "data" / "cases" / "index.json", "w", encoding="utf-8") as f:
         json.dump({
             "생성일": date.today().isoformat(),
