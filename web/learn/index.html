@@ -1,64 +1,42 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>학습 - 마이가디언</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/platform.css">
 </head>
-<body>
-  <aside class="sidebar" id="sidebar">
-    <a class="sidebar-brand" href="../">마이<span class="accent">가디언</span></a>
-    <nav class="sidebar-nav">
-      <a href="../">홈</a>
-      <a href="../claims/">청구·지급</a>
-      <a href="../cases/">사례·판례</a>
-      <a href="./" class="active">학습</a>
-      <a href="../care/">케어센터</a>
-      <a href="../card/">카톡카드</a>
+<body class="platform">
+  <aside class="platform-sidebar" id="platform-sidebar">
+    <a class="platform-brand" href="../" aria-label="마이가디언 홈"><span class="brand-mark">마</span><span><span class="brand-name">마이가디언</span><span class="brand-caption">FC 업무 플랫폼</span></span></a>
+    <nav class="platform-nav" aria-label="주요 메뉴">
+      <a href="../">홈</a><a href="../claims/">청구·지급</a><a href="../cases/">사례·판례</a><a class="active" href="./">학습</a>
+      <span class="nav-separator" aria-hidden="true"></span><a href="../care/">케어센터</a><a href="../card/">카톡카드</a>
     </nav>
-    <p class="sidebar-foot">보험 업무 플랫폼</p>
+    <div class="sidebar-status"><strong>지식 자료</strong><span>용어와 질병 정보를 빠르게 찾습니다.</span></div>
   </aside>
-  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="platform-overlay" id="platform-overlay"></div>
+  <div class="platform-shell">
+    <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">학습</span><span class="topbar-note">상담에 필요한 보험 지식</span></header>
+    <main class="platform-main">
+      <section class="page-heading"><p class="eyebrow">보험 지식</p><h1>복잡한 보험 정보를<br>쉽고 빠르게 확인하세요</h1><p>상담 중 바로 찾아볼 수 있는 용어 사전과 질병 사전, 학습 콘텐츠가 들어설 공간입니다.</p></section>
+      <div class="global-search"><input type="search" aria-label="보험 지식 검색" placeholder="보험 용어, 질병명 또는 학습 주제를 검색하세요" disabled><span class="search-state">검색 준비중</span></div>
 
-  <div class="main-area">
-    <header class="topbar">
-      <button class="menu-toggle" id="menu-toggle" aria-label="메뉴 열기">
-        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-      </button>
-      <span class="site-title">마이<span class="accent">가디언</span></span>
-    </header>
+      <section class="dictionary-grid" aria-label="사전 입주 현황">
+        <article class="dictionary-card"><span class="dictionary-label">보험 용어 사전</span><div class="dictionary-count">418<span class="dictionary-unit">개</span></div><p>실데이터 입주 후 용어 정의와 관련 설명을 제공합니다.</p></article>
+        <article class="dictionary-card"><span class="dictionary-label">질병 사전</span><div class="dictionary-count">275<span class="dictionary-unit">개</span></div><p>실데이터 입주 후 질병 정보와 보험 관련 확인 항목을 제공합니다.</p></article>
+      </section>
 
-    <main class="container">
-      <h1 class="page-title">학습</h1>
-      <p class="page-desc">학습 콘텐츠와 용어 사전 418건, 질병 사전 275건이 들어설 자리입니다.</p>
-
-      <div class="coming-soon">
-        <span class="badge">준비중</span>
-        <p>공사 중입니다. 사전 데이터 입주 후 개장합니다.</p>
-      </div>
+      <section class="section-block" aria-labelledby="learning-title">
+        <div class="section-head"><div><h2 id="learning-title">학습 콘텐츠</h2><p>검증된 자료만 주제별로 정리됩니다.</p></div></div>
+        <article class="surface-card"><h3>콘텐츠 준비중</h3><p class="surface-desc">지식 허브 자료 입주 후 학습 목록이 표시됩니다.</p><div class="empty-inline"><div><strong>표시할 학습 콘텐츠가 없습니다.</strong><span>실제 자료가 등록되면 분야별로 확인할 수 있습니다.</span></div></div></article>
+      </section>
     </main>
-
-    <footer class="site-footer">
-      마이가디언 v2
-    </footer>
+    <footer class="platform-footer">마이가디언 v2</footer>
   </div>
-
   <script>
-    (function () {
-      var toggle = document.getElementById("menu-toggle");
-      var sidebar = document.getElementById("sidebar");
-      var overlay = document.getElementById("sidebar-overlay");
-      toggle.addEventListener("click", function () {
-        sidebar.classList.toggle("open");
-        overlay.classList.toggle("show");
-      });
-      overlay.addEventListener("click", function () {
-        sidebar.classList.remove("open");
-        overlay.classList.remove("show");
-      });
-    })();
+    (function () { var button=document.getElementById("mobile-menu"),sidebar=document.getElementById("platform-sidebar"),overlay=document.getElementById("platform-overlay"); function close(){sidebar.classList.remove("open");overlay.classList.remove("show");button.setAttribute("aria-expanded","false");} button.addEventListener("click",function(){var open=sidebar.classList.toggle("open");overlay.classList.toggle("show",open);button.setAttribute("aria-expanded",String(open));});overlay.addEventListener("click",close); })();
   </script>
 </body>
 </html>

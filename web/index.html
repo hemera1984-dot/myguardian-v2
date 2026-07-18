@@ -5,99 +5,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>마이가디언</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/platform.css">
 </head>
-<body>
-  <aside class="sidebar" id="sidebar">
-    <a class="sidebar-brand" href="./">마이<span class="accent">가디언</span></a>
-    <nav class="sidebar-nav">
-      <a href="./" class="active">홈</a>
+<body class="platform">
+  <aside class="platform-sidebar" id="platform-sidebar">
+    <a class="platform-brand" href="./" aria-label="마이가디언 홈">
+      <span class="brand-mark">마</span>
+      <span><span class="brand-name">마이가디언</span><span class="brand-caption">FC 업무 플랫폼</span></span>
+    </a>
+    <nav class="platform-nav" aria-label="주요 메뉴">
+      <a class="active" href="./">홈</a>
       <a href="claims/">청구·지급</a>
       <a href="cases/">사례·판례</a>
       <a href="learn/">학습</a>
+      <span class="nav-separator" aria-hidden="true"></span>
       <a href="care/">케어센터</a>
       <a href="card/">카톡카드</a>
     </nav>
-    <p class="sidebar-foot">보험 업무 플랫폼</p>
+    <div class="sidebar-status"><strong>업무 공간</strong><span>필요한 기능만 간결하게</span></div>
   </aside>
-  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="platform-overlay" id="platform-overlay"></div>
 
-  <div class="main-area">
-    <header class="topbar">
-      <button class="menu-toggle" id="menu-toggle" aria-label="메뉴 열기">
-        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-      </button>
-      <span class="site-title">마이<span class="accent">가디언</span></span>
+  <div class="platform-shell">
+    <header class="platform-topbar">
+      <button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button>
+      <span class="mobile-brand">마이가디언</span>
+      <span class="topbar-context">홈</span>
+      <span class="topbar-note">신한라이프 FC팀 보험 업무 플랫폼</span>
     </header>
 
-    <main class="container">
-      <section class="section">
-        <div class="search-wrap">
-          <span class="search-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></svg></span>
-          <input class="search-bar" type="search" placeholder="사례·용어·케이스카드 통합 검색 (준비중)" aria-label="통합 검색">
+    <main class="platform-main">
+      <section class="page-heading">
+        <p class="eyebrow">통합 업무 검색</p>
+        <h1>오늘 필요한 보험 업무를<br>빠르게 찾으세요</h1>
+        <p>사례와 판례, 보험 용어, 지급사례 카드를 한곳에서 검색할 수 있도록 준비하고 있습니다.</p>
+      </section>
+
+      <div class="global-search">
+        <input type="search" aria-label="통합 검색" placeholder="사례, 용어, 지급 조건을 검색하세요" disabled>
+        <span class="search-state">검색 준비중</span>
+      </div>
+
+      <section class="section-block" aria-labelledby="work-menu-title">
+        <div class="section-head">
+          <div><h2 id="work-menu-title">핵심 업무</h2><p>상담 흐름에 맞춰 필요한 화면으로 바로 이동합니다.</p></div>
+        </div>
+        <div class="action-grid">
+          <a class="action-card" href="claims/"><span class="card-index">01</span><h3>청구·지급</h3><p>지급사례 검색, 알릴의무 확인, 청구 서류 안내</p></a>
+          <a class="action-card" href="cases/"><span class="card-index">02</span><h3>사례·판례</h3><p>분쟁사례와 판례를 조건별로 확인</p></a>
+          <a class="action-card" href="learn/"><span class="card-index">03</span><h3>학습</h3><p>보험 용어와 질병 정보를 빠르게 탐색</p></a>
         </div>
       </section>
 
-      <section class="section">
-        <h2 class="section-title">업무 메뉴</h2>
-        <nav class="menu-grid">
-          <a class="menu-card" href="claims/">
-            <span class="name">청구·지급</span>
-            <span class="desc">지급사례 검색, 알릴의무 셀프체크, 서류 가이드</span>
-          </a>
-          <a class="menu-card" href="cases/">
-            <span class="name">사례·판례</span>
-            <span class="desc">분쟁사례·판례 검색과 필터</span>
-          </a>
-          <a class="menu-card" href="learn/">
-            <span class="name">학습</span>
-            <span class="desc">학습 콘텐츠, 용어·질병 사전</span>
-          </a>
-          <a class="menu-card" href="care/">
-            <span class="name">케어센터</span>
-            <span class="desc">주간·월간 안창민 아카이브</span>
-          </a>
-          <a class="menu-card" href="card/">
-            <span class="name">카톡카드</span>
-            <span class="desc">고객 발송용 카드 이미지 생성</span>
-          </a>
-        </nav>
-      </section>
-
-      <section class="section">
-        <h2 class="section-title">팀 캘린더</h2>
-        <div class="placeholder-panel" id="team-calendar">
-          팀 캘린더가 연결될 자리입니다.
-          <!-- 추후 iframe 연결: <iframe src="" height="480" title="팀 캘린더"></iframe> -->
-        </div>
-      </section>
-
-      <section class="section">
-        <h2 class="section-title">케어센터 최신호</h2>
-        <div class="placeholder-panel" id="care-latest">
-          케어센터 최신호가 표시될 자리입니다.
+      <section class="section-block" aria-labelledby="operation-title">
+        <div class="section-head"><div><h2 id="operation-title">업무 현황</h2><p>팀 일정과 고객용 콘텐츠 발행 상태가 표시될 자리입니다.</p></div></div>
+        <div class="home-panels">
+          <article class="surface-card"><h3>팀 캘린더</h3><p class="surface-desc">공유 캘린더 연동 자리</p><div class="empty-inline"><div><strong>캘린더 연결 준비중</strong><span>연동 전에는 일정 정보가 표시되지 않습니다.</span></div></div></article>
+          <article class="surface-card"><h3>케어센터 최신호</h3><p class="surface-desc">주간·월간 안창민 발행 자리</p><div class="empty-inline"><div><strong>발행물 입주 준비중</strong><span>실제 발행 콘텐츠만 표시합니다.</span></div></div></article>
         </div>
       </section>
     </main>
-
-    <footer class="site-footer">
-      마이가디언 v2
-    </footer>
+    <footer class="platform-footer">마이가디언 v2</footer>
   </div>
 
   <script>
     (function () {
-      var toggle = document.getElementById("menu-toggle");
-      var sidebar = document.getElementById("sidebar");
-      var overlay = document.getElementById("sidebar-overlay");
-      toggle.addEventListener("click", function () {
-        sidebar.classList.toggle("open");
-        overlay.classList.toggle("show");
-      });
-      overlay.addEventListener("click", function () {
-        sidebar.classList.remove("open");
-        overlay.classList.remove("show");
-      });
+      var button = document.getElementById("mobile-menu");
+      var sidebar = document.getElementById("platform-sidebar");
+      var overlay = document.getElementById("platform-overlay");
+      function closeMenu() { sidebar.classList.remove("open"); overlay.classList.remove("show"); button.setAttribute("aria-expanded", "false"); }
+      button.addEventListener("click", function () { var open = sidebar.classList.toggle("open"); overlay.classList.toggle("show", open); button.setAttribute("aria-expanded", String(open)); });
+      overlay.addEventListener("click", closeMenu);
     })();
   </script>
 </body>
