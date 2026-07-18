@@ -1,18 +1,33 @@
 /* 마이가디언 v2 공용 스타일
-   딥네이비 #1a2744 + 골드 #c9a14a / 제목 Noto Serif KR, 본문 Pretendard
-   모바일 퍼스트, 인쇄 최적화, 본문 11pt 이상 */
+   금융권 최상위 플랫폼의 절제된 UI — 무채색 바탕, 색은 신호로만.
+   텍스트 #1a2744(잉크), 포인트 블루 #2563eb(버튼·활성·링크 전용).
+   골드 #c9a14a는 카톡카드·인쇄물 템플릿 전용 — 플랫폼 UI 사용 금지. */
 
 :root {
-  --navy: #1a2744;
-  --navy-deep: #121b30;
-  --gold: #c9a14a;
-  --gold-soft: #e3c98a;
-  --bg: #f7f8fa;
+  --bg: #fafbfc;
   --surface: #ffffff;
-  --text: #1c2333;
-  --text-sub: #5b6474;
-  --line: #e5e8ee;
-  --radius: 16px;
+  --ink: #1a2744;
+  --ink-sub: #6b7280;
+  --ink-faint: #9aa3b2;
+  --accent: #2563eb;      /* 버튼·활성상태·링크 전용 */
+  --paid: #16a34a;        /* 상태색: 지급 */
+  --denied: #dc2626;      /* 상태색: 부지급 */
+  --partial: #d97706;     /* 상태색: 일부지급 */
+  --line: #e8ebf0;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(26, 39, 68, 0.06);
+  --gold-print: #c9a14a;  /* 카톡카드·인쇄물 템플릿 전용 */
+}
+
+/* 다크모드 — 구조만 마련, 정식 지원은 후순위 */
+[data-theme="dark"] {
+  --bg: #10151f;
+  --surface: #1a2130;
+  --ink: #e7eaf0;
+  --ink-sub: #9aa3b2;
+  --ink-faint: #6b7280;
+  --line: #2a3242;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -22,20 +37,20 @@
 }
 
 html {
-  font-size: 16px; /* 본문 11pt(약 14.7px) 이상 보장 */
+  font-size: 15px; /* 본문 기준 15px */
 }
 
 body {
   font-family: "Pretendard", "Pretendard Variable", -apple-system, "Malgun Gothic", sans-serif;
   background: var(--bg);
-  color: var(--text);
+  color: var(--ink);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, .serif {
   font-family: "Noto Serif KR", serif;
-  color: var(--navy);
+  color: var(--ink);
 }
 
 a {
@@ -43,11 +58,11 @@ a {
   text-decoration: none;
 }
 
-/* 상단 헤더 */
+/* 상단 헤더 — 흰 바탕, 잉크 텍스트 */
 .site-header {
-  background: var(--navy);
-  color: #fff;
-  padding: 16px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  padding: 14px 20px;
 }
 
 .site-header .inner {
@@ -60,38 +75,65 @@ a {
 
 .site-title {
   font-family: "Noto Serif KR", serif;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--ink);
   letter-spacing: 0.02em;
 }
 
-.site-title .gold {
-  color: var(--gold);
+.site-title .accent {
+  color: var(--accent);
 }
 
 .site-tagline {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.87rem;
+  color: var(--ink-faint);
 }
 
 /* 본문 컨테이너 */
 .container {
   max-width: 960px;
   margin: 0 auto;
-  padding: 24px 20px 64px;
+  padding: 24px 20px 96px; /* 하단 탭바 여유 포함 */
 }
 
 .section {
-  margin-top: 32px;
+  margin-top: 48px;
 }
 
+.section:first-child {
+  margin-top: 24px;
+}
+
+/* 섹션 제목 — 타이포 위계가 디자인이다 */
 .section-title {
-  font-size: 1.05rem;
+  font-size: 1.33rem; /* 20px */
   font-weight: 700;
-  margin-bottom: 12px;
-  padding-left: 10px;
-  border-left: 3px solid var(--gold);
+  margin-bottom: 16px;
+}
+
+/* 통합 검색창 — 검색이 곧 홈 */
+.search-bar {
+  display: block;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 15px 20px;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.search-bar::placeholder {
+  color: var(--ink-faint);
+}
+
+.search-bar:focus {
+  border-color: var(--accent);
 }
 
 /* 메뉴 카드 그리드 */
@@ -106,40 +148,57 @@ a {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 20px;
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  box-shadow: var(--shadow);
+  padding: 24px;
+  transition: border-color 0.2s ease;
 }
 
 .menu-card:active,
 .menu-card:hover {
-  border-color: var(--gold);
-  transform: translateY(-1px);
+  border-color: var(--accent);
 }
 
 .menu-card .name {
   display: block;
-  font-family: "Noto Serif KR", serif;
-  font-size: 1.1rem;
+  font-size: 1.13rem; /* 17px */
   font-weight: 700;
-  color: var(--navy);
+  color: var(--ink);
 }
 
 .menu-card .desc {
   display: block;
-  margin-top: 6px;
-  font-size: 0.9rem;
-  color: var(--text-sub);
+  margin-top: 4px;
+  font-size: 0.87rem; /* 13px */
+  color: var(--ink-sub);
 }
+
+/* 핵심 수치 — 큰 숫자가 화면의 주인공 */
+.stat-value {
+  font-size: 2.9rem; /* 약 43px, 32pt 이상 */
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.stat-label {
+  font-size: 0.87rem;
+  color: var(--ink-sub);
+}
+
+/* 상태색 — 결과가 색으로 즉시 읽히게 */
+.status-paid { color: var(--paid); }
+.status-denied { color: var(--denied); }
+.status-partial { color: var(--partial); }
 
 /* 자리 표시 패널 (캘린더·케어센터 최신호 등) */
 .placeholder-panel {
   background: var(--surface);
   border: 1px dashed var(--line);
   border-radius: var(--radius);
-  padding: 32px 20px;
+  padding: 32px 24px;
   text-align: center;
-  color: var(--text-sub);
-  font-size: 0.95rem;
+  color: var(--ink-sub);
+  font-size: 0.93rem;
 }
 
 .placeholder-panel iframe {
@@ -149,29 +208,31 @@ a {
 
 /* 준비중 페이지 */
 .page-title {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 700;
   margin-top: 8px;
 }
 
 .page-desc {
   margin-top: 8px;
-  color: var(--text-sub);
+  color: var(--ink-sub);
 }
 
 .coming-soon {
-  margin-top: 32px;
+  margin-top: 48px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 48px 20px;
+  box-shadow: var(--shadow);
+  padding: 48px 24px;
   text-align: center;
 }
 
 .coming-soon .badge {
   display: inline-block;
-  background: var(--navy);
-  color: var(--gold-soft);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--ink-sub);
   font-size: 0.8rem;
   padding: 4px 12px;
   border-radius: 999px;
@@ -180,39 +241,88 @@ a {
 
 .coming-soon p {
   margin-top: 14px;
-  color: var(--text-sub);
+  color: var(--ink-sub);
 }
 
 .back-link {
   display: inline-block;
   margin-top: 24px;
-  font-size: 0.9rem;
-  color: var(--navy);
-  border-bottom: 1px solid var(--gold);
-  padding-bottom: 2px;
+  font-size: 0.93rem;
+  color: var(--accent);
 }
 
 /* 고정 면책 문구 */
 .disclaimer {
-  margin-top: 40px;
+  margin-top: 48px;
   font-size: 0.8rem;
-  color: var(--text-sub);
+  color: var(--ink-faint);
   text-align: center;
 }
 
 /* 푸터 */
 .site-footer {
   border-top: 1px solid var(--line);
-  padding: 20px;
+  padding: 20px 20px 84px;
   text-align: center;
   font-size: 0.8rem;
-  color: var(--text-sub);
+  color: var(--ink-faint);
+}
+
+/* 하단 고정 탭바 — 모바일 전용 */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab-bar a {
+  flex: 1;
+  text-align: center;
+  padding: 10px 0 12px;
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+
+.tab-bar a.active {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.tab-bar .tab-icon {
+  display: block;
+  margin: 0 auto 2px;
+  width: 22px;
+  height: 22px;
+}
+
+.tab-bar .tab-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* 데스크톱 */
 @media (min-width: 720px) {
   .menu-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+  .tab-bar {
+    display: none;
+  }
+  .container {
+    padding-bottom: 64px;
+  }
+  .site-footer {
+    padding-bottom: 20px;
   }
 }
 
@@ -223,20 +333,18 @@ a {
     color: #000;
   }
   .site-header {
-    background: none;
-    color: #000;
-    border-bottom: 2px solid var(--navy);
-  }
-  .site-title {
-    color: var(--navy);
+    border-bottom: 2px solid var(--ink);
   }
   .menu-card,
   .coming-soon,
   .placeholder-panel {
     border: 1px solid #999;
+    box-shadow: none;
     break-inside: avoid;
   }
-  .back-link {
+  .back-link,
+  .tab-bar,
+  .search-bar {
     display: none;
   }
 }
