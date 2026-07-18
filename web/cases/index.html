@@ -20,19 +20,181 @@
   <div class="platform-shell">
     <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">사례·판례</span><span class="topbar-note">공개된 분쟁 자료 통합 검색</span></header>
     <main class="platform-main">
-      <section class="page-heading"><p class="eyebrow">분쟁 자료</p><h1>사례와 판례를<br>근거 중심으로 탐색하세요</h1><p>결과와 조력자, 보험사, 쟁점을 조합해 필요한 분쟁 자료를 찾을 수 있도록 준비하고 있습니다.</p></section>
-      <div class="global-search"><input type="search" aria-label="사례 및 판례 검색" placeholder="질병, 담보, 쟁점 또는 사건번호를 검색하세요" disabled><span class="search-state">검색 준비중</span></div>
+      <div class="global-search"><input type="search" id="q" aria-label="사례 및 판례 검색" placeholder="질병, 담보, 쟁점 또는 사건번호를 검색하세요"><span class="search-state" id="result-count">-</span></div>
 
-      <div class="tabs-toolbar" role="tablist" aria-label="자료 유형"><button class="tab-button active" type="button" role="tab" aria-selected="true">분쟁사례</button><button class="tab-button" type="button" role="tab" aria-selected="false">판례</button></div>
-      <div class="filter-bar" aria-label="검색 필터"><button class="filter-chip active" type="button">전체</button><button class="filter-chip" type="button">결과</button><button class="filter-chip" type="button">조력자</button><button class="filter-chip" type="button">보험사</button><button class="filter-chip" type="button">쟁점</button></div>
+      <div class="tabs-toolbar" role="tablist" aria-label="자료 유형">
+        <button class="tab-button active" type="button" role="tab" aria-selected="true" data-tab="전체">전체</button>
+        <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="판례">판례</button>
+        <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="분쟁사례">분쟁사례</button>
+      </div>
 
-      <div class="workspace-grid"><div class="workspace-list"><div class="workspace-label"><span>분쟁사례</span><span class="workspace-count">0건</span></div><div class="list-empty">사례 데이터 입주 후 조건에 맞는 결과가 표시됩니다.</div></div><div class="workspace-detail"><div><div class="detail-empty-mark"></div><strong>관련 사례 없음</strong><p>사례를 선택하면 사건번호, 결정 근거, 준비 서류와 신뢰도 등급을 확인할 수 있습니다.</p></div></div></div>
+      <div class="filter-selects" aria-label="검색 필터">
+        <select id="f-result" aria-label="결과 필터"><option value="">결과: 전체</option></select>
+        <select id="f-issue" aria-label="쟁점 필터"><option value="">쟁점: 전체</option></select>
+        <select id="f-publisher" aria-label="기관 필터"><option value="">기관: 전체</option></select>
+        <button class="filter-reset" type="button" id="f-reset">초기화</button>
+      </div>
+
+      <div class="workspace-grid">
+        <div class="workspace-list">
+          <div class="workspace-label"><span>검색 결과</span><span class="workspace-count" id="list-count">0건</span></div>
+          <div class="case-rows" id="rows"></div>
+        </div>
+        <div class="workspace-detail" id="detail">
+          <div><div class="detail-empty-mark"></div><strong>사례를 선택하세요</strong><p>목록에서 사례를 선택하면 사건번호, 결정 결과, 요약과 원문 링크를 확인할 수 있습니다.</p></div>
+        </div>
+      </div>
       <p class="notice">본 자료는 공개된 분쟁 사례 정보 제공이며 개별 지급 여부 판단이 아닙니다</p>
     </main>
     <footer class="platform-footer">마이가디언 v2</footer>
   </div>
   <script>
     (function () { var button=document.getElementById("mobile-menu"),sidebar=document.getElementById("platform-sidebar"),overlay=document.getElementById("platform-overlay"); function close(){sidebar.classList.remove("open");overlay.classList.remove("show");button.setAttribute("aria-expanded","false");} button.addEventListener("click",function(){var open=sidebar.classList.toggle("open");overlay.classList.toggle("show",open);button.setAttribute("aria-expanded",String(open));});overlay.addEventListener("click",close); })();
+
+    (function () {
+      "use strict";
+      var ALL = [];
+      var state = { tab: "전체", q: "", result: "", issue: "", publisher: "" };
+      var $ = function (id) { return document.getElementById(id); };
+
+      // 탭 분류: 판례 = 법원(source_type 대법원), 분쟁사례 = 금감원·기타
+      function tabOf(c) { return c.source_type === "대법원" ? "판례" : "분쟁사례"; }
+
+      function resultClass(r) {
+        if (!r) return "";
+        if (r.indexOf("지급") >= 0 && r.indexOf("인정") >= 0) return "paid";
+        if (r === "기각") return "denied";
+        if (r.indexOf("일부") >= 0) return "partial";
+        return "";
+      }
+
+      function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+        });
+      }
+
+      function filtered() {
+        var q = state.q.toLowerCase();
+        return ALL.filter(function (c) {
+          if (state.tab !== "전체" && tabOf(c) !== state.tab) return false;
+          if (state.result && (c.decision_result || "기타") !== state.result) return false;
+          if (state.issue && c.issue_category !== state.issue) return false;
+          if (state.publisher && (c.publisher || "미기재") !== state.publisher) return false;
+          if (q) {
+            var hay = (c.title + " " + (c.summary || "") + " " + (c.case_number || "") + " " + (c.issue_category || "")).toLowerCase();
+            if (hay.indexOf(q) < 0) return false;
+          }
+          return true;
+        });
+      }
+
+      function renderList() {
+        var list = filtered();
+        $("list-count").textContent = list.length + "건";
+        $("result-count").textContent = "결과 " + list.length + "건";
+        var rows = $("rows");
+        if (!list.length) {
+          rows.innerHTML = '<div class="list-empty">관련 사례 없음</div>';
+          return;
+        }
+        rows.innerHTML = list.map(function (c) {
+          var badge = c.decision_result && c.decision_result !== "기타"
+            ? '<span class="badge-result ' + resultClass(c.decision_result) + '">' + esc(c.decision_result) + "</span>" : "";
+          return '<div class="case-row" data-id="' + esc(c.id) + '">'
+            + "<h4>" + esc(c.title) + "</h4>"
+            + '<div class="case-meta"><span>' + esc(c.publisher || "출처 미기재") + "</span>"
+            + "<span>" + esc(c.case_number) + "</span>"
+            + (c.decision_date ? "<span>" + esc(c.decision_date) + "</span>" : "")
+            + badge + "</div></div>";
+        }).join("");
+      }
+
+      function renderDetail(c) {
+        var links = [];
+        if (c.case_source_url) links.push('<a class="detail-link" href="' + esc(c.case_source_url) + '" target="_blank" rel="noopener">원문 보기</a>');
+        else if (c.source_url) links.push('<a class="detail-link" href="' + esc(c.source_url) + '" target="_blank" rel="noopener">출처 페이지</a>');
+        var badge = c.decision_result && c.decision_result !== "기타"
+          ? '<span class="badge-result ' + resultClass(c.decision_result) + '">' + esc(c.decision_result) + "</span>" : "";
+        $("detail").innerHTML = '<div class="case-detail-body">'
+          + '<div class="detail-badges"><span class="badge-grade">' + esc(c.verification_grade || "미검증-참고용") + "</span>" + badge + "</div>"
+          + "<h3>" + esc(c.title) + "</h3>"
+          + '<dl class="detail-fields">'
+          + "<dt>사건번호</dt><dd>" + esc(c.case_number) + "</dd>"
+          + "<dt>기관</dt><dd>" + esc(c.publisher || "미기재") + "</dd>"
+          + "<dt>유형</dt><dd>" + esc(tabOf(c)) + "</dd>"
+          + (c.decision_date ? "<dt>결정일</dt><dd>" + esc(c.decision_date) + "</dd>" : "")
+          + (c.issue_category ? "<dt>쟁점</dt><dd>" + esc(c.issue_category) + "</dd>" : "")
+          + "</dl>"
+          + '<div class="detail-summary">' + esc(c.summary || "요약 없음") + "</div>"
+          + links.join(" ")
+          + "</div>";
+      }
+
+      function fillSelect(id, values, label) {
+        var sel = $(id);
+        values.forEach(function (v) {
+          var opt = document.createElement("option");
+          opt.value = v[0];
+          opt.textContent = label + ": " + v[0] + " (" + v[1] + ")";
+          sel.appendChild(opt);
+        });
+      }
+
+      function countBy(field, fallback) {
+        var m = {};
+        ALL.forEach(function (c) {
+          var k = c[field] || fallback;
+          m[k] = (m[k] || 0) + 1;
+        });
+        return Object.keys(m).map(function (k) { return [k, m[k]]; })
+          .sort(function (a, b) { return b[1] - a[1]; });
+      }
+
+      fetch("../../data/cases/cases.json")
+        .then(function (r) { return r.json(); })
+        .then(function (payload) {
+          ALL = payload.data;
+          fillSelect("f-result", countBy("decision_result", "기타"), "결과");
+          fillSelect("f-issue", countBy("issue_category", "미분류").slice(0, 20), "쟁점");
+          fillSelect("f-publisher", countBy("publisher", "미기재").slice(0, 20), "기관");
+          renderList();
+        })
+        .catch(function () {
+          $("rows").innerHTML = '<div class="list-empty">데이터를 불러오지 못했습니다. 정적 서버 환경에서 열어야 합니다.</div>';
+        });
+
+      $("q").addEventListener("input", function (e) { state.q = e.target.value.trim(); renderList(); });
+      ["f-result", "f-issue", "f-publisher"].forEach(function (id) {
+        $(id).addEventListener("change", function (e) {
+          state[{ "f-result": "result", "f-issue": "issue", "f-publisher": "publisher" }[id]] = e.target.value;
+          renderList();
+        });
+      });
+      $("f-reset").addEventListener("click", function () {
+        state.q = state.result = state.issue = state.publisher = "";
+        $("q").value = ""; $("f-result").value = ""; $("f-issue").value = ""; $("f-publisher").value = "";
+        renderList();
+      });
+      document.querySelectorAll(".tab-button").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          document.querySelectorAll(".tab-button").forEach(function (b) {
+            b.classList.toggle("active", b === btn);
+            b.setAttribute("aria-selected", String(b === btn));
+          });
+          state.tab = btn.dataset.tab;
+          renderList();
+        });
+      });
+      document.getElementById("rows").addEventListener("click", function (e) {
+        var row = e.target.closest(".case-row");
+        if (!row) return;
+        document.querySelectorAll(".case-row.active").forEach(function (r) { r.classList.remove("active"); });
+        row.classList.add("active");
+        var c = ALL.find(function (x) { return x.id === row.dataset.id; });
+        if (c) renderDetail(c);
+      });
+    })();
   </script>
 </body>
 </html>

@@ -2,73 +2,36 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "case.schema.json",
   "title": "사례·판례",
-  "description": "보험 분쟁 사례 및 판례. data/cases/ 하위 JSON은 이 스키마를 따른다. 사건번호 없는 판례는 화면에 표시하지 않는다.",
+  "description": "보험 분쟁 사례·판례 레코드. data/cases/cases.json의 data 배열 원소. v1 지식 허브 백업(hub-backup-20260718)의 원본 필드를 무변형으로 계승한다. 사건번호(case_number) 없는 레코드는 입주 금지.",
   "type": "object",
-  "required": ["id", "제목", "출처", "쟁점분류", "결과", "신뢰도등급", "수집일"],
+  "required": ["id", "title", "case_number", "verification_grade"],
   "properties": {
     "id": {
       "type": "string",
-      "description": "사례 고유 ID (예: case-2026-0001)",
-      "pattern": "^case-[0-9]{4}-[0-9]{4}$"
+      "description": "원본 고유 ID (UUID). 지급사례 카드의 근거사례 참조 키"
     },
-    "제목": {
-      "type": "string",
-      "description": "사례 제목 (한 줄 요약)"
-    },
-    "사건번호": {
-      "type": ["string", "null"],
-      "description": "법원 사건번호 또는 조정 사건번호. 판례인데 사건번호가 없으면 화면 미표시 대상."
-    },
-    "출처": {
-      "type": "string",
-      "enum": ["대법원", "금감원", "소비자원", "자체", "커뮤니티제보"],
-      "description": "사례의 출처 기관"
-    },
-    "쟁점분류": {
-      "type": "string",
-      "description": "핵심 쟁점 분류 (예: 알릴의무위반, 재해사망인정, 암진단확정)"
-    },
-    "결과": {
-      "type": "string",
-      "enum": ["지급", "부지급", "일부지급", "화해조정"],
-      "description": "분쟁의 최종 결과"
-    },
-    "조력자": {
-      "type": ["string", "null"],
-      "enum": ["개인단독", "설계사조력", "손해사정사", "소송", null],
-      "description": "청구인이 받은 조력의 형태"
-    },
-    "상대보험사": {
-      "type": ["string", "null"],
-      "description": "상대 보험사명. 공식 출처(대법원·금감원·소비자원)에서 확인된 경우에만 기재."
-    },
-    "결정근거": {
-      "type": ["string", "null"],
-      "description": "결정 근거 한 줄 요약"
-    },
-    "준비서류": {
-      "type": "array",
-      "items": { "type": "string" },
-      "description": "해당 사례에서 실제 제출·요구된 서류 목록"
-    },
-    "금액규모": {
-      "type": ["string", "null"],
-      "description": "분쟁 금액 규모 (예: 1천만원 미만, 1억원 이상)"
-    },
-    "원문링크": {
-      "type": ["string", "null"],
-      "format": "uri",
-      "description": "원문 확인 가능한 공개 URL"
-    },
-    "신뢰도등급": {
+    "title": { "type": "string", "description": "사례 제목" },
+    "case_number": { "type": "string", "description": "사건번호 또는 조정번호. 필수 — 없으면 입주·표시 금지" },
+    "publisher": { "type": "string", "description": "기관명 (대법원, 금감원, 각급 법원 등). 빈 값은 화면에서 '출처 미기재'로 표시" },
+    "source_type": { "type": "string", "description": "출처 유형. 대법원(법원 판례) / 금감원(분쟁조정) / 기타. 탭 분류 기준" },
+    "verification_grade": {
       "type": "string",
       "enum": ["검증완료", "부분검증", "미검증-참고용"],
-      "description": "검증완료: 공식 출처 원문 대조 완료 / 부분검증: 출처 확인, 세부 미대조 / 미검증-참고용: 커뮤니티 제보 등"
+      "description": "신뢰도 등급 (헌법 필수 표기)"
     },
-    "수집일": {
-      "type": "string",
-      "format": "date",
-      "description": "수집 일자 (YYYY-MM-DD)"
+    "decision_result": { "type": "string", "description": "결정 결과 (보험금 지급 인정/기각/기타 등). 재분류는 tag_cases.py 공정에서" },
+    "issue_category": { "type": "string", "description": "쟁점 분류" },
+    "decision_date": { "type": ["string", "null"], "description": "결정·선고일" },
+    "summary": { "type": "string", "description": "요약문" },
+    "related_terms_clause": { "type": ["string", "null"], "description": "관련 약관 조항·용어" },
+    "source_url": { "type": ["string", "null"], "description": "출처 페이지 URL" },
+    "case_source_url": { "type": ["string", "null"], "description": "원문 URL" },
+    "status": { "type": "string", "description": "원본 상태 값 (active 등)" },
+    "created_at": { "type": ["string", "null"] },
+    "decision_result_v2": {
+      "type": ["string", "null"],
+      "enum": ["지급", "부지급", "일부지급", "화해조정", null],
+      "description": "v2 재분류 결과 (tag_cases.py가 근거 있는 경우에만 부여, 추후)"
     }
   }
 }

@@ -46,6 +46,17 @@
         <span class="search-state">검색 준비중</span>
       </div>
 
+      <section class="section-block" aria-labelledby="data-status-title">
+        <div class="section-head">
+          <div><h2 id="data-status-title">자료 현황</h2><p>플랫폼에 입주한 실데이터 규모입니다.</p></div>
+        </div>
+        <div class="stat-row" id="stat-row">
+          <div class="stat-tile"><span class="stat-label">사례·판례</span><div class="stat-value" id="stat-cases">-</div><span class="stat-sub" id="stat-cases-sub"></span></div>
+          <div class="stat-tile"><span class="stat-label">보험 용어</span><div class="stat-value" id="stat-terms">-</div><span class="stat-sub">용어 사전</span></div>
+          <div class="stat-tile"><span class="stat-label">질병 정보</span><div class="stat-value" id="stat-diseases">-</div><span class="stat-sub">질병 사전</span></div>
+        </div>
+      </section>
+
       <section class="section-block" aria-labelledby="work-menu-title">
         <div class="section-head">
           <div><h2 id="work-menu-title">핵심 업무</h2><p>상담 흐름에 맞춰 필요한 화면으로 바로 이동합니다.</p></div>
@@ -69,6 +80,22 @@
   </div>
 
   <script>
+    (function () {
+      fetch("../data/stats.json")
+        .then(function (r) { return r.json(); })
+        .then(function (s) {
+          document.getElementById("stat-cases").textContent = s["사례"].toLocaleString();
+          document.getElementById("stat-terms").textContent = s["용어"].toLocaleString();
+          document.getElementById("stat-diseases").textContent = s["질병"].toLocaleString();
+          var by = s["사례_출처별"] || {};
+          document.getElementById("stat-cases-sub").textContent =
+            Object.keys(by).slice(0, 3).map(function (k) { return k + " " + by[k]; }).join(" · ");
+        })
+        .catch(function () {
+          document.getElementById("stat-row").innerHTML =
+            '<div class="stat-tile"><span class="stat-label">자료 현황</span><span class="stat-sub">데이터를 불러오지 못했습니다.</span></div>';
+        });
+    })();
     (function () {
       var button = document.getElementById("mobile-menu");
       var sidebar = document.getElementById("platform-sidebar");
