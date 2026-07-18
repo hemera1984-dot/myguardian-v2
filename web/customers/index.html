@@ -6,6 +6,7 @@
   <title>고객관리 - 마이가디언</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
   <link rel="stylesheet" href="../assets/platform.css">
+  <script src="../assets/platform.js"></script>
 </head>
 <body class="platform">
   <aside class="platform-sidebar" id="platform-sidebar">
@@ -74,7 +75,6 @@
     <footer class="platform-footer">마이가디언 v2</footer>
   </div>
   <script>
-    (function () { var button=document.getElementById("mobile-menu"),sidebar=document.getElementById("platform-sidebar"),overlay=document.getElementById("platform-overlay"); function close(){sidebar.classList.remove("open");overlay.classList.remove("show");button.setAttribute("aria-expanded","false");} button.addEventListener("click",function(){var open=sidebar.classList.toggle("open");overlay.classList.toggle("show",open);button.setAttribute("aria-expanded",String(open));});overlay.addEventListener("click",close); })();
 
     (function () {
       "use strict";
@@ -92,11 +92,7 @@
       var state = { q: "", cat: "", sel: null };
       var $ = function (id) { return document.getElementById(id); };
 
-      function esc(s) {
-        return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
-          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
-        });
-      }
+      var esc = window.mg.esc;
 
       var ROOT_HANDLE = null; // 쓰기 가능 연결일 때만 설정 (메모 저장·신규 등록)
 

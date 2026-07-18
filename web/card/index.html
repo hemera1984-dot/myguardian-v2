@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="../assets/style.css">
+  <script src="../assets/platform.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body class="simple">
@@ -74,11 +75,7 @@
       "use strict";
       var $ = function (id) { return document.getElementById(id); };
 
-      function esc(s) {
-        return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
-          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
-        });
-      }
+      var esc = window.mg.esc;
 
       // 케어센터와 같은 서명 설정 공유
       function loadSender() {

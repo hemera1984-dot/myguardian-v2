@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="../assets/style.css">
+  <script src="../assets/platform.js"></script>
 </head>
 <body class="simple">
   <header class="site-header">
@@ -60,11 +61,7 @@
       var channel = "";
       var publisher = "";
 
-      function esc(s) {
-        return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
-          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
-        });
-      }
+      var esc = window.mg.esc;
 
       function issueUrl(issue) {
         return new URL("issue.html?id=" + encodeURIComponent(issue.id), window.location.href).href;
@@ -134,24 +131,7 @@
         panel.scrollIntoView({ behavior: "smooth", block: "start" });
       }
 
-      function copyText(text, button) {
-        function done() {
-          var original = button.textContent;
-          button.textContent = "복사됨";
-          setTimeout(function () { button.textContent = original; }, 1500);
-        }
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(done);
-        } else {
-          var ta = document.createElement("textarea");
-          ta.value = text;
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand("copy");
-          document.body.removeChild(ta);
-          done();
-        }
-      }
+      var copyText = window.mg.copy;
 
       function render() {
         var box = document.getElementById("issue-list");
