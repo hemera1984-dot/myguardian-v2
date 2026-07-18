@@ -20,6 +20,7 @@
       <a href="claims/">청구·지급</a>
       <a href="cases/">사례·판례</a>
       <a href="learn/">학습</a>
+      <a href="team/">우리팀</a>
       <span class="nav-separator" aria-hidden="true"></span>
       <a href="care/">케어센터</a>
       <a href="card/">카톡카드</a>
@@ -47,6 +48,8 @@
         <span class="search-state" id="global-state"></span>
         <div class="search-suggest" id="suggest" hidden></div>
       </div>
+
+      <a class="home-brief" id="home-brief" href="team/" hidden></a>
 
       <section class="section-block" aria-labelledby="data-status-title">
         <div class="section-head">
@@ -100,6 +103,22 @@
           document.getElementById("stat-row").innerHTML =
             '<div class="stat-tile"><span class="stat-label">자료 현황</span><span class="stat-sub">데이터를 불러오지 못했습니다.</span></div>';
         });
+
+      // 우리팀 최신 공지 — 있을 때만 검색창 아래에 표시
+      fetch("../data/team/notices.json")
+        .then(function (r) { return r.json(); })
+        .then(function (list) {
+          if (!Array.isArray(list) || !list.length) return;
+          list.sort(function (a, b) { return (b["작성일"] || "") + b.id < (a["작성일"] || "") + a.id ? -1 : 1; });
+          var n = list[0];
+          var esc = window.mg.esc;
+          var el = document.getElementById("home-brief");
+          el.innerHTML = '<span class="hb-kind">' + esc(n["종류"]) + "</span>"
+            + '<span class="hb-title">' + esc(n["제목"]) + "</span>"
+            + '<span class="hb-meta">' + esc(n["작성일"]) + " · 우리팀에서 확인</span>";
+          el.hidden = false;
+        })
+        .catch(function () {});
 
       fetch("../data/care/issues.json")
         .then(function (r) { return r.json(); })
