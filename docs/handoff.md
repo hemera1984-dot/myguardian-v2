@@ -32,6 +32,12 @@
 6. 케어 12호 첫 실전 발행 (매주 월요일 공정 — docs/care-workflow.md)
 7. 터미널 세션: 보장분석 파이프라인 착공 (mg-clients 로컬 데이터 대상)
 
+### 추가 (같은 날 밤, 자가 검증 라운드)
+
+- 자가 검증 실시 → docs/design-review/self-audit-20260718.md (스키마 전건 통과, 이미지 61→8.4MB 최적화, 위장 SVG 2장 복구, 개선 과제 8건 목록화)
+- pipeline/optimize_images.py 공정 추가
+- Codex 검수 지시문 발부됨 — codex/* 브랜치에서 검수 예정
+
 ### 미완료·주의 항목
 
 - web/team/ (우리팀 목업): 다른 세션 작업물, 미커밋 상태로 로컬 보존. 커밋 금지 (git add -A 주의)
