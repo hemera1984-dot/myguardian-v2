@@ -75,7 +75,10 @@
         return ALL.filter(function (c) {
           if (state.tab !== "전체" && tabOf(c) !== state.tab) return false;
           if (state.result && (c.decision_result || "기타") !== state.result) return false;
-          if (state.issue && c.issue_category !== state.issue) return false;
+          if (state.issue) {
+            var issues = c["쟁점목록"] && c["쟁점목록"].length ? c["쟁점목록"] : [c.issue_category || "미분류"];
+            if (issues.indexOf(state.issue) < 0) return false;
+          }
           if (state.publisher && (c.publisher || "미기재") !== state.publisher) return false;
           if (q) {
             var hay = (c.title + " " + (c.summary || "") + " " + (c.case_number || "") + " " + (c.issue_category || "")).toLowerCase();
@@ -139,7 +142,8 @@
           + "<dt>기관</dt><dd>" + esc(c.publisher || "미기재") + "</dd>"
           + "<dt>유형</dt><dd>" + esc(tabOf(c)) + "</dd>"
           + (c.decision_date ? "<dt>결정일</dt><dd>" + esc(c.decision_date) + "</dd>" : "")
-          + (c.issue_category ? "<dt>쟁점</dt><dd>" + esc(c.issue_category) + "</dd>" : "")
+          + ((c["쟁점목록"] && c["쟁점목록"].length) ? "<dt>쟁점</dt><dd>" + esc(c["쟁점목록"].join(" · ")) + "</dd>"
+             : (c.issue_category ? "<dt>쟁점</dt><dd>" + esc(c.issue_category) + "</dd>" : ""))
           + (c["원본건수"] > 1 ? "<dt>통합</dt><dd>동일 원문 이관본 " + c["원본건수"] + "건을 하나로 표시</dd>" : "")
           + "</dl>"
           + '<div class="detail-summary">' + esc(c.summary || "요약 없음") + "</div>"
@@ -184,6 +188,11 @@
       function countBy(field, fallback) {
         var m = {};
         ALL.forEach(function (c) {
+          // 쟁점은 그룹 보존 목록 전체를 센다 (통합 대표의 단일 값만 세면 소실)
+          if (field === "issue_category" && c["쟁점목록"] && c["쟁점목록"].length) {
+            c["쟁점목록"].forEach(function (k) { m[k] = (m[k] || 0) + 1; });
+            return;
+          }
           var k = c[field] || fallback;
           m[k] = (m[k] || 0) + 1;
         });

@@ -1,34 +1,52 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "customer.schema.json",
-  "title": "고객",
-  "description": "고객 규격 정의. 실데이터는 이 저장소가 아닌 별도 clients 저장소에 둔다. 실명·연락처 등 개인정보는 어떤 필드에도 저장 금지. 폴더명 = 고객코드(예: C-2026-005 폴더)가 진짜 코드다.",
+  "title": "고객 프로필 (profile.json)",
+  "description": "비공개 고객 저장소(mg-clients-*)의 C-YYYY-NNN 폴더에 놓이는 profile.json 규격. 폴더명 = 고객코드가 일치해야 한다. 실명·연락처는 비공개 고객 저장소에만 허용되며 공개 저장소(myguardian-v2)에는 절대 저장 금지. 카테고리 값은 v1 계승 영문 코드를 쓰고 화면에서 한글 라벨(이관/밸류업/계약/지인)로 표시한다.",
   "type": "object",
-  "required": ["코드", "담당FC", "카테고리"],
+  "required": ["고객코드"],
+  "$comment": "카테고리는 신규 프로필에서 필수. v1 이관 프로필은 v1원본.category로 대체되므로 최상위 필수로 두지 않는다.",
   "properties": {
-    "코드": {
+    "고객코드": {
       "type": "string",
       "description": "고객 코드. 폴더명과 동일해야 한다 (예: C-2026-005).",
       "pattern": "^C-[0-9]{4}-[0-9]{3}$"
     },
     "담당FC": {
       "type": "string",
-      "description": "담당 FC 식별자 (실명 아닌 FC 코드 권장)"
+      "description": "담당 FC 표시명 (예: 안창민 FC). v1 이관분은 v1원본.fcId로 식별"
     },
     "카테고리": {
       "type": "string",
-      "enum": ["이관", "밸류업", "계약", "지인"],
-      "description": "v1 체계 계승: 이관(transfer)/밸류업(valueup)/계약(contract)/지인(referral)"
+      "enum": ["transfer", "valueup", "contract", "referral"],
+      "description": "v1 체계 계승 영문 코드. 표시 라벨: transfer=이관, valueup=밸류업, contract=계약, referral=지인"
+    },
+    "등록일": {
+      "type": "string",
+      "format": "date",
+      "description": "등록 일자 (YYYY-MM-DD, 로컬 기준)"
+    },
+    "customerName": {
+      "type": ["string", "null"],
+      "description": "고객 이름 — 비공개 고객 저장소 전용"
+    },
+    "phone": {
+      "type": ["string", "null"],
+      "description": "연락처 — 비공개 고객 저장소 전용"
     },
     "상담일": {
       "type": "array",
       "items": { "type": "string", "format": "date" },
       "description": "상담 일자 이력 (YYYY-MM-DD)"
     },
-    "조인웍참여": {
-      "type": "boolean",
-      "description": "조인웍(팀 협업) 참여 여부",
-      "default": false
+    "이관일": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "v1 이관 프로필에만 존재"
+    },
+    "v1원본": {
+      "type": ["object", "null"],
+      "description": "v1 이관 프로필의 원본 레코드 (무변형 보존). 이관분의 카테고리·이름은 v1원본.category·customerName에서 읽는다"
     }
   }
 }

@@ -1310,3 +1310,11 @@ body.platform {
   margin-left: 8px;
   font-variant-numeric: tabular-nums;
 }
+
+/* 사례 화면 필터도 모바일 터치 44px 확보 (Codex 2차 중요4) */
+@media (max-width: 719px) {
+  .filter-selects select,
+  .filter-reset {
+    min-height: 44px;
+  }
+}

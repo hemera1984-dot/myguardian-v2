@@ -1,4 +1,13 @@
-# handoff — 세션 인수인계
+﻿# handoff — 세션 인수인계
+
+## 2026-07-19 오전 — Codex 2차 검수 대응 라운드 (claude/auto-improve)
+
+- findings-02 치명 2·중요 5 전부 수용·수정 완료 → docs/design-review/codex/response-02.md
+- 조세심판원 9건 원문 대조(전건 미확인 → 미검증-참고용), 색인 커버리지 안전장치 추가
+- 최종 등급: 검증완료 209 / 부분검증 147 / 미검증-참고용 27
+- customer.schema.json 실계약 개정 + 신규 등록 스키마 정합, 카드 금액 엄격 파싱, 쓰기 무결성, 쟁점목록 보존, 터치 44px, current-status 전면 갱신
+- 작업은 별도 worktree에서 수행 (이 폴더는 team-workspace 세션 사용 중이었음)
+- 재심 준비 완료 — Codex 3차(재심) 또는 사용자 병합 판단 대기
 
 ## 2026-07-19 새벽 — 자율 개선 루프 완주 (claude/auto-improve, 12사이클 마감)
 
@@ -70,3 +79,4 @@
 - mg-clients GitHub 비공개 저장소 push 미실행 (팀원 GitHub 계정 확인 대기)
 - 케어 조회수 추적 없음 (2차 공사 대상)
 - 미리보기 서버가 켜져 있을 수 있음 (포트 8123) — 필요 없으면 종료
+

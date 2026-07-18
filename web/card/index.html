@@ -59,6 +59,7 @@
         </div>
       </div>
 
+      <p class="disclaimer" id="price-warn" hidden>금액 형식이 확인되지 않은 항목이 있어 월 보험료 합계를 표시하지 않습니다. 금액은 12,000원 형식으로 입력하세요.</p>
       <div class="kcard-actions">
         <button class="btn btn-primary" type="button" id="btn-download">이미지 저장</button>
       </div>
@@ -86,14 +87,16 @@
         return { "이름": "안창민 FC", "소속": "신한라이프 하랑지점" };
       }
 
+      // 금액은 비음수 정수(콤마·원 허용)만 합산한다. 그 외 표기는 그대로 보여주되 합계에서 제외 (오계산 방지)
       function parsePolicies(text) {
         return text.split("\n").map(function (line) {
           var parts = line.split("|");
           var name = (parts[0] || "").trim();
           if (!name) return null;
           var price = (parts[1] || "").trim();
-          var num = Number(price.replace(/[^0-9]/g, ""));
-          return { name: name, price: price, num: isNaN(num) ? 0 : num };
+          var valid = /^[0-9]{1,3}(,[0-9]{3})*원?$|^[0-9]+원?$/.test(price);
+          var num = valid ? Number(price.replace(/[^0-9]/g, "")) : 0;
+          return { name: name, price: price, num: num, valid: valid };
         }).filter(Boolean);
       }
 
@@ -110,10 +113,14 @@
         $("k-list").innerHTML = pols.map(function (p) {
           return "<li><span>" + esc(p.name) + "</span>" + (p.price ? '<span class="p">' + esc(p.price) + "</span>" : "") + "</li>";
         }).join("");
-        var total = pols.reduce(function (a, p) { return a + p.num; }, 0);
-        var showTotal = pols.length > 1 && total > 0;
+        var validPols = pols.filter(function (p) { return p.valid; });
+        var invalidWithPrice = pols.filter(function (p) { return p.price && !p.valid; });
+        var total = validPols.reduce(function (a, p) { return a + p.num; }, 0);
+        // 합계는 전 항목의 금액이 확인될 때만 표시 — 일부만 합산한 값은 오해를 낳는다
+        var showTotal = pols.length > 1 && total > 0 && invalidWithPrice.length === 0;
         $("k-total").hidden = !showTotal;
         if (showTotal) $("k-total-val").textContent = total.toLocaleString() + "원";
+        $("price-warn").hidden = invalidWithPrice.length === 0;
         var note = $("in-note").value.trim();
         $("k-note").hidden = !note;
         $("k-note").textContent = note;

@@ -41,6 +41,13 @@ def main() -> None:
         entry = dict(rep)  # 대표 레코드 무변형 복사
         entry["원본건수"] = len(members)
         entry["원본id목록"] = [m["id"] for m in members]
+        # 그룹의 쟁점분류를 전부 보존 — 대표 선정으로 의미 필드가 소실되지 않게 (Codex 2차 중요1)
+        issues = []
+        for m in members:
+            v = m.get("issue_category")
+            if v and v not in issues:
+                issues.append(v)
+        entry["쟁점목록"] = issues
         index.append(entry)
         if len(members) > 1:
             dup_report.append({
@@ -52,12 +59,14 @@ def main() -> None:
             })
 
     # 검증 반영 (원본 무변형 — 색인의 등급만 조정)
-    for ver_name in ("fss-verification.json", "scourt-verification.json"):
+    verified_ids = set()
+    for ver_name in ("fss-verification.json", "scourt-verification.json", "tribunal-verification.json"):
         ver_path = ROOT / "data" / "cases" / ver_name
         if not ver_path.exists():
             continue
         with open(ver_path, encoding="utf-8") as f:
             ver = {v["id"]: v for v in json.load(f)["결과"]}
+        verified_ids.update(ver.keys())
         for e in index:
             v = ver.get(e["id"])
             if v:
@@ -68,6 +77,15 @@ def main() -> None:
         if not has_url and e.get("verification_grade") == "검증완료":
             e["verification_grade"] = "미검증-참고용"
             e["검증메모"] = "원문 URL 없음"
+    # 안전장치: 어떤 검증 보고서에도 없는 검증완료는 허용하지 않는다 (Codex 2차 치명1)
+    uncovered = 0
+    for e in index:
+        if e.get("verification_grade") == "검증완료" and e["id"] not in verified_ids:
+            e["verification_grade"] = "미검증-참고용"
+            e["검증메모"] = "검증 공정 미실시 — 원문 검증 보고서에 없음"
+            uncovered += 1
+    if uncovered:
+        print(f"경고: 검증 보고서 밖의 검증완료 {uncovered}건을 미검증-참고용으로 강등")
 
     with open(ROOT / "data" / "cases" / "index.json", "w", encoding="utf-8") as f:
         json.dump({

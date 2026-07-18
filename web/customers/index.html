@@ -213,7 +213,7 @@
         var q = state.q.toLowerCase();
         return ALL.filter(function (c) {
           var o = v1(c);
-          if (state.cat && o.category !== state.cat) return false;
+          if (state.cat && (o.category || o["카테고리"]) !== state.cat) return false;
           if (q) {
             var hay = (c.code + " " + (o.customerName || "") + " " + (o.memo || "")).toLowerCase();
             if (hay.indexOf(q) < 0) return false;
@@ -244,7 +244,7 @@
           return '<div class="case-row' + (c.code === state.sel ? " active" : "") + '" tabindex="0" role="button" data-code="' + esc(c.code) + '">'
             + "<h4>" + esc(o.customerName || "이름 미기재") + "</h4>"
             + '<div class="case-meta"><span>' + esc(c.code) + "</span>"
-            + '<span class="badge-result">' + esc(CAT[o.category] || o.category || "미분류") + "</span>"
+            + '<span class="badge-result">' + esc(CAT[o.category || o["카테고리"]] || o.category || o["카테고리"] || "미분류") + "</span>"
             + (n ? "<span>보유보험 " + n + "건</span>" : "")
             + "</div></div>";
         }).join("");
@@ -255,7 +255,7 @@
         var pols = c.policies.policies || [];
         var fields = [
           ["고객코드", c.code],
-          ["카테고리", CAT[o.category] || o.category || "미분류"],
+          ["카테고리", CAT[o.category || o["카테고리"]] || o.category || o["카테고리"] || "미분류"],
           ["연락처", o.phone],
           ["나이·성별", [o.age, o.gender === "male" ? "남" : o.gender === "female" ? "여" : o.gender].filter(Boolean).join(" · ")],
           ["주소", o.address],
@@ -273,7 +273,7 @@
             }).join("")
           : "<li>등록된 보유보험 없음</li>";
         $("detail").innerHTML = '<div class="case-detail-body">'
-          + '<div class="detail-badges"><span class="badge-grade">' + esc(CAT[o.category] || "미분류") + "</span></div>"
+          + '<div class="detail-badges"><span class="badge-grade">' + esc(CAT[o.category || o["카테고리"]] || "미분류") + "</span></div>"
           + "<h3>" + esc(o.customerName || "이름 미기재") + "</h3>"
           + '<dl class="detail-fields">' + fields.map(function (f) {
               return "<dt>" + esc(f[0]) + "</dt><dd>" + esc(f[1]) + "</dd>";
@@ -295,6 +295,8 @@
       }
 
       async function saveMemo(c, text, btn) {
+        if (btn.disabled) return; // 연속 클릭 시 동일 파일 다중 쓰기 방지
+        btn.disabled = true;
         try {
           var fh = await c.handle.getFileHandle("memo.md", { create: true });
           var w = await fh.createWritable();
@@ -305,6 +307,8 @@
           setTimeout(function () { btn.textContent = "메모 저장"; }, 1500);
         } catch (e) {
           btn.textContent = "저장 실패";
+        } finally {
+          btn.disabled = false;
         }
       }
 
@@ -357,20 +361,27 @@
           var dir = await ROOT_HANDLE.getDirectoryHandle(code, { create: true });
           var profile = {
             "고객코드": code,
+            "담당FC": (JSON.parse(localStorage.getItem("mg_care_sender") || "{}")["이름"] || "안창민 FC"),
+            "카테고리": $("new-cat").value,
             "등록일": localDate(),
             "customerName": name,
-            "category": $("new-cat").value,
             "phone": $("new-phone").value.trim() || null
           };
-          var pf = await dir.getFileHandle("profile.json", { create: true });
-          var w = await pf.createWritable();
-          await w.write(JSON.stringify(profile, null, 1));
-          await w.close();
           var memoInit = "# 상담 메모 — " + code + "\n\n";
-          var mf = await dir.getFileHandle("memo.md", { create: true });
-          var mw = await mf.createWritable();
-          await mw.write(memoInit);
-          await mw.close();
+          try {
+            var pf = await dir.getFileHandle("profile.json", { create: true });
+            var w = await pf.createWritable();
+            await w.write(JSON.stringify(profile, null, 1));
+            await w.close();
+            var mf = await dir.getFileHandle("memo.md", { create: true });
+            var mw = await mf.createWritable();
+            await mw.write(memoInit);
+            await mw.close();
+          } catch (writeErr) {
+            // 부분 생성물 정리 — 불완전 고객 폴더를 남기지 않는다
+            try { await ROOT_HANDLE.removeEntry(code, { recursive: true }); } catch (e2) {}
+            throw writeErr;
+          }
           ALL.push({ code: code, profile: profile, policies: { policies: [] }, handle: dir, memoText: memoInit });
           ALL.sort(function (a, b) { return a.code < b.code ? -1 : 1; });
           $("new-form").hidden = true;
