@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -7,27 +7,143 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="../assets/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body class="simple">
   <header class="site-header">
     <div class="inner">
       <a href="../" class="site-title">마이<span class="accent">가디언</span></a>
+      <span class="site-tagline">카톡카드</span>
     </div>
   </header>
 
   <main class="container">
-    <h1 class="page-title">카톡카드</h1>
-    <p class="page-desc">고객 정보와 보유보험 요약을 딥네이비·골드 카드 이미지로 만드는 생성기가 들어설 자리입니다. 카드 생성은 브라우저 안에서만 처리되며 외부로 전송되지 않습니다.</p>
+    <h1 class="page-title">카톡카드 생성기</h1>
+    <p class="page-desc">고객 정보와 보유보험 요약을 카드 이미지로 만듭니다. 입력한 내용은 이 브라우저 안에서만 처리되며 어디에도 전송·저장되지 않습니다.</p>
 
-    <div class="coming-soon">
-      <span class="badge">준비중</span>
-      <p>공사 중입니다. html2canvas 기반 카드 생성기가 입주합니다.</p>
-      <a class="back-link" href="../">홈으로 돌아가기</a>
+    <div class="section">
+      <div class="kcard-form">
+        <div>
+          <label for="in-name">고객 표시명</label>
+          <input type="text" id="in-name" placeholder="예: 김OO 고객님" value="고객님">
+        </div>
+        <div>
+          <label for="in-sub">부제 (선택)</label>
+          <input type="text" id="in-sub" placeholder="예: 2026년 7월 보장 점검">
+        </div>
+        <div>
+          <label for="in-policies">보유보험 (한 줄에 하나, 상품명 | 월보험료)</label>
+          <textarea id="in-policies" placeholder="예:
+종신보험 | 120,000원
+암보험 | 45,000원"></textarea>
+        </div>
+        <div>
+          <label for="in-note">안내 문구 (선택)</label>
+          <textarea id="in-note" placeholder="예: 보장 내용 궁금하신 점은 언제든 연락 주세요."></textarea>
+        </div>
+      </div>
+
+      <div class="kcard" id="kcard">
+        <p class="k-kicker">보장 안내</p>
+        <h2 class="k-name" id="k-name">고객님</h2>
+        <p class="k-sub" id="k-sub" hidden></p>
+        <div class="k-rule"></div>
+        <p class="k-section" id="k-section" hidden>보유 보험</p>
+        <ul class="k-list" id="k-list"></ul>
+        <div class="k-total" id="k-total" hidden><span>월 보험료 합계</span><span class="p" id="k-total-val"></span></div>
+        <p class="k-note" id="k-note" hidden></p>
+        <div class="k-sign">
+          <span class="who" id="k-who">안창민 FC</span>
+          <span class="org" id="k-org">신한라이프 하랑지점</span>
+        </div>
+      </div>
+
+      <div class="kcard-actions">
+        <button class="btn btn-primary" type="button" id="btn-download">이미지 저장</button>
+      </div>
+      <p class="disclaimer">카드 서명(이름·소속)은 케어센터 서재의 카톡 서명 설정을 함께 사용합니다.</p>
     </div>
   </main>
 
   <footer class="site-footer">
     마이가디언 v2
   </footer>
+
+  <script>
+    (function () {
+      "use strict";
+      var $ = function (id) { return document.getElementById(id); };
+
+      function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+        });
+      }
+
+      // 케어센터와 같은 서명 설정 공유
+      function loadSender() {
+        try {
+          var saved = JSON.parse(localStorage.getItem("mg_care_sender"));
+          if (saved && saved["이름"]) return saved;
+        } catch (e) {}
+        return { "이름": "안창민 FC", "소속": "신한라이프 하랑지점" };
+      }
+
+      function parsePolicies(text) {
+        return text.split("\n").map(function (line) {
+          var parts = line.split("|");
+          var name = (parts[0] || "").trim();
+          if (!name) return null;
+          var price = (parts[1] || "").trim();
+          var num = Number(price.replace(/[^0-9]/g, ""));
+          return { name: name, price: price, num: isNaN(num) ? 0 : num };
+        }).filter(Boolean);
+      }
+
+      function render() {
+        var s = loadSender();
+        $("k-who").textContent = s["이름"];
+        $("k-org").textContent = s["소속"];
+        $("k-name").textContent = $("in-name").value.trim() || "고객님";
+        var sub = $("in-sub").value.trim();
+        $("k-sub").hidden = !sub;
+        $("k-sub").textContent = sub;
+        var pols = parsePolicies($("in-policies").value);
+        $("k-section").hidden = !pols.length;
+        $("k-list").innerHTML = pols.map(function (p) {
+          return "<li><span>" + esc(p.name) + "</span>" + (p.price ? '<span class="p">' + esc(p.price) + "</span>" : "") + "</li>";
+        }).join("");
+        var total = pols.reduce(function (a, p) { return a + p.num; }, 0);
+        var showTotal = pols.length > 1 && total > 0;
+        $("k-total").hidden = !showTotal;
+        if (showTotal) $("k-total-val").textContent = total.toLocaleString() + "원";
+        var note = $("in-note").value.trim();
+        $("k-note").hidden = !note;
+        $("k-note").textContent = note;
+      }
+
+      ["in-name", "in-sub", "in-policies", "in-note"].forEach(function (id) {
+        $(id).addEventListener("input", render);
+      });
+      render();
+
+      $("btn-download").addEventListener("click", function () {
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = "생성 중";
+        html2canvas($("kcard"), { scale: 2, useCORS: true, backgroundColor: null }).then(function (canvas) {
+          var a = document.createElement("a");
+          a.download = "카톡카드-" + new Date().toISOString().slice(0, 10) + ".png";
+          a.href = canvas.toDataURL("image/png");
+          a.click();
+          btn.disabled = false;
+          btn.textContent = "이미지 저장";
+        }).catch(function () {
+          btn.disabled = false;
+          btn.textContent = "생성 실패 - 다시 시도";
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

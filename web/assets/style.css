@@ -1358,6 +1358,165 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   }
 }
 
+/* ==============================
+   카톡카드 생성기 — 딥네이비+골드 전용 구역 (인쇄물·카드 문법)
+   ============================== */
+
+.kcard-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.kcard-form label {
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: var(--ink-sub);
+}
+
+.kcard-form input,
+.kcard-form textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 0.97rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 14px;
+  outline: none;
+}
+
+.kcard-form input:focus,
+.kcard-form textarea:focus {
+  border-color: var(--accent);
+}
+
+.kcard-form textarea {
+  min-height: 96px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+/* 카드 실물 — 이미지로 변환되는 영역 */
+.kcard {
+  width: 420px;
+  max-width: 100%;
+  margin: 0 auto;
+  background: #16223c;
+  color: #f4efe4;
+  border-radius: 18px;
+  padding: 36px 32px 28px;
+  font-family: "Pretendard", sans-serif;
+}
+
+.kcard .k-kicker {
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  color: #c9a14a;
+  margin: 0 0 6px;
+}
+
+.kcard .k-rule {
+  height: 1px;
+  background: rgba(201, 161, 74, 0.45);
+  margin: 14px 0 18px;
+}
+
+.kcard .k-name {
+  font-family: "Noto Serif KR", serif;
+  font-size: 30px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.kcard .k-sub {
+  font-size: 13px;
+  color: rgba(244, 239, 228, 0.65);
+  margin: 4px 0 0;
+}
+
+.kcard .k-section {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: #c9a14a;
+  margin: 18px 0 10px;
+}
+
+.kcard ul.k-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kcard ul.k-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 15px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(244, 239, 228, 0.12);
+}
+
+.kcard ul.k-list li .p {
+  color: #e8d9b0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.kcard .k-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 12px 0 0;
+  color: #ffffff;
+}
+
+.kcard .k-total .p {
+  color: #c9a14a;
+  font-variant-numeric: tabular-nums;
+}
+
+.kcard .k-note {
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(244, 239, 228, 0.85);
+  margin: 18px 0 0;
+  white-space: pre-wrap;
+}
+
+.kcard .k-sign {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(201, 161, 74, 0.45);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.kcard .k-sign .who {
+  font-family: "Noto Serif KR", serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.kcard .k-sign .org {
+  font-size: 12px;
+  color: rgba(244, 239, 228, 0.65);
+}
+
+.kcard-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 20px 0 8px;
+}
+
 /* 카톡 문구 작성함 */
 .sender-row {
   display: flex;
