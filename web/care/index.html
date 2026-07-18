@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -12,22 +12,125 @@
   <header class="site-header">
     <div class="inner">
       <a href="../" class="site-title">마이<span class="accent">가디언</span></a>
+      <span class="site-tagline">케어센터</span>
     </div>
   </header>
 
   <main class="container">
-    <h1 class="page-title">케어센터</h1>
-    <p class="page-desc">주간·월간 안창민 아카이브가 들어설 자리입니다. 고객이 직접 읽는 공간입니다.</p>
+    <h1 class="page-title serif">안창민 케어센터</h1>
+    <p class="page-desc">매주 월요일, 한 주를 여는 보험·경제 이야기를 전합니다.</p>
 
-    <div class="coming-soon">
-      <span class="badge">준비중</span>
-      <p>새 단장 중입니다. 곧 다시 찾아뵙겠습니다.</p>
-      <a class="back-link" href="../">홈으로 돌아가기</a>
+    <div class="section">
+      <div class="pill-tabs" role="tablist" aria-label="채널">
+        <button type="button" class="active" data-ch="">전체</button>
+        <button type="button" data-ch="주간">주간 안창민</button>
+        <button type="button" data-ch="월간">월간 안창민</button>
+      </div>
+
+      <div class="issue-list" id="issue-list">
+        <div class="placeholder-panel">발행물을 불러오는 중입니다.</div>
+      </div>
     </div>
   </main>
 
   <footer class="site-footer">
     마이가디언 v2
   </footer>
+
+  <script>
+    (function () {
+      "use strict";
+      var ALL = [];
+      var channel = "";
+
+      function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+        });
+      }
+
+      function issueUrl(issue) {
+        return new URL("issue.html?id=" + encodeURIComponent(issue.id), window.location.href).href;
+      }
+
+      function kakaoText(issue) {
+        var url = issueUrl(issue);
+        if (issue["카톡문구"]) {
+          return issue["카톡문구"]
+            .replace(/\{\{customerName\}\}/g, "고객님")
+            .replace(/\{URL\}|\{\{shareUrl\}\}/g, url);
+        }
+        return "[" + issue["채널"] + " 안창민 " + issue["호수"] + "호] " + issue["제목"] + "\n"
+          + (issue["요약"] ? issue["요약"] + "\n" : "")
+          + "이번 주도 도움이 되는 소식으로 찾아뵙겠습니다.\n"
+          + "전체 보기: " + url;
+      }
+
+      function copyText(text, button) {
+        function done() {
+          var original = button.textContent;
+          button.textContent = "복사됨";
+          setTimeout(function () { button.textContent = original; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done);
+        } else {
+          var ta = document.createElement("textarea");
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          done();
+        }
+      }
+
+      function render() {
+        var box = document.getElementById("issue-list");
+        var list = ALL.filter(function (i) { return !channel || i["채널"] === channel; })
+          .sort(function (a, b) { return (b["발행일"] || "") < (a["발행일"] || "") ? -1 : 1; });
+        if (!list.length) {
+          box.innerHTML = '<div class="placeholder-panel">아직 발행물이 없습니다. 첫 호가 준비되는 대로 이곳에 실립니다.</div>';
+          return;
+        }
+        box.innerHTML = list.map(function (i, idx) {
+          return '<article class="issue-item">'
+            + '<div class="issue-meta">' + esc(i["채널"]) + " 안창민 " + esc(i["호수"]) + "호 · " + esc(i["발행일"]) + "</div>"
+            + '<a class="issue-title serif" href="issue.html?id=' + encodeURIComponent(i.id) + '">' + esc(i["제목"]) + "</a>"
+            + (i["요약"] ? '<p class="issue-summary">' + esc(i["요약"]) + "</p>" : "")
+            + '<div class="issue-actions">'
+            + '<a class="btn" href="issue.html?id=' + encodeURIComponent(i.id) + '">열람</a>'
+            + '<button class="btn btn-primary" type="button" data-idx="' + idx + '">카톡 문구 복사</button>'
+            + "</div></article>";
+        }).join("");
+        box.querySelectorAll("button[data-idx]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            copyText(kakaoText(list[Number(btn.dataset.idx)]), btn);
+          });
+        });
+      }
+
+      fetch("../../data/care/issues.json")
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          ALL = Array.isArray(data) ? data : (data.data || []);
+          render();
+        })
+        .catch(function () {
+          document.getElementById("issue-list").innerHTML =
+            '<div class="placeholder-panel">발행물을 불러오지 못했습니다.</div>';
+        });
+
+      document.querySelectorAll(".pill-tabs button").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          document.querySelectorAll(".pill-tabs button").forEach(function (b) {
+            b.classList.toggle("active", b === btn);
+          });
+          channel = btn.dataset.ch;
+          render();
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

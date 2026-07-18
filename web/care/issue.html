@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>안창민 케어센터 - 마이가디언</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body class="simple">
+  <header class="site-header">
+    <div class="inner">
+      <a href="./" class="site-title">마이<span class="accent">가디언</span></a>
+      <span class="site-tagline">케어센터</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <article class="article" id="article">
+      <p class="article-meta">불러오는 중입니다.</p>
+    </article>
+    <p class="disclaimer">본 콘텐츠는 정보 제공 목적이며 개별 상품 권유가 아닙니다. 문의는 담당 설계사에게 연락해 주십시오.</p>
+  </main>
+
+  <footer class="site-footer">
+    마이가디언 v2
+  </footer>
+
+  <script>
+    (function () {
+      "use strict";
+      var box = document.getElementById("article");
+
+      function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+        });
+      }
+
+      function notFound() {
+        box.innerHTML = '<p class="article-meta">발행물을 찾을 수 없습니다.</p>'
+          + '<h1 class="article-title">주소를 다시 확인해 주십시오</h1>'
+          + '<div class="article-body"><p>전달받은 링크로 다시 접속하시거나, 담당 설계사에게 문의해 주십시오.</p></div>';
+      }
+
+      var id = new URLSearchParams(window.location.search).get("id");
+      if (!id) { notFound(); return; }
+
+      fetch("../../data/care/issues.json")
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var list = Array.isArray(data) ? data : (data.data || []);
+          var issue = list.find(function (i) { return i.id === id; });
+          if (!issue) { notFound(); return; }
+          document.title = issue["제목"] + " - 안창민 케어센터";
+          return fetch("../../" + issue["본문파일"])
+            .then(function (r) {
+              if (!r.ok) throw new Error("본문 없음");
+              return r.text();
+            })
+            .then(function (body) {
+              box.innerHTML =
+                '<p class="article-meta">' + esc(issue["채널"]) + " 안창민 " + esc(issue["호수"]) + "호 · " + esc(issue["발행일"]) + "</p>"
+                + '<h1 class="article-title">' + esc(issue["제목"]) + "</h1>"
+                + (issue["커버이미지"] ? '<img class="article-cover" src="../../' + esc(issue["커버이미지"]) + '" alt="">' : "")
+                + '<div class="article-body">' + body + "</div>";
+            });
+        })
+        .catch(notFound);
+    })();
+  </script>
+</body>
+</html>
