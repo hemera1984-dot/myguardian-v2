@@ -9,14 +9,32 @@
   <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body class="magazine">
-  <main class="mag" id="mag">
-    <p style="text-align:center;padding:60px 0;color:#6b7280">발행물을 불러오는 중입니다.</p>
-  </main>
+  <header class="mag-topbar">
+    <a class="mag-home" href="./">
+      <svg viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6"/></svg>서재
+    </a>
+    <span class="mag-top-title" id="top-title">안창민 케어센터</span>
+    <span class="mag-pageno" id="pageno"></span>
+  </header>
+
+  <div class="mag-deck" id="deck">
+    <section class="mag-page cover-page">
+      <div class="page-inner">
+        <p style="text-align:center;padding:80px 0;color:inherit">발행물을 불러오는 중입니다.</p>
+      </div>
+    </section>
+  </div>
+
+  <nav class="mag-nav" id="mag-nav" hidden>
+    <button type="button" id="nav-first">처음</button>
+    <button type="button" id="nav-prev">이전</button>
+    <button type="button" class="primary" id="nav-next">다음 기사</button>
+  </nav>
 
   <script>
     (function () {
       "use strict";
-      var box = document.getElementById("mag");
+      var deck = document.getElementById("deck");
 
       function esc(s) {
         return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
@@ -24,75 +42,141 @@
         });
       }
 
+      // 섹션 컬러: 카테고리 → 색 클래스
+      function catClass(cat) {
+        var c = String(cat || "");
+        if (/시사|HOT/i.test(c)) return "cat-red";
+        if (/경제|INSIGHT/i.test(c)) return "cat-blue";
+        if (/교양|LIFE/i.test(c)) return "cat-violet";
+        if (/보험|건강/.test(c)) return "cat-green";
+        return "cat-blue";
+      }
+
       function notFound() {
-        box.innerHTML = '<div class="mag-cover"><p class="mag-kicker">안창민 케어센터</p>'
+        deck.innerHTML = '<section class="mag-page cover-page"><div class="page-inner">'
+          + '<header class="mag-cover"><p class="mag-kicker">안창민 케어센터</p>'
           + '<h1 class="mag-masthead">발행물을<br>찾을 수 없습니다</h1>'
-          + '<p class="mag-editor">전달받은 링크로 다시 접속하시거나 담당 설계사에게 문의해 주십시오.</p></div>';
+          + '<p class="mag-editor">전달받은 링크로 다시 접속하시거나 담당 설계사에게 문의해 주십시오.</p></header>'
+          + "</div></section>";
       }
 
       function render(meta, data) {
+        document.body.dataset.ch = meta["채널"];
         var masthead = meta["채널"] === "주간" ? "주간<br>안창민" : "월간<br>안창민";
-        var html = [];
-
-        html.push('<header class="mag-cover">');
-        html.push('<p class="mag-kicker">신한라이프 안창민 FC 발행</p>');
-        html.push('<h1 class="mag-masthead">' + masthead + "</h1>");
-        html.push('<p class="mag-issue-line">' + esc(meta["주차라벨"]) + " · 통권 " + esc(meta["호수"]) + "호</p>");
-        if (meta["커버이미지"]) {
-          html.push('<img class="mag-cover-img" src="../../' + esc(meta["커버이미지"]) + '" alt="표지">');
-        }
-        html.push('<p class="mag-editor">편집장 안창민 FC</p>');
-        html.push("</header>");
-
         var arts = data["기사"] || [];
-        html.push('<nav class="mag-toc"><p class="mag-toc-title">이번 호</p><ol>');
+        var note = data["편집장의말"] || [];
+        var pages = [];
+
+        // 1면: 표지 + 목차 (+ 편집장의 말)
+        var cover = [];
+        cover.push('<header class="mag-cover">');
+        cover.push('<p class="mag-kicker">신한라이프 안창민 FC 발행</p>');
+        cover.push('<h1 class="mag-masthead">' + masthead + "</h1>");
+        cover.push('<p class="mag-issue-line">' + esc(meta["주차라벨"]) + " · 통권 " + esc(meta["호수"]) + "호</p>");
+        if (meta["커버이미지"]) cover.push('<img class="mag-cover-img" src="../../' + esc(meta["커버이미지"]) + '" alt="표지">');
+        cover.push('<p class="mag-editor">편집장 안창민 FC</p>');
+        cover.push("</header>");
+        cover.push('<nav class="mag-toc"><p class="mag-toc-title">이번 호</p><ol>');
         arts.forEach(function (a, i) {
-          html.push("<li><span class=\"toc-no\">" + String(i + 1).padStart(2, "0") + "</span>"
-            + '<span class="toc-cat">' + esc(a["카테고리"]) + "</span>"
+          cover.push('<li data-goto="' + (i + 1) + '"><span class="toc-no">' + String(i + 1).padStart(2, "0") + "</span>"
+            + '<span class="toc-cat ' + catClass(a["카테고리"]) + '">' + esc(a["카테고리"]) + "</span>"
             + '<span class="toc-title">' + esc(a["제목"]) + "</span></li>");
         });
-        html.push("</ol></nav>");
-
-        var note = data["편집장의말"] || [];
+        cover.push("</ol></nav>");
         if (note.length) {
-          html.push('<section class="mag-note"><p class="mag-note-label">편집장의 말</p>');
-          note.forEach(function (p) { html.push("<p>" + esc(p) + "</p>"); });
-          html.push('<p class="mag-note-sign">편집장 안창민</p></section>');
+          cover.push('<section class="mag-note"><p class="mag-note-label">편집장의 말</p>');
+          note.forEach(function (p) { cover.push("<p>" + esc(p) + "</p>"); });
+          cover.push('<p class="mag-note-sign">편집장 안창민</p></section>');
         }
+        cover.push('<button class="page-next" type="button" data-goto="1">첫 기사 읽기</button>');
+        pages.push({ cls: "cover-page", html: cover.join("") });
 
+        // 기사 면
         arts.forEach(function (a, i) {
-          html.push('<article class="mag-article">');
-          html.push('<p class="art-kicker">' + (i + 1) + "면 · " + esc(a["카테고리"]) + "</p>");
-          html.push("<h2>" + esc(a["제목"]) + "</h2>");
-          if (a["부제"]) html.push('<p class="art-standfirst">' + esc(a["부제"]) + "</p>");
-          if (a["이미지"]) html.push('<img class="art-img" src="../../' + esc(a["이미지"]) + '" alt="">');
+          var h = [];
+          h.push('<article class="mag-article">');
+          h.push('<p class="art-kicker">' + (i + 1) + "면 · " + esc(a["카테고리"]) + "</p>");
+          h.push("<h2>" + esc(a["제목"]) + "</h2>");
+          if (a["부제"]) h.push('<p class="art-standfirst">' + esc(a["부제"]) + "</p>");
+          if (a["이미지"]) h.push('<img class="art-img" src="../../' + esc(a["이미지"]) + '" alt="">');
           var summary = a["요약"] || [];
           if (summary.length) {
-            html.push('<div class="art-summary"><span class="label">요약</span>');
-            summary.forEach(function (p) { html.push("<p>" + esc(p) + "</p>"); });
-            html.push("</div>");
+            h.push('<div class="art-summary"><span class="label">요약</span>');
+            summary.forEach(function (p) { h.push("<p>" + esc(p) + "</p>"); });
+            h.push("</div>");
           }
-          html.push('<div class="art-body">');
+          h.push('<div class="art-body">');
           (a["본문"] || []).forEach(function (seg) {
-            html.push(seg.t === "h" ? "<h3>" + esc(seg.x) + "</h3>" : "<p>" + esc(seg.x) + "</p>");
+            h.push(seg.t === "h" ? "<h3>" + esc(seg.x) + "</h3>" : "<p>" + esc(seg.x) + "</p>");
           });
-          html.push("</div>");
+          h.push("</div>");
           var comment = a["한마디"] || [];
           if (comment.length) {
-            html.push('<aside class="mag-comment"><p class="label">안창민 FC의 한마디</p>');
-            comment.forEach(function (p) { html.push("<p>" + esc(p) + "</p>"); });
-            html.push('<p class="sign">안창민 FC</p></aside>');
+            h.push('<aside class="mag-comment"><p class="label">안창민 FC의 한마디</p>');
+            comment.forEach(function (p) { h.push("<p>" + esc(p) + "</p>"); });
+            h.push('<p class="sign">안창민 FC</p></aside>');
           }
-          html.push("</article>");
+          h.push("</article>");
+          if (i < arts.length - 1) {
+            h.push('<button class="page-next" type="button" data-goto="' + (i + 2) + '">다음 기사 — ' + esc(arts[i + 1]["제목"]) + "</button>");
+          } else {
+            h.push('<footer class="mag-colophon">');
+            h.push('<p class="mag-colophon-title">' + (meta["채널"] === "주간" ? "주간 안창민" : "월간 안창민") + "</p>");
+            h.push("<p>" + esc(meta["주차라벨"]) + " · 통권 " + esc(meta["호수"]) + "호 · 편집장 안창민 FC</p>");
+            h.push("<p>본 콘텐츠는 정보 제공 목적이며 개별 상품 권유가 아닙니다. 문의는 담당 설계사에게 연락해 주십시오.</p>");
+            h.push('<button class="page-next" type="button" data-goto="0" style="margin-top:20px">표지로 돌아가기</button>');
+            h.push("</footer>");
+          }
+          pages.push({ cls: "article-page " + catClass(a["카테고리"]), html: h.join("") });
         });
 
-        html.push('<footer class="mag-colophon">');
-        html.push('<p class="mag-colophon-title">' + (meta["채널"] === "주간" ? "주간 안창민" : "월간 안창민") + "</p>");
-        html.push("<p>" + esc(meta["주차라벨"]) + " · 통권 " + esc(meta["호수"]) + "호 · 편집장 안창민 FC</p>");
-        html.push("<p>본 콘텐츠는 정보 제공 목적이며 개별 상품 권유가 아닙니다. 문의는 담당 설계사에게 연락해 주십시오.</p>");
-        html.push("</footer>");
+        deck.innerHTML = pages.map(function (p) {
+          return '<section class="mag-page ' + p.cls + '"><div class="page-inner">' + p.html + "</div></section>";
+        }).join("");
 
-        box.innerHTML = html.join("");
+        document.getElementById("top-title").textContent =
+          meta["채널"] + " 안창민 · 통권 " + meta["호수"] + "호";
+        document.getElementById("mag-nav").hidden = false;
+        initNav(pages.length, arts);
+      }
+
+      function initNav(total, arts) {
+        var pageno = document.getElementById("pageno");
+        var first = document.getElementById("nav-first");
+        var prev = document.getElementById("nav-prev");
+        var next = document.getElementById("nav-next");
+
+        function current() {
+          return Math.round(deck.scrollLeft / deck.clientWidth);
+        }
+        function goto(i) {
+          i = Math.max(0, Math.min(total - 1, i));
+          deck.scrollTo({ left: i * deck.clientWidth, behavior: "smooth" });
+        }
+        function update() {
+          var i = current();
+          pageno.textContent = (i + 1) + " / " + total;
+          first.disabled = i === 0;
+          prev.disabled = i === 0;
+          next.disabled = i === total - 1;
+          next.textContent = i === 0 ? "첫 기사" : (i < total - 1 ? "다음 기사" : "마지막");
+        }
+        deck.addEventListener("scroll", function () {
+          clearTimeout(update._t);
+          update._t = setTimeout(update, 80);
+        });
+        first.addEventListener("click", function () { goto(0); });
+        prev.addEventListener("click", function () { goto(current() - 1); });
+        next.addEventListener("click", function () { goto(current() + 1); });
+        deck.addEventListener("click", function (e) {
+          var el = e.target.closest("[data-goto]");
+          if (el) goto(Number(el.dataset.goto));
+        });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "ArrowRight") goto(current() + 1);
+          if (e.key === "ArrowLeft") goto(current() - 1);
+        });
+        update();
       }
 
       var id = new URLSearchParams(window.location.search).get("id");
