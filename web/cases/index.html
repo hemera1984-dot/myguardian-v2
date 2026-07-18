@@ -132,6 +132,7 @@
           + "<dt>유형</dt><dd>" + esc(tabOf(c)) + "</dd>"
           + (c.decision_date ? "<dt>결정일</dt><dd>" + esc(c.decision_date) + "</dd>" : "")
           + (c.issue_category ? "<dt>쟁점</dt><dd>" + esc(c.issue_category) + "</dd>" : "")
+          + (c["원본건수"] > 1 ? "<dt>통합</dt><dd>동일 원문 이관본 " + c["원본건수"] + "건을 하나로 표시</dd>" : "")
           + "</dl>"
           + '<div class="detail-summary">' + esc(c.summary || "요약 없음") + "</div>"
           + links.join(" ")
@@ -206,7 +207,8 @@
         $("q").value = initialQ;
       }
 
-      fetch("../../data/cases/cases.json")
+      // 서비스 색인 사용 — 동일 사건·원문 중복이 통합된 고유 사례 (원본은 cases.json 보존층)
+      fetch("../../data/cases/index.json")
         .then(function (r) { return r.json(); })
         .then(function (payload) {
           ALL = payload.data;
