@@ -27,7 +27,23 @@
           <div class="empty-inline" id="connect-box">
             <div><strong>연결된 폴더 없음</strong><span>고객 폴더를 선택해 시작합니다. 폴더명(C-YYYY-NNN)이 곧 고객코드입니다.</span></div>
           </div>
-          <p style="margin:14px 0 0"><button class="tab-button active" type="button" id="btn-connect">고객 폴더 연결</button></p>
+          <p style="margin:14px 0 0">
+            <button class="tab-button active" type="button" id="btn-connect">고객 폴더 연결</button>
+            <button class="tab-button" type="button" id="btn-new" hidden>신규 고객 등록</button>
+          </p>
+          <div id="new-form" hidden style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+            <input type="text" id="new-name" placeholder="고객 이름" aria-label="고객 이름" style="font:inherit;font-size:0.9rem;border:1px solid var(--platform-line);border-radius:8px;padding:8px 12px">
+            <select id="new-cat" aria-label="카테고리" style="font:inherit;font-size:0.9rem;border:1px solid var(--platform-line);border-radius:8px;padding:8px 12px">
+              <option value="referral">지인</option>
+              <option value="transfer">이관</option>
+              <option value="valueup">밸류업</option>
+              <option value="contract">계약</option>
+            </select>
+            <input type="text" id="new-phone" placeholder="연락처 (선택)" aria-label="연락처" style="font:inherit;font-size:0.9rem;border:1px solid var(--platform-line);border-radius:8px;padding:8px 12px">
+            <button class="tab-button active" type="button" id="new-save">등록</button>
+            <button class="tab-button" type="button" id="new-cancel">취소</button>
+            <span id="new-msg" style="font-size:0.83rem;color:var(--platform-muted)"></span>
+          </div>
           <input type="file" id="dir-input" webkitdirectory multiple hidden>
         </div>
       </section>
@@ -82,10 +98,15 @@
         });
       }
 
-      // 폴더 연결 — File System Access API 우선, 미지원 시 디렉터리 입력
+      var ROOT_HANDLE = null; // 쓰기 가능 연결일 때만 설정 (메모 저장·신규 등록)
+
+      // 폴더 연결 — File System Access API 우선(쓰기 포함), 미지원 시 디렉터리 입력(읽기 전용)
       $("btn-connect").addEventListener("click", function () {
         if (window.showDirectoryPicker) {
-          window.showDirectoryPicker({ mode: "read" }).then(scanHandle).catch(function () {});
+          window.showDirectoryPicker({ mode: "readwrite" }).then(function (root) {
+            ROOT_HANDLE = root;
+            scanHandle(root);
+          }).catch(function () {});
         } else {
           $("dir-input").click();
         }
@@ -94,13 +115,17 @@
         scanFileList(Array.prototype.slice.call(e.target.files));
       });
 
+      var CAN_CREATE = false; // 연결 루트가 단일 고객 저장소일 때만 신규 등록 허용
+
       function scanHandle(root) {
+        var rootHasCodes = false;
         // 각 호출이 자기 하위 결과만 반환하는 순수 재귀 — 공유 배열 누적 금지 (중복 적재 버그 방지)
         async function walk(dir, depth) {
           var out = [];
           for await (var entry of dir.values()) {
             if (entry.kind !== "directory") continue;
             if (CODE_RE.test(entry.name)) {
+              if (depth === 0) rootHasCodes = true;
               var c = await readCustomer(entry);
               if (c) out.push(c);
             } else if (depth < 2) {
@@ -118,10 +143,19 @@
               var ph = await dirHandle.getFileHandle("policies.json");
               policies = JSON.parse(await (await ph.getFile()).text());
             } catch (e) {}
-            return { code: dirHandle.name, profile: profile, policies: policies };
+            var memoText = null;
+            try {
+              var mh = await dirHandle.getFileHandle("memo.md");
+              memoText = await (await mh.getFile()).text();
+            } catch (e) {}
+            return { code: dirHandle.name, profile: profile, policies: policies, handle: dirHandle, memoText: memoText };
           } catch (e) { return null; }
         }
-        walk(root, 0).then(function (found) { onLoaded(found, root.name); });
+        walk(root, 0).then(function (found) {
+          CAN_CREATE = !!ROOT_HANDLE && (rootHasCodes || found.length === 0);
+          $("btn-new").hidden = !CAN_CREATE;
+          onLoaded(found, root.name);
+        });
       }
 
       function scanFileList(files) {
@@ -249,9 +283,93 @@
               return "<dt>" + esc(f[0]) + "</dt><dd>" + esc(f[1]) + "</dd>";
             }).join("") + "</dl>"
           + "<h4 style='margin:16px 0 6px'>보유보험 " + pols.length + "건</h4><ul style='margin:0;padding-left:20px'>" + polHtml + "</ul>"
-          + (o.memo ? "<h4 style='margin:16px 0 6px'>메모</h4><div class='detail-summary' style='margin:0'>" + esc(o.memo) + "</div>" : "")
+          + memoSection(c, o)
           + "</div>";
       }
+
+      // 메모: 쓰기 연결(FSA)이면 편집·저장, 아니면 읽기 전용 표시. 저장 대상은 memo.md
+      function memoSection(c, o) {
+        var memoVal = c.memoText != null ? c.memoText : (o.memo || "");
+        if (c.handle) {
+          return "<h4 style='margin:16px 0 6px'>메모</h4>"
+            + '<textarea id="memo-edit" aria-label="상담 메모" style="width:100%;min-height:130px;font:inherit;font-size:0.93rem;line-height:1.6;border:1px solid var(--platform-line);border-radius:8px;padding:10px 12px;resize:vertical">' + esc(memoVal) + "</textarea>"
+            + '<p style="margin:8px 0 0"><button class="tab-button" type="button" id="memo-save" data-code="' + esc(c.code) + '">메모 저장</button></p>';
+        }
+        return memoVal ? "<h4 style='margin:16px 0 6px'>메모</h4><div class='detail-summary' style='margin:0'>" + esc(memoVal) + "</div>" : "";
+      }
+
+      async function saveMemo(c, text, btn) {
+        try {
+          var fh = await c.handle.getFileHandle("memo.md", { create: true });
+          var w = await fh.createWritable();
+          await w.write(text);
+          await w.close();
+          c.memoText = text;
+          btn.textContent = "저장됨";
+          setTimeout(function () { btn.textContent = "메모 저장"; }, 1500);
+        } catch (e) {
+          btn.textContent = "저장 실패";
+        }
+      }
+
+      $("detail").addEventListener("click", function (e) {
+        var btn = e.target.closest("#memo-save");
+        if (!btn) return;
+        var c = ALL.find(function (x) { return x.code === btn.dataset.code; });
+        if (c) saveMemo(c, $("memo-edit").value, btn);
+      });
+
+      // 신규 고객 등록 — 폴더 생성이 곧 등록 (폴더명 = 고객코드)
+      function nextCode() {
+        var year = new Date().getFullYear();
+        var max = 0;
+        ALL.forEach(function (c) {
+          var m = c.code.match(new RegExp("^C-" + year + "-(\\d{3})$"));
+          if (m) max = Math.max(max, Number(m[1]));
+        });
+        return "C-" + year + "-" + String(max + 1).padStart(3, "0");
+      }
+
+      $("btn-new").addEventListener("click", function () {
+        $("new-form").hidden = !$("new-form").hidden;
+      });
+      $("new-cancel").addEventListener("click", function () {
+        $("new-form").hidden = true;
+      });
+      $("new-save").addEventListener("click", async function () {
+        var name = $("new-name").value.trim();
+        if (!name) { $("new-msg").textContent = "이름을 입력하세요."; return; }
+        if (!ROOT_HANDLE || !CAN_CREATE) { $("new-msg").textContent = "쓰기 가능한 고객 저장소 폴더를 연결하세요."; return; }
+        var code = nextCode();
+        try {
+          var dir = await ROOT_HANDLE.getDirectoryHandle(code, { create: true });
+          var profile = {
+            "고객코드": code,
+            "등록일": new Date().toISOString().slice(0, 10),
+            "customerName": name,
+            "category": $("new-cat").value,
+            "phone": $("new-phone").value.trim() || null
+          };
+          var pf = await dir.getFileHandle("profile.json", { create: true });
+          var w = await pf.createWritable();
+          await w.write(JSON.stringify(profile, null, 1));
+          await w.close();
+          var memoInit = "# 상담 메모 — " + code + "\n\n";
+          var mf = await dir.getFileHandle("memo.md", { create: true });
+          var mw = await mf.createWritable();
+          await mw.write(memoInit);
+          await mw.close();
+          ALL.push({ code: code, profile: profile, policies: { policies: [] }, handle: dir, memoText: memoInit });
+          ALL.sort(function (a, b) { return a.code < b.code ? -1 : 1; });
+          $("new-form").hidden = true;
+          $("new-name").value = ""; $("new-phone").value = "";
+          $("new-msg").textContent = "";
+          renderList();
+          $("connect-box").querySelector("span").textContent = "고객 " + ALL.length + "명. " + code + " 등록됨. 커밋·push는 별도로 진행하세요.";
+        } catch (e) {
+          $("new-msg").textContent = "등록 실패: 폴더 쓰기 권한을 확인하세요.";
+        }
+      });
 
       $("q").addEventListener("input", function (e) { state.q = e.target.value.trim(); renderList(); });
       document.querySelectorAll(".filter-chip").forEach(function (chip) {
