@@ -595,6 +595,75 @@ body.simple .container {
   color: var(--accent);
 }
 
+/* 카톡 문구 작성함 */
+.sender-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 0.87rem;
+  color: var(--ink-sub);
+}
+
+.sender-row input {
+  font: inherit;
+  font-size: 0.87rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 10px;
+  outline: none;
+  min-width: 0;
+}
+
+.sender-row input:focus {
+  border-color: var(--accent);
+}
+
+.sender-row input.name { width: 110px; }
+.sender-row input.org { width: 170px; flex: 1; max-width: 220px; }
+
+.compose-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.compose-panel h3 {
+  font-size: 1rem;
+  margin: 0 0 10px;
+}
+
+.compose-panel textarea {
+  width: 100%;
+  min-height: 300px;
+  font: inherit;
+  font-size: 0.93rem;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  resize: vertical;
+  outline: none;
+}
+
+.compose-panel textarea:focus {
+  border-color: var(--accent);
+}
+
+.compose-panel .compose-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
 /* 고정 면책 문구 */
 .disclaimer {
   margin-top: 48px;

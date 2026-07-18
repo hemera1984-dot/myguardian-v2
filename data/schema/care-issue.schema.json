@@ -44,7 +44,30 @@
     },
     "카톡문구": {
       "type": ["string", "null"],
-      "description": "카톡 발송 문구. {URL} 자리에 열람 주소가 치환된다. 없으면 제목·요약으로 기본 문구를 만든다"
+      "description": "카톡 발송 문구 직접 지정(선택). 없으면 채널별 표준 양식으로 생성한다. 발신자 서명은 화면 설정(localStorage)에서 가져온다"
+    },
+    "주차라벨": {
+      "type": ["string", "null"],
+      "description": "표시용 발행 라벨 (예: 2026년 7월 2주차 / 2026년 7월호)"
+    },
+    "원문링크": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "description": "v1(마누스 웹) 원문 URL. 이관 호에만 존재"
+    },
+    "꼭지": {
+      "type": "array",
+      "description": "기사·칼럼 목록. 카톡 문구 생성에 사용",
+      "items": {
+        "type": "object",
+        "required": ["번호", "제목"],
+        "properties": {
+          "번호": { "type": "integer" },
+          "카테고리": { "type": "string" },
+          "제목": { "type": "string" },
+          "부제": { "type": "string" }
+        }
+      }
     }
   }
 }
