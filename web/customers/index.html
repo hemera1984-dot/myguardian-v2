@@ -64,6 +64,14 @@
       "use strict";
       var CODE_RE = /^C-\d{4}-\d{3}$/;
       var CAT = { transfer: "이관", valueup: "밸류업", contract: "계약", referral: "지인" };
+      // 상품명에서 사례 검색용 담보 키워드 추출 — 매칭 없으면 링크를 만들지 않는다
+      var CASE_KEYWORDS = ["암", "실손", "종신", "정기", "치매", "간병", "운전자", "치아", "어린이", "상해", "연금", "저축", "변액", "화재", "유병", "뇌", "심장", "건강"];
+      function caseKeyword(name) {
+        for (var i = 0; i < CASE_KEYWORDS.length; i++) {
+          if (String(name).indexOf(CASE_KEYWORDS[i]) >= 0) return CASE_KEYWORDS[i];
+        }
+        return null;
+      }
       var ALL = [];
       var state = { q: "", cat: "", sel: null };
       var $ = function (id) { return document.getElementById(id); };
@@ -225,9 +233,13 @@
         ].filter(function (f) { return f[1]; });
         var polHtml = pols.length
           ? pols.map(function (p) {
-              return "<li>" + esc(p.productName || p.insuranceProduct || "상품명 미기재")
+              var name = p.productName || p.insuranceProduct || "상품명 미기재";
+              var kw = caseKeyword(name);
+              return "<li>" + esc(name)
                 + (p.monthlyPremium ? " — 월 " + Number(p.monthlyPremium).toLocaleString() + "원" : "")
-                + (p.contractDate ? " (" + esc(String(p.contractDate).slice(0, 10)) + ")" : "") + "</li>";
+                + (p.contractDate ? " (" + esc(String(p.contractDate).slice(0, 10)) + ")" : "")
+                + (kw ? ' <a href="../cases/?q=' + encodeURIComponent(kw) + '" style="color:var(--platform-blue);font-size:0.85em;font-weight:600">관련 사례</a>' : "")
+                + "</li>";
             }).join("")
           : "<li>등록된 보유보험 없음</li>";
         $("detail").innerHTML = '<div class="case-detail-body">'

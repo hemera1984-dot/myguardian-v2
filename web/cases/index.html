@@ -135,8 +135,49 @@
           + "</dl>"
           + '<div class="detail-summary">' + esc(c.summary || "요약 없음") + "</div>"
           + links.join(" ")
+          + '<p style="margin:16px 0 0"><button class="tab-button" type="button" id="btn-share" data-id="' + esc(c.id) + '">카톡 문구 복사</button></p>'
           + "</div>";
       }
+
+      // 사례 공유 문구 — 고객·팀원에게 근거를 보낼 때 (케어센터와 같은 복사 패턴)
+      function shareText(c) {
+        var lines = ["[" + tabOf(c) + " 공유] " + c.title, ""];
+        lines.push("사건번호: " + c.case_number + (c.publisher ? " (" + c.publisher + ")" : ""));
+        if (c.summary && c.summary !== c.title) {
+          var s = c.summary.length > 200 ? c.summary.slice(0, 200) + "…" : c.summary;
+          lines.push("", s);
+        }
+        var url = c.case_source_url || c.source_url;
+        if (url) lines.push("", "원문: " + url);
+        lines.push("", "본 자료는 공개된 분쟁 사례 정보 제공이며 개별 지급 여부 판단이 아닙니다");
+        return lines.join("\n");
+      }
+
+      function copyText(text, button) {
+        function done() {
+          var original = button.textContent;
+          button.textContent = "복사됨";
+          setTimeout(function () { button.textContent = original; }, 1500);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done);
+        } else {
+          var ta = document.createElement("textarea");
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          done();
+        }
+      }
+
+      $("detail").addEventListener("click", function (e) {
+        var btn = e.target.closest("#btn-share");
+        if (!btn) return;
+        var c = ALL.find(function (x) { return x.id === btn.dataset.id; });
+        if (c) copyText(shareText(c), btn);
+      });
 
       function fillSelect(id, values, label) {
         var sel = $(id);
@@ -156,6 +197,13 @@
         });
         return Object.keys(m).map(function (k) { return [k, m[k]]; })
           .sort(function (a, b) { return b[1] - a[1]; });
+      }
+
+      // URL 쿼리로 진입한 검색어 지원 (고객관리 등 다른 화면에서 연결)
+      var initialQ = new URLSearchParams(window.location.search).get("q") || "";
+      if (initialQ) {
+        state.q = initialQ;
+        $("q").value = initialQ;
       }
 
       fetch("../../data/cases/cases.json")
