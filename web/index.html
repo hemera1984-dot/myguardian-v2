@@ -43,8 +43,9 @@
       </section>
 
       <div class="global-search">
-        <input type="search" aria-label="통합 검색" placeholder="사례, 용어, 지급 조건을 검색하세요" disabled>
-        <span class="search-state">검색 준비중</span>
+        <input type="search" id="global-q" aria-label="통합 검색" placeholder="사례, 용어, 질병을 검색하세요" autocomplete="off">
+        <span class="search-state" id="global-state">용어 418 · 질병 275 · 사례 726</span>
+        <div class="search-suggest" id="suggest" hidden></div>
       </div>
 
       <section class="section-block" aria-labelledby="data-status-title">
@@ -115,6 +116,99 @@
         })
         .catch(function () {});
     })();
+    // 통합검색 — 용어·질병은 즉석 제안, 사례는 사례 화면으로 연결. 사전은 첫 입력 시에만 로드.
+    (function () {
+      "use strict";
+      var input = document.getElementById("global-q");
+      var panel = document.getElementById("suggest");
+      var TERMS = null, DISEASES = null, loading = false;
+
+      function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+        });
+      }
+
+      function loadDicts() {
+        if (TERMS || loading) return Promise.resolve();
+        loading = true;
+        return Promise.all([
+          fetch("../data/dictionary/terms.json").then(function (r) { return r.json(); }),
+          fetch("../data/dictionary/diseases.json").then(function (r) { return r.json(); })
+        ]).then(function (res) {
+          TERMS = res[0].data || [];
+          DISEASES = res[1].data || [];
+        }).catch(function () { TERMS = []; DISEASES = []; });
+      }
+
+      function suggest() {
+        var q = input.value.trim();
+        if (q.length < 1) { panel.hidden = true; return; }
+        var terms = (TERMS || []).filter(function (t) {
+          return (t.termName || "").indexOf(q) >= 0;
+        }).slice(0, 5);
+        var diseases = (DISEASES || []).filter(function (d) {
+          return (d.name || "").indexOf(q) >= 0 || (d.searchTags || "").indexOf(q) >= 0;
+        }).slice(0, 5);
+        var html = [];
+        if (terms.length) {
+          html.push('<p class="suggest-label">보험 용어</p>');
+          terms.forEach(function (t, i) {
+            html.push('<button type="button" class="suggest-item" data-kind="term" data-i="' + i + '">'
+              + '<span class="t">' + esc(t.termName) + "</span>"
+              + '<span class="d">' + esc(t.definition || "") + "</span>"
+              + '<span class="full" hidden>' + esc(t.definition || "") + "</span></button>");
+          });
+        }
+        if (diseases.length) {
+          html.push('<p class="suggest-label">질병 정보</p>');
+          diseases.forEach(function (d, i) {
+            html.push('<button type="button" class="suggest-item" data-kind="disease" data-i="' + i + '">'
+              + '<span class="t">' + esc(d.name) + "</span>"
+              + '<span class="d">' + esc(d.currentTreatment || "") + "</span>"
+              + '<span class="full" hidden>' + esc(d.currentTreatment || "") + "</span></button>");
+          });
+        }
+        if (!terms.length && !diseases.length) {
+          html.push('<p class="suggest-empty">사전에 일치하는 항목이 없습니다.</p>');
+        }
+        html.push('<button type="button" class="suggest-more" id="suggest-cases">사례·판례에서 "' + esc(q) + '" 검색</button>');
+        panel.innerHTML = html.join("");
+        panel.hidden = false;
+      }
+
+      var t;
+      input.addEventListener("input", function () {
+        clearTimeout(t);
+        t = setTimeout(function () { loadDicts().then(suggest); }, 150);
+      });
+      input.addEventListener("focus", function () { loadDicts(); });
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && input.value.trim()) {
+          window.location.href = "cases/?q=" + encodeURIComponent(input.value.trim());
+        }
+        if (e.key === "Escape") panel.hidden = true;
+      });
+      panel.addEventListener("click", function (e) {
+        var more = e.target.closest("#suggest-cases");
+        if (more) {
+          window.location.href = "cases/?q=" + encodeURIComponent(input.value.trim());
+          return;
+        }
+        var item = e.target.closest(".suggest-item");
+        if (item) {
+          var full = item.querySelector(".full");
+          var brief = item.querySelector(".d");
+          var open = full.hidden;
+          full.hidden = !open;
+          brief.hidden = open;
+        }
+      });
+      document.addEventListener("click", function (e) {
+        if (!e.target.closest(".global-search")) panel.hidden = true;
+      });
+    })();
+
     (function () {
       var button = document.getElementById("mobile-menu");
       var sidebar = document.getElementById("platform-sidebar");
