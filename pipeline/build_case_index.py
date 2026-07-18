@@ -52,8 +52,10 @@ def main() -> None:
             })
 
     # 검증 반영 (원본 무변형 — 색인의 등급만 조정)
-    ver_path = ROOT / "data" / "cases" / "fss-verification.json"
-    if ver_path.exists():
+    for ver_name in ("fss-verification.json", "scourt-verification.json"):
+        ver_path = ROOT / "data" / "cases" / ver_name
+        if not ver_path.exists():
+            continue
         with open(ver_path, encoding="utf-8") as f:
             ver = {v["id"]: v for v in json.load(f)["결과"]}
         for e in index:
