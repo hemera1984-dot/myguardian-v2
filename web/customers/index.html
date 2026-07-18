@@ -65,7 +65,7 @@
       var CODE_RE = /^C-\d{4}-\d{3}$/;
       var CAT = { transfer: "이관", valueup: "밸류업", contract: "계약", referral: "지인" };
       var ALL = [];
-      var state = { q: "", cat: "" };
+      var state = { q: "", cat: "", sel: null };
       var $ = function (id) { return document.getElementById(id); };
 
       function esc(s) {
@@ -87,19 +87,19 @@
       });
 
       function scanHandle(root) {
-        var found = [];
-        function walk(dir, depth) {
-          var jobs = [];
-          return (async function () {
-            for await (var entry of dir.values()) {
-              if (entry.kind !== "directory") continue;
-              if (CODE_RE.test(entry.name)) jobs.push(readCustomer(entry));
-              else if (depth < 2) jobs.push(walk(entry, depth + 1));
+        // 각 호출이 자기 하위 결과만 반환하는 순수 재귀 — 공유 배열 누적 금지 (중복 적재 버그 방지)
+        async function walk(dir, depth) {
+          var out = [];
+          for await (var entry of dir.values()) {
+            if (entry.kind !== "directory") continue;
+            if (CODE_RE.test(entry.name)) {
+              var c = await readCustomer(entry);
+              if (c) out.push(c);
+            } else if (depth < 2) {
+              out = out.concat(await walk(entry, depth + 1));
             }
-            var results = await Promise.all(jobs);
-            results.forEach(function (r) { if (Array.isArray(r)) found.push.apply(found, r); else if (r) found.push(r); });
-            return found;
-          })();
+          }
+          return out;
         }
         async function readCustomer(dirHandle) {
           try {
@@ -113,7 +113,7 @@
             return { code: dirHandle.name, profile: profile, policies: policies };
           } catch (e) { return null; }
         }
-        walk(root, 0).then(function () { onLoaded(found, root.name); });
+        walk(root, 0).then(function (found) { onLoaded(found, root.name); });
       }
 
       function scanFileList(files) {
@@ -148,8 +148,23 @@
       }
 
       function onLoaded(list, rootName) {
-        ALL = list.sort(function (a, b) { return a.code < b.code ? -1 : 1; });
-        $("connect-box").innerHTML = "<div><strong>연결됨: " + esc(rootName) + "</strong><span>고객 " + ALL.length + "명을 불러왔습니다. 데이터는 이 기기 안에서만 처리됩니다.</span></div>";
+        // 고객코드 중복 검출 — 조용히 덮어쓰지 않고 알린다
+        var seen = {};
+        var dupCodes = [];
+        var unique = [];
+        list.forEach(function (c) {
+          if (seen[c.code]) {
+            if (dupCodes.indexOf(c.code) < 0) dupCodes.push(c.code);
+            return;
+          }
+          seen[c.code] = true;
+          unique.push(c);
+        });
+        var dupNote = dupCodes.length
+          ? " 중복 코드 " + dupCodes.length + "건은 첫 폴더만 표시: " + dupCodes.join(", ") + "."
+          : "";
+        ALL = unique.sort(function (a, b) { return a.code < b.code ? -1 : 1; });
+        $("connect-box").innerHTML = "<div><strong>연결됨: " + esc(rootName) + "</strong><span>고객 " + ALL.length + "명을 불러왔습니다. 데이터는 이 기기 안에서만 처리됩니다." + esc(dupNote) + "</span></div>";
         $("work-block").hidden = false;
         renderList();
       }
@@ -169,10 +184,17 @@
         });
       }
 
+      var DETAIL_EMPTY = '<div><div class="detail-empty-mark"></div><strong>고객을 선택하세요</strong><p>목록에서 고객을 선택하면 프로필, 메모, 보유보험을 확인할 수 있습니다.</p></div>';
+
       function renderList() {
         var list = filtered();
         $("list-count").textContent = list.length + "명";
         $("result-count").textContent = "결과 " + list.length + "명";
+        // 선택 고객이 현재 결과에 없으면 상세도 함께 비운다 (목록-상세 상태 일치)
+        if (state.sel && !list.some(function (c) { return c.code === state.sel; })) {
+          state.sel = null;
+          $("detail").innerHTML = DETAIL_EMPTY;
+        }
         var rows = $("rows");
         if (!list.length) {
           rows.innerHTML = '<div class="list-empty">조건에 맞는 고객이 없습니다.</div>';
@@ -181,7 +203,7 @@
         rows.innerHTML = list.map(function (c) {
           var o = v1(c);
           var n = (c.policies.policies || []).length;
-          return '<div class="case-row" data-code="' + esc(c.code) + '">'
+          return '<div class="case-row' + (c.code === state.sel ? " active" : "") + '" data-code="' + esc(c.code) + '">'
             + "<h4>" + esc(o.customerName || "이름 미기재") + "</h4>"
             + '<div class="case-meta"><span>' + esc(c.code) + "</span>"
             + '<span class="badge-result">' + esc(CAT[o.category] || o.category || "미분류") + "</span>"
@@ -233,7 +255,10 @@
         document.querySelectorAll(".case-row.active").forEach(function (r) { r.classList.remove("active"); });
         row.classList.add("active");
         var c = ALL.find(function (x) { return x.code === row.dataset.code; });
-        if (c) renderDetail(c);
+        if (c) {
+          state.sel = c.code;
+          renderDetail(c);
+        }
       });
     })();
   </script>

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "care-issue.schema.json",
   "title": "케어센터 발행물",
-  "description": "주간·월간 안창민 발행물 메타데이터. data/care/issues.json은 이 스키마를 따르는 객체의 배열이다. 본문은 data/care/issues/<id>.html 조각 파일로 둔다. 고객 개인정보 금지.",
+  "description": "케어센터 발행물 메타데이터. data/care/issues.json은 이 스키마를 따르는 객체의 배열이다. 본문은 data/care/issues/<id>.json 구조 데이터로 둔다. 고객 개인정보 금지.",
   "type": "object",
   "required": ["id", "채널", "호수", "제목", "발행일", "본문파일"],
   "properties": {
@@ -41,7 +41,8 @@
     },
     "본문파일": {
       "type": "string",
-      "description": "본문 HTML 조각 파일 경로. 사이트 루트 기준 (예: data/care/issues/weekly-11.html)"
+      "pattern": "\\.json$",
+      "description": "호 구조 데이터(JSON) 경로. 사이트 루트 기준 (예: data/care/issues/weekly-11.json). 구조: {id, 편집장의말:[문단], 기사:[{번호,카테고리,제목,부제,요약:[],한마디:[],본문:[{t:h|p,x}],이미지}]}"
     },
     "커버이미지": {
       "type": ["string", "null"],

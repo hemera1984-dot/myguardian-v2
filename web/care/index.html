@@ -128,7 +128,7 @@
       function openCompose(issue) {
         var panel = document.getElementById("compose");
         document.getElementById("compose-title").textContent =
-          "카톡 문구 — " + issue["채널"] + " 안창민 " + issue["호수"] + "호 (수정 후 복사하세요)";
+          "카톡 문구 — " + issue["채널"] + " " + (issue["발행인"] || "안창민") + " " + issue["호수"] + "호 (수정 후 복사하세요)";
         document.getElementById("compose-text").value = kakaoText(issue);
         panel.hidden = false;
         panel.scrollIntoView({ behavior: "smooth", block: "start" });

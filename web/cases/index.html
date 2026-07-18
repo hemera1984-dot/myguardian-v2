@@ -54,7 +54,7 @@
     (function () {
       "use strict";
       var ALL = [];
-      var state = { tab: "전체", q: "", result: "", issue: "", publisher: "" };
+      var state = { tab: "전체", q: "", result: "", issue: "", publisher: "", sel: null };
       var $ = function (id) { return document.getElementById(id); };
 
       // 탭 분류: 판례 = 법원(source_type 대법원), 분쟁사례 = 금감원·기타
@@ -89,10 +89,17 @@
         });
       }
 
+      var DETAIL_EMPTY = '<div><div class="detail-empty-mark"></div><strong>사례를 선택하세요</strong><p>목록에서 사례를 선택하면 사건번호, 결정 결과, 요약과 원문 링크를 확인할 수 있습니다.</p></div>';
+
       function renderList() {
         var list = filtered();
         $("list-count").textContent = list.length + "건";
         $("result-count").textContent = "결과 " + list.length + "건";
+        // 선택 사례가 현재 결과에 없으면 상세도 함께 비운다 (목록-상세 상태 일치)
+        if (state.sel && !list.some(function (c) { return c.id === state.sel; })) {
+          state.sel = null;
+          $("detail").innerHTML = DETAIL_EMPTY;
+        }
         var rows = $("rows");
         if (!list.length) {
           rows.innerHTML = '<div class="list-empty">관련 사례 없음</div>';
@@ -101,7 +108,7 @@
         rows.innerHTML = list.map(function (c) {
           var badge = c.decision_result && c.decision_result !== "기타"
             ? '<span class="badge-result ' + resultClass(c.decision_result) + '">' + esc(c.decision_result) + "</span>" : "";
-          return '<div class="case-row" data-id="' + esc(c.id) + '">'
+          return '<div class="case-row' + (c.id === state.sel ? " active" : "") + '" data-id="' + esc(c.id) + '">'
             + "<h4>" + esc(c.title) + "</h4>"
             + '<div class="case-meta"><span>' + esc(c.publisher || "출처 미기재") + "</span>"
             + "<span>" + esc(c.case_number) + "</span>"
@@ -156,8 +163,8 @@
         .then(function (payload) {
           ALL = payload.data;
           fillSelect("f-result", countBy("decision_result", "기타"), "결과");
-          fillSelect("f-issue", countBy("issue_category", "미분류").slice(0, 20), "쟁점");
-          fillSelect("f-publisher", countBy("publisher", "미기재").slice(0, 20), "기관");
+          fillSelect("f-issue", countBy("issue_category", "미분류"), "쟁점");
+          fillSelect("f-publisher", countBy("publisher", "미기재"), "기관");
           renderList();
         })
         .catch(function () {
@@ -192,7 +199,10 @@
         document.querySelectorAll(".case-row.active").forEach(function (r) { r.classList.remove("active"); });
         row.classList.add("active");
         var c = ALL.find(function (x) { return x.id === row.dataset.id; });
-        if (c) renderDetail(c);
+        if (c) {
+          state.sel = c.id;
+          renderDetail(c);
+        }
       });
     })();
   </script>

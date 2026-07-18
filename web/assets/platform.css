@@ -3,7 +3,7 @@
   --platform-surface: #ffffff;
   --platform-ink: #1a2744;
   --platform-muted: #667085;
-  --platform-faint: #98a2b3;
+  --platform-faint: #717d8f; /* 흰 바탕 4.5:1 이상 — 보조 텍스트 대비 확보 */
   --platform-blue: #2563eb;
   --platform-blue-soft: #eff6ff;
   --platform-line: #e4e7ec;

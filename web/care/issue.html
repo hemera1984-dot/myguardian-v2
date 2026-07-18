@@ -42,6 +42,12 @@
         });
       }
 
+      // 월간 원본의 영문 라벨은 한글 기능 라벨로 표시한다 (데이터는 무변형, 표시만 변환)
+      var CAT_DISPLAY = { "HOT ISSUE": "주요 이슈", "LIFESTYLE": "생활", "INSIGHT": "통찰" };
+      function displayCat(cat) {
+        return CAT_DISPLAY[String(cat || "").toUpperCase()] || cat;
+      }
+
       // 섹션 컬러: 카테고리 → 색 클래스
       function catClass(cat) {
         var c = String(cat || "");
@@ -53,11 +59,13 @@
       }
 
       function notFound() {
+        document.body.dataset.ch = "주간"; // 표지 배경색을 살려 오류 화면도 충분한 대비 확보
         deck.innerHTML = '<section class="mag-page cover-page"><div class="page-inner">'
-          + '<header class="mag-cover"><p class="mag-kicker">안창민 케어센터</p>'
+          + '<header class="mag-cover"><p class="mag-kicker">케어센터</p>'
           + '<h1 class="mag-masthead">발행물을<br>찾을 수 없습니다</h1>'
-          + '<p class="mag-editor">전달받은 링크로 다시 접속하시거나 담당 설계사에게 문의해 주십시오.</p></header>'
-          + "</div></section>";
+          + '<p class="mag-editor">주소가 잘못되었거나 아직 발행되지 않은 호입니다.<br>전달받은 링크를 다시 확인하시거나 담당 설계사에게 문의해 주십시오.</p>'
+          + '<a class="page-next" href="./" style="margin-top:32px;text-align:center;text-decoration:none">케어센터 서재로 이동</a>'
+          + "</header></div></section>";
       }
 
       function render(meta, data) {
@@ -82,7 +90,7 @@
         cover.push('<nav class="mag-toc"><p class="mag-toc-title">이번 호</p><ol>');
         arts.forEach(function (a, i) {
           cover.push('<li data-goto="' + (i + 1) + '"><span class="toc-no">' + String(i + 1).padStart(2, "0") + "</span>"
-            + '<span class="toc-cat ' + catClass(a["카테고리"]) + '">' + esc(a["카테고리"]) + "</span>"
+            + '<span class="toc-cat ' + catClass(a["카테고리"]) + '">' + esc(displayCat(a["카테고리"])) + "</span>"
             + '<span class="toc-title">' + esc(a["제목"]) + "</span></li>");
         });
         cover.push("</ol></nav>");
@@ -98,7 +106,7 @@
         arts.forEach(function (a, i) {
           var h = [];
           h.push('<article class="mag-article">');
-          h.push('<p class="art-kicker">' + (i + 1) + "면 · " + esc(a["카테고리"]) + "</p>");
+          h.push('<p class="art-kicker">' + (i + 1) + "면 · " + esc(displayCat(a["카테고리"])) + "</p>");
           h.push("<h2>" + esc(a["제목"]) + "</h2>");
           if (a["부제"]) h.push('<p class="art-standfirst">' + esc(a["부제"]) + "</p>");
           if (a["이미지"]) h.push('<img class="art-img" src="../../' + esc(a["이미지"]) + '" alt="">');
@@ -190,7 +198,7 @@
         .then(function (list) {
           var meta = (Array.isArray(list) ? list : []).find(function (i) { return i.id === id; });
           if (!meta) { notFound(); return; }
-          document.title = meta["채널"] + " 안창민 " + meta["호수"] + "호 - 안창민 케어센터";
+          document.title = meta["채널"] + " " + (meta["발행인"] || "안창민") + " " + meta["호수"] + "호 - 케어센터";
           return fetch("../../" + meta["본문파일"])
             .then(function (r) {
               if (!r.ok) throw new Error("본문 없음");
