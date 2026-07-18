@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>고객관리 - 마이가디언</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="../assets/platform.css">
+</head>
+<body class="platform">
+  <aside class="platform-sidebar" id="platform-sidebar">
+    <a class="platform-brand" href="../" aria-label="마이가디언 홈"><span class="brand-mark">마</span><span><span class="brand-name">마이가디언</span><span class="brand-caption">FC 업무 플랫폼</span></span></a>
+    <nav class="platform-nav" aria-label="주요 메뉴">
+      <a href="../">홈</a><a class="active" href="./">고객관리</a><a href="../claims/">청구·지급</a><a href="../cases/">사례·판례</a><a href="../learn/">학습</a>
+      <span class="nav-separator" aria-hidden="true"></span><a href="../care/">케어센터</a><a href="../card/">카톡카드</a>
+    </nav>
+    <div class="sidebar-status"><strong>내 고객</strong><span>데이터는 이 기기 밖으로 나가지 않습니다.</span></div>
+  </aside>
+  <div class="platform-overlay" id="platform-overlay"></div>
+  <div class="platform-shell">
+    <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">고객관리</span><span class="topbar-note">로컬 고객 폴더 기반 — 외부 전송 없음</span></header>
+    <main class="platform-main">
+
+      <section class="section-block" id="connect-block">
+        <div class="section-head"><div><h2>고객 폴더 연결</h2><p>내 PC의 고객 저장소 폴더(mg-clients)를 연결하면 목록이 표시됩니다. 모든 처리는 브라우저 안에서만 이루어지며 어디에도 전송되지 않습니다.</p></div></div>
+        <div class="surface-card">
+          <div class="empty-inline" id="connect-box">
+            <div><strong>연결된 폴더 없음</strong><span>고객 폴더를 선택해 시작합니다. 폴더명(C-YYYY-NNN)이 곧 고객코드입니다.</span></div>
+          </div>
+          <p style="margin:14px 0 0"><button class="tab-button active" type="button" id="btn-connect">고객 폴더 연결</button></p>
+          <input type="file" id="dir-input" webkitdirectory multiple hidden>
+        </div>
+      </section>
+
+      <section class="section-block" id="work-block" hidden>
+        <div class="global-search"><input type="search" id="q" aria-label="고객 검색" placeholder="이름, 고객코드, 메모를 검색하세요"><span class="search-state" id="result-count">-</span></div>
+
+        <div class="filter-bar" aria-label="카테고리 필터">
+          <button class="filter-chip active" type="button" data-cat="">전체</button>
+          <button class="filter-chip" type="button" data-cat="transfer">이관</button>
+          <button class="filter-chip" type="button" data-cat="valueup">밸류업</button>
+          <button class="filter-chip" type="button" data-cat="contract">계약</button>
+          <button class="filter-chip" type="button" data-cat="referral">지인</button>
+        </div>
+
+        <div class="workspace-grid">
+          <div class="workspace-list">
+            <div class="workspace-label"><span>고객</span><span class="workspace-count" id="list-count">0명</span></div>
+            <div class="case-rows" id="rows"></div>
+          </div>
+          <div class="workspace-detail" id="detail">
+            <div><div class="detail-empty-mark"></div><strong>고객을 선택하세요</strong><p>목록에서 고객을 선택하면 프로필, 메모, 보유보험을 확인할 수 있습니다.</p></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+    <footer class="platform-footer">마이가디언 v2</footer>
+  </div>
+  <script>
+    (function () { var button=document.getElementById("mobile-menu"),sidebar=document.getElementById("platform-sidebar"),overlay=document.getElementById("platform-overlay"); function close(){sidebar.classList.remove("open");overlay.classList.remove("show");button.setAttribute("aria-expanded","false");} button.addEventListener("click",function(){var open=sidebar.classList.toggle("open");overlay.classList.toggle("show",open);button.setAttribute("aria-expanded",String(open));});overlay.addEventListener("click",close); })();
+
+    (function () {
+      "use strict";
+      var CODE_RE = /^C-\d{4}-\d{3}$/;
+      var CAT = { transfer: "이관", valueup: "밸류업", contract: "계약", referral: "지인" };
+      var ALL = [];
+      var state = { q: "", cat: "" };
+      var $ = function (id) { return document.getElementById(id); };
+
+      function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+        });
+      }
+
+      // 폴더 연결 — File System Access API 우선, 미지원 시 디렉터리 입력
+      $("btn-connect").addEventListener("click", function () {
+        if (window.showDirectoryPicker) {
+          window.showDirectoryPicker({ mode: "read" }).then(scanHandle).catch(function () {});
+        } else {
+          $("dir-input").click();
+        }
+      });
+      $("dir-input").addEventListener("change", function (e) {
+        scanFileList(Array.prototype.slice.call(e.target.files));
+      });
+
+      function scanHandle(root) {
+        var found = [];
+        function walk(dir, depth) {
+          var jobs = [];
+          return (async function () {
+            for await (var entry of dir.values()) {
+              if (entry.kind !== "directory") continue;
+              if (CODE_RE.test(entry.name)) jobs.push(readCustomer(entry));
+              else if (depth < 2) jobs.push(walk(entry, depth + 1));
+            }
+            var results = await Promise.all(jobs);
+            results.forEach(function (r) { if (Array.isArray(r)) found.push.apply(found, r); else if (r) found.push(r); });
+            return found;
+          })();
+        }
+        async function readCustomer(dirHandle) {
+          try {
+            var fh = await dirHandle.getFileHandle("profile.json");
+            var profile = JSON.parse(await (await fh.getFile()).text());
+            var policies = { policies: [] };
+            try {
+              var ph = await dirHandle.getFileHandle("policies.json");
+              policies = JSON.parse(await (await ph.getFile()).text());
+            } catch (e) {}
+            return { code: dirHandle.name, profile: profile, policies: policies };
+          } catch (e) { return null; }
+        }
+        walk(root, 0).then(function () { onLoaded(found, root.name); });
+      }
+
+      function scanFileList(files) {
+        var byFolder = {};
+        files.forEach(function (f) {
+          var parts = (f.webkitRelativePath || "").split("/");
+          for (var i = 0; i < parts.length - 1; i++) {
+            if (CODE_RE.test(parts[i])) {
+              var key = parts.slice(0, i + 1).join("/");
+              byFolder[key] = byFolder[key] || {};
+              byFolder[key][parts[parts.length - 1]] = f;
+            }
+          }
+        });
+        var jobs = Object.keys(byFolder).map(function (key) {
+          var group = byFolder[key];
+          if (!group["profile.json"]) return Promise.resolve(null);
+          var code = key.split("/").pop();
+          return group["profile.json"].text().then(function (t) {
+            var profile = JSON.parse(t);
+            if (group["policies.json"]) {
+              return group["policies.json"].text().then(function (pt) {
+                return { code: code, profile: profile, policies: JSON.parse(pt) };
+              });
+            }
+            return { code: code, profile: profile, policies: { policies: [] } };
+          }).catch(function () { return null; });
+        });
+        Promise.all(jobs).then(function (list) {
+          onLoaded(list.filter(Boolean), "선택한 폴더");
+        });
+      }
+
+      function onLoaded(list, rootName) {
+        ALL = list.sort(function (a, b) { return a.code < b.code ? -1 : 1; });
+        $("connect-box").innerHTML = "<div><strong>연결됨: " + esc(rootName) + "</strong><span>고객 " + ALL.length + "명을 불러왔습니다. 데이터는 이 기기 안에서만 처리됩니다.</span></div>";
+        $("work-block").hidden = false;
+        renderList();
+      }
+
+      function v1(c) { return c.profile["v1원본"] || c.profile; }
+
+      function filtered() {
+        var q = state.q.toLowerCase();
+        return ALL.filter(function (c) {
+          var o = v1(c);
+          if (state.cat && o.category !== state.cat) return false;
+          if (q) {
+            var hay = (c.code + " " + (o.customerName || "") + " " + (o.memo || "")).toLowerCase();
+            if (hay.indexOf(q) < 0) return false;
+          }
+          return true;
+        });
+      }
+
+      function renderList() {
+        var list = filtered();
+        $("list-count").textContent = list.length + "명";
+        $("result-count").textContent = "결과 " + list.length + "명";
+        var rows = $("rows");
+        if (!list.length) {
+          rows.innerHTML = '<div class="list-empty">조건에 맞는 고객이 없습니다.</div>';
+          return;
+        }
+        rows.innerHTML = list.map(function (c) {
+          var o = v1(c);
+          var n = (c.policies.policies || []).length;
+          return '<div class="case-row" data-code="' + esc(c.code) + '">'
+            + "<h4>" + esc(o.customerName || "이름 미기재") + "</h4>"
+            + '<div class="case-meta"><span>' + esc(c.code) + "</span>"
+            + '<span class="badge-result">' + esc(CAT[o.category] || o.category || "미분류") + "</span>"
+            + (n ? "<span>보유보험 " + n + "건</span>" : "")
+            + "</div></div>";
+        }).join("");
+      }
+
+      function renderDetail(c) {
+        var o = v1(c);
+        var pols = c.policies.policies || [];
+        var fields = [
+          ["고객코드", c.code],
+          ["카테고리", CAT[o.category] || o.category || "미분류"],
+          ["연락처", o.phone],
+          ["나이·성별", [o.age, o.gender === "male" ? "남" : o.gender === "female" ? "여" : o.gender].filter(Boolean).join(" · ")],
+          ["주소", o.address],
+          ["다음 연락", o.nextContactDate]
+        ].filter(function (f) { return f[1]; });
+        var polHtml = pols.length
+          ? pols.map(function (p) {
+              return "<li>" + esc(p.productName || p.insuranceProduct || "상품명 미기재")
+                + (p.monthlyPremium ? " — 월 " + Number(p.monthlyPremium).toLocaleString() + "원" : "")
+                + (p.contractDate ? " (" + esc(String(p.contractDate).slice(0, 10)) + ")" : "") + "</li>";
+            }).join("")
+          : "<li>등록된 보유보험 없음</li>";
+        $("detail").innerHTML = '<div class="case-detail-body">'
+          + '<div class="detail-badges"><span class="badge-grade">' + esc(CAT[o.category] || "미분류") + "</span></div>"
+          + "<h3>" + esc(o.customerName || "이름 미기재") + "</h3>"
+          + '<dl class="detail-fields">' + fields.map(function (f) {
+              return "<dt>" + esc(f[0]) + "</dt><dd>" + esc(f[1]) + "</dd>";
+            }).join("") + "</dl>"
+          + "<h4 style='margin:16px 0 6px'>보유보험 " + pols.length + "건</h4><ul style='margin:0;padding-left:20px'>" + polHtml + "</ul>"
+          + (o.memo ? "<h4 style='margin:16px 0 6px'>메모</h4><div class='detail-summary' style='margin:0'>" + esc(o.memo) + "</div>" : "")
+          + "</div>";
+      }
+
+      $("q").addEventListener("input", function (e) { state.q = e.target.value.trim(); renderList(); });
+      document.querySelectorAll(".filter-chip").forEach(function (chip) {
+        chip.addEventListener("click", function () {
+          document.querySelectorAll(".filter-chip").forEach(function (b) { b.classList.toggle("active", b === chip); });
+          state.cat = chip.dataset.cat;
+          renderList();
+        });
+      });
+      $("rows").addEventListener("click", function (e) {
+        var row = e.target.closest(".case-row");
+        if (!row) return;
+        document.querySelectorAll(".case-row.active").forEach(function (r) { r.classList.remove("active"); });
+        row.classList.add("active");
+        var c = ALL.find(function (x) { return x.code === row.dataset.code; });
+        if (c) renderDetail(c);
+      });
+    })();
+  </script>
+</body>
+</html>
