@@ -9,6 +9,13 @@
 - 하위 에이전트(Explore, Task 등)를 띄울 때도 프롬프트에 "응답은 한국어"를 명시해서 넘긴다.
 - 영어는 코드·명령어·파일명·기술 고유명사에만 허용한다.
 
+## 세션 운영
+
+- 작업 시작 전 `docs/current-status.md`, `docs/decisions.md`, `docs/handoff.md`를 읽는다.
+- 세션 종료 전 변경 내용·검증 결과·미완료 항목을 `docs/handoff.md`에 기록하고 commit·push한다.
+- 도구 분업: 앱 세션 = 화면·디자인 전담 / 터미널 세션 = 데이터·파이프라인·자동화 전담. 같은 파일을 두 세션이 동시에 만지지 않는다. 작업 전환 시 반드시 commit·push.
+- 협업 역할: Claude Code = 주 시공자, Codex = 검수·검증 전담. 브랜치는 main(검증 완료본) / claude/*(시공) / codex/*(검수), 머지 권한은 사용자에게.
+
 ## 아키텍처 — 순수 정적
 
 - HTML + CSS + JS + 정적 JSON만 사용한다.
