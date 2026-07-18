@@ -809,10 +809,48 @@ body.magazine {
 }
 
 .mag-article .art-body p {
-  font-size: 1.05rem;
+  font-size: 1.13rem; /* 17px — 독자층(40대 이상) 가독 기준 */
   line-height: 1.9;
   margin: 0 0 20px;
   color: #232c40;
+}
+
+/* 글자 크기 조절 — 크게 / 아주 크게 (localStorage 저장) */
+body.fs-2 .mag-article .art-body p { font-size: 1.27rem; line-height: 1.95; }
+body.fs-2 .mag-article .art-summary p,
+body.fs-2 .mag-comment p,
+body.fs-2 .mag-note p { font-size: 1.13rem; line-height: 1.85; }
+body.fs-3 .mag-article .art-body p { font-size: 1.45rem; line-height: 2; }
+body.fs-3 .mag-article .art-summary p,
+body.fs-3 .mag-comment p,
+body.fs-3 .mag-note p { font-size: 1.27rem; line-height: 1.9; }
+
+.mag-topbar .font-toggle {
+  font: inherit;
+  font-weight: 700;
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.mag-topbar .font-toggle.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* 면 진행 표시줄 */
+.mag-progress {
+  position: fixed;
+  top: 48px;
+  left: 0;
+  height: 3px;
+  background: var(--accent);
+  z-index: 21;
+  transition: width 0.25s ease;
 }
 
 .mag-article .art-body h3 {

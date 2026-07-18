@@ -13,9 +13,11 @@
     <a class="mag-home" href="./">
       <svg viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6"/></svg>서재
     </a>
-    <span class="mag-top-title" id="top-title">안창민 케어센터</span>
+    <span class="mag-top-title" id="top-title">케어센터</span>
+    <button type="button" class="font-toggle" id="font-toggle" aria-label="글자 크기 조절">가</button>
     <span class="mag-pageno" id="pageno"></span>
   </header>
+  <div class="mag-progress" id="mag-progress" style="width:0"></div>
 
   <div class="mag-deck" id="deck">
     <section class="mag-page cover-page">
@@ -167,6 +169,7 @@
         function update() {
           var i = current();
           pageno.textContent = (i + 1) + " / " + total;
+          document.getElementById("mag-progress").style.width = ((i + 1) / total * 100) + "%";
           first.disabled = i === 0;
           prev.disabled = i === 0;
           next.disabled = i === total - 1;
@@ -189,6 +192,27 @@
         });
         update();
       }
+
+      // 글자 크기 조절: 보통 → 크게 → 아주 크게 (저장됨)
+      (function () {
+        var FS_KEY = "mg_care_fs";
+        var btn = document.getElementById("font-toggle");
+        var levels = ["", "fs-2", "fs-3"];
+        var labels = ["가", "가+", "가++"];
+        var idx = Math.max(0, levels.indexOf(localStorage.getItem(FS_KEY) || ""));
+        function apply() {
+          document.body.classList.remove("fs-2", "fs-3");
+          if (levels[idx]) document.body.classList.add(levels[idx]);
+          btn.textContent = labels[idx];
+          btn.classList.toggle("on", idx > 0);
+          localStorage.setItem(FS_KEY, levels[idx]);
+        }
+        btn.addEventListener("click", function () {
+          idx = (idx + 1) % levels.length;
+          apply();
+        });
+        apply();
+      })();
 
       var id = new URLSearchParams(window.location.search).get("id");
       if (!id) { notFound(); return; }
