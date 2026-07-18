@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -20,23 +20,170 @@
   <div class="platform-shell">
     <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">학습</span><span class="topbar-note">상담에 필요한 보험 지식</span></header>
     <main class="platform-main">
-      <section class="page-heading"><p class="eyebrow">보험 지식</p><h1>복잡한 보험 정보를<br>쉽고 빠르게 확인하세요</h1><p>상담 중 바로 찾아볼 수 있는 용어 사전과 질병 사전, 학습 콘텐츠가 들어설 공간입니다.</p></section>
-      <div class="global-search"><input type="search" aria-label="보험 지식 검색" placeholder="보험 용어, 질병명 또는 학습 주제를 검색하세요" disabled><span class="search-state">검색 준비중</span></div>
+      <div class="global-search"><input type="search" id="q" aria-label="지식 검색" placeholder="용어, 질병명, 태그를 검색하세요"><span class="search-state" id="result-count">-</span></div>
 
-      <section class="dictionary-grid" aria-label="사전 입주 현황">
-        <article class="dictionary-card"><span class="dictionary-label">보험 용어 사전</span><div class="dictionary-count">418<span class="dictionary-unit">개</span></div><p>실데이터 입주 후 용어 정의와 관련 설명을 제공합니다.</p></article>
-        <article class="dictionary-card"><span class="dictionary-label">질병 사전</span><div class="dictionary-count">275<span class="dictionary-unit">개</span></div><p>실데이터 입주 후 질병 정보와 보험 관련 확인 항목을 제공합니다.</p></article>
-      </section>
+      <div class="tabs-toolbar" role="tablist" aria-label="사전 종류">
+        <button class="tab-button active" type="button" role="tab" aria-selected="true" data-tab="term">용어 사전</button>
+        <button class="tab-button" type="button" role="tab" aria-selected="false" data-tab="disease">질병 사전</button>
+      </div>
 
-      <section class="section-block" aria-labelledby="learning-title">
-        <div class="section-head"><div><h2 id="learning-title">학습 콘텐츠</h2><p>검증된 자료만 주제별로 정리됩니다.</p></div></div>
-        <article class="surface-card"><h3>콘텐츠 준비중</h3><p class="surface-desc">지식 허브 자료 입주 후 학습 목록이 표시됩니다.</p><div class="empty-inline"><div><strong>표시할 학습 콘텐츠가 없습니다.</strong><span>실제 자료가 등록되면 분야별로 확인할 수 있습니다.</span></div></div></article>
-      </section>
+      <div class="workspace-grid">
+        <div class="workspace-list">
+          <div class="workspace-label"><span id="list-title">용어</span><span class="workspace-count" id="list-count">0건</span></div>
+          <div class="case-rows" id="rows"></div>
+        </div>
+        <div class="workspace-detail" id="detail">
+          <div><div class="detail-empty-mark"></div><strong>항목을 선택하세요</strong><p>용어를 선택하면 정의, 실무 안내, 분쟁 유의점과 필요 서류를 확인할 수 있습니다.</p></div>
+        </div>
+      </div>
     </main>
     <footer class="platform-footer">마이가디언 v2</footer>
   </div>
   <script>
     (function () { var button=document.getElementById("mobile-menu"),sidebar=document.getElementById("platform-sidebar"),overlay=document.getElementById("platform-overlay"); function close(){sidebar.classList.remove("open");overlay.classList.remove("show");button.setAttribute("aria-expanded","false");} button.addEventListener("click",function(){var open=sidebar.classList.toggle("open");overlay.classList.toggle("show",open);button.setAttribute("aria-expanded",String(open));});overlay.addEventListener("click",close); })();
+
+    (function () {
+      "use strict";
+      var TERMS = [], DISEASES = [];
+      var state = { tab: "term", q: "", sel: null };
+      var $ = function (id) { return document.getElementById(id); };
+      var RISK = { high: ["분쟁 잦음", "denied"], medium: ["분쟁 주의", "partial"], low: ["분쟁 드묾", "paid"] };
+      var DETAIL_EMPTY = '<div><div class="detail-empty-mark"></div><strong>항목을 선택하세요</strong><p>용어를 선택하면 정의, 실무 안내, 분쟁 유의점과 필요 서류를 확인할 수 있습니다.</p></div>';
+
+      function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+        });
+      }
+
+      function listOf() { return state.tab === "term" ? TERMS : DISEASES; }
+
+      function filtered() {
+        var q = state.q.toLowerCase();
+        return listOf().filter(function (x) {
+          if (!q) return true;
+          var hay = state.tab === "term"
+            ? (x.termName + " " + (x.termNameEn || "") + " " + (x.definition || "")).toLowerCase()
+            : (x.name + " " + (x.searchTags || "") + " " + (x.insuranceRiders || "")).toLowerCase();
+          return hay.indexOf(q) >= 0;
+        });
+      }
+
+      function renderList() {
+        var list = filtered();
+        $("list-title").textContent = state.tab === "term" ? "용어" : "질병";
+        $("list-count").textContent = list.length + "건";
+        $("result-count").textContent = "결과 " + list.length + "건";
+        if (state.sel != null && !list.some(function (x) { return x.id === state.sel; })) {
+          state.sel = null;
+          $("detail").innerHTML = DETAIL_EMPTY;
+        }
+        var rows = $("rows");
+        if (!list.length) {
+          rows.innerHTML = '<div class="list-empty">일치하는 항목이 없습니다.</div>';
+          return;
+        }
+        rows.innerHTML = list.map(function (x) {
+          var name = state.tab === "term" ? x.termName : x.name;
+          var sub = state.tab === "term" ? (x.termNameEn || x.bodyPart || "") : (x.insuranceRiders || "");
+          var risk = state.tab === "term" && RISK[x.disputeRisk]
+            ? '<span class="badge-result ' + RISK[x.disputeRisk][1] + '">' + RISK[x.disputeRisk][0] + "</span>" : "";
+          return '<div class="case-row' + (x.id === state.sel ? " active" : "") + '" data-id="' + x.id + '">'
+            + "<h4>" + esc(name) + "</h4>"
+            + '<div class="case-meta"><span>' + esc(String(sub).slice(0, 46)) + "</span>" + risk + "</div></div>";
+        }).join("");
+      }
+
+      function listField(v) {
+        if (v == null) return null;
+        if (Array.isArray(v)) return v.join(", ");
+        return String(v);
+      }
+
+      function renderDetail(x) {
+        var html = ['<div class="case-detail-body">'];
+        if (state.tab === "term") {
+          var risk = RISK[x.disputeRisk];
+          html.push('<div class="detail-badges">'
+            + (x.termReliability ? '<span class="badge-grade">신뢰도 ' + esc(x.termReliability) + "</span>" : "")
+            + (risk ? '<span class="badge-result ' + risk[1] + '">' + risk[0] + "</span>" : "")
+            + "</div>");
+          html.push("<h3>" + esc(x.termName) + (x.termNameEn ? ' <span style="font-size:0.8em;color:var(--platform-muted);font-weight:500">' + esc(x.termNameEn) + "</span>" : "") + "</h3>");
+          html.push('<dl class="detail-fields">');
+          if (x.bodyPart) html.push("<dt>부위</dt><dd>" + esc(x.bodyPart) + "</dd>");
+          if (x.kcdCode) html.push("<dt>질병코드</dt><dd>" + esc(x.kcdCode) + "</dd>");
+          if (x.coverageTypes && x.coverageTypes.length) html.push("<dt>관련 담보</dt><dd>" + esc(listField(x.coverageTypes)) + "</dd>");
+          if (x.source) html.push("<dt>출처</dt><dd>" + esc(x.source) + "</dd>");
+          html.push("</dl>");
+          html.push('<div class="detail-summary">' + esc(x.definition || "") + "</div>");
+          if (x.insurancePractice) {
+            html.push("<h4 style='margin:14px 0 6px'>실무 안내</h4><div class='detail-summary' style='margin:0'>" + esc(x.insurancePractice) + "</div>");
+          }
+          if (x.disputeNote) {
+            html.push("<h4 style='margin:14px 0 6px'>분쟁 유의</h4><div class='detail-summary' style='margin:0'>" + esc(x.disputeNote) + "</div>");
+          }
+          if (x.requiredDocuments && x.requiredDocuments.length) {
+            html.push("<h4 style='margin:14px 0 6px'>필요 서류</h4><div class='detail-summary' style='margin:0'>" + esc(listField(x.requiredDocuments)) + "</div>");
+          }
+          html.push('<p style="margin:16px 0 0"><a class="tab-button" style="text-decoration:none" href="../cases/?q=' + encodeURIComponent(x.termName) + '">사례에서 검색</a></p>');
+        } else {
+          html.push("<h3>" + esc(x.name) + "</h3>");
+          html.push('<dl class="detail-fields">');
+          if (x.procedureSurgeryType) html.push("<dt>시술·수술</dt><dd>" + esc(x.procedureSurgeryType) + "</dd>");
+          if (x.surgeryClassification) html.push("<dt>수술 분류</dt><dd>" + esc(x.surgeryClassification) + "</dd>");
+          if (x.insuranceRiders) html.push("<dt>관련 특약</dt><dd>" + esc(x.insuranceRiders) + "</dd>");
+          html.push("</dl>");
+          if (x.currentTreatment) {
+            html.push("<h4 style='margin:14px 0 6px'>현재 치료</h4><div class='detail-summary' style='margin:0'>" + esc(x.currentTreatment) + "</div>");
+          }
+          if (x.futureTreatment) {
+            html.push("<h4 style='margin:14px 0 6px'>치료 전망</h4><div class='detail-summary' style='margin:0'>" + esc(x.futureTreatment) + "</div>");
+          }
+          var kw = String(x.name).split("(")[0];
+          html.push('<p style="margin:16px 0 0"><a class="tab-button" style="text-decoration:none" href="../cases/?q=' + encodeURIComponent(kw) + '">사례에서 검색</a></p>');
+        }
+        html.push("</div>");
+        $("detail").innerHTML = html.join("");
+      }
+
+      Promise.all([
+        fetch("../../data/dictionary/terms.json").then(function (r) { return r.json(); }),
+        fetch("../../data/dictionary/diseases.json").then(function (r) { return r.json(); })
+      ]).then(function (res) {
+        TERMS = res[0].data || [];
+        DISEASES = res[1].data || [];
+        var q = new URLSearchParams(window.location.search).get("q");
+        if (q) { state.q = q; $("q").value = q; }
+        renderList();
+      }).catch(function () {
+        $("rows").innerHTML = '<div class="list-empty">사전 데이터를 불러오지 못했습니다.</div>';
+      });
+
+      $("q").addEventListener("input", function (e) { state.q = e.target.value.trim(); renderList(); });
+      document.querySelectorAll(".tab-button[data-tab]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          document.querySelectorAll(".tab-button[data-tab]").forEach(function (b) {
+            b.classList.toggle("active", b === btn);
+            b.setAttribute("aria-selected", String(b === btn));
+          });
+          state.tab = btn.dataset.tab;
+          state.sel = null;
+          $("detail").innerHTML = DETAIL_EMPTY;
+          renderList();
+        });
+      });
+      $("rows").addEventListener("click", function (e) {
+        var row = e.target.closest(".case-row");
+        if (!row) return;
+        document.querySelectorAll(".case-row.active").forEach(function (r) { r.classList.remove("active"); });
+        row.classList.add("active");
+        var x = listOf().find(function (v) { return String(v.id) === row.dataset.id; });
+        if (x) {
+          state.sel = x.id;
+          renderDetail(x);
+        }
+      });
+    })();
   </script>
 </body>
 </html>
