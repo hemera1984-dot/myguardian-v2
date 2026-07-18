@@ -1055,3 +1055,74 @@ body.platform {
     max-height: 420px;
   }
 }
+
+/* ==============================
+   마감 폴리시 — 차세대 수준의 기본기
+   ============================== */
+
+/* 가변 폰트 최적화 렌더링 */
+body.platform {
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+}
+
+/* 키보드 포커스 링 — 접근성은 최상위 플랫폼의 기본기 */
+.platform :focus-visible {
+  outline: 2px solid var(--platform-blue);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 텍스트 선택 색 */
+.platform ::selection {
+  background: rgba(37, 99, 235, 0.18);
+}
+
+/* 상단바 고정 + 블러 */
+.platform-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="dark"] .platform-topbar {
+  background: rgba(24, 34, 48, 0.86);
+}
+
+/* 카드 호버 리프트 — 층위 있는 그림자 */
+.action-card,
+.stat-tile,
+.surface-card {
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.action-card:hover,
+.stat-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 12px 28px rgba(16, 24, 40, 0.09);
+  border-color: var(--platform-line-strong);
+}
+
+/* 목록 스크롤바 절제 */
+.case-rows {
+  scrollbar-width: thin;
+  scrollbar-color: var(--platform-line-strong) transparent;
+}
+
+.case-rows::-webkit-scrollbar {
+  width: 6px;
+}
+
+.case-rows::-webkit-scrollbar-thumb {
+  background: var(--platform-line-strong);
+  border-radius: 999px;
+}
+
+/* 숫자 정렬 일관성 */
+.platform .workspace-count,
+.platform .search-state,
+.platform .card-index {
+  font-variant-numeric: tabular-nums;
+}

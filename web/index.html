@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>마이가디언</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
   <link rel="stylesheet" href="assets/platform.css">
 </head>
 <body class="platform">
@@ -109,7 +109,7 @@
             });
           }
           document.getElementById("care-latest-box").innerHTML =
-            "<div><strong>" + esc(i["채널"]) + " 안창민 " + esc(i["호수"]) + "호 — " + esc(i["제목"]) + "</strong>"
+            "<div><strong>" + esc(i["채널"]) + " " + esc(i["발행인"] || "안창민") + " " + esc(i["호수"]) + "호 — " + esc(i["제목"]) + "</strong>"
             + "<span>" + esc(i["발행일"]) + ' 발행 · <a href="care/issue.html?id=' + encodeURIComponent(i.id) + '" style="color:inherit;text-decoration:underline">바로 열람</a></span></div>';
         })
         .catch(function () {});

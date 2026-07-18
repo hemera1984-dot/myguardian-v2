@@ -189,6 +189,7 @@ def scrape_issue(pg, channel: str, vol: int, url: str) -> dict:
 
     meta = {
         "id": issue_id,
+        "발행인": "안창민",
         "채널": channel,
         "호수": vol,
         "제목": toc[0]["제목"] if toc else label,

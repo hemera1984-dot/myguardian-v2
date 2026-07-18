@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>케어센터 - 마이가디언</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="../assets/style.css">
 </head>
@@ -17,7 +17,7 @@
   </header>
 
   <main class="container">
-    <h1 class="page-title serif">안창민 서재</h1>
+    <h1 class="page-title serif">케어센터 서재</h1>
     <p class="page-desc">매주 월요일, 한 주를 여는 보험·경제 이야기. 발행된 모든 호를 언제든 꺼내 읽을 수 있습니다.</p>
 
     <div class="section">
@@ -58,6 +58,7 @@
       "use strict";
       var ALL = [];
       var channel = "";
+      var publisher = "";
 
       function esc(s) {
         return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
@@ -94,10 +95,11 @@
         var s = loadSender();
         var url = issueUrl(issue);
         var toc = issue["꼭지"] || [];
+        var mag = "『" + issue["채널"] + " " + (issue["발행인"] || "안창민") + "』";
         var lines = ["안녕하세요, " + s["이름"] + "입니다.", ""];
         if (issue["채널"] === "주간") {
           lines.push("건강 유의하시고 좋은 한 주 보내세요.", "");
-          lines.push("『주간 안창민』 " + (issue["주차라벨"] || "") + " (통권 " + issue["호수"] + "호)");
+          lines.push(mag + " " + (issue["주차라벨"] || "") + " (통권 " + issue["호수"] + "호)");
           lines.push("이번 주 뉴스 브리핑이 발행되었습니다.", "");
           lines.push("[이번 주 주요 뉴스]", BAR);
           toc.forEach(function (t) {
@@ -107,7 +109,7 @@
           if (toc.length) lines.push("이번 주 핵심: " + toc[0]["제목"], "");
         } else {
           lines.push("환절기 건강 잘 챙기고 계신가요?", "");
-          lines.push("『월간 안창민』 " + (issue["주차라벨"] || "") + "(통권 " + issue["호수"] + "호)가");
+          lines.push(mag + " " + (issue["주차라벨"] || "") + "(통권 " + issue["호수"] + "호)가");
           lines.push("발행되었습니다.", "");
           lines.push("이번 호 주요 칼럼", BAR);
           toc.forEach(function (t, i) {
@@ -153,18 +155,22 @@
 
       function render() {
         var box = document.getElementById("issue-list");
-        var list = ALL.filter(function (i) { return !channel || i["채널"] === channel; })
-          .sort(function (a, b) { return (b["발행일"] || "") < (a["발행일"] || "") ? -1 : 1; });
+        var list = ALL.filter(function (i) {
+          if (channel && i["채널"] !== channel) return false;
+          if (publisher && (i["발행인"] || "안창민") !== publisher) return false;
+          return true;
+        }).sort(function (a, b) { return (b["발행일"] || "") < (a["발행일"] || "") ? -1 : 1; });
         if (!list.length) {
           box.innerHTML = '<div class="placeholder-panel" style="grid-column:1/-1">아직 발행물이 없습니다. 첫 호가 준비되는 대로 서재에 꽂힙니다.</div>';
           return;
         }
         box.innerHTML = list.map(function (i, idx) {
           var href = "issue.html?id=" + encodeURIComponent(i.id);
+          var pub = i["발행인"] || "안창민";
           var cover = i["커버이미지"]
             ? '<span class="shelf-cover"><img src="../../' + esc(i["커버이미지"]) + '" alt="" loading="lazy">'
-              + '<span class="shelf-band"><span class="vol">' + esc(i["호수"]) + '호</span><span class="ch">' + esc(i["채널"]) + " 안창민</span></span></span>"
-            : '<span class="shelf-cover no-img ch-' + esc(i["채널"]) + '">' + esc(i["채널"]) + " 안창민</span>";
+              + '<span class="shelf-band"><span class="vol">' + esc(i["호수"]) + '호</span><span class="ch">' + esc(i["채널"]) + " " + esc(pub) + "</span></span></span>"
+            : '<span class="shelf-cover no-img ch-' + esc(i["채널"]) + '">' + esc(i["채널"]) + " " + esc(pub) + "</span>";
           return '<article class="shelf-item">'
             + '<a href="' + href + '">' + cover + "</a>"
             + '<div class="shelf-label">' + esc(i["주차라벨"] || i["발행일"]) + "</div>"
@@ -204,6 +210,7 @@
         .then(function (r) { return r.json(); })
         .then(function (data) {
           ALL = Array.isArray(data) ? data : (data.data || []);
+          buildPublisherTabs();
           render();
         })
         .catch(function () {
@@ -211,15 +218,43 @@
             '<div class="placeholder-panel">발행물을 불러오지 못했습니다.</div>';
         });
 
-      document.querySelectorAll(".pill-tabs button").forEach(function (btn) {
+      var channelTabs = document.querySelector(".pill-tabs");
+      channelTabs.querySelectorAll("button").forEach(function (btn) {
         btn.addEventListener("click", function () {
-          document.querySelectorAll(".pill-tabs button").forEach(function (b) {
+          channelTabs.querySelectorAll("button").forEach(function (b) {
             b.classList.toggle("active", b === btn);
           });
           channel = btn.dataset.ch;
           render();
         });
       });
+
+      // 발행인이 2명 이상일 때만 발행인 필터를 노출한다
+      function buildPublisherTabs() {
+        var pubs = [];
+        ALL.forEach(function (i) {
+          var p = i["발행인"] || "안창민";
+          if (pubs.indexOf(p) < 0) pubs.push(p);
+        });
+        if (pubs.length < 2) return;
+        var row = document.createElement("div");
+        row.className = "pill-tabs";
+        row.setAttribute("aria-label", "발행인");
+        row.innerHTML = '<button type="button" class="active" data-pub="">전체 발행인</button>'
+          + pubs.map(function (p) {
+              return '<button type="button" data-pub="' + esc(p) + '">' + esc(p) + " FC</button>";
+            }).join("");
+        channelTabs.parentNode.insertBefore(row, channelTabs.nextSibling);
+        row.querySelectorAll("button").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            row.querySelectorAll("button").forEach(function (b) {
+              b.classList.toggle("active", b === btn);
+            });
+            publisher = btn.dataset.pub;
+            render();
+          });
+        });
+      }
     })();
   </script>
 </body>

@@ -35,7 +35,8 @@
   ],
   "커버이미지": "data/care/issues/weekly-01/cover.png",
   "본문파일": "data/care/issues/weekly-01.json",
-  "원문링크": "https://www.insurguard.life/weekly/2"
+  "원문링크": "https://www.insurguard.life/weekly/2",
+  "발행인": "안창민"
  },
  {
   "id": "weekly-02",
@@ -73,7 +74,8 @@
   ],
   "커버이미지": "data/care/issues/weekly-02/cover.png",
   "본문파일": "data/care/issues/weekly-02.json",
-  "원문링크": "https://www.insurguard.life/weekly/30001"
+  "원문링크": "https://www.insurguard.life/weekly/30001",
+  "발행인": "안창민"
  },
  {
   "id": "weekly-03",
@@ -111,7 +113,8 @@
   ],
   "커버이미지": "data/care/issues/weekly-03/cover.jpg",
   "본문파일": "data/care/issues/weekly-03.json",
-  "원문링크": "https://www.insurguard.life/weekly/60001"
+  "원문링크": "https://www.insurguard.life/weekly/60001",
+  "발행인": "안창민"
  },
  {
   "id": "weekly-04",
@@ -149,7 +152,8 @@
   ],
   "커버이미지": "data/care/issues/weekly-04/cover.png",
   "본문파일": "data/care/issues/weekly-04.json",
-  "원문링크": "https://www.insurguard.life/weekly/90001"
+  "원문링크": "https://www.insurguard.life/weekly/90001",
+  "발행인": "안창민"
  },
  {
   "id": "weekly-05",
@@ -187,7 +191,8 @@
   ],
   "커버이미지": "data/care/issues/weekly-05/cover.png",
   "본문파일": "data/care/issues/weekly-05.json",
-  "원문링크": "https://www.insurguard.life/weekly/120001"
+  "원문링크": "https://www.insurguard.life/weekly/120001",
+  "발행인": "안창민"
  },
  {
   "id": "weekly-06",
@@ -225,7 +230,8 @@
   ],
   "커버이미지": "data/care/issues/weekly-06/cover.png",
   "본문파일": "data/care/issues/weekly-06.json",
-  "원문링크": "https://www.insurguard.life/weekly/150001"
+  "원문링크": "https://www.insurguard.life/weekly/150001",
+  "발행인": "안창민"
  },
  {
   "id": "weekly-07",
@@ -263,7 +269,8 @@
   ],
   "커버이미지": "data/care/issues/weekly-07/cover.png",
   "본문파일": "data/care/issues/weekly-07.json",
-  "원문링크": "https://www.insurguard.life/weekly/180001"
+  "원문링크": "https://www.insurguard.life/weekly/180001",
+  "발행인": "안창민"
  },
  {
   "id": "weekly-08",
@@ -301,7 +308,8 @@
   ],
   "커버이미지": "data/care/issues/weekly-08/cover.png",
   "본문파일": "data/care/issues/weekly-08.json",
-  "원문링크": "https://www.insurguard.life/weekly/210001"
+  "원문링크": "https://www.insurguard.life/weekly/210001",
+  "발행인": "안창민"
  },
  {
   "id": "weekly-09",
@@ -339,7 +347,8 @@
   ],
   "커버이미지": "data/care/issues/weekly-09/cover.png",
   "본문파일": "data/care/issues/weekly-09.json",
-  "원문링크": "https://www.insurguard.life/weekly/240001"
+  "원문링크": "https://www.insurguard.life/weekly/240001",
+  "발행인": "안창민"
  },
  {
   "id": "weekly-10",
@@ -377,7 +386,8 @@
   ],
   "커버이미지": "data/care/issues/weekly-10/cover.jpg",
   "본문파일": "data/care/issues/weekly-10.json",
-  "원문링크": "https://www.insurguard.life/weekly/270001"
+  "원문링크": "https://www.insurguard.life/weekly/270001",
+  "발행인": "안창민"
  },
  {
   "id": "weekly-11",
@@ -415,7 +425,8 @@
   ],
   "커버이미지": "data/care/issues/weekly-11/cover.png",
   "본문파일": "data/care/issues/weekly-11.json",
-  "원문링크": "https://www.insurguard.life/weekly/300001"
+  "원문링크": "https://www.insurguard.life/weekly/300001",
+  "발행인": "안창민"
  },
  {
   "id": "monthly-01",
@@ -447,7 +458,8 @@
   ],
   "커버이미지": "data/care/issues/monthly-01/cover.png",
   "본문파일": "data/care/issues/monthly-01.json",
-  "원문링크": "https://www.insurguard.life/magazine/150001"
+  "원문링크": "https://www.insurguard.life/magazine/150001",
+  "발행인": "안창민"
  },
  {
   "id": "monthly-02",
@@ -479,7 +491,8 @@
   ],
   "커버이미지": "data/care/issues/monthly-02/cover.png",
   "본문파일": "data/care/issues/monthly-02.json",
-  "원문링크": "https://www.insurguard.life/magazine/180001"
+  "원문링크": "https://www.insurguard.life/magazine/180001",
+  "발행인": "안창민"
  },
  {
   "id": "monthly-03",
@@ -511,7 +524,8 @@
   ],
   "커버이미지": "data/care/issues/monthly-03/cover.png",
   "본문파일": "data/care/issues/monthly-03.json",
-  "원문링크": "https://www.insurguard.life/magazine/210001"
+  "원문링크": "https://www.insurguard.life/magazine/210001",
+  "발행인": "안창민"
  },
  {
   "id": "monthly-04",
@@ -543,6 +557,7 @@
   ],
   "커버이미지": "data/care/issues/monthly-04/cover.jpg",
   "본문파일": "data/care/issues/monthly-04.json",
-  "원문링크": "https://www.insurguard.life/magazine/240001"
+  "원문링크": "https://www.insurguard.life/magazine/240001",
+  "발행인": "안창민"
  }
 ]

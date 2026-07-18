@@ -1202,6 +1202,7 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
 }
 
 .shelf-cover {
+  display: block;
   position: relative;
   border-radius: 6px;
   overflow: hidden;

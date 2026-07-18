@@ -8,8 +8,13 @@
   "properties": {
     "id": {
       "type": "string",
-      "description": "발행물 고유 ID (예: weekly-11, monthly-04)",
-      "pattern": "^(weekly|monthly)-[0-9]{2}$"
+      "description": "발행물 고유 ID. 안창민 호는 weekly-11 형식, 팀원 호는 발행인 식별자를 끼운 weekly-kse-01 형식",
+      "pattern": "^(weekly|monthly)(-[a-z0-9]+)?-[0-9]{2}$"
+    },
+    "발행인": {
+      "type": "string",
+      "description": "발행 설계사 이름. 제호(주간 OOO)·킥커·한마디 라벨·카톡 문구에 쓰인다",
+      "default": "안창민"
     },
     "채널": {
       "type": "string",
