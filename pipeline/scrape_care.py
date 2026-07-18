@@ -1,14 +1,22 @@
 """마누스 웹(insurguard.life)에서 v1 케어센터 발행물을 백업·입주하는 수집기.
 
-주간 안창민 11호 + 월간 안창민 4호의 전문을 긁어
-data/care/issues/<id>.html 조각과 data/care/issues.json 메타를 생성한다.
+주간 안창민 11호 + 월간 안창민 4호를 잡지 구조 그대로 가져온다:
+- 기사별 요약 / 안창민 FC의 한마디 / 전문(소제목 포함)을 분리 보존
+- 표지·기사 이미지 다운로드 (CloudFront)
+- 월간의 편집장의 말 보존
 
-원칙: 콘텐츠는 원문 그대로 보존(추출만). 화면 장식 토큰만 걷어낸다.
+산출물:
+- data/care/issues/<id>.json      (기사 구조 데이터)
+- data/care/issues/<id>/*.jpg     (표지·기사 이미지)
+- data/care/issues.json           (호 메타 목록)
+
+원칙: 문장은 원문 그대로(추출만). 화면 장식 토큰만 걷어낸다.
 사용법: python pipeline/scrape_care.py
 """
 
 import json
 import re
+import urllib.request
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -20,24 +28,24 @@ OUT_DIR = ROOT / "data" / "care" / "issues"
 WEEKLY_IDS = [2, 30001, 60001, 90001, 120001, 150001, 180001, 210001, 240001, 270001, 300001]
 MONTHLY_IDS = [150001, 180001, 210001, 240001]
 
-# 화면 장식·내비게이션 토큰 (본문에서 제거)
 NOISE = {
     "서재", "서재로", "스와이프", "전문 읽기", "목차", "CONTENTS", "EDITOR'S NOTE",
     "WEEKLY NEWSPAPER", "MONTHLY MAGAZINE", "SHINHAN LIFE", "이번 주 뉴스",
-    "安", "요약", "안창민 FC · 신한라이프",
+    "安", "요약", "안창민 FC", "안창민 FC · 신한라이프", "안창민",
 }
 NOISE_RE = [
-    re.compile(r"^\d+\s*/\s*\d+$"),      # 페이지 표시 (1 / 6)
+    re.compile(r"^\d+\s*/\s*\d+$"),
     re.compile(r"^VOL\.\s*\d+$"),
-    re.compile(r"^\d{2}\s*/\s*\d{2}$"),  # 기사 표시 (01 / 04)
+    re.compile(r"^\d{2}\s*/\s*\d{2}$"),
     re.compile(r"^(WEEKLY|MONTHLY) AHN"),
     re.compile(r"^편집장"),
     re.compile(r"통권\s*제?\d+호"),
     re.compile(r"^(주간|월간) 안창민 \d{4}"),
     re.compile(r"^신한라이프 .*(지점|전문)"),
+    re.compile(r"^JULY|^JUNE|^MAY|^APRIL"),
 ]
-# 이 줄부터는 다음 기사 안내 — 본문 종료
 STOP_LINES = {"다음 기사", "이전 기사"}
+COMMENT_MARK = "안창민 FC의 한마디"
 
 
 def first_monday(year: int, month: int) -> date:
@@ -71,18 +79,12 @@ def clean_lines(text: str) -> list[str]:
 
 
 def is_subheading(line: str) -> bool:
-    """전문 안의 소제목 판별: 짧고, 종결어미·마침표 없이 끝나는 줄."""
     if len(line) > 32 or "." in line:
         return False
     return not re.search(r"(다|요|죠|까|니다)[.!?]?$", line)
 
 
-def esc(s: str) -> str:
-    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-
-
 def parse_toc(buttons: list[str]) -> list[dict]:
-    """목차 버튼 라벨('01\\n카테고리\\n제목\\n\\n부제')에서 꼭지 목록을 뽑는다."""
     toc = []
     for label in buttons:
         parts = [p.strip() for p in label.split("\n") if p.strip()]
@@ -96,24 +98,46 @@ def parse_toc(buttons: list[str]) -> list[dict]:
     return toc
 
 
-def article_html(full_text: str, toc_entry: dict) -> str:
-    """전문 뷰 텍스트를 HTML 조각으로 변환. 제목·부제 중복 줄은 걷어낸다."""
-    lines = clean_lines(full_text)
-    title, subtitle = toc_entry["제목"], toc_entry["부제"]
-    body: list[str] = []
+def parse_article(full_text: str, entry: dict) -> dict:
+    """전문 뷰 텍스트를 요약 / 한마디 / 본문(소제목 포함)으로 분해한다. 문장은 그대로 둔다."""
+    skip = {entry["제목"], entry["부제"], entry["카테고리"]}
+    lines = [ln for ln in clean_lines(full_text) if ln not in skip]
+
+    summary: list[str] = []
+    comment: list[str] = []
+    body: list[dict] = []
+    mode = "요약"
     for line in lines:
-        if line in (title, subtitle, toc_entry["카테고리"], "안창민 FC"):
+        if line == COMMENT_MARK:
+            mode = "한마디"
             continue
-        body.append(line)
-    html = [f'<h2>{esc(toc_entry["카테고리"])} · {esc(title)}</h2>']
-    if subtitle:
-        html.append(f"<p><strong>{esc(subtitle)}</strong></p>")
-    for para in body:
-        if para in ("안창민 FC의 한마디", "편집장의 말") or is_subheading(para):
-            html.append(f"<h3>{esc(para)}</h3>")
+        if mode in ("요약", "한마디") and is_subheading(line):
+            mode = "본문"
+            body.append({"t": "h", "x": line})
+            continue
+        if mode == "요약":
+            summary.append(line)
+        elif mode == "한마디":
+            comment.append(line)
         else:
-            html.append(f"<p>{esc(para)}</p>")
-    return "\n".join(html)
+            body.append({"t": "h" if is_subheading(line) else "p", "x": line})
+
+    return {**entry, "요약": summary, "한마디": comment, "본문": body}
+
+
+def download_image(url: str, dest_stem: Path) -> str | None:
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            ctype = resp.headers.get("Content-Type", "")
+            ext = {"image/png": ".png", "image/webp": ".webp", "image/gif": ".gif"}.get(ctype, ".jpg")
+            dest = dest_stem.with_suffix(ext)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(resp.read())
+        return str(dest.relative_to(ROOT)).replace("\\", "/")
+    except Exception as e:
+        print(f"  이미지 실패: {url[:60]} ({e})")
+        return None
 
 
 def scrape_issue(pg, channel: str, vol: int, url: str) -> dict:
@@ -126,28 +150,42 @@ def scrape_issue(pg, channel: str, vol: int, url: str) -> dict:
     buttons = pg.evaluate("() => [...document.querySelectorAll('button')].map(b => b.innerText)")
     toc = parse_toc(buttons)
 
-    n_articles = pg.locator("button", has_text="전문 읽기").count()
-    fragments: list[str] = []
+    issue_id = ("weekly" if channel == "주간" else "monthly") + f"-{vol:02d}"
+    img_dir = OUT_DIR / issue_id
 
-    # 월간의 편집장의 말은 표지 덱에만 있으므로 덱에서 캡처
+    # 이미지: 첫 장 = 표지, 이후 = 기사 삽화 순서
+    img_urls = pg.evaluate("() => [...document.images].map(i => i.getAttribute('src')).filter(Boolean)")
+    cover = download_image(img_urls[0], img_dir / "cover") if img_urls else None
+    art_imgs: list[str | None] = []
+    for i, src in enumerate(img_urls[1:len(toc) + 1]):
+        art_imgs.append(download_image(src, img_dir / f"art-{i + 1}"))
+    while len(art_imgs) < len(toc):
+        art_imgs.append(None)
+
+    # 월간 편집장의 말 (표지 덱에서 캡처)
+    editors_note: list[str] = []
     if channel == "월간" and "편집장의 말" in deck_text:
         seg = deck_text.split("편집장의 말", 1)[1].split("CONTENTS", 1)[0]
-        paras = [ln for ln in clean_lines(seg) if ln not in ("“", "”", "安")]
-        fragments.append("<h3>편집장의 말</h3>\n" + "\n".join(f"<p>{esc(p)}</p>" for p in paras))
+        editors_note = [ln for ln in clean_lines(seg) if ln not in ("“", "”")]
 
+    # 기사별 전문 수집
+    articles: list[dict] = []
+    n_articles = pg.locator("button", has_text="전문 읽기").count()
     for i in range(n_articles):
         pg.goto(url, wait_until="networkidle", timeout=60000)
         pg.wait_for_timeout(1500)
         pg.locator("button", has_text="전문 읽기").nth(i).click()
         pg.wait_for_timeout(1500)
         full = pg.locator("body").inner_text()
-        entry = toc[i] if i < len(toc) else {"번호": i + 1, "카테고리": "", "제목": f"{i + 1}번 기사", "부제": ""}
-        fragments.append(article_html(full, entry))
+        entry = toc[i] if i < len(toc) else {"번호": i + 1, "카테고리": "", "제목": f"{i + 1}면 기사", "부제": ""}
+        article = parse_article(full, entry)
+        article["이미지"] = art_imgs[i] if i < len(art_imgs) else None
+        articles.append(article)
 
-    issue_id = ("weekly" if channel == "주간" else "monthly") + f"-{vol:02d}"
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    with open(OUT_DIR / f"{issue_id}.html", "w", encoding="utf-8") as f:
-        f.write("\n<hr>\n".join(fragments) + "\n")
+    issue_data = {"id": issue_id, "편집장의말": editors_note, "기사": articles}
+    with open(OUT_DIR / f"{issue_id}.json", "w", encoding="utf-8") as f:
+        json.dump(issue_data, f, ensure_ascii=False, indent=1)
 
     meta = {
         "id": issue_id,
@@ -158,10 +196,12 @@ def scrape_issue(pg, channel: str, vol: int, url: str) -> dict:
         "발행일": parse_pub_date(label),
         "요약": " · ".join(t["제목"] for t in toc),
         "꼭지": toc,
-        "본문파일": f"data/care/issues/{issue_id}.html",
+        "커버이미지": cover,
+        "본문파일": f"data/care/issues/{issue_id}.json",
         "원문링크": url,
     }
-    print(f"수집: {issue_id} [{label}] 꼭지 {len(toc)}개, 전문 {n_articles}건")
+    n_imgs = sum(1 for x in [cover] + art_imgs if x)
+    print(f"수집: {issue_id} [{label}] 기사 {len(articles)}건, 이미지 {n_imgs}장")
     return meta
 
 

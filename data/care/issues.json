@@ -33,7 +33,8 @@
     "부제": "고령화 가속화로 재정 건전성 악화 우려 심화"
    }
   ],
-  "본문파일": "data/care/issues/weekly-01.html",
+  "커버이미지": "data/care/issues/weekly-01/cover.png",
+  "본문파일": "data/care/issues/weekly-01.json",
   "원문링크": "https://www.insurguard.life/weekly/2"
  },
  {
@@ -70,7 +71,8 @@
     "부제": "도수치료 등 비급여 보장 축소, 자기부담금 증가 우려"
    }
   ],
-  "본문파일": "data/care/issues/weekly-02.html",
+  "커버이미지": "data/care/issues/weekly-02/cover.png",
+  "본문파일": "data/care/issues/weekly-02.json",
   "원문링크": "https://www.insurguard.life/weekly/30001"
  },
  {
@@ -107,7 +109,8 @@
     "부제": "보험료 안정화와 가입자 선택권 확대 기대"
    }
   ],
-  "본문파일": "data/care/issues/weekly-03.html",
+  "커버이미지": "data/care/issues/weekly-03/cover.jpg",
+  "본문파일": "data/care/issues/weekly-03.json",
   "원문링크": "https://www.insurguard.life/weekly/60001"
  },
  {
@@ -144,7 +147,8 @@
     "부제": "AI 기반 맞춤형 서비스, 시니어 특화 상품으로 진화하는 보험 시장"
    }
   ],
-  "본문파일": "data/care/issues/weekly-04.html",
+  "커버이미지": "data/care/issues/weekly-04/cover.png",
+  "본문파일": "data/care/issues/weekly-04.json",
   "원문링크": "https://www.insurguard.life/weekly/90001"
  },
  {
@@ -181,7 +185,8 @@
     "부제": "사망보험금, 상속재산인가 고유재산인가? 복잡한 법률 쟁점과 활용 전략"
    }
   ],
-  "본문파일": "data/care/issues/weekly-05.html",
+  "커버이미지": "data/care/issues/weekly-05/cover.png",
+  "본문파일": "data/care/issues/weekly-05.json",
   "원문링크": "https://www.insurguard.life/weekly/120001"
  },
  {
@@ -218,7 +223,8 @@
     "부제": "표준 치료 넘어선 첨단 기술과 보장 트렌드"
    }
   ],
-  "본문파일": "data/care/issues/weekly-06.html",
+  "커버이미지": "data/care/issues/weekly-06/cover.png",
+  "본문파일": "data/care/issues/weekly-06.json",
   "원문링크": "https://www.insurguard.life/weekly/150001"
  },
  {
@@ -255,7 +261,8 @@
     "부제": "생애 주기별 활용 가능한 종신보험의 재발견"
    }
   ],
-  "본문파일": "data/care/issues/weekly-07.html",
+  "커버이미지": "data/care/issues/weekly-07/cover.png",
+  "본문파일": "data/care/issues/weekly-07.json",
   "원문링크": "https://www.insurguard.life/weekly/180001"
  },
  {
@@ -292,7 +299,8 @@
     "부제": "생보-손보협회장 하마평 속 보험산업의 변화 모색"
    }
   ],
-  "본문파일": "data/care/issues/weekly-08.html",
+  "커버이미지": "data/care/issues/weekly-08/cover.png",
+  "본문파일": "data/care/issues/weekly-08.json",
   "원문링크": "https://www.insurguard.life/weekly/210001"
  },
  {
@@ -329,7 +337,8 @@
     "부제": "유산 분쟁 속 형이 낸 상속세, 동생은 책임에서 자유로울 수 없나"
    }
   ],
-  "본문파일": "data/care/issues/weekly-09.html",
+  "커버이미지": "data/care/issues/weekly-09/cover.png",
+  "본문파일": "data/care/issues/weekly-09.json",
   "원문링크": "https://www.insurguard.life/weekly/240001"
  },
  {
@@ -366,7 +375,8 @@
     "부제": "폭염과 습도 속 건강 지키는 법과 미래형 관리 트렌드"
    }
   ],
-  "본문파일": "data/care/issues/weekly-10.html",
+  "커버이미지": "data/care/issues/weekly-10/cover.jpg",
+  "본문파일": "data/care/issues/weekly-10.json",
   "원문링크": "https://www.insurguard.life/weekly/270001"
  },
  {
@@ -403,7 +413,8 @@
     "부제": "소득대체율 논의 속 보험료율 인상 압박 고조"
    }
   ],
-  "본문파일": "data/care/issues/weekly-11.html",
+  "커버이미지": "data/care/issues/weekly-11/cover.png",
+  "본문파일": "data/care/issues/weekly-11.json",
   "원문링크": "https://www.insurguard.life/weekly/300001"
  },
  {
@@ -434,7 +445,8 @@
     "부제": "온라인 혹평 뒤에 숨겨진 종신보험의 양면성, 균형 잡힌 시각이 필요한 때."
    }
   ],
-  "본문파일": "data/care/issues/monthly-01.html",
+  "커버이미지": "data/care/issues/monthly-01/cover.png",
+  "본문파일": "data/care/issues/monthly-01.json",
   "원문링크": "https://www.insurguard.life/magazine/150001"
  },
  {
@@ -465,7 +477,8 @@
     "부제": "가정의 달, 우리 가족의 미래를 위한 보험 보장 점검 체크리스트"
    }
   ],
-  "본문파일": "data/care/issues/monthly-02.html",
+  "커버이미지": "data/care/issues/monthly-02/cover.png",
+  "본문파일": "data/care/issues/monthly-02.json",
   "원문링크": "https://www.insurguard.life/magazine/180001"
  },
  {
@@ -496,7 +509,8 @@
     "부제": "종신보험의 가치."
    }
   ],
-  "본문파일": "data/care/issues/monthly-03.html",
+  "커버이미지": "data/care/issues/monthly-03/cover.png",
+  "본문파일": "data/care/issues/monthly-03.json",
   "원문링크": "https://www.insurguard.life/magazine/210001"
  },
  {
@@ -527,7 +541,8 @@
     "부제": "실손보험 적용 기준 강화, 정확한 이해가 손실을 막는다."
    }
   ],
-  "본문파일": "data/care/issues/monthly-04.html",
+  "커버이미지": "data/care/issues/monthly-04/cover.jpg",
+  "본문파일": "data/care/issues/monthly-04.json",
   "원문링크": "https://www.insurguard.life/magazine/240001"
  }
 ]

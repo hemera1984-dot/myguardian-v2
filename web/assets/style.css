@@ -595,6 +595,330 @@ body.simple .container {
   color: var(--accent);
 }
 
+/* ==============================
+   매거진 조판 — 고객 열람 화면 (케어센터 발행물)
+   기준: 경제지 편집 문법 (제호·킥커·표제 위계·1단 본문·인용·헤어라인·캡션·칼럼 박스)
+   ============================== */
+
+body.magazine {
+  background: #f7f4ee;
+}
+
+.mag {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 20px 64px;
+}
+
+/* 제호 표지 */
+.mag-cover {
+  text-align: center;
+  padding: 44px 0 36px;
+}
+
+.mag-cover .mag-kicker {
+  font-size: 0.8rem;
+  letter-spacing: 0.28em;
+  color: var(--ink-sub);
+  margin-bottom: 18px;
+}
+
+.mag-cover .mag-masthead {
+  font-family: "Noto Serif KR", serif;
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+
+.mag-cover .mag-issue-line {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 8px 0;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  font-size: 0.93rem;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+}
+
+.mag-cover .mag-cover-img {
+  width: 100%;
+  border-radius: 4px;
+  margin-top: 28px;
+}
+
+.mag-cover .mag-editor {
+  margin-top: 18px;
+  font-size: 0.87rem;
+  color: var(--ink-sub);
+  letter-spacing: 0.06em;
+}
+
+/* 목차 */
+.mag-toc {
+  border-top: 2px solid var(--ink);
+  padding: 24px 0 8px;
+  margin-bottom: 8px;
+}
+
+.mag-toc .mag-toc-title {
+  font-family: "Noto Serif KR", serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.mag-toc ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mag-toc li {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(26, 39, 68, 0.12);
+}
+
+.mag-toc .toc-no {
+  font-family: "Noto Serif KR", serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.mag-toc .toc-cat {
+  font-size: 0.73rem;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.mag-toc .toc-title {
+  font-size: 0.97rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* 편집장의 말 */
+.mag-note {
+  margin: 40px 0;
+  padding: 28px 24px;
+  background: #ffffff;
+  border-radius: 4px;
+}
+
+.mag-note .mag-note-label {
+  font-family: "Noto Serif KR", serif;
+  font-size: 0.93rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  margin-bottom: 14px;
+}
+
+.mag-note p {
+  font-size: 1rem;
+  line-height: 1.9;
+  margin: 0 0 14px;
+  color: var(--ink);
+}
+
+.mag-note .mag-note-sign {
+  font-family: "Noto Serif KR", serif;
+  text-align: right;
+  font-weight: 600;
+  color: var(--ink-sub);
+}
+
+/* 기사 */
+.mag-article {
+  background: #ffffff;
+  border-radius: 4px;
+  padding: 36px 26px;
+  margin: 28px 0;
+}
+
+.mag-article .art-kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.77rem;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+.mag-article .art-kicker::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(26, 39, 68, 0.15);
+}
+
+.mag-article h2 {
+  font-family: "Noto Serif KR", serif;
+  font-size: 1.73rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0 0 12px;
+  letter-spacing: -0.01em;
+}
+
+.mag-article .art-standfirst {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--ink-sub);
+  margin: 0 0 22px;
+}
+
+.mag-article .art-img {
+  width: 100%;
+  border-radius: 4px;
+  margin: 4px 0 24px;
+}
+
+.mag-article .art-summary {
+  background: #f4f1ea;
+  border-radius: 4px;
+  padding: 18px 20px;
+  margin-bottom: 26px;
+}
+
+.mag-article .art-summary .label {
+  font-size: 0.77rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--ink-sub);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.mag-article .art-summary p {
+  font-size: 0.97rem;
+  line-height: 1.75;
+  margin: 0 0 10px;
+}
+
+.mag-article .art-summary p:last-child {
+  margin-bottom: 0;
+}
+
+.mag-article .art-body p {
+  font-size: 1.05rem;
+  line-height: 1.9;
+  margin: 0 0 20px;
+  color: #232c40;
+}
+
+.mag-article .art-body h3 {
+  font-family: "Noto Serif KR", serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 34px 0 14px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(26, 39, 68, 0.12);
+}
+
+/* 안창민 FC의 한마디 — 칼럼 박스 */
+.mag-comment {
+  margin-top: 30px;
+  background: #fbf6ea;
+  border-left: 3px solid var(--ink);
+  border-radius: 0 4px 4px 0;
+  padding: 22px 22px 18px;
+}
+
+.mag-comment .label {
+  font-family: "Noto Serif KR", serif;
+  font-size: 0.93rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.mag-comment p {
+  font-size: 0.99rem;
+  line-height: 1.8;
+  margin: 0 0 12px;
+}
+
+.mag-comment .sign {
+  text-align: right;
+  font-family: "Noto Serif KR", serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--ink-sub);
+  margin: 0;
+}
+
+/* 판권·마무리 */
+.mag-colophon {
+  text-align: center;
+  padding: 36px 0 8px;
+  border-top: 2px solid var(--ink);
+  margin-top: 40px;
+}
+
+.mag-colophon .mag-colophon-title {
+  font-family: "Noto Serif KR", serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.mag-colophon p {
+  font-size: 0.83rem;
+  color: var(--ink-sub);
+  margin: 6px 0 0;
+}
+
+/* 아카이브 목록 썸네일 */
+.issue-item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.issue-thumb {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.issue-item .issue-main {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (min-width: 720px) {
+  .mag-cover .mag-masthead {
+    font-size: 3.7rem;
+  }
+  .mag-article {
+    padding: 44px 48px;
+  }
+}
+
+@media print {
+  body.magazine {
+    background: #fff;
+  }
+  .mag-article,
+  .mag-note {
+    border: none;
+    padding: 24px 0;
+    break-inside: auto;
+  }
+  .mag-comment {
+    break-inside: avoid;
+  }
+}
+
 /* 카톡 문구 작성함 */
 .sender-row {
   display: flex;

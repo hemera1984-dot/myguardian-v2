@@ -161,13 +161,15 @@
         }
         box.innerHTML = list.map(function (i, idx) {
           return '<article class="issue-item">'
-            + '<div class="issue-meta">' + esc(i["채널"]) + " 안창민 " + esc(i["호수"]) + "호 · " + esc(i["발행일"]) + "</div>"
+            + (i["커버이미지"] ? '<img class="issue-thumb" src="../../' + esc(i["커버이미지"]) + '" alt="">' : "")
+            + '<div class="issue-main">'
+            + '<div class="issue-meta">' + esc(i["채널"]) + " 안창민 " + esc(i["호수"]) + "호 · " + esc(i["주차라벨"] || i["발행일"]) + "</div>"
             + '<a class="issue-title serif" href="issue.html?id=' + encodeURIComponent(i.id) + '">' + esc(i["제목"]) + "</a>"
             + (i["요약"] ? '<p class="issue-summary">' + esc(i["요약"]) + "</p>" : "")
             + '<div class="issue-actions">'
             + '<a class="btn" href="issue.html?id=' + encodeURIComponent(i.id) + '">열람</a>'
             + '<button class="btn btn-primary" type="button" data-idx="' + idx + '">카톡 문구</button>'
-            + "</div></article>";
+            + "</div></div></article>";
         }).join("");
         box.querySelectorAll("button[data-idx]").forEach(function (btn) {
           btn.addEventListener("click", function () {

@@ -8,29 +8,15 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="../assets/style.css">
 </head>
-<body class="simple">
-  <header class="site-header">
-    <div class="inner">
-      <a href="./" class="site-title">마이<span class="accent">가디언</span></a>
-      <span class="site-tagline">케어센터</span>
-    </div>
-  </header>
-
-  <main class="container">
-    <article class="article" id="article">
-      <p class="article-meta">불러오는 중입니다.</p>
-    </article>
-    <p class="disclaimer">본 콘텐츠는 정보 제공 목적이며 개별 상품 권유가 아닙니다. 문의는 담당 설계사에게 연락해 주십시오.</p>
+<body class="magazine">
+  <main class="mag" id="mag">
+    <p style="text-align:center;padding:60px 0;color:#6b7280">발행물을 불러오는 중입니다.</p>
   </main>
-
-  <footer class="site-footer">
-    마이가디언 v2
-  </footer>
 
   <script>
     (function () {
       "use strict";
-      var box = document.getElementById("article");
+      var box = document.getElementById("mag");
 
       function esc(s) {
         return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
@@ -39,9 +25,74 @@
       }
 
       function notFound() {
-        box.innerHTML = '<p class="article-meta">발행물을 찾을 수 없습니다.</p>'
-          + '<h1 class="article-title">주소를 다시 확인해 주십시오</h1>'
-          + '<div class="article-body"><p>전달받은 링크로 다시 접속하시거나, 담당 설계사에게 문의해 주십시오.</p></div>';
+        box.innerHTML = '<div class="mag-cover"><p class="mag-kicker">안창민 케어센터</p>'
+          + '<h1 class="mag-masthead">발행물을<br>찾을 수 없습니다</h1>'
+          + '<p class="mag-editor">전달받은 링크로 다시 접속하시거나 담당 설계사에게 문의해 주십시오.</p></div>';
+      }
+
+      function render(meta, data) {
+        var masthead = meta["채널"] === "주간" ? "주간<br>안창민" : "월간<br>안창민";
+        var html = [];
+
+        html.push('<header class="mag-cover">');
+        html.push('<p class="mag-kicker">신한라이프 안창민 FC 발행</p>');
+        html.push('<h1 class="mag-masthead">' + masthead + "</h1>");
+        html.push('<p class="mag-issue-line">' + esc(meta["주차라벨"]) + " · 통권 " + esc(meta["호수"]) + "호</p>");
+        if (meta["커버이미지"]) {
+          html.push('<img class="mag-cover-img" src="../../' + esc(meta["커버이미지"]) + '" alt="표지">');
+        }
+        html.push('<p class="mag-editor">편집장 안창민 FC</p>');
+        html.push("</header>");
+
+        var arts = data["기사"] || [];
+        html.push('<nav class="mag-toc"><p class="mag-toc-title">이번 호</p><ol>');
+        arts.forEach(function (a, i) {
+          html.push("<li><span class=\"toc-no\">" + String(i + 1).padStart(2, "0") + "</span>"
+            + '<span class="toc-cat">' + esc(a["카테고리"]) + "</span>"
+            + '<span class="toc-title">' + esc(a["제목"]) + "</span></li>");
+        });
+        html.push("</ol></nav>");
+
+        var note = data["편집장의말"] || [];
+        if (note.length) {
+          html.push('<section class="mag-note"><p class="mag-note-label">편집장의 말</p>');
+          note.forEach(function (p) { html.push("<p>" + esc(p) + "</p>"); });
+          html.push('<p class="mag-note-sign">편집장 안창민</p></section>');
+        }
+
+        arts.forEach(function (a, i) {
+          html.push('<article class="mag-article">');
+          html.push('<p class="art-kicker">' + (i + 1) + "면 · " + esc(a["카테고리"]) + "</p>");
+          html.push("<h2>" + esc(a["제목"]) + "</h2>");
+          if (a["부제"]) html.push('<p class="art-standfirst">' + esc(a["부제"]) + "</p>");
+          if (a["이미지"]) html.push('<img class="art-img" src="../../' + esc(a["이미지"]) + '" alt="">');
+          var summary = a["요약"] || [];
+          if (summary.length) {
+            html.push('<div class="art-summary"><span class="label">요약</span>');
+            summary.forEach(function (p) { html.push("<p>" + esc(p) + "</p>"); });
+            html.push("</div>");
+          }
+          html.push('<div class="art-body">');
+          (a["본문"] || []).forEach(function (seg) {
+            html.push(seg.t === "h" ? "<h3>" + esc(seg.x) + "</h3>" : "<p>" + esc(seg.x) + "</p>");
+          });
+          html.push("</div>");
+          var comment = a["한마디"] || [];
+          if (comment.length) {
+            html.push('<aside class="mag-comment"><p class="label">안창민 FC의 한마디</p>');
+            comment.forEach(function (p) { html.push("<p>" + esc(p) + "</p>"); });
+            html.push('<p class="sign">안창민 FC</p></aside>');
+          }
+          html.push("</article>");
+        });
+
+        html.push('<footer class="mag-colophon">');
+        html.push('<p class="mag-colophon-title">' + (meta["채널"] === "주간" ? "주간 안창민" : "월간 안창민") + "</p>");
+        html.push("<p>" + esc(meta["주차라벨"]) + " · 통권 " + esc(meta["호수"]) + "호 · 편집장 안창민 FC</p>");
+        html.push("<p>본 콘텐츠는 정보 제공 목적이며 개별 상품 권유가 아닙니다. 문의는 담당 설계사에게 연락해 주십시오.</p>");
+        html.push("</footer>");
+
+        box.innerHTML = html.join("");
       }
 
       var id = new URLSearchParams(window.location.search).get("id");
@@ -49,23 +100,16 @@
 
       fetch("../../data/care/issues.json")
         .then(function (r) { return r.json(); })
-        .then(function (data) {
-          var list = Array.isArray(data) ? data : (data.data || []);
-          var issue = list.find(function (i) { return i.id === id; });
-          if (!issue) { notFound(); return; }
-          document.title = issue["제목"] + " - 안창민 케어센터";
-          return fetch("../../" + issue["본문파일"])
+        .then(function (list) {
+          var meta = (Array.isArray(list) ? list : []).find(function (i) { return i.id === id; });
+          if (!meta) { notFound(); return; }
+          document.title = meta["채널"] + " 안창민 " + meta["호수"] + "호 - 안창민 케어센터";
+          return fetch("../../" + meta["본문파일"])
             .then(function (r) {
               if (!r.ok) throw new Error("본문 없음");
-              return r.text();
+              return r.json();
             })
-            .then(function (body) {
-              box.innerHTML =
-                '<p class="article-meta">' + esc(issue["채널"]) + " 안창민 " + esc(issue["호수"]) + "호 · " + esc(issue["발행일"]) + "</p>"
-                + '<h1 class="article-title">' + esc(issue["제목"]) + "</h1>"
-                + (issue["커버이미지"] ? '<img class="article-cover" src="../../' + esc(issue["커버이미지"]) + '" alt="">' : "")
-                + '<div class="article-body">' + body + "</div>";
-            });
+            .then(function (data) { render(meta, data); });
         })
         .catch(notFound);
     })();
