@@ -1,6 +1,7 @@
 /* 마이가디언 v2 공용 스타일
-   금융권 최상위 플랫폼의 절제된 UI — 무채색 바탕, 색은 신호로만.
-   텍스트 #1a2744(잉크), 포인트 블루 #2563eb(버튼·활성·링크 전용).
+   금융권 최상위 업무 플랫폼의 절제된 UI — 무채색 바탕, 색은 신호로만.
+   기준 기기: ① 태블릿(1024~1366px) ② 데스크톱(1920px) ③ 모바일(390px 지원).
+   예외: care/·card/는 모바일 퍼스트(고객이 카톡으로 유입).
    골드 #c9a14a는 카톡카드·인쇄물 템플릿 전용 — 플랫폼 UI 사용 금지. */
 
 :root {
@@ -10,12 +11,14 @@
   --ink-sub: #6b7280;
   --ink-faint: #9aa3b2;
   --accent: #2563eb;      /* 버튼·활성상태·링크 전용 */
+  --accent-bg: rgba(37, 99, 235, 0.08);
   --paid: #16a34a;        /* 상태색: 지급 */
   --denied: #dc2626;      /* 상태색: 부지급 */
   --partial: #d97706;     /* 상태색: 일부지급 */
   --line: #e8ebf0;
   --radius: 12px;
   --shadow: 0 1px 3px rgba(26, 39, 68, 0.06);
+  --sidebar-w: 224px;
   --gold-print: #c9a14a;  /* 카톡카드·인쇄물 템플릿 전용 */
 }
 
@@ -26,6 +29,7 @@
   --ink: #e7eaf0;
   --ink-sub: #9aa3b2;
   --ink-faint: #6b7280;
+  --accent-bg: rgba(37, 99, 235, 0.16);
   --line: #2a3242;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
@@ -58,7 +62,140 @@ a {
   text-decoration: none;
 }
 
-/* 상단 헤더 — 흰 바탕, 잉크 텍스트 */
+/* ==============================
+   플랫폼 셸 — 좌측 사이드바 (태블릿·데스크톱)
+   ============================== */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  padding: 20px 12px;
+  z-index: 30;
+  overflow-y: auto;
+}
+
+.sidebar-brand {
+  display: block;
+  font-family: "Noto Serif KR", serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+  padding: 4px 12px 16px;
+}
+
+.sidebar-brand .accent {
+  color: var(--accent);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.sidebar-nav a {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.97rem;
+  color: var(--ink-sub);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-nav a:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.sidebar-nav a.active {
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.sidebar-foot {
+  margin-top: 24px;
+  padding: 12px;
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+
+/* 모바일 오버레이 */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 39, 68, 0.4);
+  z-index: 20;
+}
+
+.sidebar-overlay.show {
+  display: block;
+}
+
+/* 본문 영역 */
+.main-area {
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 상단바 — 모바일에서만 브랜드·햄버거 표시 */
+.topbar {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  padding: 12px 16px;
+}
+
+.menu-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.menu-toggle svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.topbar .site-title {
+  font-family: "Noto Serif KR", serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.topbar .site-title .accent {
+  color: var(--accent);
+}
+
+/* ==============================
+   단순 헤더 — care/·card/·r/·admin/ (사이드바 없는 화면)
+   ============================== */
+
 .site-header {
   background: var(--surface);
   border-bottom: 1px solid var(--line);
@@ -90,11 +227,22 @@ a {
   color: var(--ink-faint);
 }
 
-/* 본문 컨테이너 */
+/* ==============================
+   본문 공통
+   ============================== */
+
 .container {
-  max-width: 960px;
+  width: 100%;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 24px 20px 96px; /* 하단 탭바 여유 포함 */
+  padding: 32px 32px 64px;
+  flex: 1;
+}
+
+/* 단순 헤더 화면의 컨테이너는 좁게 */
+body.simple .container {
+  max-width: 960px;
+  padding: 24px 20px 64px;
 }
 
 .section {
@@ -102,7 +250,7 @@ a {
 }
 
 .section:first-child {
-  margin-top: 24px;
+  margin-top: 0;
 }
 
 /* 섹션 제목 — 타이포 위계가 디자인이다 */
@@ -139,7 +287,7 @@ a {
 /* 메뉴 카드 그리드 */
 .menu-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
 
@@ -172,6 +320,14 @@ a {
   color: var(--ink-sub);
 }
 
+/* 2단 구조 — 검색·목록형 화면 (좌 목록 + 우 상세) */
+.split {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
 /* 핵심 수치 — 큰 숫자가 화면의 주인공 */
 .stat-value {
   font-size: 2.9rem; /* 약 43px, 32pt 이상 */
@@ -189,6 +345,158 @@ a {
 .status-paid { color: var(--paid); }
 .status-denied { color: var(--denied); }
 .status-partial { color: var(--partial); }
+
+/* 채널 탭 (주간/월간 등) — 활성은 블루 */
+.pill-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.pill-tabs button {
+  font-family: inherit;
+  font-size: 0.93rem;
+  padding: 8px 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-sub);
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.pill-tabs button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* 발행물 목록 */
+.issue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.issue-item {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+
+.issue-item .issue-meta {
+  font-size: 0.87rem;
+  color: var(--ink-sub);
+}
+
+.issue-item .issue-title {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.13rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.issue-item .issue-title:hover {
+  color: var(--accent);
+}
+
+.issue-item .issue-summary {
+  margin-top: 6px;
+  font-size: 0.93rem;
+  color: var(--ink-sub);
+}
+
+.issue-item .issue-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 8px;
+}
+
+/* 버튼 — 포인트 블루는 기능색 */
+.btn {
+  display: inline-block;
+  font-family: inherit;
+  font-size: 0.87rem;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.btn:hover {
+  border-color: var(--accent);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #1d4fd8;
+}
+
+/* 발행물 본문 (고객 열람 화면) */
+.article {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 32px 24px;
+  margin-top: 24px;
+}
+
+.article .article-meta {
+  font-size: 0.87rem;
+  color: var(--ink-sub);
+}
+
+.article h1.article-title {
+  margin-top: 8px;
+  font-size: 1.6rem;
+  line-height: 1.35;
+}
+
+.article .article-cover {
+  width: 100%;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.article .article-body {
+  margin-top: 24px;
+}
+
+.article .article-body h2 {
+  font-size: 1.2rem;
+  margin: 32px 0 10px;
+}
+
+.article .article-body h3 {
+  font-size: 1.05rem;
+  margin: 24px 0 8px;
+}
+
+.article .article-body p {
+  margin: 12px 0;
+}
+
+.article .article-body ul,
+.article .article-body ol {
+  margin: 12px 0 12px 22px;
+}
+
+.article .article-body img {
+  max-width: 100%;
+  border-radius: 8px;
+}
 
 /* 자리 표시 패널 (캘린더·케어센터 최신호 등) */
 .placeholder-panel {
@@ -210,7 +518,6 @@ a {
 .page-title {
   font-size: 1.6rem;
   font-weight: 700;
-  margin-top: 8px;
 }
 
 .page-desc {
@@ -262,67 +569,60 @@ a {
 /* 푸터 */
 .site-footer {
   border-top: 1px solid var(--line);
-  padding: 20px 20px 84px;
+  padding: 20px;
   text-align: center;
   font-size: 0.8rem;
   color: var(--ink-faint);
 }
 
-/* 하단 고정 탭바 — 모바일 전용 */
-.tab-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--surface);
-  border-top: 1px solid var(--line);
-  display: flex;
-  padding-bottom: env(safe-area-inset-bottom);
-}
+/* ==============================
+   반응형 — 모바일(1024px 미만)에서 사이드바를 햄버거로 축소
+   ============================== */
 
-.tab-bar a {
-  flex: 1;
-  text-align: center;
-  padding: 10px 0 12px;
-  font-size: 0.8rem;
-  color: var(--ink-faint);
-}
-
-.tab-bar a.active {
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.tab-bar .tab-icon {
-  display: block;
-  margin: 0 auto 2px;
-  width: 22px;
-  height: 22px;
-}
-
-.tab-bar .tab-icon svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* 데스크톱 */
-@media (min-width: 720px) {
-  .menu-grid {
-    grid-template-columns: repeat(3, 1fr);
+@media (max-width: 1023px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: none;
   }
-  .tab-bar {
-    display: none;
+
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 0 0 24px rgba(26, 39, 68, 0.18);
   }
+
+  .main-area {
+    margin-left: 0;
+  }
+
+  .topbar {
+    display: flex;
+  }
+
   .container {
-    padding-bottom: 64px;
+    padding: 24px 20px 64px;
   }
-  .site-footer {
-    padding-bottom: 20px;
+
+  .menu-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .split {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 모바일 소형 화면 */
+@media (max-width: 719px) {
+  .menu-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 태블릿(1024~1366px) — 기준 기기. 메뉴 카드 3열 유지, 컨테이너 여백 조정 */
+@media (min-width: 1024px) and (max-width: 1366px) {
+  .container {
+    padding: 32px 28px 64px;
   }
 }
 
@@ -332,19 +632,26 @@ a {
     background: #fff;
     color: #000;
   }
+  .sidebar,
+  .sidebar-overlay,
+  .topbar,
+  .search-bar,
+  .back-link {
+    display: none;
+  }
+  .main-area {
+    margin-left: 0;
+  }
   .site-header {
     border-bottom: 2px solid var(--ink);
   }
   .menu-card,
   .coming-soon,
-  .placeholder-panel {
+  .placeholder-panel,
+  .issue-item,
+  .article {
     border: 1px solid #999;
     box-shadow: none;
     break-inside: avoid;
-  }
-  .back-link,
-  .tab-bar,
-  .search-bar {
-    display: none;
   }
 }

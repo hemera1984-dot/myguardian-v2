@@ -2,7 +2,7 @@
 
 사용법: python scripts/screenshot.py [페이지경로...]
 예: python scripts/screenshot.py web/index.html web/claims/index.html
-결과: scripts/shots/ 에 데스크톱(1920px)·모바일(390px) 전체 페이지 스크린샷 저장
+결과: scripts/shots/ 에 데스크톱(1920px)·태블릿(1180px)·모바일(390px) 전체 페이지 스크린샷 저장
 사전 준비: pip install playwright && python -m playwright install chromium
 """
 
@@ -16,6 +16,7 @@ OUT_DIR = ROOT / "scripts" / "shots"
 
 VIEWPORTS = [
     ("desktop-1920", 1920, 1080),
+    ("tablet-1180", 1180, 820),
     ("mobile-390", 390, 844),
 ]
 

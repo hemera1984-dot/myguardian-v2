@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "care-issue.schema.json",
+  "title": "케어센터 발행물",
+  "description": "주간·월간 안창민 발행물 메타데이터. data/care/issues.json은 이 스키마를 따르는 객체의 배열이다. 본문은 data/care/issues/<id>.html 조각 파일로 둔다. 고객 개인정보 금지.",
+  "type": "object",
+  "required": ["id", "채널", "호수", "제목", "발행일", "본문파일"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "발행물 고유 ID (예: weekly-11, monthly-04)",
+      "pattern": "^(weekly|monthly)-[0-9]{2}$"
+    },
+    "채널": {
+      "type": "string",
+      "enum": ["주간", "월간"],
+      "description": "주간 안창민 / 월간 안창민"
+    },
+    "호수": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "발행 호수"
+    },
+    "제목": {
+      "type": "string",
+      "description": "호 제목"
+    },
+    "발행일": {
+      "type": "string",
+      "format": "date",
+      "description": "발행 일자 (YYYY-MM-DD)"
+    },
+    "요약": {
+      "type": ["string", "null"],
+      "description": "한두 문장 요약. 아카이브 목록과 카톡 문구에 사용"
+    },
+    "본문파일": {
+      "type": "string",
+      "description": "본문 HTML 조각 파일 경로. 사이트 루트 기준 (예: data/care/issues/weekly-11.html)"
+    },
+    "커버이미지": {
+      "type": ["string", "null"],
+      "description": "커버 이미지 경로. 없으면 미표시"
+    },
+    "카톡문구": {
+      "type": ["string", "null"],
+      "description": "카톡 발송 문구. {URL} 자리에 열람 주소가 치환된다. 없으면 제목·요약으로 기본 문구를 만든다"
+    }
+  }
+}
