@@ -36,10 +36,9 @@
     </header>
 
     <main class="platform-main">
-      <section class="page-heading">
-        <p class="eyebrow">통합 업무 검색</p>
-        <h1>오늘 필요한 보험 업무를<br>빠르게 찾으세요</h1>
-        <p>사례와 판례, 보험 용어, 질병 정보를 한곳에서 검색합니다.</p>
+      <section class="page-heading compact">
+        <h1>오늘 필요한 보험 업무를 빠르게 찾으세요</h1>
+        <p>사례·판례, 보험 용어, 질병 정보를 한곳에서 검색합니다.</p>
       </section>
 
       <div class="global-search">
@@ -71,10 +70,11 @@
       </section>
 
       <section class="section-block" aria-labelledby="operation-title">
-        <div class="section-head"><div><h2 id="operation-title">업무 현황</h2><p>팀 일정과 고객용 콘텐츠 발행 상태가 표시될 자리입니다.</p></div></div>
+        <div class="section-head"><div><h2 id="operation-title">업무 현황</h2><p>발행 일정과 최근 작업 흐름입니다.</p></div></div>
         <div class="home-panels">
-          <article class="surface-card"><h3>팀 캘린더</h3><p class="surface-desc">공유 캘린더 연동 자리</p><div class="empty-inline"><div><strong>캘린더 연결 준비중</strong><span>연동 전에는 일정 정보가 표시되지 않습니다.</span></div></div></article>
-          <article class="surface-card"><h3>케어센터 최신호</h3><p class="surface-desc">주간·월간 안창민 발행 자리</p><div class="empty-inline" id="care-latest-box"><div><strong>발행물 입주 준비중</strong><span>실제 발행 콘텐츠만 표시합니다.</span></div></div></article>
+          <article class="surface-card"><h3>케어센터 발행<span class="dday-chip" id="care-dday" hidden></span></h3><p class="surface-desc">주간 매주 월요일 · 월간 첫째 월요일</p><div class="empty-inline" id="care-latest-box"><div><strong>발행물 입주 준비중</strong><span>실제 발행 콘텐츠만 표시합니다.</span></div></div></article>
+          <article class="surface-card"><h3>최근 열람 사례</h3><p class="surface-desc">사례·판례에서 최근에 확인한 자료</p><div id="recent-cases-box"><div class="empty-inline"><div><strong>열람 기록 없음</strong><span>사례를 열람하면 이곳에 최근 목록이 남습니다.</span></div></div></div></article>
+          <article class="surface-card"><h3>팀 캘린더</h3><p class="surface-desc">공유 캘린더 연동 자리 (2차 공사)</p><div class="empty-inline"><div><strong>연동 준비중</strong><span>연동 전에는 일정이 표시되지 않습니다.</span></div></div></article>
         </div>
       </section>
     </main>
@@ -117,6 +117,37 @@
             + "<span>" + esc(i["발행일"]) + ' 발행 · <a href="care/issue.html?id=' + encodeURIComponent(i.id) + '" style="color:inherit;text-decoration:underline">바로 열람</a></span></div>';
         })
         .catch(function () {});
+
+      // 다음 주간 발행 D-day (매주 월요일)
+      (function () {
+        var now = new Date();
+        var due = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var add = (8 - due.getDay()) % 7; // 월요일=1
+        if (add === 0) add = now.getDay() === 1 ? 0 : 7;
+        due.setDate(due.getDate() + add);
+        var diff = Math.round((due - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+        var chip = document.getElementById("care-dday");
+        chip.textContent = (due.getMonth() + 1) + "월 " + due.getDate() + "일 " + (diff === 0 ? "오늘 발행" : "D-" + diff);
+        chip.hidden = false;
+      })();
+
+      // 최근 열람 사례 (사례 화면이 남긴 브라우저 기록)
+      (function () {
+        var esc = function (s) {
+          return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+          });
+        };
+        try {
+          var recent = JSON.parse(localStorage.getItem("mg_recent_cases") || "[]");
+          if (!recent.length) return;
+          document.getElementById("recent-cases-box").innerHTML =
+            '<ul class="widget-list">' + recent.slice(0, 5).map(function (r) {
+              return '<li><a href="cases/?id=' + encodeURIComponent(r.id) + '">' + esc(r.title) + "</a>"
+                + '<span class="w-meta">' + esc(r.meta || "") + "</span></li>";
+            }).join("") + "</ul>";
+        } catch (e) {}
+      })();
     })();
     // 통합검색 — 용어·질병은 즉석 제안, 사례는 사례 화면으로 연결. 사전은 첫 입력 시에만 로드.
     (function () {

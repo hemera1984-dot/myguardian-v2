@@ -1249,3 +1249,64 @@ body.platform {
     padding: 12px;
   }
 }
+
+/* 홈 대시보드 — 랜딩 히어로 대신 압축 헤딩 */
+.page-heading.compact {
+  margin-bottom: 18px;
+}
+
+.page-heading.compact h1 {
+  font-size: 1.53rem;
+  margin: 0;
+}
+
+.page-heading.compact p {
+  margin: 4px 0 0;
+  font-size: 0.93rem;
+  color: var(--platform-muted);
+}
+
+/* 대시보드 위젯 목록 */
+.widget-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.widget-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--platform-line);
+  font-size: 0.93rem;
+}
+
+.widget-list li:last-child {
+  border-bottom: none;
+}
+
+.widget-list a {
+  color: var(--platform-ink);
+  font-weight: 600;
+}
+
+.widget-list a:hover {
+  color: var(--platform-blue);
+}
+
+.widget-list .w-meta {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--platform-muted);
+  margin-top: 2px;
+}
+
+.dday-chip {
+  display: inline-block;
+  font-size: 0.77rem;
+  font-weight: 700;
+  color: var(--platform-blue);
+  background: var(--platform-blue-soft);
+  border-radius: 999px;
+  padding: 3px 10px;
+  margin-left: 8px;
+  font-variant-numeric: tabular-nums;
+}

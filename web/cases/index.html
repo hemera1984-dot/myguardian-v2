@@ -118,7 +118,18 @@
         }).join("");
       }
 
+      // 최근 열람 기록 (홈 대시보드 위젯용, 이 브라우저에만 저장)
+      function recordView(c) {
+        try {
+          var recent = JSON.parse(localStorage.getItem("mg_recent_cases") || "[]");
+          recent = recent.filter(function (r) { return r.id !== c.id; });
+          recent.unshift({ id: c.id, title: c.title, meta: (c.publisher || "") + " " + (c.case_number || "") });
+          localStorage.setItem("mg_recent_cases", JSON.stringify(recent.slice(0, 5)));
+        } catch (e) {}
+      }
+
       function renderDetail(c) {
+        recordView(c);
         var links = [];
         if (c.case_source_url) links.push('<a class="detail-link" href="' + esc(c.case_source_url) + '" target="_blank" rel="noopener">원문 보기</a>');
         else if (c.source_url) links.push('<a class="detail-link" href="' + esc(c.source_url) + '" target="_blank" rel="noopener">출처 페이지</a>');
@@ -201,8 +212,10 @@
           .sort(function (a, b) { return b[1] - a[1]; });
       }
 
-      // URL 쿼리로 진입한 검색어 지원 (고객관리 등 다른 화면에서 연결)
-      var initialQ = new URLSearchParams(window.location.search).get("q") || "";
+      // URL 쿼리 지원: ?q= 검색어 연결, ?id= 특정 사례 직접 진입 (홈 최근 열람 등)
+      var params = new URLSearchParams(window.location.search);
+      var initialQ = params.get("q") || "";
+      var initialId = params.get("id") || "";
       if (initialQ) {
         state.q = initialQ;
         $("q").value = initialQ;
@@ -216,6 +229,13 @@
           fillSelect("f-result", countBy("decision_result", "기타"), "결과");
           fillSelect("f-issue", countBy("issue_category", "미분류"), "쟁점");
           fillSelect("f-publisher", countBy("publisher", "미기재"), "기관");
+          if (initialId) {
+            var target = ALL.find(function (c) { return c.id === initialId; });
+            if (target) {
+              state.sel = target.id;
+              renderDetail(target);
+            }
+          }
           renderList();
         })
         .catch(function () {
