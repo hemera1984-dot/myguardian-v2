@@ -1,5 +1,13 @@
 ﻿# handoff — 세션 인수인계
 
+## 2026-07-19 — Codex 4차 검수 (codex/audit-04)
+
+- 대상: `claude/auto-improve` `f4c8524..24d34ca`
+- 결과: 치명 1건, 중요 6건, 사소 1건. 배포 불가·main 병합 불가 판정
+- 주요 차단 사유: 고객 이관의 사본 검증 없는 원본 삭제, 발행 본문 구조 검증 누락, Windows 콘솔 출력 실패, 프로필 사진 속성 주입
+- 통과: 채번·초안 필터·기존 카톡 문구·카드 배경 PNG·이미지 경로·케어 사이드바
+- 상세: `docs/design-review/codex/findings-04.md`
+
 ## 2026-07-19 오전 — Codex 2차 검수 대응 라운드 (claude/auto-improve)
 
 - findings-02 치명 2·중요 5 전부 수용·수정 완료 → docs/design-review/codex/response-02.md
