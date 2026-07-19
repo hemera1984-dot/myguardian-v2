@@ -39,7 +39,7 @@
 
           <div id="panel-today" role="tabpanel">
             <section class="section-block first" aria-labelledby="now-title">
-              <div class="section-head"><div><h2 id="now-title">지금 우리 팀</h2><p id="now-date"></p></div></div>
+              <div class="section-head"><div><h2 id="now-title">지금 우리 팀</h2><p id="now-date">출근·Aitom 입력·현재 일정</p></div></div>
               <div id="now-box">
                 <article class="surface-card"><div class="empty-inline"><div><strong>팀원 명단이 아직 등록되지 않았습니다.</strong><span>data/team/members.json에 이름과 역할을 등록하면 팀 상황판이 열립니다.</span></div></div></article>
               </div>
@@ -110,7 +110,7 @@
         </aside>
       </div>
 
-      <p class="notice">운영: 일정 data/team/schedule.json · 과제 tasks.json · 공지(댓글 포함) notices.json에 추가하고 배포하면 반영됩니다. 팀원 셀프 입력·댓글 작성·완료 체크는 엣지 연동(STEP 3)에서 열립니다. 고객 언급은 코드(C-YYYY-NNN)로만 합니다.</p>
+      <p class="notice">운영: 일정 data/team/schedule.json · 과제 tasks.json · 공지(댓글 포함) notices.json · 출근·Aitom daily.json에 추가하고 배포하면 반영됩니다. Aitom은 토·일 제외 모든 평일 필수(공휴일 포함). 팀원 셀프 보고·댓글 작성·완료 체크는 엣지 연동(STEP 3)에서 열립니다. 고객 언급은 코드(C-YYYY-NNN)로만 합니다.</p>
     </main>
     <footer class="platform-footer">마이가디언 v2</footer>
   </div>
@@ -123,7 +123,7 @@
       var DOW_FULL = ["일", "월", "화", "수", "목", "금", "토"];
       var KIND_CLASS = { "상담": "k-consult", "외근": "k-out", "내근": "k-in", "휴가": "k-off", "교육": "k-edu", "회의": "k-meet", "마감": "k-due", "발행": "k-pub", "기타": "k-etc" };
 
-      var MEMBERS = [], TEAM_EVENTS = [], MEMBER_SLOTS = [], TASKS = [], NOTICES = [];
+      var MEMBERS = [], TEAM_EVENTS = [], MEMBER_SLOTS = [], TASKS = [], NOTICES = [], DAILY = [];
       var weekOffset = 0;
       var calBase = new Date();
       var pickedMember = null;
@@ -190,18 +190,39 @@
         var now = new Date();
         var todayStr = fmt(now);
         var nowHM = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
-        document.getElementById("now-date").textContent =
-          (now.getMonth() + 1) + "월 " + now.getDate() + "일 " + DOW_FULL[now.getDay()] + "요일 " + nowHM + " 기준";
-        if (!MEMBERS.length) return;
-        document.getElementById("now-box").innerHTML = '<div class="now-list">' + MEMBERS.map(function (m) {
+        // Aitom은 토·일 제외 모든 평일 필수 (공휴일이어도 평일이면 대상)
+        var isWeekday = now.getDay() >= 1 && now.getDay() <= 5;
+        var counts = { att: 0, absent: 0, noReport: 0, noAitom: 0 };
+
+        var rowsHtml = MEMBERS.map(function (m) {
           var st = nowStatus(m, todayStr, nowHM);
+          var rec = DAILY.filter(function (r) { return r["팀원"] === m.id && r["날짜"] === todayStr; })[0];
+          var day = "";
+          if (rec && rec["출근"]) { counts.att++; day += '<span class="day-chip ok">출근</span>'; }
+          else if (rec && !rec["출근"]) { counts.absent++; day += '<span class="day-chip off">미출근' + (rec["사유"] ? " · " + esc(rec["사유"]) : "") + "</span>"; }
+          else { counts.noReport++; day += '<span class="day-chip none">출근 미보고</span>'; }
+          if (isWeekday) {
+            if (rec && rec["aitom"]) day += '<span class="day-chip ok">Aitom 입력</span>';
+            else { counts.noAitom++; day += '<span class="day-chip warn">Aitom 미입력</span>'; }
+          }
           return '<div class="now-row' + (st.live ? " live" : "") + '">'
             + '<span class="now-avatar">' + esc((m["이름"] || "").charAt(0)) + "</span>"
             + '<span class="now-name">' + esc(m["이름"]) + (m["관리자"] ? '<span class="member-lead">관리자</span>' : "") + "</span>"
             + (st.kind ? kindChip(st.kind, st.label) : '<span class="now-idle">' + esc(st.label) + "</span>")
             + (st.memo ? '<span class="now-memo">' + esc(st.memo) + "</span>" : "")
+            + '<span class="now-day">' + day + "</span>"
             + "</div>";
-        }).join("") + "</div>";
+        }).join("");
+
+        var summary = "";
+        if (MEMBERS.length) {
+          summary = " — 출근 " + counts.att + " · 미출근 " + counts.absent + " · 미보고 " + counts.noReport
+            + (isWeekday ? " · Aitom 미입력 " + counts.noAitom : "");
+        }
+        document.getElementById("now-date").textContent =
+          (now.getMonth() + 1) + "월 " + now.getDate() + "일 " + DOW_FULL[now.getDay()] + "요일 " + nowHM + " 기준" + summary;
+        if (!MEMBERS.length) return;
+        document.getElementById("now-box").innerHTML = '<div class="now-list">' + rowsHtml + "</div>";
       }
 
       function renderTodayEvents() {
@@ -442,13 +463,15 @@
         fetch("../../data/team/members.json", { cache: "no-store" }).then(function (r) { return r.json(); }).catch(function () { return []; }),
         fetch("../../data/team/schedule.json", { cache: "no-store" }).then(function (r) { return r.json(); }).catch(function () { return {}; }),
         fetch("../../data/team/tasks.json", { cache: "no-store" }).then(function (r) { return r.json(); }).catch(function () { return []; }),
-        fetch("../../data/team/notices.json", { cache: "no-store" }).then(function (r) { return r.json(); }).catch(function () { return []; })
+        fetch("../../data/team/notices.json", { cache: "no-store" }).then(function (r) { return r.json(); }).catch(function () { return []; }),
+        fetch("../../data/team/daily.json", { cache: "no-store" }).then(function (r) { return r.json(); }).catch(function () { return []; })
       ]).then(function (res) {
         MEMBERS = Array.isArray(res[0]) ? res[0] : [];
         TEAM_EVENTS = (res[1] && res[1]["팀일정"]) || [];
         MEMBER_SLOTS = (res[1] && res[1]["팀원일정"]) || [];
         TASKS = Array.isArray(res[2]) ? res[2] : [];
         NOTICES = Array.isArray(res[3]) ? res[3] : [];
+        DAILY = Array.isArray(res[4]) ? res[4] : [];
         renderNow(); renderTodayEvents(); renderTasks(); renderNotices();
         renderMembers(); renderWeek(); renderCal(); renderFeed();
       });
