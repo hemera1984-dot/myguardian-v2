@@ -12,6 +12,22 @@ v1 careRouter의 실제 생성 로직을 계승하되, 인앱 AI 대신 Code 세
 
 발송: 월요일에 고객에게 카톡으로 링크 + 문구 전송.
 
+## 발행 공정 도구 (2026-07-19 신설 — 1차 하이브리드)
+
+발행 데스크(web/care/desk.html)가 공정의 시작과 끝이다. 케어센터는 사이드바 워크스페이스
+(발행 데스크 / 서재 / 마이가디언 홈)로 재편되었다.
+
+| 단계 | 도구 | 설명 |
+|---|---|---|
+| 수집 | `python pipeline/collect_news.py` | 네이버 뉴스 API로 카테고리별 후보 수집 → data/care/desk/candidates.json (커밋 안 함). 키는 pipeline/naver-keys.json (gitignore) |
+| 선정 | 발행 데스크 화면 | 후보 체크 → "선택 기사로 집필 지시문 복사" → 발행 세션에 붙여넣기 |
+| 뼈대 | `python pipeline/new_care_issue.py --channel 주간` | 채번·발행일·주차라벨 자동, 본문 뼈대 생성, issues.json에 상태:초안 등록 |
+| 집필 | 발행 세션 (Code) | 아래 2~3단계 원칙으로 기사·코멘트 작성. 초안은 리더(issue.html?id=)에서 검토 |
+| 발행 | `python pipeline/publish_care_issue.py --id weekly-NN` | 검증(제목·부제·본문·요약·편집장의말·이미지 존재) 통과 시 발행 전환 + 꼭지·요약 동기화 |
+
+- 초안(상태:초안)은 발행 데스크에만 표시된다. 서재·홈·최신호·카톡 문구에서 제외.
+- 2차 공사(Cloudflare Workers) 때 수집·집필이 화면 안 버튼으로 이동한다. 스키마·공정은 그대로.
+
 ## 공정 5단계 (Code 세션에서 진행)
 
 ### 1단계 — 주제
@@ -41,8 +57,8 @@ v1 작성 원칙 계승 (careRouter 원문 기준):
 - 파일은 data/care/issues/<id>/ 하위에 두고 커버이미지 경로를 메타에 기록.
 
 ### 5단계 — 발행·발송
-1. 본문을 data/care/issues/<id>.html 조각으로 저장
-2. data/care/issues.json에 메타 등록 (care-issue.schema.json 규격)
+1. 본문을 data/care/issues/<id>.json 구조 데이터로 저장 (뼈대는 new_care_issue.py가 생성)
+2. data/care/issues.json 메타의 상태를 publish_care_issue.py 검증으로 발행 전환
 3. commit & push → GitHub Pages 반영
 4. 케어센터 아카이브에서 "카톡 문구 복사" → 카톡에 붙여넣어 발송
 

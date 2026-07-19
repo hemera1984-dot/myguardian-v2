@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>발행 데스크 - 케어센터</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../assets/style.css">
+  <script src="../assets/platform.js"></script>
+  <script src="../assets/care.js"></script>
+</head>
+<body class="simple">
+  <aside class="sidebar" id="platform-sidebar">
+    <a class="sidebar-brand" href="./">케어<span class="accent">센터</span></a>
+    <nav class="sidebar-nav" aria-label="케어센터 메뉴">
+      <a class="active" href="desk.html">발행 데스크</a>
+      <a href="./">서재</a>
+    </nav>
+    <nav class="sidebar-nav" aria-label="플랫폼" style="margin-top:16px">
+      <a href="../">마이가디언 홈</a>
+    </nav>
+    <div class="sidebar-foot">편집장 안창민 FC<br>주간·월간 발행 플랫폼</div>
+  </aside>
+  <div class="sidebar-overlay" id="platform-overlay"></div>
+
+  <div class="main-area">
+    <header class="topbar">
+      <button class="menu-toggle" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <span class="site-title">발행 데스크</span>
+    </header>
+
+    <main class="container">
+      <div class="pub-desk">
+        <div class="pub-desk-head">
+          <h2>발행 데스크</h2>
+          <span class="pub-chip" id="pub-dday"></span>
+        </div>
+        <ol class="pub-steps">
+          <li><strong>1 뉴스 수집·선정</strong><span>수집된 후보 기사에서 이번 호에 실을 기사를 고릅니다. 수집은 터미널에서 collect_news.py를 실행합니다.</span></li>
+          <li><strong>2 집필·검토</strong><span>선택 기사로 집필 지시문을 복사해 발행 세션에 전달하고, 완성된 초안을 리더에서 검토합니다.</span></li>
+          <li><strong>3 발행·발송</strong><span>publish_care_issue.py로 발행 전환 후 카톡 문구를 복사해 전송합니다.</span></li>
+        </ol>
+        <div class="pub-desk-actions" id="pub-desk-actions"></div>
+      </div>
+
+      <div class="section" id="draft-block" hidden>
+        <h3 class="section-title">작성 중인 호</h3>
+        <div id="draft-list"></div>
+      </div>
+
+      <div class="section">
+        <h3 class="section-title">뉴스 후보</h3>
+        <div id="news-box">
+          <div class="placeholder-panel">후보를 불러오는 중입니다.</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sender-row" id="sender-row">
+          <span>카톡 서명</span>
+          <input class="name" id="sender-name" type="text" aria-label="발신자 이름" placeholder="이름">
+          <input class="org" id="sender-org" type="text" aria-label="소속 지점" placeholder="소속">
+          <span id="sender-saved" hidden>저장됨</span>
+        </div>
+
+        <div class="compose-panel" id="compose" hidden>
+          <h3 id="compose-title">카톡 문구</h3>
+          <textarea id="compose-text" aria-label="카톡 발송 문구"></textarea>
+          <div class="compose-actions">
+            <button class="btn btn-primary" type="button" id="compose-copy">복사하기</button>
+            <button class="btn" type="button" id="compose-close">닫기</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="site-footer">마이가디언 v2</footer>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+      var care = window.care;
+      var esc = care.esc;
+      var ALL = [];
+
+      care.bindSenderRow();
+      care.bindCompose();
+
+      // 발행 D-day — 주간은 다음 월요일, 월간은 오늘 이후 가장 가까운 첫째 월요일
+      (function () {
+        var now = new Date();
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var weekly = new Date(today);
+        var add = (8 - weekly.getDay()) % 7;
+        if (add === 0) add = today.getDay() === 1 ? 0 : 7;
+        weekly.setDate(weekly.getDate() + add);
+        function firstMonday(y, m) {
+          var d = new Date(y, m, 1);
+          d.setDate(1 + (8 - d.getDay()) % 7);
+          return d;
+        }
+        var monthly = firstMonday(today.getFullYear(), today.getMonth());
+        if (monthly < today) monthly = firstMonday(today.getFullYear(), today.getMonth() + 1);
+        function label(name, d) {
+          var diff = Math.round((d - today) / 86400000);
+          return name + " " + (d.getMonth() + 1) + "월 " + d.getDate() + "일 " + (diff === 0 ? "오늘 발행" : "D-" + diff);
+        }
+        document.getElementById("pub-dday").textContent = label("주간", weekly) + " · " + label("월간", monthly);
+      })();
+
+      fetch("../../data/care/issues.json")
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          ALL = Array.isArray(data) ? data : (data.data || []);
+          buildActions();
+          buildDrafts();
+        })
+        .catch(function () {});
+
+      // 채널별 최신 발행호 카톡 문구
+      function buildActions() {
+        var actions = document.getElementById("pub-desk-actions");
+        ["주간", "월간"].forEach(function (ch) {
+          var latest = care.latestByChannel(ALL, ch);
+          if (!latest) return;
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.textContent = ch + " 최신호 카톡 문구 (" + latest["호수"] + "호)";
+          btn.addEventListener("click", function () { care.openCompose(latest); });
+          actions.appendChild(btn);
+        });
+      }
+
+      // 작성 중인 호 (상태: 초안) — 검토 링크와 발행 전환 안내
+      function buildDrafts() {
+        var drafts = care.drafts(ALL);
+        if (!drafts.length) return;
+        document.getElementById("draft-block").hidden = false;
+        document.getElementById("draft-list").innerHTML = drafts.map(function (i) {
+          return '<div class="draft-item">'
+            + '<div><strong>' + esc(i["채널"]) + " " + esc(i["발행인"] || "안창민") + " " + esc(i["호수"]) + "호</strong>"
+            + '<span class="draft-meta">' + esc(i["주차라벨"] || i["발행일"] || "") + " · " + esc(i["제목"] || "제목 미정") + "</span></div>"
+            + '<div class="draft-actions">'
+            + '<a class="btn" href="issue.html?id=' + encodeURIComponent(i.id) + '">리더에서 검토</a>'
+            + '<button class="btn" type="button" data-pub-cmd="' + esc(i.id) + '">발행 명령 복사</button>'
+            + "</div></div>";
+        }).join("");
+        document.getElementById("draft-list").addEventListener("click", function (e) {
+          var btn = e.target.closest("button[data-pub-cmd]");
+          if (!btn) return;
+          window.mg.copy("python pipeline/publish_care_issue.py --id " + btn.dataset.pubCmd, btn);
+        });
+      }
+
+      // 뉴스 후보 — collect_news.py 산출물. 없으면 수집 방법 안내
+      var selected = {};
+      fetch("../../data/care/desk/candidates.json")
+        .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+        .then(renderNews)
+        .catch(function () {
+          document.getElementById("news-box").innerHTML =
+            '<div class="placeholder-panel">수집된 후보가 없습니다. 터미널에서 다음을 실행하면 이 자리에 후보가 표시됩니다.'
+            + '<br><code>python pipeline/collect_news.py</code>'
+            + "<br>네이버 뉴스 API 키가 필요합니다 (pipeline/collect_news.py 상단 안내 참조).</div>";
+        });
+
+      function renderNews(data) {
+        var cats = data["카테고리별"] || {};
+        var names = Object.keys(cats);
+        if (!names.length) {
+          document.getElementById("news-box").innerHTML =
+            '<div class="placeholder-panel">후보 파일은 있으나 기사가 없습니다. collect_news.py를 다시 실행하세요.</div>';
+          return;
+        }
+        var html = ['<p class="news-collected">수집 시각: ' + esc(data["수집일시"] || "미기재") + " — 이번 호에 실을 기사를 고르고 집필 지시문을 복사하세요.</p>"];
+        names.forEach(function (cat) {
+          html.push('<h4 class="news-cat">' + esc(cat) + "</h4>");
+          (cats[cat] || []).forEach(function (a, idx) {
+            var key = cat + "|" + idx;
+            html.push('<label class="news-item">'
+              + '<input type="checkbox" data-key="' + esc(key) + '">'
+              + "<span><strong>" + esc(a["제목"]) + "</strong>"
+              + '<span class="news-desc">' + esc(a["요약"] || "") + "</span>"
+              + '<span class="news-meta">' + esc((a["발행일시"] || "").slice(0, 16)) + ' · <a href="' + esc(a["링크"]) + '" target="_blank" rel="noopener">원문</a></span>'
+              + "</span></label>");
+          });
+        });
+        html.push('<div class="news-actions"><button class="btn btn-primary" type="button" id="news-brief">선택 기사로 집필 지시문 복사</button><span id="news-count">0건 선택</span></div>');
+        var box = document.getElementById("news-box");
+        box.innerHTML = html.join("");
+        box.addEventListener("change", function (e) {
+          var cb = e.target.closest("input[data-key]");
+          if (!cb) return;
+          var parts = cb.dataset.key.split("|");
+          if (cb.checked) selected[cb.dataset.key] = cats[parts[0]][Number(parts[1])];
+          else delete selected[cb.dataset.key];
+          document.getElementById("news-count").textContent = Object.keys(selected).length + "건 선택";
+        });
+        document.getElementById("news-brief").addEventListener("click", function () {
+          var keys = Object.keys(selected);
+          if (!keys.length) {
+            document.getElementById("news-count").textContent = "기사를 먼저 선택하세요";
+            return;
+          }
+          var lines = ["주간 발행 준비. 아래 선택 기사를 근거로 이번 호 초안을 작성해줘.",
+            "작성 원칙은 docs/care-workflow.md의 2~3단계를 따른다.", ""];
+          keys.forEach(function (k) {
+            var a = selected[k];
+            lines.push("- [" + k.split("|")[0] + "] " + a["제목"]);
+            lines.push("  " + a["링크"]);
+          });
+          window.mg.copy(lines.join("\n"), this);
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

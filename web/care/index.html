@@ -1,165 +1,89 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>케어센터 - 마이가디언</title>
+  <title>서재 - 케어센터</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="../assets/style.css">
   <script src="../assets/platform.js"></script>
+  <script src="../assets/care.js"></script>
 </head>
 <body class="simple">
-  <header class="site-header">
-    <div class="inner">
-      <a href="../" class="site-title">마이<span class="accent">가디언</span></a>
-      <span class="site-tagline">케어센터</span>
-    </div>
-  </header>
+  <aside class="sidebar" id="platform-sidebar">
+    <a class="sidebar-brand" href="./">케어<span class="accent">센터</span></a>
+    <nav class="sidebar-nav" aria-label="케어센터 메뉴">
+      <a href="desk.html">발행 데스크</a>
+      <a class="active" href="./">서재</a>
+    </nav>
+    <nav class="sidebar-nav" aria-label="플랫폼" style="margin-top:16px">
+      <a href="../">마이가디언 홈</a>
+    </nav>
+    <div class="sidebar-foot">편집장 안창민 FC<br>주간·월간 발행 플랫폼</div>
+  </aside>
+  <div class="sidebar-overlay" id="platform-overlay"></div>
 
-  <main class="container">
-    <div class="photo-hero">
-      <img src="../assets/img/hero-care.jpg" alt="" fetchpriority="high">
-      <div class="photo-hero-text">
-        <h1 class="serif">케어센터 서재</h1>
-        <p>매주 월요일, 한 주를 여는 보험·경제 이야기. 발행된 모든 호를 언제든 꺼내 읽을 수 있습니다.</p>
-      </div>
-    </div>
+  <div class="main-area">
+    <header class="topbar">
+      <button class="menu-toggle" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <span class="site-title">서재</span>
+    </header>
 
-    <div class="pub-desk">
-      <div class="pub-desk-head">
-        <h2>발행 데스크</h2>
-        <span class="pub-chip" id="pub-dday"></span>
-      </div>
-      <ol class="pub-steps">
-        <li><strong>1 기사 생성</strong><span>클로드 코드 세션에 "주간 발행 준비"를 요청하면 근거 수집과 초안 작성이 진행됩니다.</span></li>
-        <li><strong>2 검토·다듬기</strong><span>리더에서 새 호를 넘겨 보며 제목과 편집장의 말을 다듬습니다.</span></li>
-        <li><strong>3 발송</strong><span>카톡 문구를 복사해 고객에게 전송합니다. 서명은 아래에서 수정합니다.</span></li>
-      </ol>
-      <div class="pub-desk-actions" id="pub-desk-actions"></div>
-    </div>
-
-    <div class="section">
-      <div class="sender-row" id="sender-row">
-        <span>카톡 서명</span>
-        <input class="name" id="sender-name" type="text" aria-label="발신자 이름" placeholder="이름">
-        <input class="org" id="sender-org" type="text" aria-label="소속 지점" placeholder="소속">
-        <span id="sender-saved" hidden>저장됨</span>
-      </div>
-
-      <div class="compose-panel" id="compose" hidden>
-        <h3 id="compose-title">카톡 문구</h3>
-        <textarea id="compose-text" aria-label="카톡 발송 문구"></textarea>
-        <div class="compose-actions">
-          <button class="btn btn-primary" type="button" id="compose-copy">복사하기</button>
-          <button class="btn" type="button" id="compose-close">닫기</button>
+    <main class="container">
+      <div class="photo-hero">
+        <img src="../assets/img/hero-care.jpg" alt="" fetchpriority="high">
+        <div class="photo-hero-text">
+          <h1 class="serif">케어센터 서재</h1>
+          <p>매주 월요일, 한 주를 여는 보험·경제 이야기. 발행된 모든 호를 언제든 꺼내 읽을 수 있습니다.</p>
         </div>
       </div>
 
-      <div class="latest-duo" id="latest-duo"></div>
+      <div class="section">
+        <div class="compose-panel" id="compose" hidden>
+          <h3 id="compose-title">카톡 문구</h3>
+          <textarea id="compose-text" aria-label="카톡 발송 문구"></textarea>
+          <div class="compose-actions">
+            <button class="btn btn-primary" type="button" id="compose-copy">복사하기</button>
+            <button class="btn" type="button" id="compose-close">닫기</button>
+          </div>
+        </div>
 
-      <div class="pill-tabs" role="tablist" aria-label="채널">
-        <button type="button" class="active" data-ch="">전체</button>
-        <button type="button" data-ch="주간">주간 안창민</button>
-        <button type="button" data-ch="월간">월간 안창민</button>
+        <div class="latest-duo" id="latest-duo"></div>
+
+        <div class="pill-tabs" role="tablist" aria-label="채널">
+          <button type="button" class="active" data-ch="">전체</button>
+          <button type="button" data-ch="주간">주간 안창민</button>
+          <button type="button" data-ch="월간">월간 안창민</button>
+        </div>
+
+        <div class="shelf-grid" id="issue-list">
+          <div class="placeholder-panel" style="grid-column:1/-1">발행물을 불러오는 중입니다.</div>
+        </div>
       </div>
+    </main>
 
-      <div class="shelf-grid" id="issue-list">
-        <div class="placeholder-panel" style="grid-column:1/-1">발행물을 불러오는 중입니다.</div>
-      </div>
-    </div>
-  </main>
-
-  <footer class="site-footer">
-    마이가디언 v2
-  </footer>
+    <footer class="site-footer">마이가디언 v2</footer>
+  </div>
 
   <script>
     (function () {
       "use strict";
+      var care = window.care;
+      var esc = care.esc;
       var ALL = [];
       var channel = "";
       var publisher = "";
 
-      var esc = window.mg.esc;
-
-      function issueUrl(issue) {
-        return new URL("issue.html?id=" + encodeURIComponent(issue.id), window.location.href).href;
-      }
-
-      // 발신자 서명 — 지점이 바뀌면 여기서만 고친다 (localStorage 저장)
-      var SENDER_KEY = "mg_care_sender";
-      function loadSender() {
-        try {
-          var saved = JSON.parse(localStorage.getItem(SENDER_KEY));
-          if (saved && saved["이름"]) return saved;
-        } catch (e) {}
-        return { "이름": "안창민 FC", "소속": "신한라이프 하랑지점" };
-      }
-      function saveSender(s) {
-        localStorage.setItem(SENDER_KEY, JSON.stringify(s));
-        var mark = document.getElementById("sender-saved");
-        mark.hidden = false;
-        clearTimeout(saveSender._t);
-        saveSender._t = setTimeout(function () { mark.hidden = true; }, 1200);
-      }
-
-      // 주간 카테고리 → 카톡 표기 (v1 실사용 양식)
-      var CAT_LABEL = { "시사": "정치/사회", "경제": "경제/상속", "교양": "지식/교양", "보험": "보험/건강" };
-      var BAR = "─────────────";
-
-      function kakaoText(issue) {
-        var s = loadSender();
-        var url = issueUrl(issue);
-        var toc = issue["꼭지"] || [];
-        var mag = "『" + issue["채널"] + " " + (issue["발행인"] || "안창민") + "』";
-        var lines = ["안녕하세요, " + s["이름"] + "입니다.", ""];
-        if (issue["채널"] === "주간") {
-          lines.push("건강 유의하시고 좋은 한 주 보내세요.", "");
-          lines.push(mag + " " + (issue["주차라벨"] || "") + " (통권 " + issue["호수"] + "호)");
-          lines.push("이번 주 뉴스 브리핑이 발행되었습니다.", "");
-          lines.push("[이번 주 주요 뉴스]", BAR);
-          toc.forEach(function (t) {
-            lines.push((CAT_LABEL[t["카테고리"]] || t["카테고리"]) + " | " + t["제목"]);
-          });
-          lines.push(BAR, "");
-          if (toc.length) lines.push("이번 주 핵심: " + toc[0]["제목"], "");
-        } else {
-          lines.push("환절기 건강 잘 챙기고 계신가요?", "");
-          lines.push(mag + " " + (issue["주차라벨"] || "") + "(통권 " + issue["호수"] + "호)가");
-          lines.push("발행되었습니다.", "");
-          lines.push("이번 호 주요 칼럼", BAR);
-          toc.forEach(function (t, i) {
-            lines.push((i + 1) + ". " + t["제목"]);
-          });
-          lines.push(BAR, "");
-        }
-        lines.push("아래 링크에서 바로 읽어보실 수 있습니다.");
-        lines.push(url, "");
-        lines.push("보험·절세·상속 관련 궁금한 점이 있으시면");
-        lines.push("언제든 편하게 연락 주세요.", "");
-        lines.push(s["이름"] + " | " + s["소속"]);
-        return lines.join("\n");
-      }
-
-      function openCompose(issue) {
-        var panel = document.getElementById("compose");
-        document.getElementById("compose-title").textContent =
-          "카톡 문구 — " + issue["채널"] + " " + (issue["발행인"] || "안창민") + " " + issue["호수"] + "호 (수정 후 복사하세요)";
-        document.getElementById("compose-text").value = kakaoText(issue);
-        panel.hidden = false;
-        panel.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-
-      var copyText = window.mg.copy;
+      care.bindCompose();
 
       function render() {
         var box = document.getElementById("issue-list");
-        var list = ALL.filter(function (i) {
+        var list = care.sortByDate(care.published(ALL).filter(function (i) {
           if (channel && i["채널"] !== channel) return false;
           if (publisher && (i["발행인"] || "안창민") !== publisher) return false;
           return true;
-        }).sort(function (a, b) { return (b["발행일"] || "") < (a["발행일"] || "") ? -1 : 1; });
+        }));
         if (!list.length) {
           box.innerHTML = '<div class="placeholder-panel" style="grid-column:1/-1">아직 발행물이 없습니다. 첫 호가 준비되는 대로 서재에 꽂힙니다.</div>';
           return;
@@ -180,38 +104,16 @@
         }).join("");
         box.querySelectorAll("button[data-idx]").forEach(function (btn) {
           btn.addEventListener("click", function () {
-            openCompose(list[Number(btn.dataset.idx)]);
+            care.openCompose(list[Number(btn.dataset.idx)]);
           });
         });
       }
-
-      // 서명 입력 초기화·저장
-      (function () {
-        var s = loadSender();
-        var nameInput = document.getElementById("sender-name");
-        var orgInput = document.getElementById("sender-org");
-        nameInput.value = s["이름"];
-        orgInput.value = s["소속"];
-        function onChange() {
-          saveSender({ "이름": nameInput.value.trim(), "소속": orgInput.value.trim() });
-        }
-        nameInput.addEventListener("input", onChange);
-        orgInput.addEventListener("input", onChange);
-      })();
-
-      document.getElementById("compose-copy").addEventListener("click", function () {
-        copyText(document.getElementById("compose-text").value, this);
-      });
-      document.getElementById("compose-close").addEventListener("click", function () {
-        document.getElementById("compose").hidden = true;
-      });
 
       fetch("../../data/care/issues.json")
         .then(function (r) { return r.json(); })
         .then(function (data) {
           ALL = Array.isArray(data) ? data : (data.data || []);
           buildPublisherTabs();
-          buildPubDesk();
           buildLatestDuo();
           render();
         })
@@ -231,50 +133,12 @@
         });
       });
 
-      // 발행 데스크 — 다음 발행일과 발송 준비를 최상단에서 처리한다
-      function buildPubDesk() {
-        var now = new Date();
-        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        // 주간: 다음 월요일 (오늘이 월요일이면 오늘)
-        var weekly = new Date(today);
-        var add = (8 - weekly.getDay()) % 7;
-        if (add === 0) add = today.getDay() === 1 ? 0 : 7;
-        weekly.setDate(weekly.getDate() + add);
-        // 월간: 오늘 이후 가장 가까운 첫째 월요일
-        function firstMonday(y, m) {
-          var d = new Date(y, m, 1);
-          d.setDate(1 + (8 - d.getDay()) % 7);
-          return d;
-        }
-        var monthly = firstMonday(today.getFullYear(), today.getMonth());
-        if (monthly < today) monthly = firstMonday(today.getFullYear(), today.getMonth() + 1);
-        function label(name, d) {
-          var diff = Math.round((d - today) / 86400000);
-          return name + " " + (d.getMonth() + 1) + "월 " + d.getDate() + "일 " + (diff === 0 ? "오늘 발행" : "D-" + diff);
-        }
-        document.getElementById("pub-dday").textContent = label("주간", weekly) + " · " + label("월간", monthly);
-
-        var actions = document.getElementById("pub-desk-actions");
-        ["주간", "월간"].forEach(function (ch) {
-          var list = ALL.filter(function (i) { return i["채널"] === ch; })
-            .sort(function (a, b) { return (b["발행일"] || "") < (a["발행일"] || "") ? -1 : 1; });
-          if (!list.length) return;
-          var btn = document.createElement("button");
-          btn.type = "button";
-          btn.textContent = ch + " 최신호 카톡 문구 (" + list[0]["호수"] + "호)";
-          btn.addEventListener("click", function () { openCompose(list[0]); });
-          actions.appendChild(btn);
-        });
-      }
-
       // 채널별 최신호 직행 배너 — 서재를 뒤지지 않고 바로 읽는다
       function buildLatestDuo() {
         var duo = document.getElementById("latest-duo");
         var html = ["주간", "월간"].map(function (ch) {
-          var list = ALL.filter(function (i) { return i["채널"] === ch; })
-            .sort(function (a, b) { return (b["발행일"] || "") < (a["발행일"] || "") ? -1 : 1; });
-          if (!list.length) return "";
-          var i = list[0];
+          var i = care.latestByChannel(ALL, ch);
+          if (!i) return "";
           var bg = i["커버이미지"] ? ' style="background-image:url(../../' + esc(i["커버이미지"]) + ')"' : "";
           return '<a class="latest-card" href="issue.html?id=' + encodeURIComponent(i.id) + '">'
             + '<span class="latest-bg"' + bg + "></span>"
@@ -288,7 +152,7 @@
       // 발행인이 2명 이상일 때만 발행인 필터를 노출한다
       function buildPublisherTabs() {
         var pubs = [];
-        ALL.forEach(function (i) {
+        care.published(ALL).forEach(function (i) {
           var p = i["발행인"] || "안창민";
           if (pubs.indexOf(p) < 0) pubs.push(p);
         });

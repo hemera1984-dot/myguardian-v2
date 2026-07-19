@@ -19,9 +19,7 @@
         button.textContent = "복사됨";
         setTimeout(function () { button.textContent = original; }, 1500);
       }
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done);
-      } else {
+      function legacy() {
         var ta = document.createElement("textarea");
         ta.value = text;
         document.body.appendChild(ta);
@@ -29,6 +27,11 @@
         document.execCommand("copy");
         document.body.removeChild(ta);
         done();
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(legacy); // 권한 거부 시 구식 복사로 폴백
+      } else {
+        legacy();
       }
     }
   };

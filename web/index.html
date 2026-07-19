@@ -175,7 +175,8 @@
       fetch("../data/care/issues.json")
         .then(function (r) { return r.json(); })
         .then(function (data) {
-          var list = Array.isArray(data) ? data : (data.data || []);
+          var list = (Array.isArray(data) ? data : (data.data || []))
+            .filter(function (i) { return i["상태"] !== "초안"; }); // 작성 중인 호는 홈에 노출하지 않는다
           if (!list.length) return;
           list.sort(function (a, b) { return (b["발행일"] || "") < (a["발행일"] || "") ? -1 : 1; });
           var i = list[0];

@@ -1791,6 +1791,115 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   }
 }
 
+/* 발행 데스크 — 작성 중인 호 */
+.draft-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: #fff;
+  border: 1px solid var(--line, #e3e7ee);
+  border-left: 3px solid #b45309;
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 10px;
+}
+
+.draft-item strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.draft-meta {
+  display: block;
+  font-size: 0.85rem;
+  color: #5b6576;
+  margin-top: 2px;
+}
+
+.draft-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* 발행 데스크 — 뉴스 후보 */
+.news-collected {
+  font-size: 0.87rem;
+  color: #5b6576;
+  margin: 0 0 6px;
+}
+
+.news-cat {
+  margin: 18px 0 8px;
+  font-size: 0.95rem;
+  border-top: 2px solid #1a2744;
+  padding-top: 8px;
+}
+
+.news-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--line, #e3e7ee);
+  border-radius: 10px;
+  background: #fff;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.news-item:has(input:checked) {
+  border-color: #2563eb;
+  background: rgba(37, 99, 235, 0.04);
+}
+
+.news-item input {
+  margin-top: 4px;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.news-item strong {
+  display: block;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.news-desc {
+  display: block;
+  font-size: 0.85rem;
+  color: #5b6576;
+  line-height: 1.55;
+  margin-top: 2px;
+}
+
+.news-meta {
+  display: block;
+  font-size: 0.78rem;
+  color: #8a93a3;
+  margin-top: 4px;
+}
+
+.news-meta a {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.news-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.news-actions #news-count {
+  font-size: 0.85rem;
+  color: #5b6576;
+}
+
 /* 실사 헤더 배너 — 서재·리포트 입구의 첫인상 */
 .photo-hero {
   position: relative;
