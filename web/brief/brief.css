@@ -1,0 +1,539 @@
+/* 브리핑 화면 스타일
+   - 발표자(present): 플랫폼 문법의 다크 작업 화면 (발표 환경 눈부심 방지)
+   - 청중(view): 검은 배경 + 흰 지면 캔버스, 케어 아티클 수준의 잡지 조판
+   - 페이지 캔버스(.stage)는 1280×800 고정 설계 후 배율 축소 — 두 창의 좌표 비율이 항상 일치 */
+
+:root {
+  --brief-bg: #10151d;
+  --brief-panel: #182130;
+  --brief-line: #2a3545;
+  --brief-line-strong: #3a4657;
+  --brief-ink: #f1f5f9;
+  --brief-muted: #a6b0c1;
+  --brief-faint: #7b8798;
+  --brief-blue: #60a5fa;
+  --brief-blue-deep: #2563eb;
+  --brief-radius: 12px;
+
+  /* 지면(캔버스) — 청중이 보는 종이. 라이트 고정 */
+  --page-paper: #ffffff;
+  --page-ink: #1a2744;
+  --page-muted: #667085;
+  --page-line: #e4e7ec;
+  --page-blue: #2563eb;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+}
+
+body.brief-present,
+body.brief-view {
+  margin: 0;
+  font-family: "Pretendard", "Pretendard Variable", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+  line-height: 1.55;
+  letter-spacing: -0.012em;
+  word-break: keep-all;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ==============================
+   페이지 캔버스 (발표자·청중 공용)
+   ============================== */
+
+.stage-wrap {
+  position: relative;
+  overflow: hidden;
+}
+
+.stage {
+  position: absolute;
+  width: 1280px;
+  height: 800px;
+  transform-origin: 0 0;
+  background: var(--page-paper);
+  color: var(--page-ink);
+  overflow: hidden;
+}
+
+.brief-page {
+  height: 100%;
+  padding: 64px 88px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pg-kicker {
+  margin: 0 0 14px;
+  color: var(--page-blue);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* 표지 */
+.pg-cover {
+  padding: 0;
+  position: relative;
+  justify-content: flex-end;
+}
+
+.pg-cover-art {
+  position: absolute;
+  inset: 0;
+}
+
+.pg-cover-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pg-cover-head {
+  position: relative;
+  padding: 200px 88px 72px;
+  background: linear-gradient(180deg, rgba(16, 21, 29, 0) 0%, rgba(16, 21, 29, 0.86) 46%, rgba(16, 21, 29, 0.94) 100%);
+  color: #ffffff;
+}
+
+.pg-cover .pg-kicker {
+  color: #93c5fd;
+}
+
+.pg-cover-title {
+  margin: 0;
+  font-family: "Noto Serif KR", serif;
+  font-size: 58px;
+  font-weight: 700;
+  line-height: 1.28;
+  letter-spacing: -0.02em;
+}
+
+.pg-cover-sub {
+  margin: 18px 0 0;
+  color: rgba(241, 245, 249, 0.82);
+  font-size: 20px;
+}
+
+/* 본문·이미지·영상 공통 머리 */
+.pg-head {
+  border-bottom: 1px solid var(--page-ink);
+  padding-bottom: 22px;
+  margin-bottom: 30px;
+}
+
+.pg-title {
+  margin: 0;
+  font-family: "Noto Serif KR", serif;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.pg-sub {
+  margin: 10px 0 0;
+  color: var(--page-muted);
+  font-size: 19px;
+}
+
+.pg-body {
+  flex: 1;
+  min-height: 0;
+  column-gap: 48px;
+}
+
+.pg-para {
+  margin: 0 0 20px;
+  font-size: 22px;
+  line-height: 1.78;
+}
+
+.pg-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pg-list li {
+  position: relative;
+  padding: 16px 0 16px 26px;
+  border-bottom: 1px solid var(--page-line);
+  font-size: 24px;
+  line-height: 1.6;
+}
+
+.pg-list li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 32px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--page-blue);
+}
+
+/* 밀도 단계 — 캔버스를 넘치는 글 많은 페이지의 조판 축소 */
+.stage[data-density="1"] .pg-para { font-size: 19px; line-height: 1.7; margin-bottom: 15px; }
+.stage[data-density="1"] .pg-title { font-size: 34px; }
+.stage[data-density="2"] .pg-para { font-size: 17px; line-height: 1.62; margin-bottom: 12px; }
+.stage[data-density="2"] .pg-title { font-size: 30px; }
+.stage[data-density="2"] .pg-head { padding-bottom: 14px; margin-bottom: 18px; }
+
+/* 이미지·영상 */
+.pg-figure {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pg-figure img,
+.pg-figure video {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  object-fit: contain;
+  background: #0b0f15;
+}
+
+.pg-caption {
+  margin-top: 12px;
+  color: var(--page-muted);
+  font-size: 15px;
+  text-align: center;
+}
+
+/* 발표자 포인터 (청중 창 표시) — 포인트 블루 점 + 옅은 원 */
+.pointer-dot {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  background: var(--page-blue);
+  box-shadow: 0 0 0 9px rgba(37, 99, 235, 0.18);
+  pointer-events: none;
+  opacity: 0;
+  transition: left 0.09s linear, top 0.09s linear, opacity 0.15s ease;
+}
+
+.pointer-dot.on { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pointer-dot { transition: opacity 0.15s ease; }
+}
+
+/* ==============================
+   발표자 화면 (present)
+   ============================== */
+
+body.brief-present {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--brief-bg);
+  color: var(--brief-ink);
+}
+
+.pr-topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 0 0 56px;
+  border-bottom: 1px solid var(--brief-line);
+  background: var(--brief-panel);
+  padding: 0 18px;
+}
+
+.pr-doc-title {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.pr-mode {
+  flex: 0 0 auto;
+  border: 1px solid var(--brief-line-strong);
+  border-radius: 7px;
+  padding: 3px 9px;
+  color: var(--brief-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pr-top-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pr-timer {
+  color: var(--brief-muted);
+  font-size: 14px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: inherit;
+  padding: 6px 4px;
+}
+
+.pr-button {
+  border: 1px solid var(--brief-line-strong);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--brief-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  padding: 8px 13px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+}
+
+.pr-button:hover { border-color: var(--brief-blue); }
+
+.pr-button.primary {
+  background: var(--brief-blue-deep);
+  border-color: var(--brief-blue-deep);
+  color: #ffffff;
+}
+
+.pr-button[aria-pressed="true"] {
+  background: rgba(37, 99, 235, 0.2);
+  border-color: var(--brief-blue);
+  color: var(--brief-blue);
+}
+
+.pr-main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  gap: 14px;
+  padding: 14px;
+}
+
+.pr-stage-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pr-stage-wrap {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--brief-line);
+  border-radius: var(--brief-radius);
+  background: #0b0f15;
+  cursor: pointer;
+}
+
+.pr-stage-wrap .stage {
+  border-radius: 4px;
+}
+
+.pr-hint {
+  flex: 0 0 auto;
+  color: var(--brief-faint);
+  font-size: 12px;
+  text-align: center;
+}
+
+.pr-side {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pr-panel {
+  border: 1px solid var(--brief-line);
+  border-radius: var(--brief-radius);
+  background: var(--brief-panel);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.pr-panel-label {
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--brief-line);
+  padding: 11px 16px;
+  color: var(--brief-faint);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.pr-script {
+  flex: 1 1 60%;
+}
+
+.pr-script-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 20px 22px;
+  font-size: 17.5px;
+  line-height: 1.95;
+  white-space: pre-wrap;
+  scrollbar-width: thin;
+  scrollbar-color: var(--brief-line-strong) transparent;
+}
+
+.pr-script-body.empty {
+  color: var(--brief-faint);
+  font-size: 14px;
+}
+
+.pr-next {
+  flex: 0 0 auto;
+}
+
+.pr-next-wrap {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  margin: 12px;
+  border-radius: 8px;
+  background: #0b0f15;
+  pointer-events: none;
+}
+
+.pr-next-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--brief-faint);
+  font-size: 13px;
+}
+
+.pr-nav {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--brief-line);
+  background: var(--brief-panel);
+  padding: 10px 14px;
+}
+
+.pr-nav-pages {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--brief-line-strong) transparent;
+}
+
+.pr-page-btn {
+  flex: 0 0 auto;
+  min-width: 34px;
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--brief-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.pr-page-btn:hover { border-color: var(--brief-line-strong); color: var(--brief-ink); }
+
+.pr-page-btn.active {
+  background: rgba(37, 99, 235, 0.2);
+  border-color: var(--brief-blue);
+  color: var(--brief-blue);
+}
+
+.pr-count {
+  flex: 0 0 auto;
+  color: var(--brief-muted);
+  font-size: 14px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  padding: 0 6px;
+}
+
+.pr-error {
+  margin: auto;
+  max-width: 460px;
+  border: 1px solid var(--brief-line-strong);
+  border-radius: var(--brief-radius);
+  background: var(--brief-panel);
+  padding: 28px 32px;
+  text-align: center;
+}
+
+.pr-error strong { display: block; font-size: 16px; }
+.pr-error p { margin: 8px 0 0; color: var(--brief-muted); font-size: 14px; }
+.pr-error a { color: var(--brief-blue); font-weight: 650; text-decoration: none; }
+
+@media (max-width: 1100px) {
+  .pr-main { grid-template-columns: minmax(0, 1fr) minmax(260px, 300px); }
+}
+
+@media (max-width: 767px) {
+  .pr-main { grid-template-columns: 1fr; overflow-y: auto; }
+  .pr-stage-col { flex: 0 0 auto; }
+  .pr-stage-wrap { aspect-ratio: 16 / 10; flex: 0 0 auto; }
+  .pr-side { flex: 0 0 auto; }
+  .pr-script { min-height: 220px; }
+  .pr-doc-title { font-size: 13px; }
+}
+
+/* ==============================
+   청중 화면 (view)
+   ============================== */
+
+body.brief-view {
+  background: #000000;
+  color: #f1f5f9;
+  cursor: none;
+  overflow: hidden;
+}
+
+.vw-stage-wrap {
+  position: fixed;
+  inset: 0;
+}
+
+.vw-stage-wrap #page-slot {
+  height: 100%;
+}
+
+.vw-wait {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: #7b8798;
+  font-size: 15px;
+}
+
+.vw-wait strong {
+  display: block;
+  color: #f1f5f9;
+  font-size: 18px;
+  margin-bottom: 6px;
+}
