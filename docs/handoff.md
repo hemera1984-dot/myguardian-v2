@@ -1,5 +1,20 @@
 # handoff — 세션 인수인계
 
+## 2026-07-19 — 브리핑 시스템 1차 시공 (claude/brief 브랜치)
+
+- 신설: web/brief/ (진입 index / 발표자 present / 청중 view / 엔진 brief.js / brief.css),
+  data/schema/brief-doc.schema.json, data/brief/(index.json + 샘플 1건), pipeline/brief_from_care.py, scripts/verify_brief.py
+- 샘플 실자료: 주간 안창민 11호 → lecture-2026-001 (강의 모드 22페이지, 스크립트 = 발행호 요약·한마디 추출)
+- 검증: 자동 10항목 전부 통과 (페이지 넘김 / 포인터 비율 좌표 / 영상 play·pause·seek / 늦은 입장 state 동기화 /
+  로컬 파일 동선 / 스크립트 청중 비노출 / 콘솔 오류 0) + 3해상도 스크린샷(scripts/shots/brief-*)
+- 시공 중 수정 2건: 청중 창 문서 로드 전 도착한 state 버퍼링(경합 해소), [hidden] display 충돌 안전망(brief.css)
+- 검증 한계: 영상 seek는 검증용 MediaRecorder webm이 탐색 불가 매체라 두 창 시각 일치만 확인 — 실전 mp4로 재확인 권장
+- 공용 파일(사이드바·platform.css) 무수정. 8123 포트에 다른 디렉터리를 서빙하는 정체불명 서버가 떠 있어
+  검증은 별도 포트로 진행 (그 프로세스는 건드리지 않음, PID 16700)
+- 2차(Cloudflare Workers 원격 동기화)는 미착공 — 규약/운반 계층 분리로 준비만 완료
+- 사용자 결정 대기: ① 브리핑 메뉴 위치(9번째 메뉴 = 헌법 개정 필요 / 학습에 묶기 / 문맥 진입만)
+  ② "브리핑" 한국어 표기 확정 ③ claude/brief → main 병합
+
 ## 2026-07-19 — 팀 캘린더 폐기 + 헌법 개정
 
 - 결정(사용자): 일정·캘린더는 우리팀 워크스페이스가 흡수. 홈 팀 캘린더 구획 폐기

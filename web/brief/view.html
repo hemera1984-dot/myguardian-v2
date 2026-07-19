@@ -32,6 +32,7 @@
       var doc = null;
       var current = 0;
       var protocol = null;
+      var pendingState = null; // 문서 로드 전에 도착한 상태 (로드 완료 후 적용)
 
       var stageWrap = document.getElementById("stage-wrap");
       var stage = document.getElementById("stage");
@@ -67,7 +68,11 @@
         document.title = doc["제목"] + " - 마이가디언";
         document.getElementById("wait").hidden = true;
         stageWrap.hidden = false;
-        show(1);
+        show(pendingState ? pendingState.page : 1);
+        if (pendingState && pendingState.video) {
+          applyVideo(pendingState.video.playing ? "play" : "pause", pendingState.video.time);
+        }
+        pendingState = null;
       }
 
       // 문서 로드 경로: ?doc=<공개id> / ?src=<저장소 상대경로> / ?local=1&ch=<문서id>
@@ -95,8 +100,12 @@
         var transport = B.createBroadcastTransport(B.channelName(id));
         protocol = B.createProtocol(transport, {
           doc: function (msg) { ready(msg.doc); },
-          page: function (msg) { show(msg.page); },
+          page: function (msg) {
+            if (!doc) { pendingState = { page: msg.page }; return; }
+            show(msg.page);
+          },
           state: function (msg) {
+            if (!doc) { pendingState = msg; return; }
             show(msg.page);
             if (msg.video) applyVideo(msg.video.playing ? "play" : "pause", msg.video.time);
           },

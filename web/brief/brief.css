@@ -25,6 +25,9 @@
 
 * { box-sizing: border-box; }
 
+/* hidden 속성이 display 선언에 밀리지 않도록 (플랫폼 공통 안전망과 동일) */
+[hidden] { display: none !important; }
+
 html, body {
   height: 100%;
 }
