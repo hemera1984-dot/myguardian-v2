@@ -60,6 +60,25 @@ C:\Users\<사용자>\.claude\projects\C--projects-myguardian-v2\
 작업 인수인계는 원래 `docs/handoff.md`·`decisions.md`·`current-status.md`가 담당한다.
 기록 복사는 "지난 대화를 다시 열어볼 수 있게" 하는 용도다.
 
+## 4-1. 새 PC에서 첫 대화 시작하기
+
+새 PC에 Claude Code 앱을 깔면 화면이 비어 있어 막막해 보이지만, **폴더만 열면 맥락이 잡힌다.**
+앱은 프로젝트 폴더의 `CLAUDE.md`(헌법)를 자동으로 읽고 시작한다.
+
+1. 앱에서 폴더 열기 → `C:\projects\myguardian-v2` 선택
+2. 첫 메시지로 아래를 그대로 붙여넣는다:
+
+```
+docs/current-status.md, docs/decisions.md, docs/handoff.md를 읽고
+지금 프로젝트가 어디까지 왔는지, 다음에 할 일이 뭔지 정리해줘.
+그 다음 오늘 작업을 시작하자.
+```
+
+이 세 문서가 인수인계서다. 어느 PC의 어느 대화창이든 이걸 읽고 이어서 작업한다.
+지난 대화 내용을 기억하지 못해도 프로젝트 상태는 문서가 알려준다.
+
+3. 작업이 끝나면 항상: 변경 내용을 `docs/handoff.md`에 기록 → commit → push
+
 ## 5. 브라우저에 저장된 것 — 이관되지 않음 (새 PC에서 다시 입력)
 
 localStorage는 PC·브라우저마다 따로다. 새 PC에서 한 번씩 다시 설정한다.
