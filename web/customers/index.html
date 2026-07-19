@@ -352,12 +352,12 @@
         return null;
       }
 
-      // handle이 dir 자신이거나 dir 트리 안에 있는지 — 자기 트리로의 이관을 막는다
-      async function containsHandle(dir, handle, depth) {
+      // handle이 dir 자신이거나 dir 트리 안에 있는지 — 자기 트리로의 이관을 막는다.
+      // 깊이 제한 없이 전체를 순회한다 (제한이 있으면 깊은 하위 폴더가 차단을 우회한다)
+      async function containsHandle(dir, handle) {
         if (await dir.isSameEntry(handle)) return true;
-        if (depth > 6) return false;
         for await (var entry of dir.values()) {
-          if (entry.kind === "directory" && (await containsHandle(entry, handle, depth + 1))) return true;
+          if (entry.kind === "directory" && (await containsHandle(entry, handle))) return true;
         }
         return false;
       }
@@ -405,7 +405,7 @@
         btn.disabled = true;
         try {
           // 자기 트리 차단: 연결 저장소 안(원본 자신·하위·형제·루트 포함)으로는 이관 불가
-          if (await containsHandle(ROOT_HANDLE || c.parent, target, 0)) {
+          if (await containsHandle(ROOT_HANDLE || c.parent, target)) {
             msg.textContent = "연결된 저장소 안으로는 이관할 수 없습니다. 대상 FC의 저장소 루트를 선택하세요.";
             btn.disabled = false;
             return;
@@ -449,7 +449,7 @@
             return;
           }
           // 검증 통과 — 원본 삭제는 고객코드를 다시 보여주고 확정받는다
-          pendingMove = { code: c.code, target: target, count: manifest.length };
+          pendingMove = { code: c.code, target: target, dst: dst, count: manifest.length };
           $("mgmt-box").innerHTML =
             '<span style="font-size:0.88rem;font-weight:600">사본 검증 완료 — 파일 ' + manifest.length + "개 전건 일치 ("
             + esc(target.name || "대상 저장소") + "/" + esc(c.code) + "). " + esc(c.code) + " 원본을 삭제하고 이관을 마칠까요?</span>"
@@ -464,9 +464,25 @@
       async function finishMove(c, btn) {
         if (btn.disabled || !pendingMove || pendingMove.code !== c.code) return;
         btn.disabled = true;
+        var name = pendingMove.target.name || "대상 저장소";
         try {
+          // 확정 직전 재검증 — 검증과 확정 사이에 원본·사본이 변했으면 삭제하지 않는다 (Codex 5차 치명 1)
+          btn.textContent = "재검증 중";
+          var fresh = await buildManifest(c.handle, "");
+          var bad = await verifyCopy(fresh, pendingMove.dst);
+          if (bad) {
+            var cleaned = true;
+            try { await pendingMove.target.removeEntry(c.code, { recursive: true }); } catch (e2) { cleaned = false; }
+            pendingMove = null;
+            renderDetail(c);
+            var m1 = $("mgmt-msg");
+            if (m1) {
+              m1.textContent = "확정 중단 (" + bad + "): 검증 이후 파일이 달라져 원본을 삭제하지 않았습니다."
+                + (cleaned ? " 사본은 제거했습니다. 다시 이관하세요." : " 사본 제거도 실패했습니다. " + name + "/" + c.code + " 폴더를 수동으로 삭제하세요.");
+            }
+            return;
+          }
           await c.parent.removeEntry(c.code, { recursive: true });
-          var name = pendingMove.target.name || "대상 저장소";
           pendingMove = null;
           removeFromList(c.code, c.code + " 이관 완료 (" + name + ").");
         } catch (e) {

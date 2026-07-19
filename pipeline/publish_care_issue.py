@@ -3,7 +3,9 @@
 사용법: python pipeline/publish_care_issue.py --id weekly-12
 
 검증 항목을 전부 통과해야 발행된다. 하나라도 실패하면 목록을 출력하고 중단한다.
-본문 구조(자료형 포함)는 data/schema/care-body.schema.json 규격을 코드로 검증한다.
+본문 구조는 data/schema/care-body.schema.json을 jsonschema로 실검증하고 (수동 검증과의
+불일치 원천 차단 — Codex 5차), 스키마가 못 보는 정합(id 일치·채널별 기사 수·번호 연속유일·
+파일 실존)만 코드로 보탠다.
 발행 전환은 임시 파일에 쓴 뒤 원자적으로 교체한다 — 절반만 쓰인 issues.json을 남기지 않는다.
 """
 
@@ -13,6 +15,12 @@ import os
 import sys
 import tempfile
 from pathlib import Path
+
+try:
+    import jsonschema
+except ImportError:
+    print("jsonschema 라이브러리가 필요합니다: pip install jsonschema")
+    sys.exit(1)
 
 # Windows 기본 콘솔(cp949)에서도 한글·특수문자 출력이 깨지지 않게 한다 (Codex 4차 중요 4)
 if hasattr(sys.stdout, "reconfigure"):
@@ -39,36 +47,15 @@ def atomic_write(path, text):
         raise
 
 
-def str_list(value):
-    """비어 있지 않은 문자열들의 비어 있지 않은 배열인지"""
-    return (isinstance(value, list) and len(value) > 0
-            and all(isinstance(x, str) and x.strip() for x in value))
-
-
-def validate_article(a, errors):
-    tag = f"기사 {a.get('번호')}"
-    if not isinstance(a.get("번호"), int):
-        errors.append(f"{tag}: 번호가 정수가 아닙니다")
-    if not (isinstance(a.get("제목"), str) and a["제목"].strip()):
-        errors.append(f"{tag}: 제목 없음")
-    if not (isinstance(a.get("부제"), str) and a["부제"].strip()):
-        errors.append(f"{tag}: 부제 없음")
-    if not str_list(a.get("요약")):
-        errors.append(f"{tag}: 요약이 비어 있거나 문자열 배열이 아닙니다")
-    if "한마디" in a and a["한마디"] and not str_list(a["한마디"]):
-        errors.append(f"{tag}: 한마디가 문자열 배열이 아닙니다")
-    body = a.get("본문")
-    if not (isinstance(body, list) and body):
-        errors.append(f"{tag}: 본문이 비어 있거나 배열이 아닙니다")
-    else:
-        for i, block in enumerate(body):
-            if (not isinstance(block, dict) or block.get("t") not in ("h", "p")
-                    or not isinstance(block.get("x"), str) or not block["x"].strip()):
-                errors.append(f"{tag}: 본문 {i + 1}번째 블록이 규격({{t: h|p, x: 문자열}})이 아닙니다")
-                break
-    img = a.get("이미지")
-    if img and not (ROOT / img).exists():
-        errors.append(f"{tag}: 이미지 파일 없음 - {img}")
+def schema_errors(body):
+    """care-body.schema.json 실검증 — 위반 목록을 사람이 읽을 수 있는 형태로"""
+    schema = json.loads((ROOT / "data" / "schema" / "care-body.schema.json").read_text(encoding="utf-8"))
+    validator = jsonschema.Draft202012Validator(schema)
+    out = []
+    for err in sorted(validator.iter_errors(body), key=lambda e: list(e.absolute_path)):
+        path = "/".join(str(p) for p in err.absolute_path) or "(루트)"
+        out.append(f"본문 규격 위반 [{path}]: {err.message}")
+    return out
 
 
 def main():
@@ -93,30 +80,28 @@ def main():
         sys.exit(1)
     body = json.loads(body_path.read_text(encoding="utf-8"))
 
-    errors = []
+    # 1) 스키마 실검증 — 자료형·필수 필드·패턴은 전부 여기서 걸린다
+    errors = schema_errors(body)
 
-    # 호 메타·본문 정합
+    # 2) 스키마가 못 보는 정합 검사 — 자료형이 보장된 경우에만 수행 (오류 시 충돌 방지)
     if not (entry.get("제목") or "").strip():
         errors.append("호 제목이 비어 있습니다 (issues.json의 제목)")
     if body.get("id") != entry.get("id"):
         errors.append(f"본문 id({body.get('id')})와 메타 id({entry.get('id')})가 다릅니다")
 
-    # 기사: 채널별 개수, 번호 유일·연속, 항목별 자료형
-    articles = body.get("기사", [])
-    expected = ARTICLE_COUNT.get(entry.get("채널"))
-    if not isinstance(articles, list) or not articles:
-        errors.append("기사가 없습니다")
-    else:
-        if expected and len(articles) != expected:
-            errors.append(f"기사 수가 {len(articles)}개 - {entry['채널']}은 {expected}개여야 합니다")
-        numbers = [a.get("번호") for a in articles]
-        if sorted(numbers) != list(range(1, len(articles) + 1)):
-            errors.append(f"기사 번호가 1~{len(articles)} 연속·유일이 아닙니다: {numbers}")
-        for a in articles:
-            validate_article(a, errors)
-
-    if not str_list(body.get("편집장의말")):
-        errors.append("편집장의 말이 비어 있거나 문자열 배열이 아닙니다")
+    articles = body.get("기사") if isinstance(body.get("기사"), list) else []
+    dict_articles = [a for a in articles if isinstance(a, dict)]
+    if not errors and dict_articles:
+        expected = ARTICLE_COUNT.get(entry.get("채널"))
+        if expected and len(dict_articles) != expected:
+            errors.append(f"기사 수가 {len(dict_articles)}개 - {entry['채널']}은 {expected}개여야 합니다")
+        numbers = [a.get("번호") for a in dict_articles]
+        if sorted(n for n in numbers if isinstance(n, int) and not isinstance(n, bool)) != list(range(1, len(dict_articles) + 1)):
+            errors.append(f"기사 번호가 1~{len(dict_articles)} 연속·유일이 아닙니다: {numbers}")
+        for a in dict_articles:
+            img = a.get("이미지")
+            if isinstance(img, str) and img and not (ROOT / img).exists():
+                errors.append(f"기사 {a.get('번호')}: 이미지 파일 없음 - {img}")
 
     cover = entry.get("커버이미지")
     if cover and not (ROOT / cover).exists():
