@@ -1701,6 +1701,96 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   display: none !important;
 }
 
+/* 발행 데스크 — 케어센터의 주 업무는 발행이다 */
+.pub-desk {
+  background: #fff;
+  border: 1px solid var(--line, #e3e7ee);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  margin-bottom: 26px;
+  box-shadow: 0 1px 2px rgba(26, 39, 68, 0.05);
+}
+
+.pub-desk-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pub-desk-head h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.pub-chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.09);
+  color: #2563eb;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.pub-steps {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.pub-steps li {
+  border-top: 2px solid #1a2744;
+  padding-top: 10px;
+}
+
+.pub-steps strong {
+  display: block;
+  font-size: 0.93rem;
+  margin-bottom: 3px;
+}
+
+.pub-steps span {
+  font-size: 0.85rem;
+  color: #5b6576;
+  line-height: 1.55;
+}
+
+.pub-desk-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.pub-desk-actions button {
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: 1px solid var(--line, #d7dce5);
+  background: #fff;
+  border-radius: 9px;
+  padding: 9px 14px;
+  cursor: pointer;
+  min-height: 42px;
+}
+
+.pub-desk-actions button:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+@media (max-width: 640px) {
+  .pub-steps {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
 /* 실사 헤더 배너 — 서재·리포트 입구의 첫인상 */
 .photo-hero {
   position: relative;

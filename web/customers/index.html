@@ -23,13 +23,13 @@
     <main class="platform-main">
 
       <section class="section-block" id="connect-block">
-        <div class="section-head"><div><h2>고객 폴더 연결</h2><p>내 PC의 고객 저장소 폴더(mg-clients)를 연결하면 목록이 표시됩니다. 모든 처리는 브라우저 안에서만 이루어지며 어디에도 전송되지 않습니다.</p></div></div>
+        <div class="section-head"><div><h2>내 고객 저장소</h2><p>내 PC의 고객 저장소(mg-clients)를 한 번 연결하면 기존 고객 전체가 목록에 올라옵니다. 이후 등록·삭제·이관은 이 화면에서 처리하며, 모든 처리는 브라우저 안에서만 이루어지고 어디에도 전송되지 않습니다.</p></div></div>
         <div class="surface-card">
           <div class="empty-inline" id="connect-box">
-            <div><strong>연결된 폴더 없음</strong><span>고객 폴더를 선택해 시작합니다. 폴더명(C-YYYY-NNN)이 곧 고객코드입니다.</span></div>
+            <div><strong>연결된 저장소 없음</strong><span>저장소 폴더를 선택해 시작합니다. 폴더명(C-YYYY-NNN)이 곧 고객코드이며, 기존 고객은 한 번에 등록됩니다.</span></div>
           </div>
           <p style="margin:14px 0 0">
-            <button class="tab-button active" type="button" id="btn-connect">고객 폴더 연결</button>
+            <button class="tab-button active" type="button" id="btn-connect">고객 저장소 연결</button>
             <button class="tab-button" type="button" id="btn-new" hidden>신규 고객 등록</button>
           </p>
           <div id="new-form" hidden style="margin-top:14px;flex-wrap:wrap;gap:8px;align-items:center;display:flex">
@@ -122,7 +122,7 @@
             if (entry.kind !== "directory") continue;
             if (CODE_RE.test(entry.name)) {
               if (depth === 0) rootHasCodes = true;
-              var c = await readCustomer(entry);
+              var c = await readCustomer(entry, dir);
               if (c) out.push(c);
             } else if (depth < 2) {
               out = out.concat(await walk(entry, depth + 1));
@@ -130,7 +130,7 @@
           }
           return out;
         }
-        async function readCustomer(dirHandle) {
+        async function readCustomer(dirHandle, parentHandle) {
           try {
             var fh = await dirHandle.getFileHandle("profile.json");
             var profile = JSON.parse(await (await fh.getFile()).text());
@@ -144,7 +144,7 @@
               var mh = await dirHandle.getFileHandle("memo.md");
               memoText = await (await mh.getFile()).text();
             } catch (e) {}
-            return { code: dirHandle.name, profile: profile, policies: policies, handle: dirHandle, memoText: memoText };
+            return { code: dirHandle.name, profile: profile, policies: policies, handle: dirHandle, parent: parentHandle, memoText: memoText };
           } catch (e) { return null; }
         }
         walk(root, 0).then(function (found) {
@@ -280,7 +280,103 @@
             }).join("") + "</dl>"
           + "<h4 style='margin:16px 0 6px'>보유보험 " + pols.length + "건</h4><ul style='margin:0;padding-left:20px'>" + polHtml + "</ul>"
           + memoSection(c, o)
+          + mgmtSection(c, o)
           + "</div>";
+      }
+
+      // 고객 관리 — 이관·삭제. 쓰기 연결일 때만 노출된다
+      function mgmtSection(c, o) {
+        if (!c.handle || !c.parent) return "";
+        return "<h4 style='margin:20px 0 6px'>관리</h4>"
+          + '<div id="mgmt-box" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
+          + '<button class="tab-button" type="button" id="cust-move" data-code="' + esc(c.code) + '">다른 FC 저장소로 이관</button>'
+          + '<button class="tab-button" type="button" id="cust-del" data-code="' + esc(c.code) + '" style="color:#b42318">고객 삭제</button>'
+          + '<span id="mgmt-msg" style="font-size:0.83rem;color:var(--platform-muted)"></span>'
+          + "</div>";
+      }
+
+      async function copyDir(srcDir, dstDir) {
+        for await (var entry of srcDir.values()) {
+          if (entry.kind === "file") {
+            var f = await entry.getFile();
+            var nfh = await dstDir.getFileHandle(entry.name, { create: true });
+            var w = await nfh.createWritable();
+            await w.write(f);
+            await w.close();
+          } else {
+            var nd = await dstDir.getDirectoryHandle(entry.name, { create: true });
+            await copyDir(entry, nd);
+          }
+        }
+      }
+
+      function removeFromList(code, notice) {
+        ALL = ALL.filter(function (x) { return x.code !== code; });
+        state.sel = null;
+        $("detail").innerHTML = DETAIL_EMPTY;
+        renderList();
+        $("connect-box").querySelector("span").textContent = "고객 " + ALL.length + "명. " + notice;
+      }
+
+      // 삭제 — 2단계 확인 후 폴더째 제거. 되돌릴 수 없으므로 고객코드를 명시해 확인한다
+      function confirmDelete(c) {
+        var box = $("mgmt-box");
+        var o = v1(c);
+        box.innerHTML = '<span style="font-size:0.88rem;color:#b42318;font-weight:600">'
+          + esc(c.code) + " " + esc(o.customerName || "") + " 폴더를 통째로 삭제합니다. 되돌릴 수 없습니다.</span>"
+          + '<button class="tab-button" type="button" id="cust-del-yes" data-code="' + esc(c.code) + '" style="color:#b42318">삭제 확정</button>'
+          + '<button class="tab-button" type="button" id="cust-del-no" data-code="' + esc(c.code) + '">취소</button>';
+      }
+
+      async function doDelete(c, btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        try {
+          await c.parent.removeEntry(c.code, { recursive: true });
+          removeFromList(c.code, c.code + " 삭제됨.");
+        } catch (e) {
+          btn.disabled = false;
+          btn.textContent = "삭제 실패 - 권한 확인";
+        }
+      }
+
+      // 이관 — 대상 FC 저장소 폴더를 선택하면 복사 → 검증 → 원본 삭제 순서로 옮긴다
+      async function doMove(c, btn) {
+        if (btn.disabled) return;
+        var msg = $("mgmt-msg");
+        var target = null;
+        try {
+          target = await window.showDirectoryPicker({ mode: "readwrite" });
+        } catch (e) { return; } // 선택 취소
+        btn.disabled = true;
+        try {
+          if (await target.isSameEntry(c.parent)) {
+            msg.textContent = "같은 저장소입니다. 대상 FC의 폴더를 선택하세요.";
+            btn.disabled = false;
+            return;
+          }
+          var exists = true;
+          try { await target.getDirectoryHandle(c.code); } catch (e) { exists = false; }
+          if (exists) {
+            msg.textContent = "대상 저장소에 " + c.code + " 폴더가 이미 있습니다. 정리 후 다시 시도하세요.";
+            btn.disabled = false;
+            return;
+          }
+          msg.textContent = "이관 중";
+          var dst = await target.getDirectoryHandle(c.code, { create: true });
+          try {
+            await copyDir(c.handle, dst);
+          } catch (copyErr) {
+            // 복사 실패 시 대상의 불완전 사본을 정리하고 원본은 그대로 둔다
+            try { await target.removeEntry(c.code, { recursive: true }); } catch (e2) {}
+            throw copyErr;
+          }
+          await c.parent.removeEntry(c.code, { recursive: true });
+          removeFromList(c.code, c.code + " 이관 완료 (" + (target.name || "대상 저장소") + ").");
+        } catch (e) {
+          msg.textContent = "이관 실패: 원본은 그대로 있습니다. 폴더 권한을 확인하세요.";
+          btn.disabled = false;
+        }
       }
 
       // 메모: 쓰기 연결(FSA)이면 편집·저장, 아니면 읽기 전용 표시. 저장 대상은 memo.md
@@ -313,10 +409,14 @@
       }
 
       $("detail").addEventListener("click", function (e) {
-        var btn = e.target.closest("#memo-save");
+        var btn = e.target.closest("button");
         if (!btn) return;
         var c = ALL.find(function (x) { return x.code === btn.dataset.code; });
-        if (c) saveMemo(c, $("memo-edit").value, btn);
+        if (btn.id === "memo-save" && c) saveMemo(c, $("memo-edit").value, btn);
+        else if (btn.id === "cust-del" && c) confirmDelete(c);
+        else if (btn.id === "cust-del-yes" && c) doDelete(c, btn);
+        else if (btn.id === "cust-del-no" && c) renderDetail(c);
+        else if (btn.id === "cust-move" && c) doMove(c, btn);
       });
 
       // 신규 고객 등록 — 폴더 생성이 곧 등록 (폴더명 = 고객코드)

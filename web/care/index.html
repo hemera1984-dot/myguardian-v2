@@ -26,6 +26,19 @@
       </div>
     </div>
 
+    <div class="pub-desk">
+      <div class="pub-desk-head">
+        <h2>발행 데스크</h2>
+        <span class="pub-chip" id="pub-dday"></span>
+      </div>
+      <ol class="pub-steps">
+        <li><strong>1 기사 생성</strong><span>클로드 코드 세션에 "주간 발행 준비"를 요청하면 근거 수집과 초안 작성이 진행됩니다.</span></li>
+        <li><strong>2 검토·다듬기</strong><span>리더에서 새 호를 넘겨 보며 제목과 편집장의 말을 다듬습니다.</span></li>
+        <li><strong>3 발송</strong><span>카톡 문구를 복사해 고객에게 전송합니다. 서명은 아래에서 수정합니다.</span></li>
+      </ol>
+      <div class="pub-desk-actions" id="pub-desk-actions"></div>
+    </div>
+
     <div class="section">
       <div class="sender-row" id="sender-row">
         <span>카톡 서명</span>
@@ -198,6 +211,7 @@
         .then(function (data) {
           ALL = Array.isArray(data) ? data : (data.data || []);
           buildPublisherTabs();
+          buildPubDesk();
           buildLatestDuo();
           render();
         })
@@ -216,6 +230,42 @@
           render();
         });
       });
+
+      // 발행 데스크 — 다음 발행일과 발송 준비를 최상단에서 처리한다
+      function buildPubDesk() {
+        var now = new Date();
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        // 주간: 다음 월요일 (오늘이 월요일이면 오늘)
+        var weekly = new Date(today);
+        var add = (8 - weekly.getDay()) % 7;
+        if (add === 0) add = today.getDay() === 1 ? 0 : 7;
+        weekly.setDate(weekly.getDate() + add);
+        // 월간: 오늘 이후 가장 가까운 첫째 월요일
+        function firstMonday(y, m) {
+          var d = new Date(y, m, 1);
+          d.setDate(1 + (8 - d.getDay()) % 7);
+          return d;
+        }
+        var monthly = firstMonday(today.getFullYear(), today.getMonth());
+        if (monthly < today) monthly = firstMonday(today.getFullYear(), today.getMonth() + 1);
+        function label(name, d) {
+          var diff = Math.round((d - today) / 86400000);
+          return name + " " + (d.getMonth() + 1) + "월 " + d.getDate() + "일 " + (diff === 0 ? "오늘 발행" : "D-" + diff);
+        }
+        document.getElementById("pub-dday").textContent = label("주간", weekly) + " · " + label("월간", monthly);
+
+        var actions = document.getElementById("pub-desk-actions");
+        ["주간", "월간"].forEach(function (ch) {
+          var list = ALL.filter(function (i) { return i["채널"] === ch; })
+            .sort(function (a, b) { return (b["발행일"] || "") < (a["발행일"] || "") ? -1 : 1; });
+          if (!list.length) return;
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.textContent = ch + " 최신호 카톡 문구 (" + list[0]["호수"] + "호)";
+          btn.addEventListener("click", function () { openCompose(list[0]); });
+          actions.appendChild(btn);
+        });
+      }
 
       // 채널별 최신호 직행 배너 — 서재를 뒤지지 않고 바로 읽는다
       function buildLatestDuo() {
