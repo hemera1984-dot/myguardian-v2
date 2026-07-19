@@ -1094,6 +1094,27 @@ body.platform {
   }
 }
 
+/* 사파리 설치 안내 — 설치 이벤트가 없는 기기용 수동 안내 */
+.install-guide {
+  margin: 8px 10px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--platform-line);
+  border-radius: 10px;
+  background: var(--platform-bg);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.install-guide strong {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.install-guide span {
+  color: var(--platform-muted);
+}
+
 /* 내 프로필 — FC 사진과 명함 정보, 본인이 직접 수정한다 */
 .profile-card {
   display: flex;
