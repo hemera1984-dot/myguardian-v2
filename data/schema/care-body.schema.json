@@ -9,12 +9,12 @@
     "id": {
       "type": "string",
       "description": "issues.json 메타의 id와 일치해야 한다",
-      "pattern": "^(weekly|monthly)(-[a-z0-9]+)?-[0-9]{2}$"
+      "pattern": "^(weekly|monthly)(-[a-z0-9]+)?-(0[1-9]|[1-9][0-9])$"
     },
     "편집장의말": {
       "type": "array",
       "minItems": 1,
-      "items": { "type": "string", "minLength": 1 },
+      "items": { "type": "string", "minLength": 1, "pattern": "\\S" },
       "description": "문단 배열. 서명은 항상 편집장 안창민"
     },
     "기사": {
@@ -25,17 +25,17 @@
         "required": ["번호", "카테고리", "제목", "부제", "요약", "본문"],
         "properties": {
           "번호": { "type": "integer", "minimum": 1 },
-          "카테고리": { "type": "string" },
-          "제목": { "type": "string", "minLength": 1 },
-          "부제": { "type": "string", "minLength": 1 },
+          "카테고리": { "type": "string", "pattern": "\\S" },
+          "제목": { "type": "string", "minLength": 1, "pattern": "\\S" },
+          "부제": { "type": "string", "minLength": 1, "pattern": "\\S" },
           "요약": {
             "type": "array",
             "minItems": 1,
-            "items": { "type": "string", "minLength": 1 }
+            "items": { "type": "string", "minLength": 1, "pattern": "\\S" }
           },
           "한마디": {
             "type": "array",
-            "items": { "type": "string", "minLength": 1 },
+            "items": { "type": "string", "minLength": 1, "pattern": "\\S" },
             "description": "발행인 한마디 문단 배열 (선택)"
           },
           "본문": {
@@ -46,7 +46,7 @@
               "required": ["t", "x"],
               "properties": {
                 "t": { "type": "string", "enum": ["h", "p"], "description": "h=소제목, p=문단" },
-                "x": { "type": "string", "minLength": 1 }
+                "x": { "type": "string", "minLength": 1, "pattern": "\\S" }
               }
             }
           },

@@ -83,25 +83,28 @@ def main():
     # 1) 스키마 실검증 — 자료형·필수 필드·패턴은 전부 여기서 걸린다
     errors = schema_errors(body)
 
-    # 2) 스키마가 못 보는 정합 검사 — 자료형이 보장된 경우에만 수행 (오류 시 충돌 방지)
+    # 2) 스키마가 못 보는 정합 검사 — 최상위가 객체일 때만 접근한다 (배열 등은 스키마 오류로 이미 잡혔다)
     if not (entry.get("제목") or "").strip():
         errors.append("호 제목이 비어 있습니다 (issues.json의 제목)")
-    if body.get("id") != entry.get("id"):
-        errors.append(f"본문 id({body.get('id')})와 메타 id({entry.get('id')})가 다릅니다")
 
-    articles = body.get("기사") if isinstance(body.get("기사"), list) else []
-    dict_articles = [a for a in articles if isinstance(a, dict)]
-    if not errors and dict_articles:
-        expected = ARTICLE_COUNT.get(entry.get("채널"))
-        if expected and len(dict_articles) != expected:
-            errors.append(f"기사 수가 {len(dict_articles)}개 - {entry['채널']}은 {expected}개여야 합니다")
-        numbers = [a.get("번호") for a in dict_articles]
-        if sorted(n for n in numbers if isinstance(n, int) and not isinstance(n, bool)) != list(range(1, len(dict_articles) + 1)):
-            errors.append(f"기사 번호가 1~{len(dict_articles)} 연속·유일이 아닙니다: {numbers}")
-        for a in dict_articles:
-            img = a.get("이미지")
-            if isinstance(img, str) and img and not (ROOT / img).exists():
-                errors.append(f"기사 {a.get('번호')}: 이미지 파일 없음 - {img}")
+    if isinstance(body, dict):
+        if body.get("id") != entry.get("id"):
+            errors.append(f"본문 id({body.get('id')})와 메타 id({entry.get('id')})가 다릅니다")
+        articles = body.get("기사") if isinstance(body.get("기사"), list) else []
+        dict_articles = [a for a in articles if isinstance(a, dict)]
+        if not errors and dict_articles:
+            expected = ARTICLE_COUNT.get(entry.get("채널"))
+            if expected and len(dict_articles) != expected:
+                errors.append(f"기사 수가 {len(dict_articles)}개 - {entry['채널']}은 {expected}개여야 합니다")
+            numbers = [a.get("번호") for a in dict_articles]
+            if sorted(n for n in numbers if isinstance(n, int) and not isinstance(n, bool)) != list(range(1, len(dict_articles) + 1)):
+                errors.append(f"기사 번호가 1~{len(dict_articles)} 연속·유일이 아닙니다: {numbers}")
+            for a in dict_articles:
+                img = a.get("이미지")
+                if isinstance(img, str) and img and not (ROOT / img).exists():
+                    errors.append(f"기사 {a.get('번호')}: 이미지 파일 없음 - {img}")
+    elif not errors:
+        errors.append("본문 최상위가 객체가 아닙니다")
 
     cover = entry.get("커버이미지")
     if cover and not (ROOT / cover).exists():

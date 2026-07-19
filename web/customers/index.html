@@ -284,12 +284,14 @@
           + "</div>";
       }
 
-      // 고객 관리 — 이관·삭제. 쓰기 연결일 때만 노출된다
+      // 고객 관리 — 이관(사본 생성)·삭제. 쓰기 연결일 때만 노출된다.
+      // 이관은 사본 생성·검증까지만 한다. 원본 정리는 반드시 별도의 삭제 절차로 —
+      // FSA에는 잠금이 없어 검증과 자동 삭제를 잇는 어떤 구현도 경합 창이 생긴다 (Codex 6차)
       function mgmtSection(c, o) {
         if (!c.handle || !c.parent) return "";
         return "<h4 style='margin:20px 0 6px'>관리</h4>"
           + '<div id="mgmt-box" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
-          + '<button class="tab-button" type="button" id="cust-move" data-code="' + esc(c.code) + '">다른 FC 저장소로 이관</button>'
+          + '<button class="tab-button" type="button" id="cust-move" data-code="' + esc(c.code) + '">다른 FC 저장소로 이관 (사본 생성)</button>'
           + '<button class="tab-button" type="button" id="cust-del" data-code="' + esc(c.code) + '" style="color:#b42318">고객 삭제</button>'
           + '<span id="mgmt-msg" style="font-size:0.83rem;color:var(--platform-muted)"></span>'
           + "</div>";
@@ -392,9 +394,7 @@
         }
       }
 
-      // 이관 — 복사 → 매니페스트 검증 → 사용자 확정 후 원본 삭제. 검증 전에는 절대 지우지 않는다
-      var pendingMove = null; // { code, target, count } — 검증 통과 후 확정 대기 상태
-
+      // 이관 — 복사 → 매니페스트 전건 검증까지. 원본은 어떤 경로로도 자동 삭제하지 않는다
       async function doMove(c, btn) {
         if (btn.disabled) return;
         var msg = $("mgmt-msg");
@@ -448,62 +448,14 @@
             btn.disabled = false;
             return;
           }
-          // 검증 통과 — 원본 삭제는 고객코드를 다시 보여주고 확정받는다
-          pendingMove = { code: c.code, target: target, dst: dst, count: manifest.length };
-          $("mgmt-box").innerHTML =
-            '<span style="font-size:0.88rem;font-weight:600">사본 검증 완료 — 파일 ' + manifest.length + "개 전건 일치 ("
-            + esc(target.name || "대상 저장소") + "/" + esc(c.code) + "). " + esc(c.code) + " 원본을 삭제하고 이관을 마칠까요?</span>"
-            + '<button class="tab-button" type="button" id="cust-move-yes" data-code="' + esc(c.code) + '">원본 삭제 확정</button>'
-            + '<button class="tab-button" type="button" id="cust-move-no" data-code="' + esc(c.code) + '">취소 (사본 제거)</button>';
+          // 검증 통과 — 여기서 끝난다. 원본 정리는 별도의 삭제 절차로만 한다
+          msg.textContent = "이관 사본 검증 완료 — 파일 " + manifest.length + "개 전건 일치 ("
+            + (target.name || "대상 저장소") + "/" + c.code + "). 원본은 보존되어 있습니다. "
+            + "대상 FC의 인수 확인 후, 이 화면의 고객 삭제로 원본을 정리하세요.";
+          btn.disabled = false;
         } catch (e) {
           msg.textContent = "이관 실패: 원본은 그대로 있습니다. 폴더 권한을 확인하세요.";
           btn.disabled = false;
-        }
-      }
-
-      async function finishMove(c, btn) {
-        if (btn.disabled || !pendingMove || pendingMove.code !== c.code) return;
-        btn.disabled = true;
-        var name = pendingMove.target.name || "대상 저장소";
-        try {
-          // 확정 직전 재검증 — 검증과 확정 사이에 원본·사본이 변했으면 삭제하지 않는다 (Codex 5차 치명 1)
-          btn.textContent = "재검증 중";
-          var fresh = await buildManifest(c.handle, "");
-          var bad = await verifyCopy(fresh, pendingMove.dst);
-          if (bad) {
-            var cleaned = true;
-            try { await pendingMove.target.removeEntry(c.code, { recursive: true }); } catch (e2) { cleaned = false; }
-            pendingMove = null;
-            renderDetail(c);
-            var m1 = $("mgmt-msg");
-            if (m1) {
-              m1.textContent = "확정 중단 (" + bad + "): 검증 이후 파일이 달라져 원본을 삭제하지 않았습니다."
-                + (cleaned ? " 사본은 제거했습니다. 다시 이관하세요." : " 사본 제거도 실패했습니다. " + name + "/" + c.code + " 폴더를 수동으로 삭제하세요.");
-            }
-            return;
-          }
-          await c.parent.removeEntry(c.code, { recursive: true });
-          pendingMove = null;
-          removeFromList(c.code, c.code + " 이관 완료 (" + name + ").");
-        } catch (e) {
-          btn.disabled = false;
-          btn.textContent = "원본 삭제 실패 - 권한 확인";
-        }
-      }
-
-      async function cancelMove(c, btn) {
-        if (btn.disabled || !pendingMove || pendingMove.code !== c.code) return;
-        btn.disabled = true;
-        var cleaned = true;
-        try { await pendingMove.target.removeEntry(c.code, { recursive: true }); } catch (e) { cleaned = false; }
-        var name = pendingMove.target.name || "대상";
-        pendingMove = null;
-        renderDetail(c);
-        var m2 = $("mgmt-msg");
-        if (m2) {
-          m2.textContent = cleaned
-            ? "이관을 취소했습니다. 사본을 제거했고 원본은 그대로입니다."
-            : "취소했지만 사본 제거에 실패했습니다. " + name + "/" + c.code + " 폴더를 수동으로 삭제하세요.";
         }
       }
 
@@ -545,8 +497,6 @@
         else if (btn.id === "cust-del-yes" && c) doDelete(c, btn);
         else if (btn.id === "cust-del-no" && c) renderDetail(c);
         else if (btn.id === "cust-move" && c) doMove(c, btn);
-        else if (btn.id === "cust-move-yes" && c) finishMove(c, btn);
-        else if (btn.id === "cust-move-no" && c) cancelMove(c, btn);
       });
 
       // 신규 고객 등록 — 폴더 생성이 곧 등록 (폴더명 = 고객코드)

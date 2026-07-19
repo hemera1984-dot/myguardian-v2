@@ -105,6 +105,13 @@ expect_reject("본문-메타 id 불일치 차단", dict(full_body(), id="weekly-
 expect_reject("주간 기사 3개 차단", full_body(기사=[art(1), art(2), art(3)]), "개여야")
 expect_reject("기사 번호 중복 차단", full_body(기사=[art(1), art(1), art(3), art(4)]), "연속·유일")
 
+# Codex 6차 재현 — 공백 콘텐츠·id 00·최상위 배열
+expect_reject("공백만인 콘텐츠 차단", {"id": "weekly-90", "편집장의말": ["   "], "기사": [
+    art(1, 카테고리="  ", 제목="  ", 부제=" ", 요약=["  "], 한마디=["  "], 본문=[{"t": "p", "x": "   "}]),
+    art(2), art(3), art(4)]})
+expect_reject("본문 id weekly-00 차단", dict(full_body(), id="weekly-00"))
+expect_reject("최상위 배열 본문 차단", [full_body()])
+
 # 실데이터의 빈 초안은 여전히 차단 (읽기만)
 r = subprocess.run([sys.executable, str(ROOT / "pipeline" / "publish_care_issue.py"), "--id", "weekly-12"],
                    capture_output=True, cwd=str(ROOT))
@@ -188,58 +195,35 @@ with sync_playwright() as p:
     pg.wait_for_timeout(500)
     check("비저장소 대상 차단", "고객 저장소로 보이지 않습니다" in pg.locator("#mgmt-msg").inner_text())
 
-    # 확정 사이 대상 변조 → 재검증이 삭제를 막아야 한다 (5차 치명 1 재현)
+    # 이관 = 사본 생성·검증까지 — 원본은 어떤 경로로도 자동 삭제되지 않는다 (Codex 6차 치명 1 재설계)
     pg.evaluate("window.__pick.push(window.__dst)")
     pg.click("#cust-move")
-    pg.wait_for_selector("#cust-move-yes", timeout=8000)
-    pg.evaluate("""(async () => {
-      const d = await window.__dst.getDirectoryHandle('C-2026-001');
-      const w = await (await d.getFileHandle('profile.json')).createWritable();
-      await w.write('변조된 내용'); await w.close();
-    })()""")
-    pg.click("#cust-move-yes")
-    pg.wait_for_timeout(800)
+    pg.wait_for_timeout(1500)
+    move_msg = pg.locator("#mgmt-msg").inner_text()
     state = pg.evaluate("""(async () => {
       const out = {};
       try { await window.__src.getDirectoryHandle('C-2026-001'); out.srcKept = true; } catch (e) { out.srcKept = false; }
-      try { await window.__dst.getDirectoryHandle('C-2026-001'); out.copyGone = false; } catch (e) { out.copyGone = true; }
-      return out; })()""")
-    check("대상 변조 시 원본 보존·확정 중단", state["srcKept"] and state["copyGone"], str(state))
-    check("변조 중단 안내 표시", "확정 중단" in pg.locator("#mgmt-msg").inner_text())
-
-    # 확정 사이 원본에 새 파일 추가 → 재검증이 누락을 감지해야 한다 (5차 치명 1 원본측 재현)
-    select("C-2026-002")
-    pg.evaluate("window.__pick.push(window.__dst)")
-    pg.click("#cust-move")
-    pg.wait_for_selector("#cust-move-yes", timeout=8000)
-    pg.evaluate("""(async () => {
-      const d = await window.__src.getDirectoryHandle('C-2026-002');
-      const w = await (await d.getFileHandle('new-after-verify.txt', {create:true})).createWritable();
-      await w.write('검증 후 추가'); await w.close();
-    })()""")
-    pg.click("#cust-move-yes")
-    pg.wait_for_timeout(800)
-    state = pg.evaluate("""(async () => {
-      try { await window.__src.getDirectoryHandle('C-2026-002'); return true; } catch (e) { return false; } })()""")
-    check("원본 추가 파일 감지·삭제 중단", state)
-
-    # 정상 이관: 검증 → 확정 → 원본 삭제, 사본 내용 일치
-    select("C-2026-003")
-    pg.evaluate("window.__pick.push(window.__dst)")
-    pg.click("#cust-move")
-    pg.wait_for_selector("#cust-move-yes", timeout=8000)
-    pg.click("#cust-move-yes")
-    pg.wait_for_timeout(800)
-    state = pg.evaluate("""(async () => {
-      const out = {};
-      try { await window.__src.getDirectoryHandle('C-2026-003'); out.srcGone = false; } catch (e) { out.srcGone = true; }
       try {
-        const d = await window.__dst.getDirectoryHandle('C-2026-003');
+        const d = await window.__dst.getDirectoryHandle('C-2026-001');
         const f = await (await (await d.getDirectoryHandle('docs')).getFileHandle('note.txt')).getFile();
         out.content = await f.text();
       } catch (e) { out.content = null; }
       return out; })()""")
-    check("정상 이관 완료 (원본 삭제·사본 온전)", state["srcGone"] and state["content"] == "하위 파일 내용", str(state))
+    check("이관 = 사본 생성·검증, 원본 보존", state["srcKept"] and state["content"] == "하위 파일 내용"
+          and "사본 검증 완료" in move_msg and "원본은 보존" in move_msg, str(state))
+    # 자동 삭제 요소가 화면에 없어야 한다
+    check("자동 원본 삭제 UI 부재", pg.locator("#cust-move-yes").count() == 0)
+
+    # 원본 정리는 별도의 삭제 절차로 — 2단계 확인 후 제거
+    pg.click("#cust-del")
+    pg.wait_for_selector("#cust-del-yes")
+    pg.click("#cust-del-yes")
+    pg.wait_for_timeout(600)
+    src_gone = pg.evaluate("""(async () => {
+      try { await window.__src.getDirectoryHandle('C-2026-001'); return false; } catch (e) { return true; } })()""")
+    copy_kept = pg.evaluate("""(async () => {
+      try { await window.__dst.getDirectoryHandle('C-2026-001'); return true; } catch (e) { return false; } })()""")
+    check("별도 삭제 절차로 원본 정리 (사본 무관)", src_gone and copy_kept)
 
     # 프로필 사진 속성 주입 무력화 + 수치 즉시 표시 + 모바일 배경
     pg2 = ctx.new_page()
