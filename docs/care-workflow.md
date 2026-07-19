@@ -17,13 +17,16 @@ v1 careRouter의 실제 생성 로직을 계승하되, 인앱 AI 대신 Code 세
 발행 데스크(web/care/desk.html)가 공정의 시작과 끝이다. 케어센터는 사이드바 워크스페이스
 (발행 데스크 / 서재 / 마이가디언 홈)로 재편되었다.
 
+공정의 주도권은 가제에 있다. 발행인이 이미 아는 주제로 가제를 쓰면, 집필 세션이 제목을
+다듬고 근거를 수집해 기사를 완성한다. 뉴스 후보 목록은 참조용 보조다.
+
 | 단계 | 도구 | 설명 |
 |---|---|---|
-| 수집 | `python pipeline/collect_news.py` | 네이버 뉴스 API로 카테고리별 후보 수집 → data/care/desk/candidates.json (커밋 안 함). 키는 pipeline/naver-keys.json (gitignore) |
-| 선정 | 발행 데스크 화면 | 후보 체크 → "선택 기사로 집필 지시문 복사" → 발행 세션에 붙여넣기 |
-| 뼈대 | `python pipeline/new_care_issue.py --channel 주간` | 채번·발행일·주차라벨 자동, 본문 뼈대 생성, issues.json에 상태:초안 등록 |
-| 집필 | 발행 세션 (Code) | 아래 2~3단계 원칙으로 기사·코멘트 작성. 초안은 리더(issue.html?id=)에서 검토 |
+| 기획 | 발행 데스크 화면 | 채널 선택(주간 4꼭지/월간 3칼럼) → 꼭지별 가제 입력(브라우저 저장) → 참조 기사 선택(선택사항) → "집필 지시문 복사" |
+| 뼈대 | `python pipeline/new_care_issue.py --channel 주간` | 채번·발행일·주차라벨 자동, 본문 뼈대 생성, issues.json에 상태:초안 등록. 지시문이 초안 id를 자동으로 물고 간다 |
+| 집필 | 발행 세션 (Code) | 지시문 붙여넣기 → 제목 확정, `collect_news.py --query "키워드"`(뉴스+백과사전)와 웹검색으로 근거 교차 수집, 아래 2~3단계 원칙으로 기사·코멘트 작성. 초안은 리더(issue.html?id=)에서 검토 |
 | 발행 | `python pipeline/publish_care_issue.py --id weekly-NN` | 검증(제목·부제·본문·요약·편집장의말·이미지 존재) 통과 시 발행 전환 + 꼭지·요약 동기화 |
+| 보조 수집 | `python pipeline/collect_news.py` | 카테고리별 후보 일괄 수집 → 데스크 뉴스 후보 표시 (선택사항). 키는 pipeline/naver-keys.json (gitignore, NAVER API HUB) |
 
 - 초안(상태:초안)은 발행 데스크에만 표시된다. 서재·홈·최신호·카톡 문구에서 제외.
 - 2차 공사(Cloudflare Workers) 때 수집·집필이 화면 안 버튼으로 이동한다. 스키마·공정은 그대로.

@@ -1824,6 +1824,44 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   flex-wrap: wrap;
 }
 
+/* 발행 데스크 — 이번 호 기획 (가제 입력) */
+.topic-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.topic-cat {
+  flex: 0 0 64px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1a2744;
+}
+
+.topic-row input {
+  flex: 1;
+  font: inherit;
+  font-size: 0.95rem;
+  border: 1px solid var(--line, #d7dce5);
+  border-radius: 9px;
+  padding: 10px 14px;
+  min-height: 44px;
+}
+
+.topic-row input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.news-sub {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #8a93a3;
+  margin-left: 8px;
+}
+
 /* 발행 데스크 — 뉴스 후보 */
 .news-collected {
   font-size: 0.87rem;
