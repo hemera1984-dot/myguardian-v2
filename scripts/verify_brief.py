@@ -8,6 +8,9 @@
   5. 로컬 파일 동선(진입 → 파일 선택 → 발표 시작 → 청중 창 문서 전달)이 동작하는가
   6. 스크립트가 청중 화면 DOM에 절대 나타나지 않는가
   7. 전 페이지 콘솔 오류 0건
+  8. 기형·위조 메시지(같은 origin 채널 위조)에 청중 창이 흔들리지 않는가
+  9. 로컬 청중 창을 발표자보다 먼저 열어도 동기화되는가
+seek 검증은 발표자가 실제로 이동했는지(≥1.0s)를 전제로 단언한다 — 거짓 양성 방지.
 추가로 3해상도(1920/1180/390) 스크린샷을 scripts/shots/에 저장한다.
 
 사용법: python scripts/verify_brief.py
@@ -186,6 +189,35 @@ def main() -> None:
             check("늦게 연 청중 창 → 현재 페이지 동기화", True, "8페이지로 즉시 맞춤")
             late.close()
 
+            # 8. 기형·위조 메시지 내성 (Codex 검수 반영: 같은 origin 다른 탭의 채널 위조)
+            err_before = len(errors)
+            attacker = ctx.new_page()
+            attacker.goto(f"{base}/web/brief/index.html", wait_until="networkidle")
+            attacker.evaluate(
+                "(ch) => { const c = new BroadcastChannel(ch);"
+                " c.postMessage({ v: 1, type: 'page', page: {} });"
+                " c.postMessage({ v: 1, type: 'page', page: 999 });"
+                " c.postMessage({ v: 1, type: 'pointer', x: 5, y: -2, on: true });"
+                " c.postMessage({ v: 1, type: 'doc', doc: { '제목': '위조 문서' } });"
+                " c.postMessage({ v: 1, type: 'state', page: 'x' });"
+                " c.close(); }",
+                f"mg-brief-{PUBLIC_DOC}",
+            )
+            view.wait_for_timeout(500)
+            attacker.close()
+            pointer_pct = view.evaluate(
+                "() => parseFloat(document.getElementById('pointer').style.left || '0')"
+            )
+            forged_title = "위조" in (view.title() or "")
+            # page 999는 숫자라 유효 — 마지막 페이지로 클램프될 수 있으므로 예외 없음만 본다
+            check(
+                "기형·위조 메시지 내성",
+                len(errors) == err_before and not forged_title and 0 <= pointer_pct <= 100,
+                f"예외 0건, 위조 doc 무시, 포인터 {pointer_pct:.0f}% (범위 밖 폐기)",
+            )
+            present.close()
+            view.close()
+
             # --- 검증 3: 영상 동기화 (검증용 문서) ---
             vp = ctx.new_page()
             watch_console(vp, errors, "present-video")
@@ -202,14 +234,35 @@ def main() -> None:
             vp.evaluate("() => document.querySelector('#stage video').pause()")
             vv.wait_for_function("() => document.querySelector('#stage video').paused", timeout=3000)
             check("영상 pause 동기화", True)
+            # MediaRecorder webm은 길이 메타데이터가 없고 python http.server는 Range를
+            # 지원하지 않아 탐색이 조용히 무시된다 — 두 창의 클립을 blob으로 다시 실어
+            # 매체를 탐색 가능하게 만든 뒤, 발표자의 실제 이동을 전제로 동기화를 단언한다
+            # (Codex 검수 반영: 두 창 모두 0초여도 통과하던 거짓 양성 제거)
+            for pg in (vp, vv):
+                pg.evaluate(
+                    """async () => {
+                      const v = document.querySelector('#stage video');
+                      const blob = await (await fetch(v.src)).blob();
+                      v.src = URL.createObjectURL(blob);
+                      await new Promise((r) => { v.onloadeddata = r; });
+                    }"""
+                )
+            vp.evaluate(
+                """async () => {
+                  const v = document.querySelector('#stage video');
+                  const seekTo = (t) => new Promise((r) => { v.onseeked = r; v.currentTime = t; });
+                  await seekTo(1e5);
+                  await seekTo(0);
+                }"""
+            )
             vp.evaluate("() => { document.querySelector('#stage video').currentTime = 1.2; }")
-            vp.wait_for_timeout(400)
+            vp.wait_for_timeout(600)
             t_present = vp.evaluate("() => document.querySelector('#stage video').currentTime")
             t_view = vv.evaluate("() => document.querySelector('#stage video').currentTime")
             check(
                 "영상 seek 동기화",
-                abs(t_present - t_view) < 0.6,
-                f"발표자 {t_present:.2f}s / 청중 {t_view:.2f}s",
+                t_present >= 1.0 and abs(t_present - t_view) < 0.6,
+                f"발표자 {t_present:.2f}s / 청중 {t_view:.2f}s (전제: 발표자 실제 이동 ≥1.0s)",
             )
             vp.close()
             vv.close()
@@ -235,8 +288,22 @@ def main() -> None:
             )
             popup.close()
             entry.close()
-            present.close()
-            view.close()
+
+            # 9. 로컬 청중 창 선개설 → 발표자 시작 시 문서 수신 (Codex 검수 반영: hello 유실 영구 대기 해소)
+            early = ctx.new_page()
+            watch_console(early, errors, "early-view")
+            early.goto(f"{base}/web/brief/view.html?local=1&ch={PUBLIC_DOC}", wait_until="networkidle")
+            early.wait_for_timeout(300)
+            lp = ctx.new_page()
+            watch_console(lp, errors, "present-local")
+            lp.goto(f"{base}/web/brief/index.html", wait_until="networkidle")
+            doc_text = (ROOT / "data" / "brief" / f"{PUBLIC_DOC}.json").read_text(encoding="utf-8")
+            lp.evaluate("(t) => window.sessionStorage.setItem('mg-brief-local', t)", doc_text)
+            lp.goto(f"{base}/web/brief/present.html?local=1", wait_until="networkidle")
+            early.wait_for_selector(".pg-cover-title", timeout=5000)
+            check("청중 창 선개설 → 발표자 시작 시 문서 수신", True, "hello 재송신·시작 방송으로 동기화")
+            early.close()
+            lp.close()
 
             # --- 검증 7: 콘솔 오류 ---
             check("콘솔 오류 0건", not errors, "; ".join(errors[:4]))

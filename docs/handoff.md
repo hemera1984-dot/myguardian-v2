@@ -1,5 +1,19 @@
 # handoff — 세션 인수인계
 
+## 2026-07-19 — Codex 검수 중간 확정 5건 반영 (claude/brief)
+
+- Codex 재현으로 확정된 지적 5건을 시공자가 수용·수정 (findings-brief.md 최종본은 아직 대기):
+  1. 위조 doc 메시지가 공개 문서 로드를 선점 → doc 수신을 로컬 모드로 한정 + 문서 형식 검증
+  2. pointer x=5/y=-2가 500%/-200% 적용 → 규약 계층(brief.js createProtocol)에 수신 검증 신설, 타입·범위(0~1) 밖 폐기
+  3. 기형 page={}로 청중 창 예외 → 숫자 검증 + 반올림·클램프
+  4. 로컬 청중 창 선개설 시 hello 유실로 영구 대기 → 청중 hello 재송신(1.2초 간격, 문서 수신까지) + 발표자 시작 시 doc·state 선제 방송
+  5. 발표자 sessionStorage 문서가 팝업 청중 창에 복사 → 청중 창 로드 즉시 자기 복사본 삭제
+- verify_brief.py 10→12항목: 기형·위조 메시지 내성 + 청중 선개설 테스트 추가.
+  seek 거짓 양성 제거(발표자 실제 이동 ≥1.0s 전제) — 클립을 blob 재적재로 탐색 가능화
+- 운영 주의: python http.server(로컬 미리보기)는 Range 미지원이라 실전 mp4도 로컬에서는
+  탐색이 안 될 수 있다. 정식 배포(정적 호스팅, Range 지원)에서는 문제 없음
+- 수신 검증은 규약 계층에 두어 2차 원격 운반체(WebSocket)에서도 그대로 유효
+
 ## 2026-07-19 — 브리핑 시스템 1차 시공 (claude/brief 브랜치)
 
 - 신설: web/brief/ (진입 index / 발표자 present / 청중 view / 엔진 brief.js / brief.css),

@@ -196,10 +196,45 @@
 
   // ---------- 규약 계층 ----------
 
+  // 수신 검증 — 같은 origin의 다른 탭이 채널명만 맞춰 보낸 기형·위조 메시지를 폐기한다.
+  // (Codex 검수 반영. 2차 원격 운반체에서도 이 검증층이 그대로 유효하다.)
+  function isNum(v) {
+    return typeof v === "number" && isFinite(v);
+  }
+
+  var VALIDATORS = {
+    page: function (m) { return isNum(m.page); },
+    pointer: function (m) {
+      if (m.on === false) return true;
+      return m.on === true && isNum(m.x) && isNum(m.y)
+        && m.x >= 0 && m.x <= 1 && m.y >= 0 && m.y <= 1;
+    },
+    video: function (m) {
+      return (m.action === "play" || m.action === "pause" || m.action === "seek")
+        && (m.time === undefined || isNum(m.time));
+    },
+    hello: function () { return true; },
+    state: function (m) {
+      if (!isNum(m.page)) return false;
+      if (m.video == null) return true;
+      return typeof m.video === "object" && (m.video.time === undefined || isNum(m.video.time));
+    },
+    doc: function (m) {
+      try {
+        assertDoc(m.doc);
+        return true;
+      } catch (err) {
+        return false;
+      }
+    }
+  };
+
   function createProtocol(transport, handlers) {
     handlers = handlers || {};
     transport.onMessage(function (msg) {
       if (!msg || msg.v !== 1 || typeof msg.type !== "string") return;
+      var valid = VALIDATORS[msg.type];
+      if (!valid || !valid(msg)) return;
       var fn = handlers[msg.type];
       if (fn) fn(msg);
     });
@@ -235,6 +270,7 @@
     loadDocById: loadDocById,
     loadDocBySrc: loadDocBySrc,
     parseDocText: parseDocText,
+    validateDoc: assertDoc,
     renderPage: renderPage,
     fitPage: fitPage,
     scaleStage: scaleStage,

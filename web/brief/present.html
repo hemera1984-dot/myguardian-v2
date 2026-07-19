@@ -116,7 +116,7 @@
 
       function goTo(n, silent) {
         var total = doc["페이지"].length;
-        n = Math.max(1, Math.min(total, n));
+        n = Math.max(1, Math.min(total, Math.round(n)));
         current = n;
         var page = doc["페이지"][n - 1];
         renderInto(stage, stageWrap, page);
@@ -203,6 +203,8 @@
 
         buildNav();
         goTo(1);
+        // 먼저 열려 대기 중인 청중 창을 위해 시작 즉시 방송 (로컬이면 문서까지)
+        if (isLocal) protocol.sendDoc(doc);
         protocol.sendState(current, videoState());
 
         document.getElementById("open-view").addEventListener("click", function () {
