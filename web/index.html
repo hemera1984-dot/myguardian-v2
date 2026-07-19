@@ -40,9 +40,13 @@
     </header>
 
     <main class="platform-main">
-      <section class="page-heading compact">
-        <h1>오늘 필요한 보험 업무를 빠르게 찾으세요</h1>
-        <p>사례·판례, 보험 용어, 질병 정보를 한곳에서 검색합니다.</p>
+      <section class="home-hero">
+        <div class="hero-copy">
+          <span class="hero-kicker">신한라이프 FC팀 업무 플랫폼</span>
+          <h1>오늘 필요한 보험 업무를 빠르게 찾으세요</h1>
+          <p>사례·판례, 보험 용어, 질병 정보를 한곳에서 검색합니다.</p>
+        </div>
+        <div class="hero-visual"><img src="assets/img/hero-home.jpg" alt="" fetchpriority="high"></div>
       </section>
 
       <div class="global-search">
@@ -60,6 +64,17 @@
           <div class="stat-tile"><span class="stat-label">보험 용어</span><div class="stat-value" id="stat-terms">-</div><span class="stat-sub">용어 사전</span></div>
           <div class="stat-tile"><span class="stat-label">질병 정보</span><div class="stat-value" id="stat-diseases">-</div><span class="stat-sub">질병 사전</span></div>
         </div>
+      </section>
+
+      <section class="section-block" aria-labelledby="profile-title">
+        <div class="section-head">
+          <div><h2 id="profile-title">내 프로필</h2><p>명함에 들어갈 정보입니다. 지점 이동이나 연락처 변경 시 직접 수정하세요.</p></div>
+        </div>
+        <div class="profile-card" id="profile-card"></div>
+        <div class="namecard-stage" aria-hidden="true">
+          <div class="namecard" id="namecard"></div>
+        </div>
+        <input type="file" id="profile-file" accept="image/*" hidden>
       </section>
 
       <section class="section-block" aria-labelledby="work-menu-title">
@@ -107,12 +122,30 @@
     })();
 
     (function () {
+      // 수치 카운트업 — 실데이터 규모가 살아 움직이는 첫 화면 (0.7초, 감속, 사용자 설정 존중)
+      function countUp(id, value) {
+        var el = document.getElementById(id);
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          el.textContent = value.toLocaleString();
+          return;
+        }
+        var start = null;
+        function step(ts) {
+          if (!start) start = ts;
+          var p = Math.min((ts - start) / 700, 1);
+          var eased = 1 - Math.pow(1 - p, 3);
+          el.textContent = Math.round(value * eased).toLocaleString();
+          if (p < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      }
+
       fetch("../data/stats.json")
         .then(function (r) { return r.json(); })
         .then(function (s) {
-          document.getElementById("stat-cases").textContent = s["사례"].toLocaleString();
-          document.getElementById("stat-terms").textContent = s["용어"].toLocaleString();
-          document.getElementById("stat-diseases").textContent = s["질병"].toLocaleString();
+          countUp("stat-cases", s["사례"]);
+          countUp("stat-terms", s["용어"]);
+          countUp("stat-diseases", s["질병"]);
           document.getElementById("global-state").textContent =
             "용어 " + s["용어"] + " · 질병 " + s["질병"] + " · 사례 " + s["사례"];
           var by = s["사례_출처별"] || {};
@@ -171,6 +204,170 @@
         } catch (e) {}
       })();
     })();
+    // 내 프로필·자동 명함 — 이름·직함·지점·연락처·전문분야를 본인이 수정, 명함은 저장된 값으로 생성
+    (function () {
+      "use strict";
+      var esc = window.mg.esc;
+      var KEY = "mg_profile";
+      var FIELDS = [
+        { k: "이름", label: "이름", ph: "예: 안창민" },
+        { k: "직함", label: "직함", ph: "예: FC / 팀장" },
+        { k: "지점", label: "소속 지점", ph: "예: 신한라이프 하랑지점" },
+        { k: "연락처", label: "연락처", ph: "예: 010-0000-0000" },
+        { k: "전문분야", label: "전문분야", ph: "예: 보장분석 · 상속 · 절세" }
+      ];
+
+      function load() {
+        try {
+          var p = JSON.parse(localStorage.getItem(KEY));
+          if (p && p["이름"]) return p;
+        } catch (e) {}
+        // 카톡 서명 설정이 있으면 초기값으로 잇는다
+        var name = "안창민", org = "신한라이프 하랑지점";
+        try {
+          var s = JSON.parse(localStorage.getItem("mg_care_sender"));
+          if (s && s["이름"]) { name = s["이름"].replace(/\s*FC$/, ""); org = s["소속"] || org; }
+        } catch (e) {}
+        return { "이름": name, "직함": "FC", "지점": org, "연락처": "", "전문분야": "", "사진": "" };
+      }
+
+      function save(p) {
+        localStorage.setItem(KEY, JSON.stringify(p));
+        // 케어센터 카톡 서명과 한 몸으로 움직인다
+        localStorage.setItem("mg_care_sender", JSON.stringify({
+          "이름": p["이름"] + (p["직함"] ? " " + p["직함"] : ""),
+          "소속": p["지점"]
+        }));
+      }
+
+      var box = document.getElementById("profile-card");
+      var fileInput = document.getElementById("profile-file");
+      var profile = load();
+
+      function photoHtml(p) {
+        return p["사진"]
+          ? '<img class="profile-photo" id="p-photo" src="' + p["사진"] + '" alt="프로필 사진">'
+          : '<div class="profile-photo placeholder" id="p-photo">' + esc((p["이름"] || "?").charAt(0)) + "</div>";
+      }
+
+      function renderView() {
+        var p = profile;
+        var rows = [["지점", p["지점"]], ["연락처", p["연락처"]], ["전문분야", p["전문분야"]]]
+          .filter(function (r) { return r[1]; })
+          .map(function (r) {
+            return '<div class="row"><span class="k">' + r[0] + '</span><span class="v">' + esc(r[1]) + "</span></div>";
+          }).join("");
+        box.innerHTML = photoHtml(p)
+          + '<div class="profile-main">'
+          + '<div class="p-name">' + esc(p["이름"]) + (p["직함"] ? "<small>" + esc(p["직함"]) + "</small>" : "") + "</div>"
+          + '<div class="profile-rows">' + rows + "</div>"
+          + '<div class="profile-actions">'
+          + '<button type="button" id="p-edit">프로필 수정</button>'
+          + '<button type="button" id="p-card" class="primary">명함 이미지 저장</button>'
+          + "</div></div>";
+        document.getElementById("p-edit").addEventListener("click", renderEdit);
+        document.getElementById("p-card").addEventListener("click", downloadCard);
+      }
+
+      function renderEdit() {
+        var p = profile;
+        box.innerHTML = photoHtml(p)
+          + '<div class="profile-main"><div class="profile-edit">'
+          + FIELDS.map(function (f) {
+              var span = f.k === "전문분야" ? " class=\"span2\"" : "";
+              return "<label" + span + ">" + f.label
+                + '<input type="text" data-k="' + f.k + '" value="' + esc(p[f.k] || "") + '" placeholder="' + f.ph + '">'
+                + "</label>";
+            }).join("")
+          + "</div>"
+          + '<div class="profile-actions">'
+          + '<button type="button" id="p-photo-btn">사진 첨부</button>'
+          + '<button type="button" id="p-save" class="primary">저장</button>'
+          + '<button type="button" id="p-cancel">취소</button>'
+          + "</div></div>";
+        document.getElementById("p-photo-btn").addEventListener("click", function () { fileInput.click(); });
+        document.getElementById("p-cancel").addEventListener("click", renderView);
+        document.getElementById("p-save").addEventListener("click", function () {
+          box.querySelectorAll("input[data-k]").forEach(function (inp) {
+            profile[inp.dataset.k] = inp.value.trim();
+          });
+          if (!profile["이름"]) profile["이름"] = "안창민";
+          save(profile);
+          renderView();
+        });
+      }
+
+      // 사진은 512px로 축소해 이 브라우저에만 저장한다 (외부 전송 없음)
+      fileInput.addEventListener("change", function () {
+        var f = fileInput.files && fileInput.files[0];
+        if (!f) return;
+        var img = new Image();
+        img.onload = function () {
+          var side = Math.min(img.width, img.height);
+          var canvas = document.createElement("canvas");
+          canvas.width = canvas.height = 512;
+          var ctx = canvas.getContext("2d");
+          ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, 512, 512);
+          profile["사진"] = canvas.toDataURL("image/jpeg", 0.85);
+          save(profile);
+          var mark = document.getElementById("p-photo");
+          if (mark) mark.outerHTML = photoHtml(profile);
+          URL.revokeObjectURL(img.src);
+        };
+        img.src = URL.createObjectURL(f);
+        fileInput.value = "";
+      });
+
+      // 명함 자동 생성 — 골드 프레임 배경에 저장된 프로필로 조판
+      function downloadCard() {
+        var btn = document.getElementById("p-card");
+        btn.disabled = true;
+        btn.textContent = "생성 중";
+        var p = profile;
+        var card = document.getElementById("namecard");
+        var rows = [["연락처", p["연락처"]], ["지점", p["지점"]], ["전문분야", p["전문분야"]]]
+          .filter(function (r) { return r[1]; })
+          .map(function (r) {
+            return "<div><span class=\"k\">" + r[0] + "</span>" + esc(r[1]) + "</div>";
+          }).join("");
+        card.innerHTML = '<span class="n-kicker">신한라이프</span>'
+          + '<div class="n-name">' + esc(p["이름"]) + (p["직함"] ? "<small>" + esc(p["직함"]) + "</small>" : "") + "</div>"
+          + '<div class="n-rule"></div>'
+          + '<div class="n-rows">' + rows + "</div>"
+          + (p["사진"] ? '<img class="n-photo" src="' + p["사진"] + '" alt="">' : "");
+        ensureH2C().then(function () {
+          return html2canvas(card, { scale: 2, useCORS: true, backgroundColor: null });
+        }).then(function (canvas) {
+          var a = document.createElement("a");
+          a.download = "명함-" + p["이름"] + ".png";
+          a.href = canvas.toDataURL("image/png");
+          a.click();
+          btn.disabled = false;
+          btn.textContent = "명함 이미지 저장";
+        }).catch(function () {
+          btn.disabled = false;
+          btn.textContent = "생성 실패 - 다시 시도";
+        });
+      }
+
+      var h2cPromise = null;
+      function ensureH2C() {
+        if (window.html2canvas) return Promise.resolve();
+        if (!h2cPromise) {
+          h2cPromise = new Promise(function (resolve, reject) {
+            var s = document.createElement("script");
+            s.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+            s.onload = resolve;
+            s.onerror = function () { h2cPromise = null; reject(); };
+            document.head.appendChild(s);
+          });
+        }
+        return h2cPromise;
+      }
+
+      renderView();
+    })();
+
     // 통합검색 — 용어·질병은 즉석 제안, 사례는 사례 화면으로 연결. 사전은 첫 입력 시에만 로드.
     (function () {
       "use strict";

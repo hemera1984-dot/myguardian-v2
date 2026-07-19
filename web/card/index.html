@@ -42,6 +42,14 @@
           <label for="in-note">안내 문구 (선택)</label>
           <textarea id="in-note" placeholder="예: 보장 내용 궁금하신 점은 언제든 연락 주세요."></textarea>
         </div>
+        <div>
+          <label for="in-bg">카드 배경</label>
+          <select id="in-bg">
+            <option value="">단색 네이비</option>
+            <option value="bg-frame">골드 프레임</option>
+            <option value="bg-celebrate">축하 색종이</option>
+          </select>
+        </div>
       </div>
 
       <div class="kcard" id="kcard">
@@ -128,6 +136,13 @@
 
       ["in-name", "in-sub", "in-policies", "in-note"].forEach(function (id) {
         $(id).addEventListener("input", render);
+      });
+
+      // 배경 선택 — 골드 프레임 / 축하 색종이
+      $("in-bg").addEventListener("change", function () {
+        var card = $("kcard");
+        card.classList.remove("bg-frame", "bg-celebrate");
+        if (this.value) card.classList.add(this.value);
       });
       render();
 

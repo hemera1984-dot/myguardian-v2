@@ -40,7 +40,7 @@ html {
 body.platform {
   margin: 0;
   min-width: 320px;
-  background: var(--platform-bg);
+  background: var(--platform-bg) url("img/texture-light.jpg") center / cover fixed no-repeat;
   color: var(--platform-ink);
   font-family: "Pretendard", "Pretendard Variable", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
   line-height: 1.55;
@@ -561,6 +561,14 @@ body.platform {
   background: var(--platform-bg);
 }
 
+/* 빈 상태 일러스트 — 도해 스타일 (문서·폴더) */
+.empty-illust {
+  display: block;
+  width: 108px;
+  max-width: 40%;
+  margin: 0 auto 14px;
+}
+
 .workspace-detail strong {
   display: block;
   font-size: 16px;
@@ -1014,6 +1022,289 @@ body.platform {
   margin-top: 4px;
 }
 
+/* 홈 히어로 — 상담 실사 이미지로 첫인상을 만든다 */
+.home-hero {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  margin-bottom: 22px;
+  border: 1px solid var(--platform-line);
+  border-radius: var(--platform-radius);
+  background: var(--platform-surface);
+  box-shadow: var(--platform-shadow);
+}
+
+.home-hero .hero-copy {
+  flex: 1 1 52%;
+  padding: 30px 34px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.home-hero .hero-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--platform-blue);
+}
+
+.home-hero h1 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+}
+
+.home-hero .hero-copy p {
+  margin: 0;
+  color: var(--platform-muted);
+  font-size: 14px;
+}
+
+.home-hero .hero-visual {
+  flex: 1 1 48%;
+  min-height: 190px;
+  position: relative;
+}
+
+.home-hero .hero-visual img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 35%;
+}
+
+@media (max-width: 860px) {
+  .home-hero {
+    flex-direction: column-reverse;
+  }
+  .home-hero .hero-visual {
+    min-height: 150px;
+  }
+  .home-hero .hero-copy {
+    padding: 22px 24px;
+  }
+  .home-hero h1 {
+    font-size: 21px;
+  }
+}
+
+/* 내 프로필 — FC 사진과 명함 정보, 본인이 직접 수정한다 */
+.profile-card {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  background: var(--platform-surface);
+  border: 1px solid var(--platform-line);
+  border-radius: var(--platform-radius);
+  box-shadow: var(--platform-shadow);
+  padding: 24px;
+}
+
+.profile-photo {
+  flex: 0 0 auto;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--platform-line-strong);
+  background: var(--platform-bg);
+}
+
+.profile-photo.placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--platform-faint);
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.profile-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.profile-main .p-name {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.profile-main .p-name small {
+  margin-left: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--platform-muted);
+}
+
+.profile-rows {
+  margin-top: 10px;
+  display: grid;
+  gap: 4px;
+  font-size: 13.5px;
+}
+
+.profile-rows .row {
+  display: flex;
+  gap: 10px;
+}
+
+.profile-rows .row .k {
+  flex: 0 0 58px;
+  color: var(--platform-faint);
+}
+
+.profile-rows .row .v {
+  color: var(--platform-ink);
+  word-break: keep-all;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.profile-actions button {
+  border: 1px solid var(--platform-line-strong);
+  background: var(--platform-surface);
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.profile-actions button.primary {
+  background: var(--platform-blue);
+  border-color: var(--platform-blue);
+  color: #ffffff;
+}
+
+.profile-edit {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.profile-edit label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--platform-muted);
+  font-weight: 600;
+}
+
+.profile-edit input {
+  border: 1px solid var(--platform-line-strong);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 14px;
+  min-height: 40px;
+}
+
+.profile-edit .span2 {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+  .profile-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .profile-rows .row {
+    justify-content: center;
+  }
+  .profile-edit {
+    grid-template-columns: 1fr;
+    text-align: left;
+    width: 100%;
+  }
+  .profile-actions {
+    justify-content: center;
+  }
+}
+
+/* 명함 실물 — 이미지로 변환되는 영역 (화면 밖 렌더) */
+.namecard-stage {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+}
+
+.namecard {
+  position: relative;
+  width: 630px;
+  height: 360px;
+  background: #16223c url("img/card-bg-navy.jpg") center / cover no-repeat;
+  color: #f4efe4;
+  padding: 44px 48px;
+  display: flex;
+  flex-direction: column;
+  font-family: "Pretendard", sans-serif;
+}
+
+.namecard .n-kicker {
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  color: #c9a14a;
+}
+
+.namecard .n-name {
+  margin-top: 14px;
+  font-size: 40px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.namecard .n-name small {
+  margin-left: 10px;
+  font-size: 20px;
+  font-weight: 600;
+  color: rgba(244, 239, 228, 0.8);
+}
+
+.namecard .n-rule {
+  height: 1px;
+  background: rgba(201, 161, 74, 0.45);
+  margin: 18px 0;
+}
+
+.namecard .n-rows {
+  display: grid;
+  gap: 7px;
+  font-size: 16px;
+}
+
+.namecard .n-rows .k {
+  display: inline-block;
+  width: 74px;
+  color: #c9a14a;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+}
+
+.namecard .n-photo {
+  position: absolute;
+  right: 48px;
+  top: 44px;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(201, 161, 74, 0.6);
+}
+
 /* 홈 자료 현황 타일 */
 .stat-row {
   display: grid;
@@ -1103,6 +1394,24 @@ body.platform {
   transform: translateY(-2px);
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 12px 28px rgba(16, 24, 40, 0.09);
   border-color: var(--platform-line-strong);
+}
+
+/* 누름 반응 — 버튼·카드가 손끝에 답한다 (기능 모션) */
+@media (prefers-reduced-motion: no-preference) {
+  .platform button,
+  .platform .btn,
+  .action-card,
+  .suggest-item {
+    transition: transform 0.12s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  }
+  .platform button:active,
+  .platform .btn:active,
+  .action-card:active {
+    transform: scale(0.97);
+  }
+  .mobile-menu:active {
+    transform: scale(0.9);
+  }
 }
 
 /* 목록 스크롤바 절제 */

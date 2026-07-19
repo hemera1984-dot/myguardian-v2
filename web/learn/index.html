@@ -34,7 +34,7 @@
           <div class="case-rows" id="rows"></div>
         </div>
         <div class="workspace-detail" id="detail">
-          <div><div class="detail-empty-mark"></div><strong>항목을 선택하세요</strong><p>용어를 선택하면 정의, 실무 안내, 분쟁 유의점과 필요 서류를 확인할 수 있습니다.</p></div>
+          <div><img class="empty-illust" src="../assets/img/empty-search.png" alt=""><strong>항목을 선택하세요</strong><p>용어를 선택하면 정의, 실무 안내, 분쟁 유의점과 필요 서류를 확인할 수 있습니다.</p></div>
         </div>
       </div>
     </main>
@@ -52,7 +52,7 @@
         var msg = state.tab === "term"
           ? "용어를 선택하면 정의, 실무 안내, 분쟁 유의점과 필요 서류를 확인할 수 있습니다."
           : "질병을 선택하면 치료 방법, 수술 분류, 관련 특약을 확인할 수 있습니다.";
-        return '<div><div class="detail-empty-mark"></div><strong>항목을 선택하세요</strong><p>' + msg + "</p></div>";
+        return '<div><img class="empty-illust" src="../assets/img/empty-search.png" alt=""><strong>항목을 선택하세요</strong><p>' + msg + "</p></div>";
       }
 
       var esc = window.mg.esc;
