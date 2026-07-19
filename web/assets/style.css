@@ -1688,3 +1688,89 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
 [hidden] {
   display: none !important;
 }
+
+/* 채널 최신호 직행 배너 — 실사 표지가 화면의 첫인상 */
+.latest-duo {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (min-width: 720px) {
+  .latest-duo {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.latest-card {
+  position: relative;
+  display: block;
+  min-height: 148px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(26, 39, 68, 0.22);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.latest-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px rgba(26, 39, 68, 0.3);
+}
+
+.latest-card .latest-bg {
+  position: absolute;
+  inset: 0;
+  background-color: var(--mag-weekly);
+  background-size: cover;
+  background-position: center;
+}
+
+.latest-card .latest-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  min-height: 148px;
+  padding: 16px 18px;
+  background: rgba(13, 20, 36, 0.55);
+}
+
+.latest-card .latest-ch {
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.latest-card .latest-title {
+  font-size: 1.13rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.latest-card .latest-go {
+  margin-top: 6px;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #ffd98a;
+}
+
+/* 등장 모션 — 절제된 기능 모션 (감속, 0.4초 이내, 사용자 설정 존중) */
+@media (prefers-reduced-motion: no-preference) {
+  .container > *,
+  .shelf-item,
+  .latest-card {
+    animation: mg-rise 0.35s ease both;
+  }
+  .shelf-item:nth-child(2), .container > *:nth-child(2) { animation-delay: 0.04s; }
+  .shelf-item:nth-child(3), .container > *:nth-child(3) { animation-delay: 0.08s; }
+  .shelf-item:nth-child(4), .container > *:nth-child(4) { animation-delay: 0.12s; }
+  .shelf-item:nth-child(n+5) { animation-delay: 0.16s; }
+}
+
+@keyframes mg-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}

@@ -38,6 +38,8 @@
         </div>
       </div>
 
+      <div class="latest-duo" id="latest-duo"></div>
+
       <div class="pill-tabs" role="tablist" aria-label="채널">
         <button type="button" class="active" data-ch="">전체</button>
         <button type="button" data-ch="주간">주간 안창민</button>
@@ -191,6 +193,7 @@
         .then(function (data) {
           ALL = Array.isArray(data) ? data : (data.data || []);
           buildPublisherTabs();
+          buildLatestDuo();
           render();
         })
         .catch(function () {
@@ -208,6 +211,24 @@
           render();
         });
       });
+
+      // 채널별 최신호 직행 배너 — 서재를 뒤지지 않고 바로 읽는다
+      function buildLatestDuo() {
+        var duo = document.getElementById("latest-duo");
+        var html = ["주간", "월간"].map(function (ch) {
+          var list = ALL.filter(function (i) { return i["채널"] === ch; })
+            .sort(function (a, b) { return (b["발행일"] || "") < (a["발행일"] || "") ? -1 : 1; });
+          if (!list.length) return "";
+          var i = list[0];
+          var bg = i["커버이미지"] ? ' style="background-image:url(../../' + esc(i["커버이미지"]) + ')"' : "";
+          return '<a class="latest-card" href="issue.html?id=' + encodeURIComponent(i.id) + '">'
+            + '<span class="latest-bg"' + bg + "></span>"
+            + '<span class="latest-body"><span class="latest-ch">' + esc(ch) + " " + esc(i["발행인"] || "안창민") + " · " + esc(i["호수"]) + "호</span>"
+            + '<span class="latest-title serif">' + esc(i["제목"]) + "</span>"
+            + '<span class="latest-go">최신호 바로 읽기</span></span></a>';
+        }).join("");
+        duo.innerHTML = html;
+      }
 
       // 발행인이 2명 이상일 때만 발행인 필터를 노출한다
       function buildPublisherTabs() {

@@ -6,6 +6,8 @@
   <title>마이가디언</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
   <link rel="stylesheet" href="assets/platform.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#16223c">
   <script src="assets/platform.js"></script>
 </head>
 <body class="platform">
@@ -24,6 +26,7 @@
       <a href="care/">케어센터</a>
       <a href="card/">카톡카드</a>
     </nav>
+    <button class="install-btn" id="btn-install" type="button" hidden>홈 화면에 바로가기 설치</button>
     <div class="sidebar-status"><strong>업무 공간</strong><span>필요한 기능만 간결하게</span></div>
   </aside>
   <div class="platform-overlay" id="platform-overlay"></div>
@@ -83,6 +86,26 @@
   </div>
 
   <script>
+    // 바로가기 설치 (v1 계승) + 서비스 워커
+    (function () {
+      if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+        navigator.serviceWorker.register("sw.js").catch(function () {});
+      }
+      var installBtn = document.getElementById("btn-install");
+      var deferred = null;
+      window.addEventListener("beforeinstallprompt", function (e) {
+        e.preventDefault();
+        deferred = e;
+        installBtn.hidden = false;
+      });
+      installBtn.addEventListener("click", function () {
+        if (!deferred) return;
+        deferred.prompt();
+        deferred.userChoice.then(function () { deferred = null; installBtn.hidden = true; });
+      });
+      window.addEventListener("appinstalled", function () { installBtn.hidden = true; });
+    })();
+
     (function () {
       fetch("../data/stats.json")
         .then(function (r) { return r.json(); })
@@ -109,8 +132,10 @@
           list.sort(function (a, b) { return (b["발행일"] || "") < (a["발행일"] || "") ? -1 : 1; });
           var i = list[0];
           var esc = window.mg.esc;
+          var cover = i["커버이미지"] ? '<img class="w-cover" src="../' + esc(i["커버이미지"]) + '" alt="">' : "";
           document.getElementById("care-latest-box").innerHTML =
-            "<div><strong>" + esc(i["채널"]) + " " + esc(i["발행인"] || "안창민") + " " + esc(i["호수"]) + "호 — " + esc(i["제목"]) + "</strong>"
+            cover
+            + "<div><strong>" + esc(i["채널"]) + " " + esc(i["발행인"] || "안창민") + " " + esc(i["호수"]) + "호 — " + esc(i["제목"]) + "</strong>"
             + "<span>" + esc(i["발행일"]) + ' 발행 · <a href="care/issue.html?id=' + encodeURIComponent(i.id) + '" style="color:inherit;text-decoration:underline">바로 열람</a></span></div>';
         })
         .catch(function () {});
