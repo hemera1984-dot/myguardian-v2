@@ -4,10 +4,12 @@
 결과:  data/care/desk/candidates.json (발행 데스크 화면이 읽는다. 저장소에는 커밋하지 않는다)
 
 네이버 API 키 준비 (최초 1회):
-  1. https://developers.naver.com 에서 애플리케이션 등록 (검색 API 사용 설정)
+  1. https://console.ncloud.com 의 NAVER API HUB에서 Application 등록 (뉴스 등 NAVER 검색 API 선택)
   2. pipeline/naver-keys.json 파일을 만들어 저장한다 (gitignore 대상):
-     {"client_id": "발급받은 ID", "client_secret": "발급받은 SECRET"}
+     {"client_id": "발급받은 Client ID", "client_secret": "발급받은 Client Secret"}
   또는 환경변수 NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 로 지정한다.
+
+주의: 구 개발자센터(openapi.naver.com) 키와 호환되지 않는다. 검색 API는 NAVER API HUB로 이전됐다.
 """
 
 import argparse
@@ -34,7 +36,8 @@ QUERIES = {
     "보험": ["보험 제도", "건강보험", "국민연금"],
 }
 
-API = "https://openapi.naver.com/v1/search/news.json"
+# NAVER API HUB (네이버 클라우드) — 구 openapi.naver.com에서 이전된 검색 API
+API = "https://naverapihub.apigw.ntruss.com/search/v1/news"
 
 
 def load_keys():
@@ -57,10 +60,10 @@ def strip_tags(text):
 
 
 def search(cid, secret, query, display):
-    url = API + "?" + urllib.parse.urlencode({"query": query, "display": display, "sort": "date"})
+    url = API + "?" + urllib.parse.urlencode({"query": query, "display": display, "sort": "date", "format": "json"})
     req = urllib.request.Request(url, headers={
-        "X-Naver-Client-Id": cid,
-        "X-Naver-Client-Secret": secret,
+        "X-NCP-APIGW-API-KEY-ID": cid,
+        "X-NCP-APIGW-API-KEY": secret,
     })
     with urllib.request.urlopen(req, timeout=15) as res:
         return json.loads(res.read().decode("utf-8")).get("items", [])
