@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
   <link rel="stylesheet" href="../assets/platform.css">
   <script src="../assets/platform.js"></script>
+  <script src="brief.js"></script>
   <style>
     .mode-grid button.action-card {
       width: 100%;
@@ -102,12 +103,17 @@
           </article>
           <article class="surface-card local-open" id="local-card">
             <h3>내 컴퓨터에서 열기</h3>
-            <p class="surface-desc" id="local-desc">브리핑 문서(JSON)를 선택해 엽니다. 파일은 브라우저 안에서만 처리되며 어디에도 전송되지 않습니다.</p>
-            <input type="file" id="file-input" accept="application/json,.json">
-            <div class="local-actions"><button class="local-button" id="file-open" type="button">문서 파일 선택</button></div>
+            <p class="surface-desc" id="local-desc">브리핑 문서(JSON)·PDF·HTML·이미지(여러 장)를 열어 발표합니다. 스크립트 파일(.txt/.md)을 함께 올리면 "---" 구분 순서대로 페이지별 발표자 스크립트가 됩니다. 파일은 이 브라우저 안에서만 처리되며 어디에도 전송되지 않습니다.</p>
+            <input type="file" id="file-input" accept=".json,application/json,.pdf,application/pdf,.html,.htm,text/html,image/*" multiple>
+            <input type="file" id="script-input" accept=".txt,.md,text/plain,text/markdown">
+            <div class="local-actions">
+              <button class="local-button" id="file-open" type="button">자료 파일 선택</button>
+              <button class="local-button" id="script-open" type="button">스크립트 파일 선택 (선택)</button>
+            </div>
             <div class="local-summary" id="local-summary" hidden>
               <strong id="local-title"></strong>
               <span id="local-meta"></span>
+              <span id="local-script-meta"></span>
               <div class="local-actions"><button class="local-button primary" id="local-start" type="button">발표 시작</button></div>
             </div>
             <p class="local-error" id="local-error" hidden></p>
@@ -125,7 +131,6 @@
       "use strict";
       var docs = [];
       var mode = null;
-      var localDocText = null;
 
       function el(tag, className, text) {
         var node = document.createElement(tag);
@@ -150,6 +155,7 @@
         rows.forEach(function (d) {
           var b = el("button", "doc-item");
           b.type = "button";
+          if (d["분류"]) b.appendChild(el("span", "mode-tag", d["분류"]));
           b.appendChild(el("span", "d-title", d["제목"]));
           b.appendChild(el("span", "d-meta", d["작성일"] + " · " + d["작성자"] + (d["페이지수"] ? " · " + d["페이지수"] + "페이지" : "")));
           if (d["요약"]) b.appendChild(el("span", "d-sum", d["요약"]));
@@ -184,49 +190,124 @@
         .then(function (list) { docs = Array.isArray(list) ? list : []; if (mode && mode !== "상담") renderList(); })
         .catch(function () {});
 
-      // 로컬 파일 열기 — 브라우저 안에서만 처리, 외부 전송 없음
+      // 로컬 자료 열기 — 브라우저 안에서만 처리, 외부 전송 없음.
+      // 선택한 자료는 IndexedDB 한 슬롯에 저장되고 발표자·청중 창이 직접 읽는다.
+      var pending = null;         // { record, 제목, 메타 }
+      var scriptSections = null;  // 스크립트 파일의 "---" 구간 배열
       var input = document.getElementById("file-input");
+      var scriptInput = document.getElementById("script-input");
+      var errorEl = document.getElementById("local-error");
+      var summary = document.getElementById("local-summary");
+
+      function showLocalError(msg) {
+        errorEl.textContent = msg;
+        errorEl.hidden = false;
+      }
+
+      function fileExt(name) {
+        var m = /\.([a-z0-9]+)$/i.exec(name || "");
+        return m ? m[1].toLowerCase() : "";
+      }
+
+      function updateSummary() {
+        if (!pending) return;
+        document.getElementById("local-title").textContent = pending["제목"];
+        document.getElementById("local-meta").textContent = pending["메타"];
+        document.getElementById("local-script-meta").textContent = scriptSections
+          ? "스크립트 " + scriptSections.length + "구간 — 순서대로 1·2·3…페이지에 연결됩니다."
+          : "스크립트 파일 없음 (선택 사항)";
+        summary.hidden = false;
+      }
+
       document.getElementById("file-open").addEventListener("click", function () { input.click(); });
+      document.getElementById("script-open").addEventListener("click", function () { scriptInput.click(); });
+
       input.addEventListener("change", function () {
-        var file = input.files && input.files[0];
-        var error = document.getElementById("local-error");
-        var summary = document.getElementById("local-summary");
-        error.hidden = true;
+        errorEl.hidden = true;
         summary.hidden = true;
-        localDocText = null;
-        if (!file) return;
+        pending = null;
+        var files = Array.prototype.slice.call(input.files || []);
+        if (!files.length) return;
+
+        var images = files.filter(function (f) { return /^image\//.test(f.type); });
+        if (images.length && images.length === files.length) {
+          images.sort(function (a, b) { return a.name.localeCompare(b.name, "ko"); });
+          var label = images[0].name + (images.length > 1 ? " 외 " + (images.length - 1) + "장" : "");
+          pending = {
+            record: { kind: "images", id: window.mgBrief.localId(images[0].name, images.length), "이름": label, files: images },
+            "제목": label,
+            "메타": "이미지 " + images.length + "장 → " + images.length + "페이지"
+          };
+          updateSummary();
+          return;
+        }
+        if (files.length > 1) {
+          showLocalError("이미지가 아닌 파일은 한 번에 하나만 선택할 수 있습니다.");
+          return;
+        }
+
+        var file = files[0];
+        var ext = fileExt(file.name);
+        if (ext === "json") {
+          var reader = new FileReader();
+          reader.onload = function () {
+            try {
+              var doc = window.mgBrief.parseDocText(String(reader.result));
+              pending = {
+                record: { kind: "doc", id: doc.id, "이름": doc["제목"], doc: doc },
+                "제목": doc["제목"],
+                "메타": (doc["모드"] || "") + " · " + (doc["작성자"] || "") + " · " + doc["페이지"].length + "페이지"
+              };
+              updateSummary();
+            } catch (err) {
+              showLocalError("열 수 없는 파일입니다: " + err.message);
+            }
+          };
+          reader.readAsText(file, "utf-8");
+        } else if (ext === "pdf") {
+          pending = {
+            record: { kind: "pdf", id: window.mgBrief.localId(file.name, file.size), "이름": file.name, file: file },
+            "제목": file.name,
+            "메타": "PDF 문서 — 페이지 수는 발표 화면에서 확인됩니다."
+          };
+          updateSummary();
+        } else if (ext === "html" || ext === "htm") {
+          pending = {
+            record: { kind: "html", id: window.mgBrief.localId(file.name, file.size), "이름": file.name, file: file },
+            "제목": file.name,
+            "메타": "HTML 문서 — 스크롤이 동기화됩니다. 포인터·페이지 넘김은 이 형식에서 지원되지 않습니다."
+          };
+          updateSummary();
+        } else {
+          showLocalError("지원 형식: 브리핑 문서(JSON) · PDF · HTML · 이미지");
+        }
+      });
+
+      scriptInput.addEventListener("change", function () {
+        scriptSections = null;
+        var f = scriptInput.files && scriptInput.files[0];
+        if (!f) {
+          updateSummary();
+          return;
+        }
         var reader = new FileReader();
         reader.onload = function () {
-          try {
-            var text = String(reader.result);
-            var doc = JSON.parse(text);
-            if (!doc || !doc.id || !doc["제목"] || !Array.isArray(doc["페이지"]) || !doc["페이지"].length) {
-              throw new Error("브리핑 문서 형식이 아닙니다. (id·제목·페이지 필요)");
-            }
-            localDocText = text;
-            document.getElementById("local-title").textContent = doc["제목"];
-            document.getElementById("local-meta").textContent =
-              (doc["모드"] || "") + " · " + (doc["작성자"] || "") + " · " + doc["페이지"].length + "페이지";
-            summary.hidden = false;
-          } catch (err) {
-            error.textContent = "열 수 없는 파일입니다: " + err.message;
-            error.hidden = false;
-          }
+          scriptSections = window.mgBrief.parseScriptText(String(reader.result));
+          updateSummary();
         };
-        reader.readAsText(file, "utf-8");
+        reader.readAsText(f, "utf-8");
       });
 
       document.getElementById("local-start").addEventListener("click", function () {
-        if (!localDocText) return;
-        try {
-          window.sessionStorage.setItem("mg-brief-local", localDocText);
-        } catch (err) {
-          var error = document.getElementById("local-error");
-          error.textContent = "문서를 넘기지 못했습니다: " + err.message;
-          error.hidden = false;
-          return;
-        }
-        window.location.href = "present.html?local=1";
+        if (!pending) return;
+        var record = pending.record;
+        record["모드"] = mode || null;
+        if (scriptSections) record["스크립트"] = scriptSections;
+        window.mgBrief.saveMaterial(record).then(function () {
+          window.location.href = "present.html?local=1";
+        }).catch(function (err) {
+          showLocalError("자료를 저장하지 못했습니다: " + err.message);
+        });
       });
     })();
   </script>

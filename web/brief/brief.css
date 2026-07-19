@@ -180,11 +180,34 @@ body.brief-view {
 }
 
 /* 밀도 단계 — 캔버스를 넘치는 글 많은 페이지의 조판 축소 */
-.stage[data-density="1"] .pg-para { font-size: 19px; line-height: 1.7; margin-bottom: 15px; }
-.stage[data-density="1"] .pg-title { font-size: 34px; }
-.stage[data-density="2"] .pg-para { font-size: 17px; line-height: 1.62; margin-bottom: 12px; }
-.stage[data-density="2"] .pg-title { font-size: 30px; }
-.stage[data-density="2"] .pg-head { padding-bottom: 14px; margin-bottom: 18px; }
+[data-density="1"] .pg-para { font-size: 19px; line-height: 1.7; margin-bottom: 15px; }
+[data-density="1"] .pg-title { font-size: 34px; }
+[data-density="2"] .pg-para { font-size: 17px; line-height: 1.62; margin-bottom: 12px; }
+[data-density="2"] .pg-title { font-size: 30px; }
+[data-density="2"] .pg-head { padding-bottom: 14px; margin-bottom: 18px; }
+
+/* 업로드 자료 렌더 (PDF·이미지·HTML) */
+.pg-media-center {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--page-paper);
+}
+
+.pg-full-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.pg-html-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #ffffff;
+}
 
 /* 이미지·영상 */
 .pg-figure {
