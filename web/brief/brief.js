@@ -304,6 +304,51 @@
       .map(function (s) { return s.trim(); });
   }
 
+  // 스크립트 파일(HTML): <hr> 요소 또는 줄 단독 "---"가 구간 구분. 블록 요소는 줄바꿈으로
+  function parseScriptHtml(html) {
+    var parsed = new DOMParser().parseFromString(String(html), "text/html");
+    var out = [];
+    var BLOCK = /^(P|DIV|LI|UL|OL|SECTION|ARTICLE|H[1-6]|BR|TR|TABLE|BLOCKQUOTE)$/;
+    (function walk(node) {
+      node.childNodes.forEach(function (child) {
+        if (child.nodeType === 3) {
+          out.push(child.nodeValue);
+          return;
+        }
+        if (child.nodeType !== 1) return;
+        if (child.tagName === "HR") {
+          out.push("\n---\n");
+          return;
+        }
+        if (child.tagName === "SCRIPT" || child.tagName === "STYLE") return;
+        walk(child);
+        if (BLOCK.test(child.tagName)) out.push("\n");
+      });
+    })(parsed.body);
+    return parseScriptText(out.join(""));
+  }
+
+  // 스크립트 파일(PDF): 페이지 = 구간. 텍스트 안에 "---" 구분이 있으면 그 구분을 우선한다
+  function parseScriptPdf(arrayBuffer) {
+    if (!window.pdfjsLib) return Promise.reject(new Error("PDF 렌더러를 불러오지 못했습니다."));
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "../assets/vendor/pdfjs/pdf.worker.min.js";
+    return window.pdfjsLib.getDocument({ data: arrayBuffer }).promise.then(function (pdf) {
+      var jobs = [];
+      for (var n = 1; n <= pdf.numPages; n += 1) {
+        jobs.push(pdf.getPage(n).then(function (page) {
+          return page.getTextContent().then(function (tc) {
+            return tc.items.map(function (it) { return it.str; }).join(" ").trim();
+          });
+        }));
+      }
+      return Promise.all(jobs).then(function (pages) {
+        var joined = pages.join("\n");
+        if (/(^|\n)\s*-{3,}\s*(\n|$)/.test(joined)) return parseScriptText(joined);
+        return pages;
+      });
+    });
+  }
+
   // 로컬 자료 채널 ID (파일명·크기 기반 — 문서 ID 형식 규칙을 따른다)
   function localId(name, size) {
     var slug = String(name).toLowerCase().replace(/[^a-z0-9]+/g, "-")
@@ -444,6 +489,8 @@
     saveMaterial: saveMaterial,
     loadMaterial: loadMaterial,
     parseScriptText: parseScriptText,
+    parseScriptHtml: parseScriptHtml,
+    parseScriptPdf: parseScriptPdf,
     localId: localId,
     createDriver: createDriver
   };

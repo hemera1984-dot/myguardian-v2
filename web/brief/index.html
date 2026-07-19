@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
   <link rel="stylesheet" href="../assets/platform.css">
   <script src="../assets/platform.js"></script>
+  <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
   <script src="brief.js"></script>
   <style>
     .mode-grid button.action-card {
@@ -103,9 +104,9 @@
           </article>
           <article class="surface-card local-open" id="local-card">
             <h3>내 컴퓨터에서 열기</h3>
-            <p class="surface-desc" id="local-desc">브리핑 문서(JSON)·PDF·HTML·이미지(여러 장)를 열어 발표합니다. 스크립트 파일(.txt/.md)을 함께 올리면 "---" 구분 순서대로 페이지별 발표자 스크립트가 됩니다. 파일은 이 브라우저 안에서만 처리되며 어디에도 전송되지 않습니다.</p>
+            <p class="surface-desc" id="local-desc">브리핑 문서(JSON)·PDF·HTML·이미지(여러 장)를 열어 발표합니다. 스크립트 파일(.txt/.md/.pdf/.html)을 함께 올리면 페이지별 발표자 스크립트가 됩니다 — 텍스트는 "---" 구분, PDF는 페이지가 구간, HTML은 수평선(hr) 구분. 파일은 이 브라우저 안에서만 처리되며 어디에도 전송되지 않습니다.</p>
             <input type="file" id="file-input" accept=".json,application/json,.pdf,application/pdf,.html,.htm,text/html,image/*" multiple>
-            <input type="file" id="script-input" accept=".txt,.md,text/plain,text/markdown">
+            <input type="file" id="script-input" accept=".txt,.md,.pdf,.html,.htm,text/plain,text/markdown,application/pdf,text/html">
             <div class="local-actions">
               <button class="local-button" id="file-open" type="button">자료 파일 선택</button>
               <button class="local-button" id="script-open" type="button">스크립트 파일 선택 (선택)</button>
@@ -290,9 +291,24 @@
           updateSummary();
           return;
         }
+        var scriptExt = fileExt(f.name);
+        if (scriptExt === "pdf") {
+          f.arrayBuffer().then(function (buf) {
+            return window.mgBrief.parseScriptPdf(buf);
+          }).then(function (sections) {
+            scriptSections = sections;
+            updateSummary();
+          }).catch(function (err) {
+            showLocalError("스크립트 PDF를 읽지 못했습니다: " + err.message);
+          });
+          return;
+        }
         var reader = new FileReader();
         reader.onload = function () {
-          scriptSections = window.mgBrief.parseScriptText(String(reader.result));
+          var text = String(reader.result);
+          scriptSections = (scriptExt === "html" || scriptExt === "htm")
+            ? window.mgBrief.parseScriptHtml(text)
+            : window.mgBrief.parseScriptText(text);
           updateSummary();
         };
         reader.readAsText(f, "utf-8");

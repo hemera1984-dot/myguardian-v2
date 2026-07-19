@@ -12,6 +12,7 @@
   9. 로컬 청중 창을 발표자보다 먼저 열어도 동기화되는가
   10. PDF 업로드(3페이지)가 페이지 동기화·스크립트 사이드카("---" 구간)와 함께 동작하는가
   11. HTML 업로드의 스크롤이 청중 창에 동기화되는가
+  12. 스크립트를 PDF(페이지=구간)·HTML(hr 구분)로 올려도 페이지별로 연결되는가
 seek 검증은 발표자가 실제로 이동했는지(≥1.0s)를 전제로 단언한다 — 거짓 양성 방지.
 업로드 픽스처(PDF·스크립트·HTML)는 실행 시 scripts/fixtures/brief/에 생성한다.
 추가로 3해상도(1920/1180/390) 스크린샷을 scripts/shots/에 저장한다.
@@ -161,7 +162,9 @@ def make_upload_fixtures() -> tuple:
         "<p>문서 끝</p></body></html>",
         encoding="utf-8",
     )
-    return pdf_path, txt_path, html_path
+    script_pdf_path = FIXTURES / "script.pdf"
+    make_pdf_fixture(script_pdf_path, ["Section 1 notes", "Section 2 notes", "Section 3 notes"])
+    return pdf_path, txt_path, html_path, script_pdf_path
 
 
 def watch_console(page, errors: list, label: str) -> None:
@@ -183,7 +186,7 @@ def main() -> None:
         with sync_playwright() as p:
             browser = p.chromium.launch(args=["--autoplay-policy=no-user-gesture-required"])
             make_video_fixture(browser, base)
-            pdf_path, txt_path, html_path = make_upload_fixtures()
+            pdf_path, txt_path, html_path, script_pdf_path = make_upload_fixtures()
             ctx = browser.new_context(viewport={"width": 1600, "height": 1000})
 
             # --- 검증 1·2·4·6: 공개 문서로 발표자·청중 동기화 ---
@@ -418,6 +421,37 @@ def main() -> None:
             check("HTML 업로드 + 스크롤 동기화", True, "발표자 스크롤 → 청중 창 반영")
             hv.close()
             he.close()
+
+            # 12. PDF·HTML 스크립트 사이드카 (스크립트를 PDF로 올리면 페이지=구간, HTML은 hr 구분)
+            se = ctx.new_page()
+            watch_console(se, errors, "present-script-pdf")
+            se.goto(f"{base}/web/brief/index.html", wait_until="networkidle")
+            html_parse_ok = se.evaluate(
+                "() => { const s = window.mgBrief.parseScriptHtml("
+                "'<p>구간 하나</p><hr><p>구간 둘</p><hr><p>구간 셋</p>');"
+                " return s.length === 3 && s[1].includes('구간 둘'); }"
+            )
+            se.locator(".mode-grid .action-card[data-mode='강의']").click()
+            se.set_input_files("#file-input", str(pdf_path))
+            se.set_input_files("#script-input", str(script_pdf_path))
+            se.wait_for_function(
+                "() => !document.getElementById('local-script-meta').textContent.includes('없음')",
+                timeout=6000,
+            )
+            se.locator("#local-start").click()
+            se.wait_for_selector("#count")
+            sec1 = "Section 1" in se.locator("#script-body").inner_text()
+            se.keyboard.press("ArrowRight")
+            se.wait_for_function(
+                "() => document.getElementById('script-body').textContent.includes('Section 2')",
+                timeout=4000,
+            )
+            check(
+                "PDF·HTML 스크립트 사이드카",
+                html_parse_ok and sec1,
+                "PDF 스크립트 페이지=구간 전환, HTML hr 구분 3구간 파싱",
+            )
+            se.close()
 
             # --- 검증 7: 콘솔 오류 ---
             check("콘솔 오류 0건", not errors, "; ".join(errors[:4]))
