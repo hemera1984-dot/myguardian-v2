@@ -16,58 +16,101 @@
       <a href="../">홈</a><a href="../customers/">고객관리</a><a href="../claims/">청구·지급</a><a href="../cases/">사례·판례</a><a href="../learn/">학습</a><a href="../brief/">브리핑</a><a class="active" href="./">우리팀</a>
       <span class="nav-separator" aria-hidden="true"></span><a href="../care/">케어센터</a><a href="../card/">카톡카드</a>
     </nav>
-    <div class="sidebar-status"><strong>팀 공간</strong><span>일정·과제·공지를 한 판에서</span></div>
+    <div class="sidebar-status"><strong>팀 공간</strong><span>오늘·팀원·캘린더·활동을 한 판에서</span></div>
   </aside>
   <div class="platform-overlay" id="platform-overlay"></div>
   <div class="platform-shell">
-    <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">우리팀</span><span class="topbar-note">팀 일정·과제·공지</span></header>
+    <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">우리팀</span><span class="topbar-note">팀 관리 — 오늘·팀원·캘린더·활동</span></header>
     <main class="platform-main">
       <section class="page-heading">
         <p class="eyebrow">팀 관리</p>
-        <h1>팀의 일정과 할 일을<br>한 판에서 확인하세요</h1>
-        <p>누가 어디에 있는지, 무엇을 해야 하는지, 무엇이 공지됐는지 — 카톡으로 묻지 않아도 이 화면에 있습니다.</p>
+        <h1>팀의 오늘을 한 판에서</h1>
+        <p>누가 어디에 있는지, 무엇을 해야 하는지, 무슨 일이 있었는지 — 카톡으로 묻지 않아도 여기에 있습니다.</p>
       </section>
 
-      <section class="section-block" aria-labelledby="week-title">
-        <div class="section-head">
-          <div><h2 id="week-title">주간 확인표</h2><p>팀원별 스케줄 — 시간 단위, 자유 메모. 첫 줄은 팀 공유 일정입니다.</p></div>
-          <div class="range-nav"><button type="button" class="range-button" id="week-prev">이전 주</button><button type="button" class="range-button" id="week-today">이번 주</button><button type="button" class="range-button" id="week-next">다음 주</button></div>
+      <div class="tabs-toolbar" role="tablist" aria-label="우리팀 보기 전환">
+        <button type="button" class="tab-button active" id="tab-today" role="tab" aria-selected="true">오늘</button>
+        <button type="button" class="tab-button" id="tab-members" role="tab" aria-selected="false">팀원</button>
+        <button type="button" class="tab-button" id="tab-calendar" role="tab" aria-selected="false">캘린더</button>
+      </div>
+
+      <div class="team-layout">
+        <div class="team-main">
+
+          <div id="panel-today" role="tabpanel">
+            <section class="section-block first" aria-labelledby="now-title">
+              <div class="section-head"><div><h2 id="now-title">지금 우리 팀</h2><p id="now-date">출근·Aitom 입력·현재 일정</p></div></div>
+              <div id="now-box">
+                <article class="surface-card"><div class="empty-inline"><div><strong>팀원 명단이 아직 등록되지 않았습니다.</strong><span>data/team/members.json에 이름과 역할을 등록하면 팀 상황판이 열립니다.</span></div></div></article>
+              </div>
+            </section>
+
+            <section class="section-block" aria-labelledby="today-event-title" id="today-event-section" hidden>
+              <div class="section-head"><div><h2 id="today-event-title">오늘 팀 일정</h2></div></div>
+              <div class="notice-list" id="today-event-list"></div>
+            </section>
+
+            <section class="section-block" aria-labelledby="task-title">
+              <div class="section-head"><div><h2 id="task-title">과제</h2><p>완료 셀프 체크와 점수 반영은 엣지 연동 후 열립니다.</p></div></div>
+              <div id="task-box">
+                <article class="surface-card"><div class="empty-inline"><div><strong>부여된 과제가 없습니다.</strong><span>data/team/tasks.json에 추가하면 표시됩니다.</span></div></div></article>
+              </div>
+            </section>
+
+            <section class="section-block" aria-labelledby="latest-title">
+              <div class="section-head"><div><h2 id="latest-title">공지</h2><p>새 공지가 올라오면 카톡 팀방에 링크로 공유됩니다.</p></div></div>
+              <div id="latest-box">
+                <article class="surface-card"><div class="empty-inline"><div><strong>등록된 공지가 없습니다.</strong><span>공지가 발행되면 이곳에 표시됩니다.</span></div></div></article>
+              </div>
+            </section>
+
+            <section class="section-block" aria-labelledby="archive-title" id="archive-section" hidden>
+              <div class="section-head"><div><h2 id="archive-title">지난 공지</h2><p>제목을 누르면 본문과 댓글이 펼쳐집니다.</p></div></div>
+              <div class="notice-list" id="archive-list"></div>
+            </section>
+          </div>
+
+          <div id="panel-members" role="tabpanel" hidden>
+            <section class="section-block first" aria-labelledby="member-title">
+              <div class="section-head"><div><h2 id="member-title">팀원</h2><p>팀원을 누르면 일정·과제가 자세히 보입니다.</p></div></div>
+              <div id="member-box">
+                <article class="surface-card"><div class="empty-inline"><div><strong>팀원 명단이 아직 등록되지 않았습니다.</strong><span>data/team/members.json에 이름과 역할을 등록하면 표시됩니다.</span></div></div></article>
+              </div>
+            </section>
+          </div>
+
+          <div id="panel-calendar" role="tabpanel" hidden>
+            <section class="section-block first" aria-labelledby="week-title">
+              <div class="section-head">
+                <div><h2 id="week-title">주간 확인표</h2><p>팀원별 스케줄 — 시간 단위, 자유 메모. 첫 줄은 팀 공유 일정입니다.</p></div>
+                <div class="range-nav"><button type="button" class="range-button" id="week-prev">이전 주</button><button type="button" class="range-button" id="week-today">이번 주</button><button type="button" class="range-button" id="week-next">다음 주</button></div>
+              </div>
+              <p class="range-label" id="week-label"></p>
+              <div id="week-box">
+                <article class="surface-card"><div class="empty-inline"><div><strong>팀원 명단이 아직 등록되지 않았습니다.</strong><span>data/team/members.json에 등록하면 확인표가 열립니다.</span></div></div></article>
+              </div>
+            </section>
+
+            <section class="section-block" aria-labelledby="cal-title">
+              <div class="section-head">
+                <div><h2 id="cal-title">팀 캘린더</h2><p>교육·회의·마감과 케어센터 발행일(매주 월요일 자동 표시)입니다.</p></div>
+                <div class="range-nav"><button type="button" class="range-button" id="cal-prev">이전 달</button><button type="button" class="range-button" id="cal-today">이번 달</button><button type="button" class="range-button" id="cal-next">다음 달</button></div>
+              </div>
+              <p class="range-label" id="cal-label"></p>
+              <div class="cal-wrap" id="cal-box"></div>
+            </section>
+          </div>
+
         </div>
-        <p class="range-label" id="week-label"></p>
-        <div id="week-box">
-          <article class="surface-card"><div class="empty-inline"><div><strong>팀원 명단이 아직 등록되지 않았습니다.</strong><span>data/team/members.json에 이름과 역할을 등록하면 확인표가 열립니다.</span></div></div></article>
-        </div>
-      </section>
 
-      <section class="section-block" aria-labelledby="cal-title">
-        <div class="section-head">
-          <div><h2 id="cal-title">팀 캘린더</h2><p>교육·회의·마감과 케어센터 발행일(매주 월요일 자동 표시)입니다.</p></div>
-          <div class="range-nav"><button type="button" class="range-button" id="cal-prev">이전 달</button><button type="button" class="range-button" id="cal-today">이번 달</button><button type="button" class="range-button" id="cal-next">다음 달</button></div>
-        </div>
-        <p class="range-label" id="cal-label"></p>
-        <div class="cal-wrap" id="cal-box"></div>
-      </section>
+        <aside class="team-feed" aria-labelledby="feed-title">
+          <h2 id="feed-title">활동</h2>
+          <div id="feed-box"><p class="feed-empty">아직 활동 기록이 없습니다.</p></div>
+          <p class="feed-note">댓글·반응·읽음은 엣지 연동(STEP 3) 후 이 흐름에 실시간으로 붙습니다.</p>
+        </aside>
+      </div>
 
-      <section class="section-block" aria-labelledby="task-title">
-        <div class="section-head"><div><h2 id="task-title">과제</h2><p>팀장이 부여한 할 일입니다. 완료 셀프 체크는 엣지 연동 후 열립니다.</p></div></div>
-        <div id="task-box">
-          <article class="surface-card"><div class="empty-inline"><div><strong>부여된 과제가 없습니다.</strong><span>data/team/tasks.json에 추가하면 표시됩니다.</span></div></div></article>
-        </div>
-      </section>
-
-      <section class="section-block" aria-labelledby="latest-title">
-        <div class="section-head"><div><h2 id="latest-title">공지</h2><p>새 공지가 올라오면 카톡 팀방에 링크로 공유됩니다.</p></div></div>
-        <div id="latest-box">
-          <article class="surface-card"><div class="empty-inline"><div><strong>등록된 공지가 없습니다.</strong><span>공지가 발행되면 이곳에 표시됩니다.</span></div></div></article>
-        </div>
-      </section>
-
-      <section class="section-block" aria-labelledby="archive-title" id="archive-section" hidden>
-        <div class="section-head"><div><h2 id="archive-title">지난 공지</h2><p>제목을 누르면 본문이 펼쳐집니다.</p></div></div>
-        <div class="notice-list" id="archive-list"></div>
-      </section>
-
-      <p class="notice">운영: 일정은 data/team/schedule.json, 과제는 tasks.json, 공지는 notices.json에 추가하고 배포하면 반영됩니다. 팀원 셀프 입력·완료 체크·읽음 확인은 엣지 연동(STEP 3) 후 열립니다. 고객 언급은 코드(C-YYYY-NNN)로만 합니다.</p>
+      <p class="notice">운영: 일정 data/team/schedule.json · 과제 tasks.json · 공지(댓글 포함) notices.json · 출근·Aitom daily.json에 추가하고 배포하면 반영됩니다. Aitom은 토·일 제외 모든 평일 필수(공휴일 포함). 팀원 셀프 보고·댓글 작성·완료 체크는 엣지 연동(STEP 3)에서 열립니다. 고객 언급은 코드(C-YYYY-NNN)로만 합니다.</p>
     </main>
     <footer class="platform-footer">마이가디언 v2</footer>
   </div>
@@ -77,19 +120,20 @@
       "use strict";
       var esc = window.mg.esc;
       var DAY_NAMES = ["월", "화", "수", "목", "금"];
+      var DOW_FULL = ["일", "월", "화", "수", "목", "금", "토"];
       var KIND_CLASS = { "상담": "k-consult", "외근": "k-out", "내근": "k-in", "휴가": "k-off", "교육": "k-edu", "회의": "k-meet", "마감": "k-due", "발행": "k-pub", "기타": "k-etc" };
 
-      var MEMBERS = [], TEAM_EVENTS = [], MEMBER_SLOTS = [], TASKS = [];
+      var MEMBERS = [], TEAM_EVENTS = [], MEMBER_SLOTS = [], TASKS = [], NOTICES = [], DAILY = [];
       var weekOffset = 0;
       var calBase = new Date();
+      var pickedMember = null;
 
       function fmt(d) {
         return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
       }
       function mondayOf(d) {
         var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-        var shift = (x.getDay() + 6) % 7; // 월=0
-        x.setDate(x.getDate() - shift);
+        x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
         return x;
       }
       function timeLabel(s) {
@@ -99,126 +143,10 @@
       function kindChip(kind, label) {
         return '<span class="slot-chip ' + (KIND_CLASS[kind] || "k-etc") + '">' + esc(label || kind) + "</span>";
       }
-
-      // ── 주간 확인표 ──
-      function renderWeek() {
-        var start = mondayOf(new Date());
-        start.setDate(start.getDate() + weekOffset * 7);
-        var days = [];
-        for (var i = 0; i < 5; i++) {
-          var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
-          days.push(d);
-        }
-        var end = days[4];
-        document.getElementById("week-label").textContent =
-          (start.getMonth() + 1) + "월 " + start.getDate() + "일 – " + (end.getMonth() + 1) + "월 " + end.getDate() + "일"
-          + (weekOffset === 0 ? " (이번 주)" : "");
-
-        if (!MEMBERS.length) return;
-        var todayStr = fmt(new Date());
-
-        function cellHtml(items) {
-          if (!items.length) return '<span class="cell-empty">-</span>';
-          return items.map(function (s) {
-            return '<div class="slot">'
-              + '<span class="slot-time">' + esc(timeLabel(s)) + "</span>" + kindChip(s["구분"])
-              + (s["메모"] ? '<span class="slot-memo">' + esc(s["메모"]) + "</span>" : "")
-              + "</div>";
-          }).join("");
-        }
-
-        var head = '<div class="week-row week-head"><div class="week-name">팀원</div>' + days.map(function (d) {
-          var isToday = fmt(d) === todayStr;
-          return '<div class="week-day' + (isToday ? " today" : "") + '">' + DAY_NAMES[(d.getDay() + 6) % 7] + " " + (d.getMonth() + 1) + "/" + d.getDate() + "</div>";
-        }).join("") + "</div>";
-
-        // 첫 줄: 팀 공유 일정 (팀일정 + 매주 월요일 케어센터 발행)
-        var teamRow = '<div class="week-row"><div class="week-name"><strong>팀 공유</strong><span class="week-role">전체 일정</span></div>' + days.map(function (d) {
-          var ds = fmt(d);
-          var items = TEAM_EVENTS.filter(function (e) { return e["날짜"] === ds; }).map(function (e) {
-            return { "시작": e["시작"], "종료": e["종료"], "구분": e["구분"], "메모": e["제목"] };
-          });
-          if ((d.getDay() + 6) % 7 === 0) items.push({ "시작": null, "구분": "발행", "메모": "케어센터 주간 발행" });
-          return '<div class="week-cell">' + cellHtml(items) + "</div>";
-        }).join("") + "</div>";
-
-        var rows = MEMBERS.map(function (m) {
-          return '<div class="week-row"><div class="week-name">' + esc(m["이름"])
-            + (m["관리자"] ? '<span class="member-lead">관리자</span>' : "")
-            + (m["역할"] ? '<span class="week-role">' + esc(m["역할"]) + "</span>" : "")
-            + "</div>"
-            + days.map(function (d) {
-              var ds = fmt(d);
-              var items = MEMBER_SLOTS.filter(function (s) { return s["팀원"] === m.id && s["날짜"] === ds; })
-                .sort(function (a, b) { return (a["시작"] || "") < (b["시작"] || "") ? -1 : 1; });
-              return '<div class="week-cell">' + cellHtml(items) + "</div>";
-            }).join("") + "</div>";
-        }).join("");
-
-        document.getElementById("week-box").innerHTML = '<div class="week-grid">' + head + teamRow + rows + "</div>";
-      }
-
-      // ── 월간 캘린더 ──
-      function renderCal() {
-        var y = calBase.getFullYear(), mo = calBase.getMonth();
-        document.getElementById("cal-label").textContent = y + "년 " + (mo + 1) + "월";
-        var first = new Date(y, mo, 1);
-        var startPad = (first.getDay() + 6) % 7; // 월요일 시작
-        var daysInMonth = new Date(y, mo + 1, 0).getDate();
-        var todayStr = fmt(new Date());
-
-        var cells = [];
-        cells.push('<div class="cal-grid">');
-        ["월", "화", "수", "목", "금", "토", "일"].forEach(function (n) {
-          cells.push('<div class="cal-dow">' + n + "</div>");
-        });
-        for (var p = 0; p < startPad; p++) cells.push('<div class="cal-cell pad"></div>');
-        for (var day = 1; day <= daysInMonth; day++) {
-          var d = new Date(y, mo, day);
-          var ds = fmt(d);
-          var isMon = (d.getDay() + 6) % 7 === 0;
-          var evs = TEAM_EVENTS.filter(function (e) { return e["날짜"] === ds; });
-          var html = '<div class="cal-cell' + (ds === todayStr ? " today" : "") + '"><span class="cal-daynum">' + day + "</span>";
-          if (isMon) html += kindChip("발행", "주간 발행");
-          html += evs.map(function (e) { return kindChip(e["구분"], e["제목"]); }).join("");
-          html += "</div>";
-          cells.push(html);
-        }
-        cells.push("</div>");
-        document.getElementById("cal-box").innerHTML = cells.join("");
-      }
-
-      // ── 과제 ──
       function memberName(id) {
         var m = MEMBERS.filter(function (x) { return x.id === id; })[0];
         return m ? m["이름"] : id;
       }
-      function renderTasks() {
-        if (!TASKS.length) return;
-        var todayStr = fmt(new Date());
-        var order = { "요청": 0, "진행중": 1, "완료": 2 };
-        var list = TASKS.slice().sort(function (a, b) {
-          return (order[a["상태"]] - order[b["상태"]]) || (a["부여일"] < b["부여일"] ? 1 : -1);
-        });
-        document.getElementById("task-box").innerHTML = '<div class="task-list">' + list.map(function (t) {
-          var target = t["대상"] === "전체" ? "전체" : (t["대상"] || []).map(memberName).join(", ");
-          var overdue = t["기한"] && t["기한"] < todayStr && t["상태"] !== "완료";
-          var links = (t["연결"] || []).map(function (l) {
-            return '<a class="link-chip" href="' + esc(l["경로"]) + '"><span class="chip-kind">연결 화면</span>' + esc(l["라벨"]) + "</a>";
-          }).join("");
-          return '<div class="task-item' + (t["상태"] === "완료" ? " done" : "") + '">'
-            + '<span class="task-state ' + (t["상태"] === "완료" ? "st-done" : t["상태"] === "진행중" ? "st-doing" : "st-todo") + '">' + esc(t["상태"]) + "</span>"
-            + '<div class="task-main"><span class="task-title">' + esc(t["제목"]) + "</span>"
-            + (t["내용"] ? '<span class="task-desc">' + esc(t["내용"]) + "</span>" : "")
-            + (links ? '<div class="link-chip-row">' + links + "</div>" : "")
-            + "</div>"
-            + '<div class="task-meta"><span>' + esc(target) + "</span><span>" + esc(t["부여일"]) + " 부여</span>"
-            + (t["기한"] ? '<span class="' + (overdue ? "task-overdue" : "") + '">기한 ' + esc(t["기한"]) + (overdue ? " 경과" : "") + "</span>" : "")
-            + "</div></div>";
-        }).join("") + "</div>";
-      }
-
-      // ── 공지 ──
       function chipRow(links) {
         if (!links || !links.length) return "";
         return '<div class="link-chip-row">' + links.map(function (l) {
@@ -228,14 +156,123 @@
       function paragraphs(body) {
         return (body || []).map(function (p) { return '<p class="brief-body">' + esc(p) + "</p>"; }).join("");
       }
-      function renderNotices(list) {
-        if (!Array.isArray(list) || !list.length) return;
+      function commentsHtml(list, withInput) {
+        var items = (list || []).map(function (c) {
+          return '<div class="comment-item"><span class="comment-meta">' + esc(c["작성자"]) + " · " + esc(c["날짜"]) + "</span><p>" + esc(c["내용"]) + "</p></div>";
+        }).join("");
+        var input = withInput
+          ? '<div class="comment-input"><input type="text" aria-label="댓글 작성" placeholder="댓글 작성은 엣지 연동 후 열립니다" disabled></div>'
+          : "";
+        if (!items && !withInput) return "";
+        return '<div class="comment-block">'
+          + '<span class="comment-label">댓글 ' + ((list || []).length || 0) + "</span>"
+          + items + input + "</div>";
+      }
+
+      // ── 오늘: 지금 우리 팀 ──
+      function nowStatus(m, todayStr, nowHM) {
+        var slots = MEMBER_SLOTS.filter(function (s) { return s["팀원"] === m.id && s["날짜"] === todayStr; })
+          .sort(function (a, b) { return (a["시작"] || "") < (b["시작"] || "") ? -1 : 1; });
+        if (!slots.length) return { kind: null, label: "일정 미등록", memo: "" };
+        for (var i = 0; i < slots.length; i++) {
+          var s = slots[i];
+          if (!s["시작"]) return { kind: s["구분"], label: s["구분"] + " (종일)", memo: s["메모"] || "" };
+          if (s["시작"] <= nowHM && (!s["종료"] || nowHM <= s["종료"])) {
+            return { kind: s["구분"], label: s["구분"] + " " + timeLabel(s), memo: s["메모"] || "", live: true };
+          }
+        }
+        var next = slots.filter(function (s) { return s["시작"] && s["시작"] > nowHM; })[0];
+        if (next) return { kind: next["구분"], label: next["시작"] + " " + next["구분"] + " 예정", memo: next["메모"] || "" };
+        return { kind: null, label: "오늘 일정 종료", memo: "" };
+      }
+
+      function renderNow() {
+        var now = new Date();
+        var todayStr = fmt(now);
+        var nowHM = String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+        // Aitom은 토·일 제외 모든 평일 필수 (공휴일이어도 평일이면 대상)
+        var isWeekday = now.getDay() >= 1 && now.getDay() <= 5;
+        var counts = { att: 0, absent: 0, noReport: 0, noAitom: 0 };
+
+        var rowsHtml = MEMBERS.map(function (m) {
+          var st = nowStatus(m, todayStr, nowHM);
+          var rec = DAILY.filter(function (r) { return r["팀원"] === m.id && r["날짜"] === todayStr; })[0];
+          var day = "";
+          if (rec && rec["출근"]) { counts.att++; day += '<span class="day-chip ok">출근</span>'; }
+          else if (rec && !rec["출근"]) { counts.absent++; day += '<span class="day-chip off">미출근' + (rec["사유"] ? " · " + esc(rec["사유"]) : "") + "</span>"; }
+          else { counts.noReport++; day += '<span class="day-chip none">출근 미보고</span>'; }
+          if (isWeekday) {
+            if (rec && rec["aitom"]) day += '<span class="day-chip ok">Aitom 입력</span>';
+            else { counts.noAitom++; day += '<span class="day-chip warn">Aitom 미입력</span>'; }
+          }
+          return '<div class="now-row' + (st.live ? " live" : "") + '">'
+            + '<span class="now-avatar">' + esc((m["이름"] || "").charAt(0)) + "</span>"
+            + '<span class="now-name">' + esc(m["이름"]) + (m["관리자"] ? '<span class="member-lead">관리자</span>' : "") + "</span>"
+            + (st.kind ? kindChip(st.kind, st.label) : '<span class="now-idle">' + esc(st.label) + "</span>")
+            + (st.memo ? '<span class="now-memo">' + esc(st.memo) + "</span>" : "")
+            + '<span class="now-day">' + day + "</span>"
+            + "</div>";
+        }).join("");
+
+        var summary = "";
+        if (MEMBERS.length) {
+          summary = " — 출근 " + counts.att + " · 미출근 " + counts.absent + " · 미보고 " + counts.noReport
+            + (isWeekday ? " · Aitom 미입력 " + counts.noAitom : "");
+        }
+        document.getElementById("now-date").textContent =
+          (now.getMonth() + 1) + "월 " + now.getDate() + "일 " + DOW_FULL[now.getDay()] + "요일 " + nowHM + " 기준" + summary;
+        if (!MEMBERS.length) return;
+        document.getElementById("now-box").innerHTML = '<div class="now-list">' + rowsHtml + "</div>";
+      }
+
+      function renderTodayEvents() {
+        var todayStr = fmt(new Date());
+        var isMon = (new Date().getDay() + 6) % 7 === 0;
+        var evs = TEAM_EVENTS.filter(function (e) { return e["날짜"] === todayStr; });
+        var rows = evs.map(function (e) {
+          return '<div class="notice-item"><span class="notice-title">' + kindChip(e["구분"]) + " " + esc(e["제목"]) + "</span>"
+            + '<span class="notice-meta">' + esc(e["시작"] ? timeLabel(e) : "종일") + "</span></div>";
+        });
+        if (isMon) rows.push('<div class="notice-item"><span class="notice-title">' + kindChip("발행", "발행") + ' 케어센터 주간 발행</span><span class="notice-meta">매주 월요일</span></div>');
+        if (!rows.length) return;
+        document.getElementById("today-event-section").hidden = false;
+        document.getElementById("today-event-list").innerHTML = rows.join("");
+      }
+
+      // ── 과제 ──
+      function taskItemHtml(t) {
+        var todayStr = fmt(new Date());
+        var target = t["대상"] === "전체" ? "전체" : (t["대상"] || []).map(memberName).join(", ");
+        var overdue = t["기한"] && t["기한"] < todayStr && t["상태"] !== "완료";
+        return '<div class="task-item' + (t["상태"] === "완료" ? " done" : "") + '">'
+          + '<span class="task-state ' + (t["상태"] === "완료" ? "st-done" : t["상태"] === "진행중" ? "st-doing" : "st-todo") + '">' + esc(t["상태"]) + "</span>"
+          + '<div class="task-main"><span class="task-title">' + esc(t["제목"]) + "</span>"
+          + (t["내용"] ? '<span class="task-desc">' + esc(t["내용"]) + "</span>" : "")
+          + chipRow(t["연결"]) + "</div>"
+          + '<div class="task-meta"><span>' + esc(target) + "</span><span>" + esc(t["부여일"]) + " 부여</span>"
+          + (t["기한"] ? '<span class="' + (overdue ? "task-overdue" : "") + '">기한 ' + esc(t["기한"]) + (overdue ? " 경과" : "") + "</span>" : "")
+          + "</div></div>";
+      }
+      function renderTasks() {
+        if (!TASKS.length) return;
+        var order = { "요청": 0, "진행중": 1, "완료": 2 };
+        var list = TASKS.slice().sort(function (a, b) {
+          return (order[a["상태"]] - order[b["상태"]]) || (a["부여일"] < b["부여일"] ? 1 : -1);
+        });
+        document.getElementById("task-box").innerHTML = '<div class="task-list">' + list.map(taskItemHtml).join("") + "</div>";
+      }
+
+      // ── 공지 ──
+      function renderNotices() {
+        if (!NOTICES.length) return;
+        var list = NOTICES;
         list.sort(function (a, b) { return (b["작성일"] || "") + b.id < (a["작성일"] || "") + a.id ? -1 : 1; });
         var n = list[0];
         document.getElementById("latest-box").innerHTML =
           '<article class="brief-card">'
           + '<div class="brief-meta"><span class="brief-kind">' + esc(n["종류"]) + "</span><span>" + esc(n["작성일"]) + "</span><span>" + esc(n["작성자"] || "안창민") + "</span></div>"
           + "<h3>" + esc(n["제목"]) + "</h3>" + paragraphs(n["본문"]) + chipRow(n["연결"])
+          + commentsHtml(n["댓글"], true)
           + '<div class="read-row"><span class="read-count"><span class="read-sub">읽음 확인은 엣지 연동 후 제공됩니다.</span></span>'
           + '<button type="button" class="share-button" id="share-latest">카톡 공유 문구 복사</button></div>'
           + "</article>";
@@ -248,8 +285,9 @@
           document.getElementById("archive-list").innerHTML = rest.map(function (m) {
             return '<div class="notice-item expandable">'
               + '<span class="notice-title">' + esc(m["제목"]) + "</span>"
-              + '<span class="notice-meta">' + esc(m["작성일"]) + " · " + esc(m["작성자"] || "안창민") + " · " + esc(m["종류"]) + "</span>"
-              + '<div class="notice-body" hidden>' + paragraphs(m["본문"]) + chipRow(m["연결"]) + "</div>"
+              + '<span class="notice-meta">' + esc(m["작성일"]) + " · " + esc(m["작성자"] || "안창민") + " · " + esc(m["종류"])
+              + ((m["댓글"] || []).length ? " · 댓글 " + m["댓글"].length : "") + "</span>"
+              + '<div class="notice-body" hidden>' + paragraphs(m["본문"]) + chipRow(m["연결"]) + commentsHtml(m["댓글"], false) + "</div>"
               + "</div>";
           }).join("");
           document.getElementById("archive-list").addEventListener("click", function (e) {
@@ -261,24 +299,182 @@
         }
       }
 
+      // ── 팀원 탭 ──
+      function memberDetailHtml(m) {
+        var start = mondayOf(new Date());
+        var days = [];
+        for (var i = 0; i < 5; i++) days.push(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i));
+        var weekRows = days.map(function (d) {
+          var ds = fmt(d);
+          var slots = MEMBER_SLOTS.filter(function (s) { return s["팀원"] === m.id && s["날짜"] === ds; })
+            .sort(function (a, b) { return (a["시작"] || "") < (b["시작"] || "") ? -1 : 1; });
+          var content = slots.length ? slots.map(function (s) {
+            return '<div class="slot"><span class="slot-time">' + esc(timeLabel(s)) + "</span>" + kindChip(s["구분"])
+              + (s["메모"] ? '<span class="slot-memo">' + esc(s["메모"]) + "</span>" : "") + "</div>";
+          }).join("") : '<span class="cell-empty">-</span>';
+          return '<div class="md-day"><span class="md-dow">' + DAY_NAMES[(d.getDay() + 6) % 7] + " " + (d.getMonth() + 1) + "/" + d.getDate() + "</span><div>" + content + "</div></div>";
+        }).join("");
+        var myTasks = TASKS.filter(function (t) {
+          return t["대상"] === "전체" || (Array.isArray(t["대상"]) && t["대상"].indexOf(m.id) >= 0);
+        });
+        return '<div class="md-head"><span class="now-avatar big">' + esc((m["이름"] || "").charAt(0)) + "</span>"
+          + '<div><div class="md-name">' + esc(m["이름"]) + (m["관리자"] ? '<span class="member-lead">관리자</span>' : "") + "</div>"
+          + (m["역할"] ? '<div class="md-role">' + esc(m["역할"]) + "</div>" : "") + "</div></div>"
+          + '<p class="md-label">이번 주 일정</p><div class="md-week">' + weekRows + "</div>"
+          + '<p class="md-label">과제 ' + myTasks.length + "</p>"
+          + (myTasks.length ? '<div class="task-list">' + myTasks.map(taskItemHtml).join("") + "</div>" : '<p class="md-empty">부여된 과제가 없습니다.</p>')
+          + '<p class="md-label">학습 이수</p><p class="md-empty">엣지 연동 후 표시됩니다.</p>';
+      }
+
+      function renderMembers() {
+        if (!MEMBERS.length) return;
+        if (!pickedMember) pickedMember = MEMBERS[0].id;
+        document.getElementById("member-box").innerHTML =
+          '<div class="member-pane"><div class="member-list" role="listbox" aria-label="팀원 선택">'
+          + MEMBERS.map(function (m) {
+            return '<button type="button" class="member-pick' + (m.id === pickedMember ? " active" : "") + '" data-id="' + esc(m.id) + '" role="option" aria-selected="' + (m.id === pickedMember) + '">'
+              + '<span class="now-avatar">' + esc((m["이름"] || "").charAt(0)) + "</span>"
+              + '<span class="mp-name">' + esc(m["이름"]) + '</span><span class="mp-role">' + esc(m["역할"] || "") + "</span></button>";
+          }).join("")
+          + '</div><div class="member-detail" id="member-detail">'
+          + memberDetailHtml(MEMBERS.filter(function (m) { return m.id === pickedMember; })[0])
+          + "</div></div>";
+        document.querySelector(".member-list").addEventListener("click", function (e) {
+          var b = e.target.closest(".member-pick");
+          if (!b) return;
+          pickedMember = b.dataset.id;
+          renderMembers();
+        });
+      }
+
+      // ── 캘린더 탭 (주간 확인표 + 월간) ──
+      function renderWeek() {
+        var start = mondayOf(new Date());
+        start.setDate(start.getDate() + weekOffset * 7);
+        var days = [];
+        for (var i = 0; i < 5; i++) days.push(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i));
+        var end = days[4];
+        document.getElementById("week-label").textContent =
+          (start.getMonth() + 1) + "월 " + start.getDate() + "일 – " + (end.getMonth() + 1) + "월 " + end.getDate() + "일"
+          + (weekOffset === 0 ? " (이번 주)" : "");
+        if (!MEMBERS.length) return;
+        var todayStr = fmt(new Date());
+
+        function cellHtml(items) {
+          if (!items.length) return '<span class="cell-empty">-</span>';
+          return items.map(function (s) {
+            return '<div class="slot"><span class="slot-time">' + esc(timeLabel(s)) + "</span>" + kindChip(s["구분"])
+              + (s["메모"] ? '<span class="slot-memo">' + esc(s["메모"]) + "</span>" : "") + "</div>";
+          }).join("");
+        }
+
+        var head = '<div class="week-row week-head"><div class="week-name">팀원</div>' + days.map(function (d) {
+          return '<div class="week-day' + (fmt(d) === todayStr ? " today" : "") + '">' + DAY_NAMES[(d.getDay() + 6) % 7] + " " + (d.getMonth() + 1) + "/" + d.getDate() + "</div>";
+        }).join("") + "</div>";
+
+        var teamRow = '<div class="week-row"><div class="week-name"><strong>팀 공유</strong><span class="week-role">전체 일정</span></div>' + days.map(function (d) {
+          var ds = fmt(d);
+          var items = TEAM_EVENTS.filter(function (e) { return e["날짜"] === ds; }).map(function (e) {
+            return { "시작": e["시작"], "종료": e["종료"], "구분": e["구분"], "메모": e["제목"] };
+          });
+          if ((d.getDay() + 6) % 7 === 0) items.push({ "시작": null, "구분": "발행", "메모": "케어센터 주간 발행" });
+          return '<div class="week-cell">' + cellHtml(items) + "</div>";
+        }).join("") + "</div>";
+
+        var rows = MEMBERS.map(function (m) {
+          return '<div class="week-row"><div class="week-name">' + esc(m["이름"])
+            + (m["관리자"] ? '<span class="member-lead">관리자</span>' : "")
+            + (m["역할"] ? '<span class="week-role">' + esc(m["역할"]) + "</span>" : "") + "</div>"
+            + days.map(function (d) {
+              var ds = fmt(d);
+              var items = MEMBER_SLOTS.filter(function (s) { return s["팀원"] === m.id && s["날짜"] === ds; })
+                .sort(function (a, b) { return (a["시작"] || "") < (b["시작"] || "") ? -1 : 1; });
+              return '<div class="week-cell">' + cellHtml(items) + "</div>";
+            }).join("") + "</div>";
+        }).join("");
+
+        document.getElementById("week-box").innerHTML = '<div class="week-grid">' + head + teamRow + rows + "</div>";
+      }
+
+      function renderCal() {
+        var y = calBase.getFullYear(), mo = calBase.getMonth();
+        document.getElementById("cal-label").textContent = y + "년 " + (mo + 1) + "월";
+        var startPad = (new Date(y, mo, 1).getDay() + 6) % 7;
+        var daysInMonth = new Date(y, mo + 1, 0).getDate();
+        var todayStr = fmt(new Date());
+        var cells = ['<div class="cal-grid">'];
+        ["월", "화", "수", "목", "금", "토", "일"].forEach(function (n) { cells.push('<div class="cal-dow">' + n + "</div>"); });
+        for (var p = 0; p < startPad; p++) cells.push('<div class="cal-cell pad"></div>');
+        for (var day = 1; day <= daysInMonth; day++) {
+          var d = new Date(y, mo, day);
+          var ds = fmt(d);
+          var html = '<div class="cal-cell' + (ds === todayStr ? " today" : "") + '"><span class="cal-daynum">' + day + "</span>";
+          if ((d.getDay() + 6) % 7 === 0) html += kindChip("발행", "주간 발행");
+          html += TEAM_EVENTS.filter(function (e) { return e["날짜"] === ds; })
+            .map(function (e) { return kindChip(e["구분"], e["제목"]); }).join("");
+          cells.push(html + "</div>");
+        }
+        cells.push("</div>");
+        document.getElementById("cal-box").innerHTML = cells.join("");
+      }
+
+      // ── 활동 피드 (데이터에서 자동 생성) ──
+      function renderFeed() {
+        var events = [];
+        NOTICES.forEach(function (n) {
+          events.push({ d: n["작성일"], who: n["작성자"] || "안창민", what: (n["종류"] === "브리핑" ? "브리핑" : "공지") + "를 올렸습니다", detail: n["제목"] });
+          (n["댓글"] || []).forEach(function (c) {
+            events.push({ d: c["날짜"], who: c["작성자"], what: "댓글을 남겼습니다", detail: c["내용"] });
+          });
+        });
+        TASKS.forEach(function (t) {
+          events.push({ d: t["부여일"], who: "팀장", what: "과제를 부여했습니다", detail: t["제목"] });
+        });
+        TEAM_EVENTS.forEach(function (e) {
+          events.push({ d: e["날짜"], who: null, what: "팀 일정", detail: e["제목"] + " (" + e["구분"] + ")" });
+        });
+        if (!events.length) return;
+        events.sort(function (a, b) { return (b.d || "") < (a.d || "") ? -1 : 1; });
+        document.getElementById("feed-box").innerHTML = events.slice(0, 15).map(function (ev) {
+          return '<div class="feed-item">'
+            + '<span class="feed-date">' + esc(ev.d || "") + "</span>"
+            + "<p>" + (ev.who ? "<strong>" + esc(ev.who) + "</strong>" + (ev.who.slice(-1) === "장" ? "이 " : " ") : "") + esc(ev.what) + "</p>"
+            + '<span class="feed-detail">' + esc(ev.detail) + "</span>"
+            + "</div>";
+        }).join("");
+      }
+
+      // ── 탭 전환 ──
+      var tabs = { "tab-today": "panel-today", "tab-members": "panel-members", "tab-calendar": "panel-calendar" };
+      Object.keys(tabs).forEach(function (tid) {
+        document.getElementById(tid).addEventListener("click", function () {
+          Object.keys(tabs).forEach(function (t) {
+            var on = t === tid;
+            document.getElementById(t).classList.toggle("active", on);
+            document.getElementById(t).setAttribute("aria-selected", String(on));
+            document.getElementById(tabs[t]).hidden = !on;
+          });
+        });
+      });
+
       // ── 로드 ──
-      // 일정·과제는 매일 바뀌는 운영 데이터 — 캐시된 구버전을 쓰지 않는다
+      // 일정·과제·공지는 매일 바뀌는 운영 데이터 — 캐시된 구버전을 쓰지 않는다
       Promise.all([
         fetch("../../data/team/members.json", { cache: "no-store" }).then(function (r) { return r.json(); }).catch(function () { return []; }),
         fetch("../../data/team/schedule.json", { cache: "no-store" }).then(function (r) { return r.json(); }).catch(function () { return {}; }),
-        fetch("../../data/team/tasks.json", { cache: "no-store" }).then(function (r) { return r.json(); }).catch(function () { return []; })
+        fetch("../../data/team/tasks.json", { cache: "no-store" }).then(function (r) { return r.json(); }).catch(function () { return []; }),
+        fetch("../../data/team/notices.json", { cache: "no-store" }).then(function (r) { return r.json(); }).catch(function () { return []; }),
+        fetch("../../data/team/daily.json", { cache: "no-store" }).then(function (r) { return r.json(); }).catch(function () { return []; })
       ]).then(function (res) {
         MEMBERS = Array.isArray(res[0]) ? res[0] : [];
         TEAM_EVENTS = (res[1] && res[1]["팀일정"]) || [];
         MEMBER_SLOTS = (res[1] && res[1]["팀원일정"]) || [];
         TASKS = Array.isArray(res[2]) ? res[2] : [];
-        renderWeek(); renderCal(); renderTasks();
+        NOTICES = Array.isArray(res[3]) ? res[3] : [];
+        DAILY = Array.isArray(res[4]) ? res[4] : [];
+        renderNow(); renderTodayEvents(); renderTasks(); renderNotices();
+        renderMembers(); renderWeek(); renderCal(); renderFeed();
       });
-
-      fetch("../../data/team/notices.json", { cache: "no-store" })
-        .then(function (r) { return r.json(); })
-        .then(renderNotices)
-        .catch(function () {});
 
       document.getElementById("week-prev").addEventListener("click", function () { weekOffset--; renderWeek(); });
       document.getElementById("week-today").addEventListener("click", function () { weekOffset = 0; renderWeek(); });

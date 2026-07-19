@@ -47,6 +47,19 @@
           "경로": { "type": "string", "description": "사이트 내부 경로 (web/team/ 기준 상대경로, 예: ../claims/)" }
         }
       }
+    },
+    "댓글": {
+      "type": "array",
+      "description": "공지에 달린 댓글 (예: 다 했습니다). 팀원이 화면에서 직접 작성하는 것은 엣지 연동(STEP 3) 후 열리며, 그 전에는 팀장이 취합해 입력한다",
+      "items": {
+        "type": "object",
+        "required": ["작성자", "날짜", "내용"],
+        "properties": {
+          "작성자": { "type": "string", "description": "팀원 이름" },
+          "날짜": { "type": "string", "format": "date" },
+          "내용": { "type": "string" }
+        }
+      }
     }
   }
 }

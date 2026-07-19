@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "team-daily.schema.json",
+  "title": "우리팀 일일 현황 (출근·Aitom)",
+  "description": "팀원별 하루 단위 보고. data/team/daily.json은 이 스키마를 따르는 객체의 배열이다. 팀원 셀프 보고는 엣지 연동(STEP 3)에서 열리며, 그 전에는 팀장이 취합해 입력한다. Aitom(신한 SOL 프로그램) 입력은 토·일을 제외한 모든 평일에 필수 — 공휴일이어도 평일이면 대상이다. 기록이 없는 평일은 화면에서 미보고·미입력으로 표시된다.",
+  "type": "object",
+  "required": ["팀원", "날짜", "출근"],
+  "properties": {
+    "팀원": { "type": "string", "pattern": "^m-[0-9]{2}$", "description": "members.json의 팀원 id" },
+    "날짜": { "type": "string", "format": "date" },
+    "출근": { "type": "boolean", "description": "이날 출근 여부. false면 사유를 함께 적는다" },
+    "사유": { "type": ["string", "null"], "description": "미출근 사유 (예: 휴가, 외부 교육, 경조사). 출근이면 비움" },
+    "aitom": { "type": "boolean", "default": false, "description": "이날 Aitom 입력 완료 여부 (평일만 평가)" }
+  }
+}

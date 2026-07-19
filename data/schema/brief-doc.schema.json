@@ -33,6 +33,10 @@
       "type": ["string", "null"],
       "description": "한두 문장 요약. 진입 목록에 표시"
     },
+    "분류": {
+      "type": ["string", "null"],
+      "description": "자유 입력 갈래 (예: 보험상품, 보험원리, 시사경제). 강제 분류 아님 — 진입 목록에 배지로 표시"
+    },
     "출처": {
       "type": ["string", "null"],
       "description": "원자료 표기 (예: care:weekly-11). 실자료 변환 문서의 이력 추적용"

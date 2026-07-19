@@ -1,6 +1,350 @@
 /* 우리팀 팀 관리 화면 전용 스타일. platform.css 위에 얹는다.
    STEP 3(셀프 입력·완료 체크·읽음 확인) 화면 스타일은 해당 기능 시공 때 추가한다. */
 
+/* 전체 배치 — 본문 + 활동 피드 레일 */
+
+.team-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 272px;
+  gap: 24px;
+  align-items: start;
+  margin-top: 8px;
+}
+
+.team-main .section-block.first {
+  margin-top: 28px;
+}
+
+.team-feed {
+  position: sticky;
+  top: 92px;
+  margin-top: 28px;
+  border: 1px solid var(--platform-line);
+  border-radius: var(--platform-radius);
+  background: var(--platform-surface);
+  box-shadow: var(--platform-shadow);
+  padding: 20px;
+}
+
+.team-feed h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.feed-item {
+  border-top: 1px solid var(--platform-line);
+  padding: 12px 0;
+}
+
+.feed-item:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.feed-item p {
+  margin: 2px 0 0;
+  color: var(--platform-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.feed-item p strong {
+  color: var(--platform-ink);
+  font-weight: 700;
+}
+
+.feed-date {
+  color: var(--platform-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.feed-detail {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--platform-faint);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feed-empty {
+  margin: 0;
+  color: var(--platform-faint);
+  font-size: 13px;
+}
+
+.feed-note {
+  margin: 14px 0 0;
+  border-top: 1px solid var(--platform-line);
+  padding-top: 12px;
+  color: var(--platform-faint);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* 오늘 — 지금 우리 팀 */
+
+.now-list {
+  display: grid;
+  gap: 8px;
+}
+
+.now-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--platform-line);
+  border-radius: var(--platform-radius);
+  background: var(--platform-surface);
+  box-shadow: var(--platform-shadow);
+  padding: 12px 16px;
+}
+
+.now-row.live {
+  border-color: var(--platform-blue);
+}
+
+.now-avatar {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--platform-blue-soft);
+  color: var(--platform-blue);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.now-avatar.big {
+  width: 44px;
+  height: 44px;
+  font-size: 16px;
+}
+
+.now-name {
+  min-width: 72px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.now-idle {
+  color: var(--platform-faint);
+  font-size: 13px;
+}
+
+.now-memo {
+  color: var(--platform-faint);
+  font-size: 12px;
+}
+
+.now-day {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.day-chip {
+  border: 1px solid var(--platform-line);
+  border-radius: 6px;
+  background: var(--platform-bg);
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.day-chip.ok {
+  border-color: transparent;
+  background: rgba(21, 128, 61, 0.09);
+  color: var(--platform-paid);
+}
+
+.day-chip.off {
+  border-color: transparent;
+  background: rgba(217, 119, 6, 0.12);
+  color: var(--platform-partial);
+}
+
+.day-chip.warn {
+  border-color: var(--platform-partial);
+  background: transparent;
+  color: var(--platform-partial);
+}
+
+.day-chip.none {
+  color: var(--platform-faint);
+}
+
+/* 댓글 */
+
+.comment-block {
+  margin-top: 20px;
+  border-top: 1px solid var(--platform-line);
+  padding-top: 14px;
+}
+
+.comment-label {
+  display: block;
+  color: var(--platform-faint);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.comment-item {
+  margin-top: 10px;
+  border-left: 2px solid var(--platform-line-strong);
+  padding-left: 12px;
+}
+
+.comment-item .comment-meta {
+  color: var(--platform-faint);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.comment-item p {
+  margin: 2px 0 0;
+  color: var(--platform-ink);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.comment-input {
+  margin-top: 12px;
+}
+
+.comment-input input {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--platform-line);
+  border-radius: 9px;
+  background: var(--platform-bg);
+  padding: 0 14px;
+  color: var(--platform-ink);
+  font-size: 13px;
+}
+
+/* 팀원 탭 — 목록 + 상세 2단 */
+
+.member-pane {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.62fr) minmax(0, 1.6fr);
+  overflow: hidden;
+  border: 1px solid var(--platform-line);
+  border-radius: var(--platform-radius);
+  background: var(--platform-surface);
+  box-shadow: var(--platform-shadow);
+}
+
+.member-list {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--platform-line);
+  padding: 10px;
+}
+
+.member-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+
+.member-pick:hover {
+  background: var(--platform-bg);
+}
+
+.member-pick.active {
+  background: var(--platform-blue-soft);
+}
+
+.member-pick .mp-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.member-pick .mp-role {
+  overflow: hidden;
+  color: var(--platform-faint);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-detail {
+  padding: 24px;
+}
+
+.md-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.md-name {
+  font-size: 18px;
+  font-weight: 780;
+  letter-spacing: -0.02em;
+}
+
+.md-role {
+  margin-top: 2px;
+  color: var(--platform-muted);
+  font-size: 13px;
+}
+
+.md-label {
+  margin: 22px 0 8px;
+  color: var(--platform-faint);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.md-week {
+  overflow: hidden;
+  border: 1px solid var(--platform-line);
+  border-radius: 10px;
+}
+
+.md-day {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 10px;
+  border-top: 1px solid var(--platform-line);
+  padding: 10px 14px;
+}
+
+.md-day:first-child {
+  border-top: 0;
+}
+
+.md-dow {
+  color: var(--platform-faint);
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.md-empty {
+  margin: 0;
+  color: var(--platform-faint);
+  font-size: 13px;
+}
+
 /* 기간 이동 */
 
 .range-nav {
@@ -493,6 +837,14 @@
   .week-row {
     grid-template-columns: 120px repeat(5, minmax(108px, 1fr));
   }
+
+  .team-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .team-feed {
+    position: static;
+  }
 }
 
 @media (max-width: 767px) {
@@ -534,6 +886,34 @@
     grid-column: 2;
     justify-items: start;
     text-align: left;
+  }
+
+  .member-pane {
+    grid-template-columns: 1fr;
+  }
+
+  .member-list {
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--platform-line);
+  }
+
+  .member-pick {
+    flex: 0 0 auto;
+  }
+
+  .member-pick .mp-role {
+    display: none;
+  }
+
+  .member-detail {
+    padding: 18px;
+  }
+
+  .now-day {
+    flex-basis: 100%;
+    margin-left: 42px;
   }
 }
 

@@ -10,7 +10,11 @@
   7. 전 페이지 콘솔 오류 0건
   8. 기형·위조 메시지(같은 origin 채널 위조)에 청중 창이 흔들리지 않는가
   9. 로컬 청중 창을 발표자보다 먼저 열어도 동기화되는가
+  10. PDF 업로드(3페이지)가 페이지 동기화·스크립트 사이드카("---" 구간)와 함께 동작하는가
+  11. HTML 업로드의 스크롤이 청중 창에 동기화되는가
+  12. 스크립트를 PDF(페이지=구간)·HTML(hr 구분)로 올려도 페이지별로 연결되는가
 seek 검증은 발표자가 실제로 이동했는지(≥1.0s)를 전제로 단언한다 — 거짓 양성 방지.
+업로드 픽스처(PDF·스크립트·HTML)는 실행 시 scripts/fixtures/brief/에 생성한다.
 추가로 3해상도(1920/1180/390) 스크린샷을 scripts/shots/에 저장한다.
 
 사용법: python scripts/verify_brief.py
@@ -108,6 +112,61 @@ def make_video_fixture(browser, base: str) -> None:
     )
 
 
+def make_pdf_fixture(path: Path, titles: list) -> None:
+    """외부 도구 없이 최소 구조의 다페이지 PDF를 만든다 (Helvetica, ASCII 텍스트)."""
+    n = len(titles)
+    kids = " ".join(f"{4 + i * 2} 0 R" for i in range(n))
+    objects = [
+        "<< /Type /Catalog /Pages 2 0 R >>",
+        f"<< /Type /Pages /Kids [{kids}] /Count {n} >>",
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ]
+    for i, title in enumerate(titles):
+        content_ref = 4 + i * 2 + 1
+        objects.append(
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+            f"/Resources << /Font << /F1 3 0 R >> >> /Contents {content_ref} 0 R >>"
+        )
+        stream = f"BT /F1 36 Tf 72 700 Td ({title}) Tj ET"
+        objects.append(f"<< /Length {len(stream)} >>\nstream\n{stream}\nendstream")
+
+    out = bytearray(b"%PDF-1.4\n")
+    offsets = []
+    for i, obj in enumerate(objects, start=1):
+        offsets.append(len(out))
+        out += f"{i} 0 obj\n{obj}\nendobj\n".encode("latin-1")
+    xref_pos = len(out)
+    out += f"xref\n0 {len(objects) + 1}\n".encode()
+    out += b"0000000000 65535 f \n"
+    for off in offsets:
+        out += f"{off:010d} 00000 n \n".encode()
+    out += f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF".encode()
+    path.write_bytes(bytes(out))
+
+
+def make_upload_fixtures() -> tuple:
+    """PDF·스크립트·HTML 업로드 검증용 픽스처를 생성한다."""
+    FIXTURES.mkdir(parents=True, exist_ok=True)
+    pdf_path = FIXTURES / "slides.pdf"
+    make_pdf_fixture(pdf_path, ["Page 1", "Page 2", "Page 3"])
+    txt_path = FIXTURES / "script.txt"
+    txt_path.write_text(
+        "1구간: 첫 페이지 발표 멘트입니다.\n---\n2구간: 둘째 페이지 멘트.\n---\n3구간: 셋째 페이지 멘트.\n",
+        encoding="utf-8",
+    )
+    html_path = FIXTURES / "doc.html"
+    html_path.write_text(
+        '<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>스크롤 검증</title></head>'
+        '<body style="margin:0"><h1>스크롤 검증 문서</h1>'
+        '<div style="height:4000px;background:#f0f0f0"></div>'
+        "<p>문서 끝</p></body></html>",
+        encoding="utf-8",
+    )
+    script_pdf_path = FIXTURES / "script.pdf"
+    make_pdf_fixture(script_pdf_path, ["Section 1 notes", "Section 2 notes", "Section 3 notes"])
+    return pdf_path, txt_path, html_path, script_pdf_path
+
+
 def watch_console(page, errors: list, label: str) -> None:
     page.on("console", lambda m: errors.append(f"[{label}] {m.text}") if m.type == "error" else None)
     page.on("pageerror", lambda e: errors.append(f"[{label}] {e}"))
@@ -127,6 +186,7 @@ def main() -> None:
         with sync_playwright() as p:
             browser = p.chromium.launch(args=["--autoplay-policy=no-user-gesture-required"])
             make_video_fixture(browser, base)
+            pdf_path, txt_path, html_path, script_pdf_path = make_upload_fixtures()
             ctx = browser.new_context(viewport={"width": 1600, "height": 1000})
 
             # --- 검증 1·2·4·6: 공개 문서로 발표자·청중 동기화 ---
@@ -283,13 +343,13 @@ def main() -> None:
             watch_console(popup, errors, "local-view")
             popup.wait_for_selector(".pg-cover-title", timeout=3000)
             check(
-                "로컬 문서 청중 창 전달(hello→doc→state)",
+                "로컬 자료 청중 창 표시(IndexedDB 직접 읽기)",
                 popup.locator(".pg-cover-title").inner_text() != "",
             )
             popup.close()
             entry.close()
 
-            # 9. 로컬 청중 창 선개설 → 발표자 시작 시 문서 수신 (Codex 검수 반영: hello 유실 영구 대기 해소)
+            # 9. 로컬 청중 창 선개설 → 발표자 시작 시 자료 수신 (Codex 검수 반영: hello 유실 영구 대기 해소)
             early = ctx.new_page()
             watch_console(early, errors, "early-view")
             early.goto(f"{base}/web/brief/view.html?local=1&ch={PUBLIC_DOC}", wait_until="networkidle")
@@ -297,13 +357,101 @@ def main() -> None:
             lp = ctx.new_page()
             watch_console(lp, errors, "present-local")
             lp.goto(f"{base}/web/brief/index.html", wait_until="networkidle")
-            doc_text = (ROOT / "data" / "brief" / f"{PUBLIC_DOC}.json").read_text(encoding="utf-8")
-            lp.evaluate("(t) => window.sessionStorage.setItem('mg-brief-local', t)", doc_text)
-            lp.goto(f"{base}/web/brief/present.html?local=1", wait_until="networkidle")
-            early.wait_for_selector(".pg-cover-title", timeout=5000)
-            check("청중 창 선개설 → 발표자 시작 시 문서 수신", True, "hello 재송신·시작 방송으로 동기화")
+            lp.locator(".mode-grid .action-card[data-mode='상담']").click()
+            lp.set_input_files("#file-input", str(ROOT / "data" / "brief" / f"{PUBLIC_DOC}.json"))
+            lp.wait_for_selector("#local-start")
+            lp.locator("#local-start").click()
+            lp.wait_for_selector("#count")
+            early.wait_for_selector(".pg-cover-title", timeout=6000)
+            check("청중 창 선개설 → 발표자 시작 시 자료 수신", True, "IndexedDB 재시도 + hello 재송신")
             early.close()
             lp.close()
+
+            # 10. PDF 업로드 + 스크립트 사이드카 + 페이지 동기화
+            pe = ctx.new_page()
+            watch_console(pe, errors, "present-pdf")
+            pe.goto(f"{base}/web/brief/index.html", wait_until="networkidle")
+            pe.locator(".mode-grid .action-card[data-mode='강의']").click()
+            pe.set_input_files("#file-input", str(pdf_path))
+            pe.set_input_files("#script-input", str(txt_path))
+            pe.wait_for_selector("#local-start")
+            pe.locator("#local-start").click()
+            pe.wait_for_selector("#count")
+            pe.wait_for_function("() => document.getElementById('count').textContent.includes('/ 3')", timeout=6000)
+            script1 = "1구간" in pe.locator("#script-body").inner_text()
+            with ctx.expect_page() as pv_info:
+                pe.locator("#open-view").click()
+            pv = pv_info.value
+            watch_console(pv, errors, "view-pdf")
+            pv.wait_for_selector("#stage canvas", timeout=8000)
+            pe.keyboard.press("ArrowRight")
+            pv.wait_for_function("() => document.getElementById('stage').dataset.page === '2'", timeout=4000)
+            script2 = "2구간" in pe.locator("#script-body").inner_text()
+            check(
+                "PDF 업로드 3페이지 + 페이지 동기화 + 스크립트 사이드카",
+                script1 and script2,
+                "1/3 표시, 구간 1→2 전환, 청중 캔버스 렌더",
+            )
+            pv.close()
+            pe.close()
+
+            # 11. HTML 업로드 + 스크롤 동기화
+            he = ctx.new_page()
+            watch_console(he, errors, "present-html")
+            he.goto(f"{base}/web/brief/index.html", wait_until="networkidle")
+            he.locator(".mode-grid .action-card[data-mode='강의']").click()
+            he.set_input_files("#file-input", str(html_path))
+            he.wait_for_selector("#local-start")
+            he.locator("#local-start").click()
+            he.wait_for_selector("#stage iframe")
+            with ctx.expect_page() as hv_info:
+                he.locator("#open-view").click()
+            hv = hv_info.value
+            watch_console(hv, errors, "view-html")
+            hv.wait_for_selector("#stage iframe", timeout=6000)
+            hv.wait_for_timeout(400)
+            he.evaluate("() => { const f = document.querySelector('#stage iframe'); f.contentWindow.scrollTo(0, 999999); }")
+            hv.wait_for_function(
+                "() => { const f = document.querySelector('#stage iframe');"
+                " if (!f || !f.contentWindow) return false;"
+                " const el = f.contentWindow.document.scrollingElement;"
+                " return !!el && el.scrollTop > 500; }",
+                timeout=4000,
+            )
+            check("HTML 업로드 + 스크롤 동기화", True, "발표자 스크롤 → 청중 창 반영")
+            hv.close()
+            he.close()
+
+            # 12. PDF·HTML 스크립트 사이드카 (스크립트를 PDF로 올리면 페이지=구간, HTML은 hr 구분)
+            se = ctx.new_page()
+            watch_console(se, errors, "present-script-pdf")
+            se.goto(f"{base}/web/brief/index.html", wait_until="networkidle")
+            html_parse_ok = se.evaluate(
+                "() => { const s = window.mgBrief.parseScriptHtml("
+                "'<p>구간 하나</p><hr><p>구간 둘</p><hr><p>구간 셋</p>');"
+                " return s.length === 3 && s[1].includes('구간 둘'); }"
+            )
+            se.locator(".mode-grid .action-card[data-mode='강의']").click()
+            se.set_input_files("#file-input", str(pdf_path))
+            se.set_input_files("#script-input", str(script_pdf_path))
+            se.wait_for_function(
+                "() => !document.getElementById('local-script-meta').textContent.includes('없음')",
+                timeout=6000,
+            )
+            se.locator("#local-start").click()
+            se.wait_for_selector("#count")
+            sec1 = "Section 1" in se.locator("#script-body").inner_text()
+            se.keyboard.press("ArrowRight")
+            se.wait_for_function(
+                "() => document.getElementById('script-body').textContent.includes('Section 2')",
+                timeout=4000,
+            )
+            check(
+                "PDF·HTML 스크립트 사이드카",
+                html_parse_ok and sec1,
+                "PDF 스크립트 페이지=구간 전환, HTML hr 구분 3구간 파싱",
+            )
+            se.close()
 
             # --- 검증 7: 콘솔 오류 ---
             check("콘솔 오류 0건", not errors, "; ".join(errors[:4]))
