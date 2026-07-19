@@ -58,6 +58,7 @@
         <div id="topic-inputs"></div>
         <div class="news-actions">
           <button class="btn btn-primary" type="button" id="news-brief">집필 지시문 복사</button>
+          <button class="btn" type="button" id="topic-suggest">주제 추천 지시문 복사</button>
           <span id="news-count">참조 기사 0건 선택</span>
         </div>
         <p class="news-collected">제목은 가제면 됩니다. 집필 세션이 제목을 다듬어 확정하고, 가제 키워드로 네이버 뉴스·백과사전과 웹검색 근거를 수집해 기사를 작성합니다.</p>
@@ -244,6 +245,25 @@
             lines.push("  " + a["링크"]);
           });
         }
+        window.mg.copy(lines.join("\n"), this);
+      });
+
+      // 주제 추천 — 가제가 안 떠오를 때. 추천 세션이 최신 뉴스와 지난 호 이력을 보고 제안한다
+      document.getElementById("topic-suggest").addEventListener("click", function () {
+        var slots = TOPIC_SLOTS[planChannel].join(" / ");
+        var lines = [
+          planChannel + " 발행 기획. 이번 호에 실을 기사 주제와 가제를 추천해줘.",
+          "",
+          "- 꼭지 구성: " + slots + " — 꼭지마다 후보 3개씩, 각 후보는 가제(제목형) + 한 줄 이유",
+          "- 근거: python pipeline/collect_news.py 로 최신 뉴스를 수집해 훑고, 웹검색으로 보강한다",
+          "- 중복 방지: data/care/issues.json 의 지난 호 꼭지 이력과 겹치지 않게 한다",
+          "- 관점: 고객(보험 가입자·가장·자영업자)의 돈과 보장에 닿는 주제를 우선한다",
+          planChannel === "월간"
+            ? "- 월간 기준: 반년 뒤에 읽어도 유효한 주제만 (시의성 소재는 주간으로 넘긴다)"
+            : "- 주간 기준: 이번 주에 읽어야 가치 있는 시의성 주제 우선",
+          "",
+          "추천이 확정되면 발행 데스크의 가제 칸에 옮겨 적고 집필 지시문으로 이어간다."
+        ];
         window.mg.copy(lines.join("\n"), this);
       });
 
