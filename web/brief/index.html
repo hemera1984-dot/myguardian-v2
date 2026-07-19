@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>브리핑 - 마이가디언</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="../assets/platform.css">
+  <script src="../assets/platform.js"></script>
+  <style>
+    .mode-grid button.action-card {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--platform-line);
+      cursor: pointer;
+      font: inherit;
+    }
+    .mode-grid button.action-card.selected {
+      border-color: var(--platform-blue);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .mode-tag {
+      display: inline-block;
+      border-radius: 7px;
+      background: var(--platform-blue-soft);
+      color: var(--platform-blue);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 9px;
+    }
+    .doc-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      font: inherit;
+      background: none;
+      border: none;
+      border-bottom: 1px solid var(--platform-line);
+      padding: 14px 4px;
+      cursor: pointer;
+    }
+    .doc-item:hover .d-title { color: var(--platform-blue); }
+    .doc-item .d-title { font-weight: 700; font-size: 15px; }
+    .doc-item .d-meta { display: block; margin-top: 3px; color: var(--platform-faint); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+    .doc-item .d-sum { display: block; margin-top: 5px; color: var(--platform-muted); font-size: 13px; }
+    .local-open input[type="file"] { display: none; }
+    .local-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .local-button {
+      border: 1px solid var(--platform-line-strong);
+      border-radius: 9px;
+      background: var(--platform-surface);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 650;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: border-color 0.18s ease;
+    }
+    .local-button:hover { border-color: var(--platform-blue); color: var(--platform-blue); }
+    .local-button.primary { background: var(--platform-blue); border-color: var(--platform-blue); color: #ffffff; }
+    .local-summary { margin-top: 16px; border-top: 1px solid var(--platform-line); padding-top: 16px; }
+    .local-summary strong { font-size: 15px; }
+    .local-summary span { display: block; margin-top: 3px; color: var(--platform-muted); font-size: 13px; }
+    .local-error { margin-top: 12px; color: var(--platform-denied); font-size: 13px; }
+  </style>
+</head>
+<body class="platform">
+  <aside class="platform-sidebar" id="platform-sidebar">
+    <a class="platform-brand" href="../" aria-label="마이가디언 홈"><span class="brand-mark">마</span><span><span class="brand-name">마이가디언</span><span class="brand-caption">FC 업무 플랫폼</span></span></a>
+    <nav class="platform-nav" aria-label="주요 메뉴">
+      <a href="../">홈</a><a href="../customers/">고객관리</a><a href="../claims/">청구·지급</a><a href="../cases/">사례·판례</a><a href="../learn/">학습</a><a class="active" href="./">브리핑</a><a href="../team/">우리팀</a>
+      <span class="nav-separator" aria-hidden="true"></span><a href="../care/">케어센터</a><a href="../card/">카톡카드</a>
+    </nav>
+    <div class="sidebar-status"><strong>브리핑</strong><span>상담·교육·강의 발표 도구</span></div>
+  </aside>
+  <div class="platform-overlay" id="platform-overlay"></div>
+  <div class="platform-shell">
+    <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">브리핑</span><span class="topbar-note">발표자·청중 화면 동기화</span></header>
+    <main class="platform-main">
+      <section class="page-heading">
+        <p class="eyebrow">발표 도구</p>
+        <h1>브리핑</h1>
+        <p>한 자료를 발표자 화면과 청중 화면 두 시점으로 띄웁니다. 페이지 넘김·마우스포인터·영상이 실시간으로 따라가고, 스크립트는 발표자 화면에만 보입니다.</p>
+      </section>
+
+      <section class="section-block" aria-labelledby="mode-title">
+        <div class="section-head"><div><h2 id="mode-title">모드 선택</h2><p>기기 구성만 다를 뿐 화면과 조작은 같습니다.</p></div></div>
+        <div class="action-grid mode-grid">
+          <button class="action-card" type="button" data-mode="상담"><span class="mode-tag">상담</span><h3>고객 상담</h3><p>내 노트북 + 고객 태블릿. 보장분석 문서를 내 컴퓨터에서 열어 진행합니다. 고객 문서는 저장소에 올라가지 않습니다.</p></button>
+          <button class="action-card" type="button" data-mode="교육"><span class="mode-tag">교육</span><h3>팀 교육</h3><p>내 노트북 + 빔프로젝터. 공개 교육 자료로 진행하고 수강생 화면이 발표자를 따라옵니다.</p></button>
+          <button class="action-card" type="button" data-mode="강의"><span class="mode-tag">강의</span><h3>외부 강의</h3><p>내 노트북 + 빔프로젝터. 당근모임 등 외부 강의용 자료를 청중 화면에 띄웁니다.</p></button>
+        </div>
+      </section>
+
+      <section class="section-block" id="doc-section" hidden aria-labelledby="doc-title">
+        <div class="section-head"><div><h2 id="doc-title">자료 선택</h2><p id="doc-desc"></p></div></div>
+        <div class="home-panels">
+          <article class="surface-card" id="list-card">
+            <h3>공개 자료</h3>
+            <p class="surface-desc">data/brief/에 발행된 자료입니다.</p>
+            <div id="doc-list"></div>
+          </article>
+          <article class="surface-card local-open" id="local-card">
+            <h3>내 컴퓨터에서 열기</h3>
+            <p class="surface-desc" id="local-desc">브리핑 문서(JSON)를 선택해 엽니다. 파일은 브라우저 안에서만 처리되며 어디에도 전송되지 않습니다.</p>
+            <input type="file" id="file-input" accept="application/json,.json">
+            <div class="local-actions"><button class="local-button" id="file-open" type="button">문서 파일 선택</button></div>
+            <div class="local-summary" id="local-summary" hidden>
+              <strong id="local-title"></strong>
+              <span id="local-meta"></span>
+              <div class="local-actions"><button class="local-button primary" id="local-start" type="button">발표 시작</button></div>
+            </div>
+            <p class="local-error" id="local-error" hidden></p>
+          </article>
+        </div>
+      </section>
+
+      <p class="notice">사용 순서: 자료를 열면 발표자 화면이 뜹니다 → "청중 화면 열기"로 새 창을 띄워 빔프로젝터·확장 모니터(상담은 고객 쪽 창)로 옮기고 F 키로 전체화면 → 발표자 화면에서 페이지를 넘기면 청중 창이 따라옵니다.</p>
+    </main>
+    <footer class="platform-footer">마이가디언 v2</footer>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+      var docs = [];
+      var mode = null;
+      var localDocText = null;
+
+      function el(tag, className, text) {
+        var node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text != null) node.textContent = text;
+        return node;
+      }
+
+      function renderList() {
+        var box = document.getElementById("doc-list");
+        box.textContent = "";
+        var rows = docs.filter(function (d) { return d["모드"] === mode; });
+        if (!rows.length) {
+          var empty = el("div", "empty-inline");
+          var inner = el("div");
+          inner.appendChild(el("strong", null, "등록된 자료 없음"));
+          inner.appendChild(el("span", null, "data/brief/index.json에 등록된 " + mode + " 자료가 없습니다."));
+          empty.appendChild(inner);
+          box.appendChild(empty);
+          return;
+        }
+        rows.forEach(function (d) {
+          var b = el("button", "doc-item");
+          b.type = "button";
+          b.appendChild(el("span", "d-title", d["제목"]));
+          b.appendChild(el("span", "d-meta", d["작성일"] + " · " + d["작성자"] + (d["페이지수"] ? " · " + d["페이지수"] + "페이지" : "")));
+          if (d["요약"]) b.appendChild(el("span", "d-sum", d["요약"]));
+          b.addEventListener("click", function () {
+            window.location.href = "present.html?doc=" + encodeURIComponent(d.id);
+          });
+          box.appendChild(b);
+        });
+      }
+
+      function selectMode(next) {
+        mode = next;
+        document.querySelectorAll(".mode-grid .action-card").forEach(function (c) {
+          c.classList.toggle("selected", c.dataset.mode === mode);
+        });
+        document.getElementById("doc-section").hidden = false;
+        var isCounsel = mode === "상담";
+        document.getElementById("list-card").hidden = isCounsel;
+        document.getElementById("doc-desc").textContent = isCounsel
+          ? "상담 문서는 개인정보가 들어 있어 공개 자료로 두지 않습니다. 로컬 고객 저장소(mg-clients)의 문서를 파일로 여세요."
+          : mode + " 모드로 진행할 자료를 고르세요.";
+        if (!isCounsel) renderList();
+        document.getElementById("doc-section").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      document.querySelectorAll(".mode-grid .action-card").forEach(function (c) {
+        c.addEventListener("click", function () { selectMode(c.dataset.mode); });
+      });
+
+      fetch("../../data/brief/index.json")
+        .then(function (r) { return r.json(); })
+        .then(function (list) { docs = Array.isArray(list) ? list : []; if (mode && mode !== "상담") renderList(); })
+        .catch(function () {});
+
+      // 로컬 파일 열기 — 브라우저 안에서만 처리, 외부 전송 없음
+      var input = document.getElementById("file-input");
+      document.getElementById("file-open").addEventListener("click", function () { input.click(); });
+      input.addEventListener("change", function () {
+        var file = input.files && input.files[0];
+        var error = document.getElementById("local-error");
+        var summary = document.getElementById("local-summary");
+        error.hidden = true;
+        summary.hidden = true;
+        localDocText = null;
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          try {
+            var text = String(reader.result);
+            var doc = JSON.parse(text);
+            if (!doc || !doc.id || !doc["제목"] || !Array.isArray(doc["페이지"]) || !doc["페이지"].length) {
+              throw new Error("브리핑 문서 형식이 아닙니다. (id·제목·페이지 필요)");
+            }
+            localDocText = text;
+            document.getElementById("local-title").textContent = doc["제목"];
+            document.getElementById("local-meta").textContent =
+              (doc["모드"] || "") + " · " + (doc["작성자"] || "") + " · " + doc["페이지"].length + "페이지";
+            summary.hidden = false;
+          } catch (err) {
+            error.textContent = "열 수 없는 파일입니다: " + err.message;
+            error.hidden = false;
+          }
+        };
+        reader.readAsText(file, "utf-8");
+      });
+
+      document.getElementById("local-start").addEventListener("click", function () {
+        if (!localDocText) return;
+        try {
+          window.sessionStorage.setItem("mg-brief-local", localDocText);
+        } catch (err) {
+          var error = document.getElementById("local-error");
+          error.textContent = "문서를 넘기지 못했습니다: " + err.message;
+          error.hidden = false;
+          return;
+        }
+        window.location.href = "present.html?local=1";
+      });
+    })();
+  </script>
+</body>
+</html>

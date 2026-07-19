@@ -1,2 +1,4 @@
 __pycache__/
 scripts/shots/
+scripts/fixtures/
+pipeline/naver-keys.json

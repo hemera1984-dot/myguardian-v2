@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>발표자 화면 - 브리핑 - 마이가디언</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="brief.css">
+  <script src="brief.js"></script>
+</head>
+<body class="brief-present">
+  <header class="pr-topbar" id="topbar" hidden>
+    <span class="pr-mode" id="mode-badge"></span>
+    <span class="pr-doc-title" id="doc-title"></span>
+    <div class="pr-top-right">
+      <button class="pr-timer" id="timer" type="button" title="누르면 0:00부터 다시 잽니다" aria-label="경과 시간, 누르면 초기화">0:00</button>
+      <button class="pr-button" id="pointer-toggle" type="button" aria-pressed="true">포인터 송신</button>
+      <button class="pr-button primary" id="open-view" type="button">청중 화면 열기</button>
+    </div>
+  </header>
+
+  <main class="pr-main" id="main" hidden>
+    <div class="pr-stage-col">
+      <div class="pr-stage-wrap stage-wrap" id="stage-wrap">
+        <div class="stage" id="stage"></div>
+      </div>
+      <p class="pr-hint">새로 열린 청중 창을 빔프로젝터·확장 모니터로 끌어 놓고 F 키를 누르면 전체화면이 됩니다. 화면 클릭 또는 →/Space로 다음 페이지.</p>
+    </div>
+    <aside class="pr-side">
+      <section class="pr-panel pr-script" aria-label="발표 스크립트">
+        <p class="pr-panel-label">스크립트 — 청중 화면에는 표시되지 않습니다</p>
+        <div class="pr-script-body" id="script-body"></div>
+      </section>
+      <section class="pr-panel pr-next" aria-label="다음 페이지 미리보기">
+        <p class="pr-panel-label" id="next-label">다음 페이지</p>
+        <div class="pr-next-wrap stage-wrap" id="next-wrap">
+          <div class="stage" id="next-stage"></div>
+          <div class="pr-next-empty" id="next-empty" hidden>마지막 페이지입니다</div>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <nav class="pr-nav" id="nav" aria-label="페이지 이동" hidden>
+    <button class="pr-button" id="prev" type="button" aria-label="이전 페이지">←</button>
+    <div class="pr-nav-pages" id="nav-pages"></div>
+    <button class="pr-button" id="next" type="button" aria-label="다음 페이지">→</button>
+    <span class="pr-count" id="count"></span>
+  </nav>
+
+  <div class="pr-error" id="error" hidden>
+    <strong>문서를 열 수 없습니다.</strong>
+    <p id="error-msg"></p>
+    <p><a href="./">브리핑 진입 화면으로 돌아가기</a></p>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+      var B = window.mgBrief;
+      var params = new URLSearchParams(window.location.search);
+      var isLocal = params.get("local") === "1";
+
+      var doc = null;
+      var current = 1;
+      var protocol = null;
+      var transport = null;
+      var pointerEnabled = true;
+      var startedAt = Date.now();
+
+      var stage = document.getElementById("stage");
+      var stageWrap = document.getElementById("stage-wrap");
+      var nextStage = document.getElementById("next-stage");
+      var nextWrap = document.getElementById("next-wrap");
+
+      function fail(message) {
+        document.getElementById("error-msg").textContent = message;
+        document.getElementById("error").hidden = false;
+      }
+
+      function videoEl() {
+        return stage.querySelector("video");
+      }
+
+      function videoState() {
+        var v = videoEl();
+        if (!v) return null;
+        return { playing: !v.paused && !v.ended, time: v.currentTime || 0 };
+      }
+
+      function bindVideo() {
+        var v = videoEl();
+        if (!v) return;
+        v.addEventListener("play", function () { protocol.sendVideo("play", v.currentTime || 0); });
+        v.addEventListener("pause", function () { protocol.sendVideo("pause", v.currentTime || 0); });
+        v.addEventListener("seeked", function () { protocol.sendVideo("seek", v.currentTime || 0); });
+      }
+
+      function renderInto(stageEl, wrapEl, page) {
+        stageEl.textContent = "";
+        if (page) stageEl.appendChild(B.renderPage(page, { audience: false }));
+        B.fitPage(stageEl);
+        B.scaleStage(wrapEl, stageEl);
+      }
+
+      function updateNav() {
+        var buttons = document.querySelectorAll(".pr-page-btn");
+        buttons.forEach(function (b) {
+          b.classList.toggle("active", Number(b.dataset.page) === current);
+        });
+        var active = document.querySelector(".pr-page-btn.active");
+        if (active && active.scrollIntoView) active.scrollIntoView({ block: "nearest", inline: "nearest" });
+        document.getElementById("count").textContent = current + " / " + doc["페이지"].length;
+      }
+
+      function goTo(n, silent) {
+        var total = doc["페이지"].length;
+        n = Math.max(1, Math.min(total, Math.round(n)));
+        current = n;
+        var page = doc["페이지"][n - 1];
+        renderInto(stage, stageWrap, page);
+        bindVideo();
+
+        var scriptBody = document.getElementById("script-body");
+        if (page["스크립트"]) {
+          scriptBody.textContent = page["스크립트"];
+          scriptBody.classList.remove("empty");
+        } else {
+          scriptBody.textContent = "이 페이지의 스크립트가 없습니다.";
+          scriptBody.classList.add("empty");
+        }
+
+        var nextPage = doc["페이지"][n] || null;
+        document.getElementById("next-empty").hidden = !!nextPage;
+        renderInto(nextStage, nextWrap, nextPage);
+
+        updateNav();
+        if (!silent) protocol.sendPage(current);
+      }
+
+      function buildNav() {
+        var box = document.getElementById("nav-pages");
+        doc["페이지"].forEach(function (page, i) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "pr-page-btn";
+          b.dataset.page = String(i + 1);
+          b.textContent = String(i + 1);
+          b.title = (page["제목"] || page["유형"]) + "";
+          b.addEventListener("click", function () { goTo(i + 1); });
+          box.appendChild(b);
+        });
+        document.getElementById("prev").addEventListener("click", function () { goTo(current - 1); });
+        document.getElementById("next").addEventListener("click", function () { goTo(current + 1); });
+      }
+
+      function viewUrl() {
+        if (isLocal) return "view.html?local=1&ch=" + encodeURIComponent(doc.id);
+        if (params.get("src")) return "view.html?src=" + encodeURIComponent(params.get("src"));
+        return "view.html?doc=" + encodeURIComponent(doc.id);
+      }
+
+      // 포인터 — 30ms 스로틀, 캔버스 기준 0~1 비율 좌표
+      var lastSent = 0;
+      var pointerOn = false;
+      function sendPointer(e) {
+        if (!pointerEnabled) return;
+        var now = Date.now();
+        if (now - lastSent < 30) return;
+        lastSent = now;
+        var rect = stage.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        var x = (e.clientX - rect.left) / rect.width;
+        var y = (e.clientY - rect.top) / rect.height;
+        if (x < 0 || x > 1 || y < 0 || y > 1) return;
+        pointerOn = true;
+        protocol.sendPointer(Math.round(x * 1000) / 1000, Math.round(y * 1000) / 1000, true);
+      }
+
+      function pointerOff() {
+        if (!pointerOn) return;
+        pointerOn = false;
+        protocol.sendPointer(0, 0, false);
+      }
+
+      function start() {
+        document.title = "발표 — " + doc["제목"] + " - 마이가디언";
+        document.getElementById("doc-title").textContent = doc["제목"];
+        document.getElementById("mode-badge").textContent = doc["모드"] || "브리핑";
+        document.getElementById("topbar").hidden = false;
+        document.getElementById("main").hidden = false;
+        document.getElementById("nav").hidden = false;
+
+        transport = B.createBroadcastTransport(B.channelName(doc.id));
+        protocol = B.createProtocol(transport, {
+          // 청중 창이 뒤늦게 열리면 문서(로컬일 때)와 현재 상태를 보내 맞춘다
+          hello: function () {
+            if (isLocal) protocol.sendDoc(doc);
+            protocol.sendState(current, videoState());
+          }
+        });
+
+        buildNav();
+        goTo(1);
+        // 먼저 열려 대기 중인 청중 창을 위해 시작 즉시 방송 (로컬이면 문서까지)
+        if (isLocal) protocol.sendDoc(doc);
+        protocol.sendState(current, videoState());
+
+        document.getElementById("open-view").addEventListener("click", function () {
+          window.open(viewUrl(), "mg-brief-view-" + doc.id);
+        });
+
+        var toggle = document.getElementById("pointer-toggle");
+        toggle.addEventListener("click", function () {
+          pointerEnabled = !pointerEnabled;
+          toggle.setAttribute("aria-pressed", String(pointerEnabled));
+          if (!pointerEnabled) pointerOff();
+        });
+
+        stageWrap.addEventListener("mousemove", sendPointer);
+        stageWrap.addEventListener("mouseleave", pointerOff);
+        stageWrap.addEventListener("click", function (e) {
+          if (e.target.closest("video")) return;
+          goTo(current + 1);
+        });
+
+        document.addEventListener("keydown", function (e) {
+          if (e.target.closest("button, input, select, textarea")) return;
+          if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") {
+            e.preventDefault();
+            goTo(current + 1);
+          } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+            e.preventDefault();
+            goTo(current - 1);
+          }
+        });
+
+        var timer = document.getElementById("timer");
+        setInterval(function () {
+          var s = Math.floor((Date.now() - startedAt) / 1000);
+          timer.textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+        }, 1000);
+        timer.addEventListener("click", function () { startedAt = Date.now(); });
+
+        window.addEventListener("resize", function () {
+          B.scaleStage(stageWrap, stage);
+          B.scaleStage(nextWrap, nextStage);
+        });
+        window.addEventListener("beforeunload", function () { transport.close(); });
+      }
+
+      if (isLocal) {
+        try {
+          var text = window.sessionStorage.getItem("mg-brief-local");
+          if (!text) throw new Error("로컬 문서가 없습니다. 진입 화면에서 파일을 다시 열어주세요.");
+          doc = B.parseDocText(text);
+          start();
+        } catch (err) {
+          fail(err.message);
+        }
+      } else if (params.get("src")) {
+        B.loadDocBySrc(params.get("src")).then(function (d) { doc = d; start(); }).catch(function (err) { fail(err.message); });
+      } else if (params.get("doc")) {
+        B.loadDocById(params.get("doc")).then(function (d) { doc = d; start(); }).catch(function (err) { fail(err.message); });
+      } else {
+        fail("문서가 지정되지 않았습니다.");
+      }
+    })();
+  </script>
+</body>
+</html>

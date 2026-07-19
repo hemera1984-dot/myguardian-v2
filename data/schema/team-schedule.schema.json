@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "team-schedule.schema.json",
+  "title": "우리팀 일정",
+  "description": "우리팀 화면의 일정 데이터. data/team/schedule.json은 {팀일정:[], 팀원일정:[]} 객체다. 팀일정은 월간 캘린더에, 팀원일정은 주간 확인표(팀원 x 요일, 월~금)에 표시된다. 케어센터 주간 발행(매주 월요일)은 저장하지 않고 화면에서 자동 표시한다. 고객 언급은 코드(C-YYYY-NNN)로만 한다.",
+  "type": "object",
+  "required": ["팀일정", "팀원일정"],
+  "properties": {
+    "팀일정": {
+      "type": "array",
+      "description": "팀 공유 일정 (교육·회의·마감 등)",
+      "items": {
+        "type": "object",
+        "required": ["id", "날짜", "제목", "구분"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^e-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}$", "description": "일정 ID (예: e-2026-07-21-01)" },
+          "날짜": { "type": "string", "format": "date" },
+          "제목": { "type": "string" },
+          "구분": { "type": "string", "enum": ["교육", "회의", "마감", "발행", "기타"] },
+          "시작": { "type": ["string", "null"], "description": "시작 시각 HH:MM. 없으면 종일" },
+          "종료": { "type": ["string", "null"], "description": "종료 시각 HH:MM (선택)" },
+          "연결": {
+            "type": "array",
+            "description": "관련 플랫폼 화면 링크 (교육이면 학습 자료 등)",
+            "items": {
+              "type": "object",
+              "required": ["라벨", "경로"],
+              "properties": { "라벨": { "type": "string" }, "경로": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "팀원일정": {
+      "type": "array",
+      "description": "팀원별 스케줄 (주간 확인표). 시간 단위 입력, 자유 메모 지원. STEP 3 전에는 팀장이 취합해 입력한다",
+      "items": {
+        "type": "object",
+        "required": ["팀원", "날짜", "구분"],
+        "properties": {
+          "팀원": { "type": "string", "pattern": "^m-[0-9]{2}$", "description": "members.json의 팀원 id" },
+          "날짜": { "type": "string", "format": "date" },
+          "구분": { "type": "string", "enum": ["상담", "외근", "내근", "휴가", "교육", "회의"] },
+          "시작": { "type": ["string", "null"], "description": "시작 시각 HH:MM. 없으면 종일 (휴가 등)" },
+          "종료": { "type": ["string", "null"], "description": "종료 시각 HH:MM (선택)" },
+          "메모": { "type": ["string", "null"], "description": "자유 메모 한 줄 (예: 강남 외근, C-2026-014 상담). 고객 실명 금지" }
+        }
+      }
+    }
+  }
+}
