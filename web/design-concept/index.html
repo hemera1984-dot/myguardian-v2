@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>마이가디언 디자인 시안</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="concept.css">
+</head>
+<body>
+  <aside class="side" id="side">
+    <a class="brand" href="../" aria-label="마이가디언 홈">
+      <span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span><strong>마이가디언</strong><small>보험 업무 플랫폼</small></span>
+    </a>
+
+    <nav class="navigation" aria-label="주요 메뉴">
+      <a class="active" href="../"><span>홈</span><em>업무 현황</em></a>
+      <a href="../customers/"><span>고객관리</span><em>고객 자료</em></a>
+      <a href="../claims/"><span>청구·지급</span><em>보험금 업무</em></a>
+      <a href="../cases/"><span>사례·판례</span><em>383건</em></a>
+      <a href="../learn/"><span>학습</span><em>사전 693건</em></a>
+      <a href="#prototype-only"><span>브리핑</span><em>발표 도구</em></a>
+      <a href="#prototype-only"><span>우리팀</span><em>팀 업무</em></a>
+      <a href="../care/"><span>케어센터</span><em>15호</em></a>
+      <a href="../card/"><span>카톡카드</span><em>콘텐츠</em></a>
+    </nav>
+
+    <div class="side-foot">
+      <div class="side-user"><span>안</span><div><strong>안창민 FC</strong><small>신한라이프 하랑지점</small></div></div>
+      <p><i></i> 로컬 업무 공간</p>
+    </div>
+  </aside>
+  <button class="side-overlay" id="side-overlay" type="button" aria-label="메뉴 닫기"></button>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-button" id="menu-button" type="button" aria-label="메뉴 열기" aria-expanded="false"><i></i><i></i><i></i></button>
+        <span class="mobile-wordmark">마이가디언</span>
+        <div class="breadcrumb"><span>업무 홈</span><strong>오늘의 업무</strong></div>
+      </div>
+      <div class="topbar-actions">
+        <button class="quiet-button" type="button">화면 설정</button>
+        <a class="primary-button" href="../customers/">고객 폴더 연결</a>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="page-intro">
+        <div>
+          <span class="intro-label">업무 홈</span>
+          <h1>오늘 필요한 업무를<br>한 화면에서 시작합니다</h1>
+          <p id="today-label">자료 현황과 최근 발행물을 확인하고 필요한 업무로 바로 이동하세요.</p>
+        </div>
+        <div class="intro-summary" aria-label="플랫폼 자료 합계">
+          <span>검증·검색 가능 자료</span>
+          <strong id="total-count">—</strong>
+          <small>사례·용어·질병 통합</small>
+        </div>
+      </section>
+
+      <form class="master-search" id="master-search" role="search">
+        <span class="search-icon" aria-hidden="true"></span>
+        <label for="master-q"><strong>통합 업무 검색</strong><small>사례·판례, 보험 용어, 질병 정보를 한 번에 찾습니다</small></label>
+        <input id="master-q" type="search" placeholder="검색어를 입력하세요" autocomplete="off">
+        <button type="submit">검색</button>
+      </form>
+
+      <section class="priority-strip" aria-label="오늘의 우선 업무">
+        <div class="priority-mark"><span>우선 업무</span><strong id="publication-label">다음 케어 발행 일정 확인</strong></div>
+        <p id="publication-copy">주간 발행일과 최근 발행물을 확인하세요.</p>
+        <a href="../care/">케어센터 열기</a>
+      </section>
+
+      <section class="metrics" aria-label="실데이터 현황">
+        <article class="metric accent"><span>사례·판례</span><strong id="metric-cases">—</strong><small id="metric-cases-detail">공식 자료 색인</small></article>
+        <article class="metric"><span>보험 용어</span><strong id="metric-terms">—</strong><small>용어 사전</small></article>
+        <article class="metric"><span>질병 정보</span><strong id="metric-diseases">—</strong><small>질병 사전</small></article>
+        <article class="metric"><span>케어 발행물</span><strong id="metric-care">—</strong><small>주간·월간 누적</small></article>
+      </section>
+
+      <div class="dashboard-grid">
+        <section class="work-panel panel">
+          <header class="panel-head"><div><span>업무 바로가기</span><h2>상담 흐름에 맞춘 주요 업무</h2></div><small>자주 쓰는 순서로 배치</small></header>
+          <div class="work-links">
+            <a href="../customers/" class="work-link featured"><span class="work-index">01</span><div><strong>고객 자료 확인</strong><p>로컬 고객 폴더를 연결하고 보유보험과 메모를 확인합니다.</p></div><em>열기</em></a>
+            <a href="../cases/" class="work-link"><span class="work-index">02</span><div><strong>사례·판례 검색</strong><p>지급 결과와 쟁점, 기관 조건으로 실제 자료를 찾습니다.</p></div><em>검색</em></a>
+            <a href="../claims/" class="work-link"><span class="work-index">03</span><div><strong>청구·지급 업무</strong><p>지급사례와 알릴의무, 청구서류 안내를 확인합니다.</p></div><em>확인</em></a>
+            <a href="#prototype-only" class="work-link"><span class="work-index">04</span><div><strong>브리핑 시작</strong><p>상담·교육·강의 자료를 발표자 화면으로 엽니다.</p></div><em>시작</em></a>
+          </div>
+        </section>
+
+        <aside class="care-panel panel">
+          <header class="panel-head"><div><span>최근 발행</span><h2>케어센터</h2></div><a href="../care/">전체 보기</a></header>
+          <a class="latest-care" id="latest-care" href="../care/">
+            <div class="care-cover"><img id="latest-cover" alt="" loading="eager"><span id="latest-channel">주간</span></div>
+            <div class="care-copy"><span id="latest-meta">최근 발행물</span><h3 id="latest-title">발행 정보를 불러오는 중입니다</h3><p id="latest-summary">실제 발행 콘텐츠만 표시합니다.</p><strong>발행물 열기</strong></div>
+          </a>
+        </aside>
+
+        <section class="data-panel panel">
+          <header class="panel-head"><div><span>자료 구성</span><h2>사례 출처 현황</h2></div><a href="../cases/">자료 검색</a></header>
+          <div class="source-table" id="source-table"><p>자료 현황을 불러오는 중입니다.</p></div>
+          <footer><span>원본 레코드는 별도 보존</span><strong id="raw-count">—</strong></footer>
+        </section>
+
+        <section class="recent-panel panel">
+          <header class="panel-head"><div><span>최근 갱신</span><h2>플랫폼 자료 이력</h2></div><small>실데이터 기준</small></header>
+          <ol class="recent-list">
+            <li><time>2026.07.19</time><div><strong>사례 서비스 색인 갱신</strong><p>중복 원본을 보존하고 검색용 고유 색인을 분리했습니다.</p></div><span>자료</span></li>
+            <li><time>2026.07.13</time><div><strong>주간 안창민 11호 발행</strong><p>최근 케어 발행물이 서재에 등록됐습니다.</p></div><span>케어</span></li>
+            <li><time>2026.07.06</time><div><strong>월간 안창민 4호 발행</strong><p>월간 발행물이 케어센터에 등록됐습니다.</p></div><span>케어</span></li>
+          </ol>
+        </section>
+      </div>
+
+      <footer class="concept-note" id="prototype-only"><strong>디자인 시안</strong><span>기능·데이터 구조는 변경하지 않은 디자인 언어 검토용 화면입니다.</span></footer>
+    </main>
+  </div>
+
+  <script src="concept.js"></script>
+</body>
+</html>

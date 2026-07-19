@@ -1,5 +1,15 @@
 ﻿# handoff — 세션 인수인계
 
+## 2026-07-19 — Codex 플랫폼 디자인 시안 (`codex/design-concept`)
+
+- 사용자·Claude Code가 확정한 1순위 디자인 라운드용 독립 시안 신설: `web/design-concept/`
+- 운영 화면은 수정하지 않고 홈 대표 화면만 별도 구성했다.
+- 실데이터만 사용: 사례 383, 용어 418, 질병 275, 케어 발행물 15호와 실제 최근 발행물.
+- 디자인 언어 명세: `docs/design-review/codex/concept/design-language.md`
+- 방향: 네이비 업무 프레임, 블루 실행 신호, 통합검색 우선, 연결형 지표, 업무 바로가기, 최근 발행물.
+- 사용자 승인 전 병합 금지. Claude Code는 시안 코드를 복사하지 않고 디자인 언어를 헌법에 반영한 뒤 전 화면에 재적용한다.
+- 로고는 임시 심벌 자리만 마련했으며 최종 6종 검토 후 교체한다.
+
 ## 2026-07-19 오전 — Codex 2차 검수 대응 라운드 (claude/auto-improve)
 
 - findings-02 치명 2·중요 5 전부 수용·수정 완료 → docs/design-review/codex/response-02.md
