@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "team-member.schema.json",
+  "title": "우리팀 팀원",
+  "description": "우리팀 화면의 팀원 명단. data/team/members.json은 이 스키마를 따르는 객체의 배열이다. 팀원(설계사) 정보만 담으며 고객 정보는 절대 넣지 않는다. 연락처·주민번호 등 식별 정보 금지 — 이름과 역할만 둔다.",
+  "type": "object",
+  "required": ["id", "이름"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "팀원 고유 ID (예: m-01). STEP 3 엣지 연동 시 읽음·이수 기록의 키가 된다",
+      "pattern": "^m-[0-9]{2}$"
+    },
+    "이름": {
+      "type": "string",
+      "description": "팀원 이름"
+    },
+    "역할": {
+      "type": ["string", "null"],
+      "description": "자유 입력 역할 (예: 보장분석 담당, 법인 담당, 신입 · 교육 과정중)"
+    },
+    "관리자": {
+      "type": "boolean",
+      "default": false,
+      "description": "팀장(관리자) 여부. 관리자에게만 읽음·이수 집계가 표시된다 (STEP 3)"
+    }
+  }
+}

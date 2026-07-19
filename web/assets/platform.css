@@ -319,6 +319,44 @@ body.platform {
   font-weight: 600;
 }
 
+.home-brief {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  border: 1px solid var(--platform-line);
+  border-radius: var(--platform-radius);
+  background: var(--platform-surface);
+  box-shadow: var(--platform-shadow);
+  padding: 14px 20px;
+  transition: border-color 0.18s ease;
+}
+
+.home-brief:hover {
+  border-color: var(--platform-blue);
+}
+
+.home-brief .hb-kind {
+  border-radius: 7px;
+  background: var(--platform-blue-soft);
+  padding: 3px 8px;
+  color: var(--platform-blue);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.home-brief .hb-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.home-brief .hb-meta {
+  margin-left: auto;
+  color: var(--platform-faint);
+  font-size: 12px;
+}
+
 .section-block {
   margin-top: 52px;
 }

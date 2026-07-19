@@ -1,16 +1,18 @@
-﻿# 현재 구현 상태
+# 현재 구현 상태
 
-기준: claude/auto-improve 브랜치 (Codex 2차 검수 대응 반영). 갱신일 2026-07-19.
+기준: main 병합본 (auto-improve + team-workspace + brief 통합). 갱신일 2026-07-19.
 
 ## 화면 (web/)
 
 | 화면 | 상태 | 비고 |
 |---|---|---|
-| 홈 | 완성 | 통합검색(용어·질병 제안+사례 연결), 자료 현황 타일, 발행 D-day·최근 열람 위젯. 팀 캘린더는 자리(2차 공사) |
+| 홈 | 완성 | 통합검색(용어·질병 제안+사례 연결), 자료 현황 타일, 발행 D-day·최근 열람 위젯, 최신 공지 스트립. 일정·캘린더는 우리팀 소관 |
 | 고객관리 | 완성 (읽기+쓰기) | 로컬 폴더 연결, 검색·필터·상세, 메모 저장, 신규 등록(스키마 정합·실패 시 정리) |
 | 사례·판례 | 완성 | 서비스 색인 383건, 검색·탭·필터(쟁점목록 기준)·2단 상세, 등급 배지, 공유 문구, ?q=/?id= 진입 |
 | 청구·지급 | 골격만 | 도구 3종 자리. 기능 미구현 |
 | 학습 | 완성 | 용어 418·질병 275 검색·상세 |
+| 브리핑 (brief/) | 1차 완성 + 업로드 확장 (Codex 검수 반영) | 상담·교육·강의 3모드 발표 도구. 발표자·청중 두 창 동기화(페이지·포인터·영상·스크롤, BroadcastChannel + 수신 검증). 로컬 자료 4형식(JSON·PDF·HTML·이미지) + 스크립트 사이드카(.txt/.md/.pdf/.html), IndexedDB 전달, pdf.js 내장. 사이드바 9번째 메뉴. 2차(원격 동기화)는 미착공 |
+| 우리팀 (team/) | 팀 관리 도구 개편 | 주간 확인표(팀원별 스케줄) + 월간 팀 캘린더(케어 발행 자동 표시) + 과제 목록 + 공지 + 출근·일일 현황 배지. members·schedule 실데이터 입력은 사용자 몫 |
 | 케어센터 | 완성 | 서재 15권, 스와이프 잡지 리더(섹션 컬러·글자 조절·진행바), 카톡 문구 작성함, 발행인/편집장 체계 |
 | 카톡카드 | 완성 | 실시간 미리보기+이미지 저장, 금액 형식 검증 |
 | 고객 리포트 (r/) | 준비중 | |
@@ -22,15 +24,19 @@
 - 등급(전량 검증 공정 통과 필수 — 커버리지 안전장치): 검증완료 209 / 부분검증 147 / 미검증-참고용 27
 - 검증 보고서 3종: fss(금감원 129) · scourt(법원 243) · tribunal(조세심판원 9)
 - 용어 418 · 질병 275 / 케어 15호 + 최적화 이미지(8.4MB)
+- 브리핑 문서 1건 (brief/) — 주간 11호 변환 샘플(강의 모드, 22페이지). 스키마 brief-doc.schema.json, 변환 공정 pipeline/brief_from_care.py. 상담용(보장분석) 문서는 공개 저장소 금지 — 로컬 고객 저장소에 두고 파일로 연다
+- 우리팀: notices·members·schedule·tasks + 스키마 (실데이터 입력 대기)
 - 고객 실데이터는 저장소 외부: C:/projects/mg-clients-fc01~03 (270명)
 
 ## 파이프라인 (pipeline/)
 
-- 운영: ingest_backup, migrate_clients(실행 완료), scrape_care, optimize_images, build_case_index, verify_fss, verify_scourt
+- 운영: ingest_backup, migrate_clients(실행 완료), scrape_care, optimize_images, build_case_index, verify_fss, verify_scourt, brief_from_care
 - 뼈대: collect_fss, collect_law, tag_cases(결과 재분류 대기 — 기타 621건), report/p1~p5
 
 ## 검증·환경
 
 - scripts/screenshot.py 3해상도(HTTP 서빙) — 쿼리 URL 파일명 미지원(개선 항목)
+- scripts/verify_brief.py — 브리핑 동기화 자동 검증 15항목(페이지·포인터·영상 실이동·늦은 입장·선개설·기형 메시지 내성·로컬 동선·PDF 사이드카·HTML 스크롤·PDF/HTML 스크립트·스크립트 비노출·콘솔) + 3해상도 스크린샷
 - 공용 web/assets/platform.js (이스케이프·복사·사이드바)
+- .claude/launch.json — 정적 미리보기 서버 (8123 / static-8124)
 - Python 3.12 + Playwright, Node 없음

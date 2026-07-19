@@ -22,6 +22,8 @@
       <a href="claims/">청구·지급</a>
       <a href="cases/">사례·판례</a>
       <a href="learn/">학습</a>
+      <a href="brief/">브리핑</a>
+      <a href="team/">우리팀</a>
       <span class="nav-separator" aria-hidden="true"></span>
       <a href="care/">케어센터</a>
       <a href="card/">카톡카드</a>
@@ -54,6 +56,8 @@
         <span class="search-state" id="global-state"></span>
         <div class="search-suggest" id="suggest" hidden></div>
       </div>
+
+      <a class="home-brief" id="home-brief" href="team/" hidden></a>
 
       <section class="section-block" aria-labelledby="data-status-title">
         <div class="section-head">
@@ -93,7 +97,6 @@
         <div class="home-panels">
           <article class="surface-card"><h3>케어센터 발행<span class="dday-chip" id="care-dday" hidden></span></h3><p class="surface-desc">주간 매주 월요일 · 월간 첫째 월요일</p><div class="empty-inline" id="care-latest-box"><div><strong>발행물 입주 준비중</strong><span>실제 발행 콘텐츠만 표시합니다.</span></div></div></article>
           <article class="surface-card"><h3>최근 열람 사례</h3><p class="surface-desc">사례·판례에서 최근에 확인한 자료</p><div id="recent-cases-box"><div class="empty-inline"><div><strong>열람 기록 없음</strong><span>사례를 열람하면 이곳에 최근 목록이 남습니다.</span></div></div></div></article>
-          <article class="surface-card"><h3>팀 캘린더</h3><p class="surface-desc">공유 캘린더 연동 자리 (2차 공사)</p><div class="empty-inline"><div><strong>연동 준비중</strong><span>연동 전에는 일정이 표시되지 않습니다.</span></div></div></article>
         </div>
       </section>
     </main>
@@ -154,6 +157,22 @@
           document.getElementById("stat-row").innerHTML =
             '<div class="stat-tile"><span class="stat-label">자료 현황</span><span class="stat-sub">데이터를 불러오지 못했습니다.</span></div>';
         });
+
+      // 우리팀 최신 공지 — 있을 때만 검색창 아래에 표시
+      fetch("../data/team/notices.json")
+        .then(function (r) { return r.json(); })
+        .then(function (list) {
+          if (!Array.isArray(list) || !list.length) return;
+          list.sort(function (a, b) { return (b["작성일"] || "") + b.id < (a["작성일"] || "") + a.id ? -1 : 1; });
+          var n = list[0];
+          var esc = window.mg.esc;
+          var el = document.getElementById("home-brief");
+          el.innerHTML = '<span class="hb-kind">' + esc(n["종류"]) + "</span>"
+            + '<span class="hb-title">' + esc(n["제목"]) + "</span>"
+            + '<span class="hb-meta">' + esc(n["작성일"]) + " · 우리팀에서 확인</span>";
+          el.hidden = false;
+        })
+        .catch(function () {});
 
       fetch("../data/care/issues.json")
         .then(function (r) { return r.json(); })

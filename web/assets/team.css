@@ -1,0 +1,934 @@
+/* 우리팀 팀 관리 화면 전용 스타일. platform.css 위에 얹는다.
+   STEP 3(셀프 입력·완료 체크·읽음 확인) 화면 스타일은 해당 기능 시공 때 추가한다. */
+
+/* 전체 배치 — 본문 + 활동 피드 레일 */
+
+.team-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 272px;
+  gap: 24px;
+  align-items: start;
+  margin-top: 8px;
+}
+
+.team-main .section-block.first {
+  margin-top: 28px;
+}
+
+.team-feed {
+  position: sticky;
+  top: 92px;
+  margin-top: 28px;
+  border: 1px solid var(--platform-line);
+  border-radius: var(--platform-radius);
+  background: var(--platform-surface);
+  box-shadow: var(--platform-shadow);
+  padding: 20px;
+}
+
+.team-feed h2 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.feed-item {
+  border-top: 1px solid var(--platform-line);
+  padding: 12px 0;
+}
+
+.feed-item:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.feed-item p {
+  margin: 2px 0 0;
+  color: var(--platform-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.feed-item p strong {
+  color: var(--platform-ink);
+  font-weight: 700;
+}
+
+.feed-date {
+  color: var(--platform-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.feed-detail {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--platform-faint);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feed-empty {
+  margin: 0;
+  color: var(--platform-faint);
+  font-size: 13px;
+}
+
+.feed-note {
+  margin: 14px 0 0;
+  border-top: 1px solid var(--platform-line);
+  padding-top: 12px;
+  color: var(--platform-faint);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* 오늘 — 지금 우리 팀 */
+
+.now-list {
+  display: grid;
+  gap: 8px;
+}
+
+.now-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--platform-line);
+  border-radius: var(--platform-radius);
+  background: var(--platform-surface);
+  box-shadow: var(--platform-shadow);
+  padding: 12px 16px;
+}
+
+.now-row.live {
+  border-color: var(--platform-blue);
+}
+
+.now-avatar {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--platform-blue-soft);
+  color: var(--platform-blue);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.now-avatar.big {
+  width: 44px;
+  height: 44px;
+  font-size: 16px;
+}
+
+.now-name {
+  min-width: 72px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.now-idle {
+  color: var(--platform-faint);
+  font-size: 13px;
+}
+
+.now-memo {
+  color: var(--platform-faint);
+  font-size: 12px;
+}
+
+.now-day {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.day-chip {
+  border: 1px solid var(--platform-line);
+  border-radius: 6px;
+  background: var(--platform-bg);
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.day-chip.ok {
+  border-color: transparent;
+  background: rgba(21, 128, 61, 0.09);
+  color: var(--platform-paid);
+}
+
+.day-chip.off {
+  border-color: transparent;
+  background: rgba(217, 119, 6, 0.12);
+  color: var(--platform-partial);
+}
+
+.day-chip.warn {
+  border-color: var(--platform-partial);
+  background: transparent;
+  color: var(--platform-partial);
+}
+
+.day-chip.none {
+  color: var(--platform-faint);
+}
+
+/* 댓글 */
+
+.comment-block {
+  margin-top: 20px;
+  border-top: 1px solid var(--platform-line);
+  padding-top: 14px;
+}
+
+.comment-label {
+  display: block;
+  color: var(--platform-faint);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.comment-item {
+  margin-top: 10px;
+  border-left: 2px solid var(--platform-line-strong);
+  padding-left: 12px;
+}
+
+.comment-item .comment-meta {
+  color: var(--platform-faint);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.comment-item p {
+  margin: 2px 0 0;
+  color: var(--platform-ink);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.comment-input {
+  margin-top: 12px;
+}
+
+.comment-input input {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--platform-line);
+  border-radius: 9px;
+  background: var(--platform-bg);
+  padding: 0 14px;
+  color: var(--platform-ink);
+  font-size: 13px;
+}
+
+/* 팀원 탭 — 목록 + 상세 2단 */
+
+.member-pane {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.62fr) minmax(0, 1.6fr);
+  overflow: hidden;
+  border: 1px solid var(--platform-line);
+  border-radius: var(--platform-radius);
+  background: var(--platform-surface);
+  box-shadow: var(--platform-shadow);
+}
+
+.member-list {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--platform-line);
+  padding: 10px;
+}
+
+.member-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.18s ease;
+}
+
+.member-pick:hover {
+  background: var(--platform-bg);
+}
+
+.member-pick.active {
+  background: var(--platform-blue-soft);
+}
+
+.member-pick .mp-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.member-pick .mp-role {
+  overflow: hidden;
+  color: var(--platform-faint);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-detail {
+  padding: 24px;
+}
+
+.md-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.md-name {
+  font-size: 18px;
+  font-weight: 780;
+  letter-spacing: -0.02em;
+}
+
+.md-role {
+  margin-top: 2px;
+  color: var(--platform-muted);
+  font-size: 13px;
+}
+
+.md-label {
+  margin: 22px 0 8px;
+  color: var(--platform-faint);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.md-week {
+  overflow: hidden;
+  border: 1px solid var(--platform-line);
+  border-radius: 10px;
+}
+
+.md-day {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 10px;
+  border-top: 1px solid var(--platform-line);
+  padding: 10px 14px;
+}
+
+.md-day:first-child {
+  border-top: 0;
+}
+
+.md-dow {
+  color: var(--platform-faint);
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.md-empty {
+  margin: 0;
+  color: var(--platform-faint);
+  font-size: 13px;
+}
+
+/* 기간 이동 */
+
+.range-nav {
+  display: flex;
+  gap: 6px;
+}
+
+.range-button {
+  border: 1px solid var(--platform-line);
+  border-radius: 9px;
+  background: var(--platform-surface);
+  padding: 7px 12px;
+  color: var(--platform-muted);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+
+.range-button:hover {
+  border-color: var(--platform-blue);
+  color: var(--platform-blue);
+}
+
+.range-label {
+  margin: 0 0 12px;
+  color: var(--platform-faint);
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 주간 확인표 */
+
+.week-grid {
+  overflow-x: auto;
+  border: 1px solid var(--platform-line);
+  border-radius: var(--platform-radius);
+  background: var(--platform-surface);
+  box-shadow: var(--platform-shadow);
+}
+
+.week-row {
+  display: grid;
+  grid-template-columns: 148px repeat(5, minmax(120px, 1fr));
+  border-top: 1px solid var(--platform-line);
+}
+
+.week-row:first-child {
+  border-top: 0;
+}
+
+.week-head {
+  background: var(--platform-bg);
+}
+
+.week-head .week-name,
+.week-day {
+  padding: 10px 14px;
+  color: var(--platform-faint);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.week-day.today {
+  color: var(--platform-blue);
+}
+
+.week-name {
+  border-right: 1px solid var(--platform-line);
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.week-role {
+  display: block;
+  margin-top: 2px;
+  color: var(--platform-faint);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.member-lead {
+  margin-left: 6px;
+  border-radius: 6px;
+  background: var(--platform-blue-soft);
+  padding: 2px 7px;
+  color: var(--platform-blue);
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: 1px;
+}
+
+.week-cell {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  border-right: 1px solid var(--platform-line);
+  padding: 10px 12px;
+  min-height: 52px;
+}
+
+.week-row .week-cell:last-child {
+  border-right: 0;
+}
+
+.cell-empty {
+  color: var(--platform-line-strong);
+  font-size: 12px;
+}
+
+.slot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+}
+
+.slot-time {
+  color: var(--platform-muted);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.slot-memo {
+  flex-basis: 100%;
+  color: var(--platform-faint);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.slot-chip {
+  border: 1px solid var(--platform-line);
+  border-radius: 6px;
+  background: var(--platform-bg);
+  padding: 2px 7px;
+  color: var(--platform-muted);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.slot-chip.k-consult {
+  border-color: transparent;
+  background: var(--platform-blue-soft);
+  color: var(--platform-blue);
+}
+
+.slot-chip.k-out {
+  border-color: var(--platform-line-strong);
+  color: var(--platform-ink);
+}
+
+.slot-chip.k-off {
+  border-color: transparent;
+  background: rgba(217, 119, 6, 0.12);
+  color: var(--platform-partial);
+}
+
+.slot-chip.k-due {
+  border-color: transparent;
+  background: rgba(217, 119, 6, 0.12);
+  color: var(--platform-partial);
+}
+
+.slot-chip.k-pub {
+  border-color: transparent;
+  background: var(--platform-blue-soft);
+  color: var(--platform-blue);
+}
+
+/* 월간 캘린더 */
+
+.cal-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--platform-line);
+  border-radius: var(--platform-radius);
+  background: var(--platform-surface);
+  box-shadow: var(--platform-shadow);
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(96px, 1fr));
+}
+
+.cal-dow {
+  border-bottom: 1px solid var(--platform-line);
+  background: var(--platform-bg);
+  padding: 10px 12px;
+  color: var(--platform-faint);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.cal-cell {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-height: 92px;
+  border-right: 1px solid var(--platform-line);
+  border-bottom: 1px solid var(--platform-line);
+  padding: 8px 10px;
+}
+
+.cal-grid .cal-cell:nth-child(7n),
+.cal-grid .cal-dow:nth-child(7n) {
+  border-right: 0;
+}
+
+.cal-cell.pad {
+  background: var(--platform-bg);
+}
+
+.cal-daynum {
+  color: var(--platform-muted);
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.cal-cell.today {
+  background: var(--platform-blue-soft);
+}
+
+.cal-cell.today .cal-daynum {
+  color: var(--platform-blue);
+  font-weight: 800;
+}
+
+.cal-cell .slot-chip {
+  justify-self: start;
+  white-space: normal;
+  line-height: 1.35;
+}
+
+/* 과제 */
+
+.task-list {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--platform-line);
+  border-radius: var(--platform-radius);
+  background: var(--platform-surface);
+  box-shadow: var(--platform-shadow);
+}
+
+.task-item {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: 4px 16px;
+  align-items: start;
+  border-top: 1px solid var(--platform-line);
+  padding: 16px 20px;
+}
+
+.task-item:first-child {
+  border-top: 0;
+}
+
+.task-item.done .task-title {
+  color: var(--platform-faint);
+  text-decoration: line-through;
+}
+
+.task-state {
+  border-radius: 7px;
+  padding: 4px 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.task-state.st-todo {
+  background: var(--platform-blue-soft);
+  color: var(--platform-blue);
+}
+
+.task-state.st-doing {
+  border: 1px solid var(--platform-line-strong);
+  color: var(--platform-ink);
+}
+
+.task-state.st-done {
+  border: 1px solid var(--platform-line);
+  color: var(--platform-faint);
+}
+
+.task-main {
+  display: grid;
+  gap: 3px;
+}
+
+.task-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.task-desc {
+  color: var(--platform-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.task-meta {
+  display: grid;
+  gap: 2px;
+  justify-items: end;
+  color: var(--platform-faint);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.task-overdue {
+  color: var(--platform-partial);
+  font-weight: 700;
+}
+
+/* 공지 (최신 카드 + 지난 목록) */
+
+.brief-card {
+  border: 1px solid var(--platform-line);
+  border-radius: var(--platform-radius);
+  background: var(--platform-surface);
+  box-shadow: var(--platform-shadow);
+  padding: 28px;
+}
+
+.brief-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  color: var(--platform-faint);
+  font-size: 13px;
+}
+
+.brief-meta .brief-kind {
+  border-radius: 7px;
+  background: var(--platform-blue-soft);
+  padding: 4px 9px;
+  color: var(--platform-blue);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.brief-card h3 {
+  margin: 14px 0 0;
+  font-size: 22px;
+  font-weight: 780;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+}
+
+.brief-body {
+  margin: 12px 0 0;
+  max-width: 680px;
+  color: var(--platform-muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.link-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.link-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--platform-line);
+  border-radius: 9px;
+  background: var(--platform-bg);
+  padding: 8px 12px;
+  color: var(--platform-ink);
+  font-size: 13px;
+  font-weight: 600;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+
+.link-chip:hover {
+  border-color: var(--platform-blue);
+  color: var(--platform-blue);
+}
+
+.link-chip .chip-kind {
+  color: var(--platform-faint);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.read-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 22px;
+  border-top: 1px solid var(--platform-line);
+  padding-top: 16px;
+}
+
+.read-count {
+  color: var(--platform-ink);
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.read-count .read-sub {
+  color: var(--platform-faint);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.share-button {
+  border: 1px solid var(--platform-line-strong);
+  border-radius: 9px;
+  background: var(--platform-surface);
+  padding: 9px 14px;
+  color: var(--platform-ink);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+
+.share-button:hover {
+  border-color: var(--platform-blue);
+  color: var(--platform-blue);
+}
+
+.notice-list {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--platform-line);
+  border-radius: var(--platform-radius);
+  background: var(--platform-surface);
+  box-shadow: var(--platform-shadow);
+}
+
+.notice-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 18px;
+  border-top: 1px solid var(--platform-line);
+  padding: 18px 24px;
+}
+
+.notice-item:first-child {
+  border-top: 0;
+}
+
+.notice-item.expandable {
+  cursor: pointer;
+}
+
+.notice-item .notice-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.notice-item .notice-meta {
+  grid-row: 2;
+  color: var(--platform-faint);
+  font-size: 13px;
+}
+
+.notice-item .notice-body {
+  grid-column: 1 / -1;
+  padding-top: 4px;
+  cursor: auto;
+}
+
+.notice-item .notice-body .brief-body {
+  font-size: 14px;
+}
+
+/* 반응형 */
+
+@media (max-width: 1100px) {
+  .week-row {
+    grid-template-columns: 120px repeat(5, minmax(108px, 1fr));
+  }
+
+  .team-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .team-feed {
+    position: static;
+  }
+}
+
+@media (max-width: 767px) {
+  .section-head .range-nav {
+    margin-top: 4px;
+  }
+
+  .week-grid,
+  .cal-wrap {
+    overflow-x: auto;
+  }
+
+  .week-row {
+    grid-template-columns: 104px repeat(5, minmax(96px, 1fr));
+    min-width: 600px;
+  }
+
+  .cal-grid {
+    min-width: 680px;
+  }
+
+  .brief-card {
+    padding: 20px;
+  }
+
+  .brief-card h3 {
+    font-size: 19px;
+  }
+
+  .notice-item {
+    padding: 16px 18px;
+  }
+
+  .task-item {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .task-meta {
+    grid-column: 2;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .member-pane {
+    grid-template-columns: 1fr;
+  }
+
+  .member-list {
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--platform-line);
+  }
+
+  .member-pick {
+    flex: 0 0 auto;
+  }
+
+  .member-pick .mp-role {
+    display: none;
+  }
+
+  .member-detail {
+    padding: 18px;
+  }
+
+  .now-day {
+    flex-basis: 100%;
+    margin-left: 42px;
+  }
+}
+
+@media print {
+  .range-nav,
+  .share-button {
+    display: none !important;
+  }
+
+  .week-grid,
+  .cal-wrap,
+  .task-list,
+  .brief-card,
+  .notice-list {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+}

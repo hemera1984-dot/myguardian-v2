@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "team-notice.schema.json",
+  "title": "우리팀 공지·브리핑",
+  "description": "우리팀 화면의 공지·브리핑. data/team/notices.json은 이 스키마를 따르는 객체의 배열이다. 최신 글이 화면 상단과 홈에 표시된다. 고객 개인정보 금지 — 고객 언급은 코드(C-YYYY-NNN)로만 한다.",
+  "type": "object",
+  "required": ["id", "종류", "제목", "본문", "작성일"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "공지 고유 ID (예: notice-2026-07-19-01)",
+      "pattern": "^notice-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}$"
+    },
+    "종류": {
+      "type": "string",
+      "enum": ["브리핑", "공지"],
+      "description": "브리핑=아침 브리핑 등 당일 전달, 공지=일정·안내 등 보존형"
+    },
+    "제목": {
+      "type": "string",
+      "description": "공지 제목"
+    },
+    "본문": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "본문 문단 배열. 문단마다 문자열 하나"
+    },
+    "작성일": {
+      "type": "string",
+      "format": "date",
+      "description": "작성 일자 (YYYY-MM-DD)"
+    },
+    "작성자": {
+      "type": "string",
+      "default": "안창민",
+      "description": "작성자 이름"
+    },
+    "연결": {
+      "type": "array",
+      "description": "플랫폼 내부 연결 화면. 브리핑 내용과 관련된 청구·지급, 사례·판례, 학습 화면을 링크로 붙인다",
+      "items": {
+        "type": "object",
+        "required": ["라벨", "경로"],
+        "properties": {
+          "라벨": { "type": "string", "description": "링크 표시 문구" },
+          "경로": { "type": "string", "description": "사이트 내부 경로 (web/team/ 기준 상대경로, 예: ../claims/)" }
+        }
+      }
+    },
+    "댓글": {
+      "type": "array",
+      "description": "공지에 달린 댓글 (예: 다 했습니다). 팀원이 화면에서 직접 작성하는 것은 엣지 연동(STEP 3) 후 열리며, 그 전에는 팀장이 취합해 입력한다",
+      "items": {
+        "type": "object",
+        "required": ["작성자", "날짜", "내용"],
+        "properties": {
+          "작성자": { "type": "string", "description": "팀원 이름" },
+          "날짜": { "type": "string", "format": "date" },
+          "내용": { "type": "string" }
+        }
+      }
+    }
+  }
+}

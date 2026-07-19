@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "brief-doc.schema.json",
+  "title": "브리핑 문서",
+  "description": "브리핑 시스템(상담·교육·강의) 문서. 공개 문서는 data/brief/<id>.json에 두고 data/brief/index.json 목록에 등록한다. 상담용(고객 보장분석) 문서는 개인정보가 들어가므로 공개 저장소에 절대 저장하지 않는다 — 로컬 고객 저장소(mg-clients-<fc>/C-YYYY-NNN/)에 두고 브리핑 진입 화면에서 파일로 연다. 터미널 세션의 보장분석 파이프라인(P1~P5)이 이 스키마로 산출물을 생성한다. 스키마 변경 시 docs/decisions.md에 기록한다.",
+  "type": "object",
+  "required": ["id", "제목", "모드", "작성일", "작성자", "페이지"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "문서 고유 ID. 동기화 채널명(mg-brief-<id>)에 쓰인다",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "제목": {
+      "type": "string",
+      "description": "문서 제목. 진입 목록과 발표자 화면 상단에 표시"
+    },
+    "모드": {
+      "type": "string",
+      "enum": ["상담", "교육", "강의"],
+      "description": "상담 = 내 노트북 + 고객 태블릿(1차는 한 기기 두 창) / 교육 = 내 노트북 + 빔 / 강의 = 내 노트북 + 빔. 1차에서 모드별 동작 차이는 진입 동선뿐이다"
+    },
+    "작성일": {
+      "type": "string",
+      "format": "date",
+      "description": "작성 일자 (YYYY-MM-DD)"
+    },
+    "작성자": {
+      "type": "string",
+      "description": "작성 설계사 이름 (예: 안창민 FC)"
+    },
+    "요약": {
+      "type": ["string", "null"],
+      "description": "한두 문장 요약. 진입 목록에 표시"
+    },
+    "분류": {
+      "type": ["string", "null"],
+      "description": "자유 입력 갈래 (예: 보험상품, 보험원리, 시사경제). 강제 분류 아님 — 진입 목록에 배지로 표시"
+    },
+    "출처": {
+      "type": ["string", "null"],
+      "description": "원자료 표기 (예: care:weekly-11). 실자료 변환 문서의 이력 추적용"
+    },
+    "페이지": {
+      "type": "array",
+      "minItems": 1,
+      "description": "발표 페이지 목록. 번호는 1부터 연속",
+      "items": {
+        "type": "object",
+        "required": ["번호", "유형"],
+        "properties": {
+          "번호": { "type": "integer", "minimum": 1 },
+          "유형": {
+            "type": "string",
+            "enum": ["표지", "본문", "이미지", "영상"],
+            "description": "1차 렌더 유형 4종. 표지 = 제목·부제 중앙 배치 / 본문 = 제목 + 문단 조판 / 이미지 = 큰 이미지 + 캡션 / 영상 = video 태그(로컬 mp4 우선)"
+          },
+          "제목": { "type": "string" },
+          "부제": { "type": "string" },
+          "킥커": {
+            "type": "string",
+            "description": "제목 위 작은 분류 라벨 (예: 카테고리명)"
+          },
+          "본문": {
+            "type": "array",
+            "description": "본문 블록. t: p = 문단, li = 항목",
+            "items": {
+              "type": "object",
+              "required": ["t", "x"],
+              "properties": {
+                "t": { "type": "string", "enum": ["p", "li"] },
+                "x": { "type": "string" }
+              }
+            }
+          },
+          "이미지": {
+            "type": "string",
+            "description": "이미지 경로. 사이트 루트 기준 (예: data/care/issues/weekly-11/art-1.jpg)"
+          },
+          "캡션": { "type": "string", "description": "이미지·영상 캡션" },
+          "영상": {
+            "type": "string",
+            "description": "영상 파일 경로. 사이트 루트 기준, 로컬 mp4 우선. 외부 스트리밍 임베드 금지"
+          },
+          "스크립트": {
+            "type": "string",
+            "description": "발표자가 말할 내용. 발표자 화면에만 표시하고 청중 화면에는 절대 렌더링하지 않는다"
+          }
+        }
+      }
+    }
+  }
+}
