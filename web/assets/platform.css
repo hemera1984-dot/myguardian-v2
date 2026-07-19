@@ -1366,6 +1366,10 @@ body.platform {
   .case-rows {
     max-height: 420px;
   }
+  /* 모바일은 고정 배경의 스크롤 재합성 비용을 피한다 (Codex 4차 사소 1) */
+  body.platform {
+    background-attachment: scroll;
+  }
 }
 
 /* ==============================

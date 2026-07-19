@@ -310,6 +310,58 @@
         }
       }
 
+      // 이관 검증 도구 — 원본 매니페스트(경로·크기·해시)와 사본을 전건 대조한다
+      async function fileSha256(file) {
+        var buf = await file.arrayBuffer();
+        var hash = await crypto.subtle.digest("SHA-256", buf);
+        return Array.prototype.map.call(new Uint8Array(hash), function (b) {
+          return b.toString(16).padStart(2, "0");
+        }).join("");
+      }
+
+      async function buildManifest(dir, prefix) {
+        var out = [];
+        for await (var entry of dir.values()) {
+          var path = (prefix ? prefix + "/" : "") + entry.name;
+          if (entry.kind === "file") {
+            var f = await entry.getFile();
+            out.push({ path: path, size: f.size, hash: await fileSha256(f) });
+          } else {
+            out = out.concat(await buildManifest(entry, path));
+          }
+        }
+        return out;
+      }
+
+      async function verifyCopy(manifest, dstRoot) {
+        for (var i = 0; i < manifest.length; i++) {
+          var m = manifest[i];
+          var fh;
+          try {
+            var parts = m.path.split("/");
+            var dir = dstRoot;
+            for (var j = 0; j < parts.length - 1; j++) dir = await dir.getDirectoryHandle(parts[j]);
+            fh = await dir.getFileHandle(parts[parts.length - 1]);
+          } catch (e) {
+            return m.path + " 누락";
+          }
+          var f = await fh.getFile();
+          if (f.size !== m.size) return m.path + " 크기 불일치";
+          if ((await fileSha256(f)) !== m.hash) return m.path + " 내용 불일치";
+        }
+        return null;
+      }
+
+      // handle이 dir 자신이거나 dir 트리 안에 있는지 — 자기 트리로의 이관을 막는다
+      async function containsHandle(dir, handle, depth) {
+        if (await dir.isSameEntry(handle)) return true;
+        if (depth > 6) return false;
+        for await (var entry of dir.values()) {
+          if (entry.kind === "directory" && (await containsHandle(entry, handle, depth + 1))) return true;
+        }
+        return false;
+      }
+
       function removeFromList(code, notice) {
         ALL = ALL.filter(function (x) { return x.code !== code; });
         state.sel = null;
@@ -340,7 +392,9 @@
         }
       }
 
-      // 이관 — 대상 FC 저장소 폴더를 선택하면 복사 → 검증 → 원본 삭제 순서로 옮긴다
+      // 이관 — 복사 → 매니페스트 검증 → 사용자 확정 후 원본 삭제. 검증 전에는 절대 지우지 않는다
+      var pendingMove = null; // { code, target, count } — 검증 통과 후 확정 대기 상태
+
       async function doMove(c, btn) {
         if (btn.disabled) return;
         var msg = $("mgmt-msg");
@@ -350,8 +404,24 @@
         } catch (e) { return; } // 선택 취소
         btn.disabled = true;
         try {
-          if (await target.isSameEntry(c.parent)) {
-            msg.textContent = "같은 저장소입니다. 대상 FC의 폴더를 선택하세요.";
+          // 자기 트리 차단: 연결 저장소 안(원본 자신·하위·형제·루트 포함)으로는 이관 불가
+          if (await containsHandle(ROOT_HANDLE || c.parent, target, 0)) {
+            msg.textContent = "연결된 저장소 안으로는 이관할 수 없습니다. 대상 FC의 저장소 루트를 선택하세요.";
+            btn.disabled = false;
+            return;
+          }
+          // 대상이 고객 저장소로 보이는지: mg-clients 이름이거나, 비어 있거나, C-코드 폴더 보유
+          var looksStore = /^mg-clients/.test(target.name || "");
+          if (!looksStore) {
+            var empty = true, hasCode = false;
+            for await (var te of target.values()) {
+              empty = false;
+              if (te.kind === "directory" && CODE_RE.test(te.name)) { hasCode = true; break; }
+            }
+            looksStore = empty || hasCode;
+          }
+          if (!looksStore) {
+            msg.textContent = "대상이 고객 저장소로 보이지 않습니다. mg-clients 폴더나 고객코드 폴더가 있는 저장소 루트를 선택하세요.";
             btn.disabled = false;
             return;
           }
@@ -362,20 +432,62 @@
             btn.disabled = false;
             return;
           }
-          msg.textContent = "이관 중";
+          msg.textContent = "복사 중";
+          var manifest = await buildManifest(c.handle, "");
           var dst = await target.getDirectoryHandle(c.code, { create: true });
           try {
             await copyDir(c.handle, dst);
+            msg.textContent = "사본 검증 중";
+            var bad = await verifyCopy(manifest, dst);
+            if (bad) throw new Error("사본 검증 실패 — " + bad);
           } catch (copyErr) {
-            // 복사 실패 시 대상의 불완전 사본을 정리하고 원본은 그대로 둔다
-            try { await target.removeEntry(c.code, { recursive: true }); } catch (e2) {}
-            throw copyErr;
+            var cleaned = true;
+            try { await target.removeEntry(c.code, { recursive: true }); } catch (e2) { cleaned = false; }
+            msg.textContent = "이관 실패 (" + (copyErr && copyErr.message ? copyErr.message : "복사 오류") + "). 원본은 그대로 있습니다."
+              + (cleaned ? "" : " 대상 저장소의 불완전 사본 " + (target.name || "대상") + "/" + c.code + " 폴더를 수동으로 삭제하세요.");
+            btn.disabled = false;
+            return;
           }
-          await c.parent.removeEntry(c.code, { recursive: true });
-          removeFromList(c.code, c.code + " 이관 완료 (" + (target.name || "대상 저장소") + ").");
+          // 검증 통과 — 원본 삭제는 고객코드를 다시 보여주고 확정받는다
+          pendingMove = { code: c.code, target: target, count: manifest.length };
+          $("mgmt-box").innerHTML =
+            '<span style="font-size:0.88rem;font-weight:600">사본 검증 완료 — 파일 ' + manifest.length + "개 전건 일치 ("
+            + esc(target.name || "대상 저장소") + "/" + esc(c.code) + "). " + esc(c.code) + " 원본을 삭제하고 이관을 마칠까요?</span>"
+            + '<button class="tab-button" type="button" id="cust-move-yes" data-code="' + esc(c.code) + '">원본 삭제 확정</button>'
+            + '<button class="tab-button" type="button" id="cust-move-no" data-code="' + esc(c.code) + '">취소 (사본 제거)</button>';
         } catch (e) {
           msg.textContent = "이관 실패: 원본은 그대로 있습니다. 폴더 권한을 확인하세요.";
           btn.disabled = false;
+        }
+      }
+
+      async function finishMove(c, btn) {
+        if (btn.disabled || !pendingMove || pendingMove.code !== c.code) return;
+        btn.disabled = true;
+        try {
+          await c.parent.removeEntry(c.code, { recursive: true });
+          var name = pendingMove.target.name || "대상 저장소";
+          pendingMove = null;
+          removeFromList(c.code, c.code + " 이관 완료 (" + name + ").");
+        } catch (e) {
+          btn.disabled = false;
+          btn.textContent = "원본 삭제 실패 - 권한 확인";
+        }
+      }
+
+      async function cancelMove(c, btn) {
+        if (btn.disabled || !pendingMove || pendingMove.code !== c.code) return;
+        btn.disabled = true;
+        var cleaned = true;
+        try { await pendingMove.target.removeEntry(c.code, { recursive: true }); } catch (e) { cleaned = false; }
+        var name = pendingMove.target.name || "대상";
+        pendingMove = null;
+        renderDetail(c);
+        var m2 = $("mgmt-msg");
+        if (m2) {
+          m2.textContent = cleaned
+            ? "이관을 취소했습니다. 사본을 제거했고 원본은 그대로입니다."
+            : "취소했지만 사본 제거에 실패했습니다. " + name + "/" + c.code + " 폴더를 수동으로 삭제하세요.";
         }
       }
 
@@ -417,6 +529,8 @@
         else if (btn.id === "cust-del-yes" && c) doDelete(c, btn);
         else if (btn.id === "cust-del-no" && c) renderDetail(c);
         else if (btn.id === "cust-move" && c) doMove(c, btn);
+        else if (btn.id === "cust-move-yes" && c) finishMove(c, btn);
+        else if (btn.id === "cust-move-no" && c) cancelMove(c, btn);
       });
 
       // 신규 고객 등록 — 폴더 생성이 곧 등록 (폴더명 = 고객코드)

@@ -12,10 +12,32 @@
 
 import argparse
 import json
+import os
 import re
 import sys
+import tempfile
 from datetime import date, timedelta
 from pathlib import Path
+
+# Windows 기본 콘솔(cp949)에서도 출력이 깨지지 않게 한다
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+
+def atomic_write(path, text):
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(text)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
 
 ROOT = Path(__file__).resolve().parent.parent
 ISSUES = ROOT / "data" / "care" / "issues.json"
@@ -98,7 +120,7 @@ def main():
     if body_path.exists():
         print(f"중단: {body_path} 가 이미 존재합니다.")
         sys.exit(1)
-    body_path.write_text(json.dumps(body, ensure_ascii=False, indent=1), encoding="utf-8")
+    atomic_write(body_path, json.dumps(body, ensure_ascii=False, indent=1))
     (BODY_DIR / issue_id).mkdir(exist_ok=True)
 
     entry = {
@@ -117,11 +139,8 @@ def main():
     if args.publisher != "안창민":
         entry["발행인"] = args.publisher
     issues.insert(0, entry)
-    if isinstance(data, list):
-        ISSUES.write_text(json.dumps(issues, ensure_ascii=False, indent=1), encoding="utf-8")
-    else:
-        data["data"] = issues
-        ISSUES.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    payload = issues if isinstance(data, list) else {**data, "data": issues}
+    atomic_write(ISSUES, json.dumps(payload, ensure_ascii=False, indent=1))
 
     print(f"초안 생성: {args.channel} {args.publisher} {number}호 ({issue_id})")
     print(f"발행 예정일: {pub_date.isoformat()} ({entry['주차라벨']})")

@@ -29,6 +29,19 @@ from datetime import datetime
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
+# Windows 기본 콘솔(cp949)에서도 출력이 깨지지 않게 한다
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+# 키 발급처는 NAVER API HUB 하나뿐이다 — 안내 문구를 한곳에서 관리 (Codex 4차 중요 7)
+KEY_GUIDE = [
+    "네이버 API 키가 없습니다.",
+    "발급: https://console.ncloud.com 의 NAVER API HUB → Application 등록 → NAVER 검색(뉴스 등) 선택",
+    '저장: pipeline/naver-keys.json 에 {"client_id": "...", "client_secret": "..."}',
+    "주의: 구 개발자센터(developers.naver.com) 키는 새 규격과 호환되지 않습니다.",
+]
+
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "data" / "care" / "desk"
 KEY_FILE = ROOT / "pipeline" / "naver-keys.json"
@@ -55,9 +68,8 @@ def load_keys():
         data = json.loads(KEY_FILE.read_text(encoding="utf-8"))
         if data.get("client_id") and data.get("client_secret"):
             return data["client_id"], data["client_secret"]
-    print("네이버 API 키가 없습니다.")
-    print("발급: https://developers.naver.com → 애플리케이션 등록 → 검색 API")
-    print('저장: pipeline/naver-keys.json 에 {"client_id": "...", "client_secret": "..."}')
+    for line in KEY_GUIDE:
+        print(line)
     sys.exit(1)
 
 
