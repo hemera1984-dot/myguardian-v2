@@ -12,6 +12,13 @@
   <script src="assets/platform.js"></script>
 </head>
 <body class="platform">
+  <div class="app-splash" id="app-splash" hidden>
+    <div class="splash-center">
+      <span class="splash-mark"><img src="assets/logo.svg" alt=""><span class="splash-shine"></span></span>
+      <p class="splash-name">마이가디언</p>
+      <p class="splash-cap">FC 업무 플랫폼</p>
+    </div>
+  </div>
   <aside class="platform-sidebar" id="platform-sidebar">
     <a class="platform-brand" href="./" aria-label="마이가디언 홈">
       <span class="brand-mark"><img src="assets/logo.svg" alt=""></span>
@@ -106,6 +113,20 @@
   </div>
 
   <script>
+    // 시작 스플래시 — 세션당 1회, 1.5초 이내 (헌법 모션 예외 조항, 2026-07-20)
+    (function () {
+      var KEY = "mg_splash_shown";
+      try {
+        if (sessionStorage.getItem(KEY)) return;
+        sessionStorage.setItem(KEY, "1");
+      } catch (e) { return; }
+      var el = document.getElementById("app-splash");
+      el.hidden = false;
+      var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      // 모션 줄이기: 애니메이션 없이 잠깐 정적 표시 후 제거
+      setTimeout(function () { el.hidden = true; }, still ? 700 : 1500);
+    })();
+
     // 바로가기 설치 진입점 — 설치 절차는 전용 화면(install.html)이 전담한다 (개정 10차)
     (function () {
       if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {

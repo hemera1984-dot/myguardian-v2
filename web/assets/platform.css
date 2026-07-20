@@ -1808,6 +1808,85 @@ body.platform {
 /* 개정 10차: 등장 모션 폐기 — 형태 변화 없는 조용한 화면 (0.14초 색 전환만) */
 
 /* ==============================
+   시작 스플래시 — 헌법 모션 예외 1건 (세션당 1회, 1.5초 이내)
+   ============================== */
+
+.app-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  background: var(--platform-navy);
+}
+
+.splash-center {
+  text-align: center;
+  animation: splash-in 0.4s ease both;
+}
+
+.splash-mark {
+  position: relative;
+  display: inline-block;
+  width: 88px;
+  height: 88px;
+  overflow: hidden;
+  border-radius: 22%;
+}
+
+.splash-mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* 광택 스윕 — 스플래시 한정 그라데이션 허용 (헌법 예외 조항) */
+.splash-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.5) 50%, transparent 60%);
+  transform: translateX(-130%);
+  animation: splash-shine 0.65s ease 0.45s forwards;
+}
+
+.splash-name {
+  margin: 14px 0 0;
+  color: #ffffff;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.splash-cap {
+  margin: 3px 0 0;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+}
+
+.app-splash {
+  animation: splash-out 0.35s ease 1.15s forwards;
+}
+
+@keyframes splash-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes splash-shine {
+  to { transform: translateX(130%); }
+}
+
+@keyframes splash-out {
+  to { opacity: 0; visibility: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-shine { display: none; }
+  .splash-center { animation: none; }
+  .app-splash { animation: none; }
+}
+
+/* ==============================
    바로가기 설치 화면 (web/install.html)
    ============================== */
 
