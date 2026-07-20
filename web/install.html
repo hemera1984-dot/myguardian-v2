@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>바로가기 설치 - 마이가디언</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#102a4e">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="assets/platform.css">
+  <script src="assets/platform.js"></script>
+</head>
+<body class="platform">
+  <div class="install-shell">
+    <header class="install-topbar">
+      <a class="install-back" href="./">마이가디언 홈</a>
+      <span class="topbar-note">바로가기 설치</span>
+    </header>
+
+    <main class="install-main">
+      <div class="page-heading">
+        <p class="eyebrow">마이가디언</p>
+        <h1>어느 기기에서든 앱처럼 씁니다</h1>
+        <p>홈 화면에 바로가기를 설치하면 브라우저 주소 입력 없이 한 번에 열립니다.
+          새 계정이나 별도 데이터가 생기지 않습니다 — 같은 마이가디언을 앱 모양으로 여는 것입니다.</p>
+      </div>
+
+      <div class="install-status-row">
+        <span class="install-state" id="install-state">설치 가능 여부 확인 중</span>
+      </div>
+
+      <div class="install-actions">
+        <button class="install-primary" id="install-primary" type="button">이 기기에 바로 설치</button>
+        <button class="install-secondary" id="install-copy" type="button">앱 주소 복사</button>
+      </div>
+
+      <div class="install-guide-grid">
+        <div class="guide-card" id="guide-ios">
+          <h3>아이폰·아이패드</h3>
+          <ol>
+            <li>사파리로 이 페이지를 엽니다</li>
+            <li>하단 공유 버튼을 누릅니다</li>
+            <li>"홈 화면에 추가"를 선택합니다</li>
+          </ol>
+        </div>
+        <div class="guide-card" id="guide-android">
+          <h3>안드로이드 휴대폰·태블릿</h3>
+          <ol>
+            <li>크롬으로 이 페이지를 엽니다</li>
+            <li>위의 "이 기기에 바로 설치"를 누릅니다</li>
+            <li>안내 창에서 설치를 확인합니다</li>
+          </ol>
+        </div>
+        <div class="guide-card" id="guide-desktop">
+          <h3>데스크톱·노트북</h3>
+          <ol>
+            <li>크롬 또는 엣지로 엽니다</li>
+            <li>"이 기기에 바로 설치"를 누르거나</li>
+            <li>주소창 오른쪽의 설치 아이콘을 누릅니다</li>
+          </ol>
+        </div>
+      </div>
+
+      <p class="install-note">설치가 안 되는 브라우저에서는 "앱 주소 복사"로 주소를 옮겨
+        크롬·사파리에서 다시 열어 주세요. 문의는 총관리자(안창민 FC)에게.</p>
+    </main>
+
+    <footer class="platform-footer">마이가디언 v2</footer>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+      if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+        navigator.serviceWorker.register("sw.js").catch(function () {});
+      }
+
+      var stateEl = document.getElementById("install-state");
+      var primary = document.getElementById("install-primary");
+      var copyBtn = document.getElementById("install-copy");
+      var deferred = null;
+
+      var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+        || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+      function isStandalone() {
+        return window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+      }
+
+      function refresh() {
+        if (isStandalone()) {
+          stateEl.textContent = "이 기기에 설치됨";
+          stateEl.className = "install-state ok";
+          primary.textContent = "설치 완료 — 앱으로 실행 중";
+          primary.disabled = true;
+          return;
+        }
+        stateEl.textContent = "모든 기기에서 사용 가능";
+        stateEl.className = "install-state ready";
+        if (isIOS) {
+          primary.textContent = "홈 화면 추가 방법 보기";
+        } else if (deferred) {
+          primary.textContent = "이 기기에 바로 설치";
+        } else {
+          primary.textContent = "브라우저 메뉴에서 설치";
+        }
+      }
+
+      window.addEventListener("beforeinstallprompt", function (e) {
+        e.preventDefault();
+        deferred = e;
+        refresh();
+      });
+
+      window.addEventListener("appinstalled", function () {
+        deferred = null;
+        stateEl.textContent = "이 기기에 설치됨";
+        stateEl.className = "install-state ok";
+        primary.textContent = "설치 완료";
+        primary.disabled = true;
+      });
+
+      primary.addEventListener("click", function () {
+        if (deferred) {
+          deferred.prompt();
+          deferred.userChoice.then(function () { deferred = null; refresh(); });
+          return;
+        }
+        var target = isIOS ? document.getElementById("guide-ios")
+          : document.getElementById("guide-desktop");
+        target.classList.add("focus");
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(function () { target.classList.remove("focus"); }, 2400);
+      });
+
+      copyBtn.addEventListener("click", function () {
+        var url = new URL("./", window.location.href).href;
+        window.mg.copy(url, copyBtn);
+      });
+
+      refresh();
+    })();
+  </script>
+</body>
+</html>

@@ -1729,3 +1729,170 @@ body.platform {
 }
 
 /* 개정 10차: 등장 모션 폐기 — 형태 변화 없는 조용한 화면 (0.14초 색 전환만) */
+
+/* ==============================
+   바로가기 설치 화면 (web/install.html)
+   ============================== */
+
+.install-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.install-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 62px;
+  border-bottom: 1px solid var(--platform-line);
+  background: rgba(255, 255, 255, 0.97);
+  padding: 0 30px;
+}
+
+.install-back {
+  color: var(--platform-blue);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.install-main {
+  width: min(880px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 34px 0 60px;
+  flex: 1 1 auto;
+}
+
+.install-status-row {
+  margin-top: 18px;
+}
+
+.install-state {
+  display: inline-block;
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--platform-line-strong);
+  background: var(--platform-surface);
+  color: var(--platform-muted);
+}
+
+.install-state.ready {
+  color: var(--platform-blue-dark);
+  background: var(--platform-blue-soft);
+  border-color: var(--platform-blue-soft);
+}
+
+.install-state.ok {
+  color: var(--platform-paid);
+  background: #e8f4ee;
+  border-color: #e8f4ee;
+}
+
+.install-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.install-primary {
+  border: 1px solid var(--platform-blue);
+  border-radius: 4px;
+  background: var(--platform-blue);
+  padding: 12px 20px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.install-primary:hover {
+  background: var(--platform-blue-dark);
+  border-color: var(--platform-blue-dark);
+}
+
+.install-primary:disabled {
+  border-color: var(--platform-line);
+  background: var(--platform-bg);
+  color: var(--platform-muted);
+  cursor: default;
+}
+
+.install-secondary {
+  border: 1px solid var(--platform-line-strong);
+  border-radius: 4px;
+  background: var(--platform-surface);
+  padding: 12px 20px;
+  color: var(--platform-ink);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.install-secondary:hover {
+  border-color: var(--platform-faint);
+}
+
+.install-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  margin-top: 28px;
+  border: 1px solid var(--platform-line);
+  border-radius: var(--platform-radius);
+  background: var(--platform-surface);
+}
+
+.guide-card {
+  border-right: 1px solid var(--platform-line);
+  padding: 18px 20px;
+  transition: background-color 0.14s ease;
+}
+
+.guide-card:last-child {
+  border-right: 0;
+}
+
+.guide-card.focus {
+  background: var(--platform-blue-soft);
+}
+
+.guide-card h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.guide-card ol {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--platform-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.install-note {
+  margin-top: 16px;
+  color: var(--platform-faint);
+  font-size: 12px;
+}
+
+@media (max-width: 760px) {
+  .install-guide-grid {
+    grid-template-columns: 1fr;
+  }
+  .guide-card {
+    border-right: 0;
+    border-bottom: 1px solid var(--platform-line);
+  }
+  .guide-card:last-child {
+    border-bottom: 0;
+  }
+  .install-topbar {
+    padding: 0 16px;
+  }
+}

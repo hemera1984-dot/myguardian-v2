@@ -28,7 +28,7 @@
       <a href="care/">케어센터</a>
       <a href="card/">카톡카드</a>
     </nav>
-    <button class="install-btn" id="btn-install" type="button" hidden>홈 화면에 바로가기 설치</button>
+    <a class="install-btn" id="btn-install" href="install.html" hidden>홈 화면에 바로가기 설치</a>
     <div class="sidebar-status"><strong>업무 공간</strong><span>필요한 기능만 간결하게</span></div>
   </aside>
   <div class="platform-overlay" id="platform-overlay"></div>
@@ -104,38 +104,15 @@
   </div>
 
   <script>
-    // 바로가기 설치 (v1 계승) + 서비스 워커
+    // 바로가기 설치 진입점 — 설치 절차는 전용 화면(install.html)이 전담한다 (개정 10차)
     (function () {
       if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
         navigator.serviceWorker.register("sw.js").catch(function () {});
       }
       var installBtn = document.getElementById("btn-install");
-      var deferred = null;
-      window.addEventListener("beforeinstallprompt", function (e) {
-        e.preventDefault();
-        deferred = e;
-        installBtn.hidden = false;
-      });
-      // 사파리(아이폰·아이패드)는 설치 이벤트가 없어 수동 안내로 잇는다
-      var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-        || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
       var isStandalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-      if (isIOS && !isStandalone) installBtn.hidden = false;
-      installBtn.addEventListener("click", function () {
-        if (deferred) {
-          deferred.prompt();
-          deferred.userChoice.then(function () { deferred = null; installBtn.hidden = true; });
-          return;
-        }
-        var guide = document.getElementById("install-guide");
-        if (guide) { guide.hidden = !guide.hidden; return; }
-        guide = document.createElement("div");
-        guide.id = "install-guide";
-        guide.className = "install-guide";
-        guide.innerHTML = "<strong>홈 화면에 추가하는 방법</strong>"
-          + "<span>사파리 하단의 공유 버튼을 누른 뒤 “홈 화면에 추가”를 선택하세요.</span>";
-        installBtn.insertAdjacentElement("afterend", guide);
-      });
+      // 이미 앱으로 실행 중이면 숨기고, 브라우저로 보고 있으면 항상 안내한다
+      installBtn.hidden = isStandalone;
       window.addEventListener("appinstalled", function () { installBtn.hidden = true; });
     })();
 
