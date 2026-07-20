@@ -1,5 +1,37 @@
 ﻿# handoff — 세션 인수인계
 
+## 2026-07-20 — 새 PC 첫 세션: 이관·케어센터·디자인 개정 10차 (main 직접 커밋)
+
+### 환경 (새 업무용 노트북)
+- C:\projects\myguardian-v2 클론, Python 3.12.10 + playwright/jsonschema/pillow + Chromium,
+  gh CLI 설치(로그인 미실행), git 사용자 설정 완료. verify_review 29건 전건 통과
+- GitHub Pages는 이미 활성 상태였음 (사용자 할 일 목록에서 제외)
+- 미이관: mg-clients-fc01~03 / pipeline\naver-keys.json / 대화 기록 폴더 — 예전 PC에서 복사 대기
+- **push 미실행** (gh 미로그인) — 로그인 후 즉시 push 필요
+
+### 결정 (전부 decisions.md 기록됨)
+- 2차 공사 착공 조건 충족: 팀원 2명(김승은·이지영) + 1명 추가 예정. 우선순위 상향
+- 팀원 인증 = GitHub 불사용, FC별 발급 코드 + 기기 등록. 역할 2계층(팀원/총관리자, role 설계)
+- 케어센터 공유 발행: 편집장 안창민 고정 / 발행인 = 해당 FC. 내용 동일 에디션
+- 디자인 개정 10차: 스레드 인텔리전스(C:\projects\threads-intelligence) 언어 이식 승인
+
+### 시공
+- 주간 12호 v1(insurguard.life/weekly/330001)에서 수집·입주 (기사 4건, 1번 기사 블록 보정)
+- 공유 발행: data/care/publishers.json(FC 3인) + 스키마, 리더 ?fc= 에디션 렌더,
+  데스크 FC별 에디션 카톡 문구 버튼 (care.js kakaoText/openCompose 확장)
+- platform.css 전면 개편: 다크 네이비 사이드바 2-톤, 선 중심, #0758d6, radius 6/4/3,
+  본문 13px + eyebrow, 칸막이형 지표 격자, 0.14초 색 전환만
+- web/install.html 신설(기기별 안내·상태 배지·주소 복사) + sw.js 앱 셸 캐시 전략
+- 검증: verify_review 29건 통과 × 3회, 3해상도 스크린샷(홈·사례·학습·설치)
+
+### 미완료·다음 세션
+- 사용자 발행 문구의 12호는 v1에서 발송됨. v2 발행 이전은 도메인(insurguard.life,
+  사용자 소유) DNS를 GitHub Pages로 돌리는 시점에 진행
+- "보상의 기록" 게임 디자인·사이트 참조 대기 — 도착 시 디자인 언어 추가 검토
+- 케어 데스크·서재(style.css 사용)는 새 언어 미적용 — 후속 라운드
+- 보장분석 P1~P5: mg-clients 데이터 도착 전에는 골격만 가능
+- 신한라이프 규정 확인(고객정보 외부 클라우드 보관) = 2차 착공 선행 조건
+
 ## 2026-07-19 오전 — Codex 2차 검수 대응 라운드 (claude/auto-improve)
 
 - findings-02 치명 2·중요 5 전부 수용·수정 완료 → docs/design-review/codex/response-02.md
