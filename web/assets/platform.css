@@ -163,6 +163,19 @@ body.platform {
   background: rgba(255, 255, 255, 0.12);
 }
 
+/* 개정 10차 잔여: 메뉴 그룹 라벨 — 초소형·자간 확장 (스레드 nav-section 문법) */
+.nav-group-label {
+  margin: 16px 14px 5px;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.platform-nav .nav-group-label:first-child {
+  margin-top: 2px;
+}
+
 .sidebar-status {
   margin-top: auto;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
@@ -497,6 +510,15 @@ body.platform {
 .empty-inline span {
   margin-top: 4px;
   color: var(--platform-faint);
+}
+
+/* 빈 상태 문법 (보상의 기록에서 이식): 현재 상태 + 다음 행동 + 필요 시 이동 링크 */
+.empty-inline a {
+  display: inline-block;
+  margin-top: 8px;
+  color: var(--platform-blue);
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .tabs-toolbar {
