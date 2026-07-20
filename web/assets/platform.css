@@ -1038,6 +1038,59 @@ body.platform {
   background: var(--platform-blue-soft);
 }
 
+/* 고객 진행상태 배지 — 연한 동색 배경 + 진한 동색 텍스트 (색+텍스트 병기 원칙) */
+.badge-status {
+  display: inline-block;
+  font-size: 0.73rem;
+  font-weight: 700;
+  border-radius: 3px;
+  padding: 2px 7px;
+}
+
+.st-recall { color: #8a4c07; background: #f7ead6; }
+.st-meet { color: #0648ad; background: #edf4ff; }
+.st-met { color: #087a55; background: #e1f2eb; }
+.st-hold { color: #596579; background: #eef1f5; }
+.st-reject { color: #b3261e; background: #f8dfd9; }
+.st-cancel { color: #8e3b30; background: #f3e3e0; }
+
+/* 진행상태 선택 버튼 — 현재 상태만 채워진다. 재클릭 = 해제 */
+.status-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 4px 0 14px;
+}
+
+.status-btn {
+  border: 1px solid var(--platform-line);
+  border-radius: 3px;
+  background: var(--platform-surface);
+  padding: 6px 10px;
+  color: var(--platform-muted);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.status-btn:hover {
+  border-color: var(--platform-line-strong);
+}
+
+.status-btn.on.st-recall { color: #8a4c07; background: #f7ead6; border-color: #e5cfa4; }
+.status-btn.on.st-meet { color: #0648ad; background: #edf4ff; border-color: #b9d4f8; }
+.status-btn.on.st-met { color: #087a55; background: #e1f2eb; border-color: #b2ddcb; }
+.status-btn.on.st-hold { color: #435066; background: #eef1f5; border-color: #cbd3de; }
+.status-btn.on.st-reject { color: #b3261e; background: #f8dfd9; border-color: #edbcb3; }
+.status-btn.on.st-cancel { color: #8e3b30; background: #f3e3e0; border-color: #dfc0ba; }
+
+@media (max-width: 719px) {
+  .status-btn {
+    padding: 11px 14px;
+  }
+}
+
 .case-detail-body {
   text-align: left;
   width: 100%;

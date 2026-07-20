@@ -62,6 +62,17 @@
           <button class="filter-chip" type="button" data-cat="referral">지인</button>
         </div>
 
+        <div class="filter-bar" aria-label="진행상태 필터" id="status-bar" style="margin-top:8px">
+          <button class="filter-chip active" type="button" data-st="">전체 상태</button>
+          <button class="filter-chip" type="button" data-st="다시 전화">다시 전화</button>
+          <button class="filter-chip" type="button" data-st="미팅 예정">미팅 예정</button>
+          <button class="filter-chip" type="button" data-st="미팅 완료">미팅 완료</button>
+          <button class="filter-chip" type="button" data-st="보류">보류</button>
+          <button class="filter-chip" type="button" data-st="거절">거절</button>
+          <button class="filter-chip" type="button" data-st="일정 취소">일정 취소</button>
+          <button class="filter-chip" type="button" data-st="__none">미분류</button>
+        </div>
+
         <div class="workspace-grid">
           <div class="workspace-list">
             <div class="workspace-label"><span>고객</span><span class="workspace-count" id="list-count">0명</span></div>
@@ -82,6 +93,14 @@
       "use strict";
       var CODE_RE = /^C-\d{4}-\d{3}$/;
       var CAT = { transfer: "이관", valueup: "밸류업", contract: "계약", referral: "지인" };
+      // 진행상태 — 전화·미팅 결과를 목록에서 바로 읽기 위한 분류 (2026-07-20 사용자 요구).
+      // v1 파이프라인 단계(영업 퍼널)와 다르다: 순서 없는 결과 태그이며, 값은 profile.json 최상위에 저장한다
+      var STATUS = ["다시 전화", "미팅 예정", "미팅 완료", "보류", "거절", "일정 취소"];
+      var ST_CLASS = {
+        "다시 전화": "st-recall", "미팅 예정": "st-meet", "미팅 완료": "st-met",
+        "보류": "st-hold", "거절": "st-reject", "일정 취소": "st-cancel"
+      };
+      function custStatus(c) { return c.profile["진행상태"] || ""; }
       // 상품명에서 사례 검색용 담보 키워드 추출 — 매칭 없으면 링크를 만들지 않는다
       var CASE_KEYWORDS = ["암", "실손", "종신", "정기", "치매", "간병", "운전자", "치아", "어린이", "상해", "연금", "저축", "변액", "화재", "유병", "뇌", "심장", "건강"];
       function caseKeyword(name) {
@@ -91,7 +110,7 @@
         return null;
       }
       var ALL = [];
-      var state = { q: "", cat: "", sel: null };
+      var state = { q: "", cat: "", st: "", sel: null };
       var $ = function (id) { return document.getElementById(id); };
 
       var esc = window.mg.esc;
@@ -216,6 +235,9 @@
         return ALL.filter(function (c) {
           var o = v1(c);
           if (state.cat && (o.category || o["카테고리"]) !== state.cat) return false;
+          var st = custStatus(c);
+          if (state.st === "__none" && st) return false;
+          if (state.st && state.st !== "__none" && st !== state.st) return false;
           if (q) {
             var hay = (c.code + " " + (o.customerName || "") + " " + (o.memo || "")).toLowerCase();
             if (hay.indexOf(q) < 0) return false;
@@ -243,10 +265,12 @@
         rows.innerHTML = list.map(function (c) {
           var o = v1(c);
           var n = (c.policies.policies || []).length;
+          var st = custStatus(c);
           return '<div class="case-row' + (c.code === state.sel ? " active" : "") + '" tabindex="0" role="button" data-code="' + esc(c.code) + '">'
             + "<h4>" + esc(o.customerName || "이름 미기재") + "</h4>"
             + '<div class="case-meta"><span>' + esc(c.code) + "</span>"
             + '<span class="badge-result">' + esc(CAT[o.category || o["카테고리"]] || o.category || o["카테고리"] || "미분류") + "</span>"
+            + (st ? '<span class="badge-status ' + ST_CLASS[st] + '">' + esc(st) + "</span>" : "")
             + (n ? "<span>보유보험 " + n + "건</span>" : "")
             + "</div></div>";
         }).join("");
@@ -274,9 +298,13 @@
                 + "</li>";
             }).join("")
           : "<li>등록된 보유보험 없음</li>";
+        var st = custStatus(c);
         $("detail").innerHTML = '<div class="case-detail-body">'
-          + '<div class="detail-badges"><span class="badge-grade">' + esc(CAT[o.category || o["카테고리"]] || "미분류") + "</span></div>"
+          + '<div class="detail-badges"><span class="badge-grade">' + esc(CAT[o.category || o["카테고리"]] || "미분류") + "</span>"
+          + (st ? '<span class="badge-status ' + ST_CLASS[st] + '">' + esc(st) + "</span>" : "")
+          + "</div>"
           + "<h3>" + esc(o.customerName || "이름 미기재") + "</h3>"
+          + statusSection(c)
           + '<dl class="detail-fields">' + fields.map(function (f) {
               return "<dt>" + esc(f[0]) + "</dt><dd>" + esc(f[1]) + "</dd>";
             }).join("") + "</dl>"
@@ -461,6 +489,46 @@
         }
       }
 
+      // 진행상태 선택 — 쓰기 연결이면 버튼으로 즉시 변경, 같은 상태를 다시 누르면 해제(미분류).
+      // 값은 profile.json 최상위 "진행상태"에 저장한다 (v1 이관 프로필도 동일 — v1원본은 건드리지 않는다)
+      function statusSection(c) {
+        var st = custStatus(c);
+        if (!c.handle) return "";
+        return '<div class="status-picker" role="group" aria-label="진행상태 선택">'
+          + STATUS.map(function (s) {
+              var on = s === st;
+              return '<button type="button" class="status-btn ' + ST_CLASS[s] + (on ? " on" : "") + '"'
+                + ' data-status="' + esc(s) + '" data-code="' + esc(c.code) + '" aria-pressed="' + on + '">'
+                + esc(s) + "</button>";
+            }).join("")
+          + '<span id="status-msg" style="font-size:0.8rem;color:var(--platform-muted)"></span>'
+          + "</div>";
+      }
+
+      async function saveStatus(c, value, btn) {
+        if (btn.disabled) return;
+        btn.disabled = true;
+        var next = custStatus(c) === value ? null : value; // 재클릭 = 해제
+        var prev = c.profile["진행상태"];
+        try {
+          if (next) c.profile["진행상태"] = next;
+          else delete c.profile["진행상태"];
+          var fh = await c.handle.getFileHandle("profile.json", { create: true });
+          var w = await fh.createWritable();
+          await w.write(JSON.stringify(c.profile, null, 1));
+          await w.close();
+          renderDetail(c);
+          renderList();
+        } catch (e) {
+          // 쓰기 실패 시 메모리 상태 원복 — 화면과 파일이 갈라지지 않게 한다
+          if (prev === undefined) delete c.profile["진행상태"];
+          else c.profile["진행상태"] = prev;
+          btn.disabled = false;
+          var msg = $("status-msg");
+          if (msg) msg.textContent = "저장 실패 - 폴더 쓰기 권한을 확인하세요.";
+        }
+      }
+
       // 메모: 쓰기 연결(FSA)이면 편집·저장, 아니면 읽기 전용 표시. 저장 대상은 memo.md
       function memoSection(c, o) {
         var memoVal = c.memoText != null ? c.memoText : (o.memo || "");
@@ -494,7 +562,8 @@
         var btn = e.target.closest("button");
         if (!btn) return;
         var c = ALL.find(function (x) { return x.code === btn.dataset.code; });
-        if (btn.id === "memo-save" && c) saveMemo(c, $("memo-edit").value, btn);
+        if (btn.dataset.status && c) saveStatus(c, btn.dataset.status, btn);
+        else if (btn.id === "memo-save" && c) saveMemo(c, $("memo-edit").value, btn);
         else if (btn.id === "cust-del" && c) confirmDelete(c);
         else if (btn.id === "cust-del-yes" && c) doDelete(c, btn);
         else if (btn.id === "cust-del-no" && c) renderDetail(c);
@@ -586,10 +655,12 @@
       });
 
       $("q").addEventListener("input", function (e) { state.q = e.target.value.trim(); renderList(); });
+      // 필터 칩 — 카테고리·진행상태 두 줄이 독립 동작한다 (active 표시는 자기 줄 안에서만)
       document.querySelectorAll(".filter-chip").forEach(function (chip) {
         chip.addEventListener("click", function () {
-          document.querySelectorAll(".filter-chip").forEach(function (b) { b.classList.toggle("active", b === chip); });
-          state.cat = chip.dataset.cat;
+          chip.parentElement.querySelectorAll(".filter-chip").forEach(function (b) { b.classList.toggle("active", b === chip); });
+          if (chip.dataset.st !== undefined) state.st = chip.dataset.st;
+          else state.cat = chip.dataset.cat;
           renderList();
         });
       });

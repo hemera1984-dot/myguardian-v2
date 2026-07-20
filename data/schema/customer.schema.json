@@ -39,6 +39,11 @@
       "items": { "type": "string", "format": "date" },
       "description": "상담 일자 이력 (YYYY-MM-DD)"
     },
+    "진행상태": {
+      "type": ["string", "null"],
+      "enum": ["다시 전화", "미팅 예정", "미팅 완료", "보류", "거절", "일정 취소", null],
+      "description": "전화·미팅 결과 분류 (2026-07-20 신설). 순서 없는 결과 태그 — v1 파이프라인 단계(퍼널)와 다르다. 없으면 미분류. v1 이관 프로필도 최상위에 저장한다"
+    },
     "이관일": {
       "type": ["string", "null"],
       "format": "date",
