@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="마이가디언">
+  <rect x="4" y="4" width="88" height="88" rx="22" fill="#0758d6"/>
+  <path d="M48 20 L72 28 V47 C72 61 63 71 48 76 C33 71 24 61 24 47 V28 Z" fill="#ffffff"/>
+  <path d="M38 47 L45.5 54.5 L59 39" fill="none" stroke="#0758d6" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
