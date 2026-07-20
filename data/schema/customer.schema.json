@@ -44,6 +44,20 @@
       "enum": ["다시 전화", "미팅 예정", "미팅 완료", "보류", "거절", "일정 취소", null],
       "description": "전화·미팅 결과 분류 (2026-07-20 신설). 순서 없는 결과 태그 — v1 파이프라인 단계(퍼널)와 다르다. 없으면 미분류. v1 이관 프로필도 최상위에 저장한다"
     },
+    "미팅": {
+      "type": "array",
+      "description": "미팅 차수 일정 (2026-07-20 신설). 차수는 자동 제안되며 수정 가능. 취소된 차수는 재등록 시 같은 차수를 다시 쓴다",
+      "items": {
+        "type": "object",
+        "required": ["차수", "일자", "상태"],
+        "additionalProperties": false,
+        "properties": {
+          "차수": { "type": "integer", "minimum": 1 },
+          "일자": { "type": "string", "format": "date" },
+          "상태": { "type": "string", "enum": ["예정", "완료", "취소"] }
+        }
+      }
+    },
     "이관일": {
       "type": ["string", "null"],
       "format": "date",

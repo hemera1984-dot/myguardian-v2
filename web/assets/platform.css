@@ -1091,6 +1091,38 @@ body.platform {
   }
 }
 
+/* 미팅 차수 일정 — 행 단위 목록 + 빠른 추가 줄 */
+.meeting-list {
+  display: grid;
+  gap: 6px;
+}
+
+.meeting-row,
+.meeting-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.meeting-add {
+  margin-top: 10px;
+  border-top: 1px solid var(--platform-line);
+  padding-top: 10px;
+}
+
+.meeting-row input.mt-date,
+.meeting-add input[type="date"] {
+  font: inherit;
+  font-size: 13px;
+  border: 1px solid var(--platform-line-strong);
+  border-radius: 4px;
+  padding: 5px 8px;
+  color: var(--platform-ink);
+  background: var(--platform-surface);
+}
+
 /* 알릴의무 셀프체크 항목 — 질문과 예/아니오를 한 줄에, 좁으면 줄바꿈 */
 .check-item {
   display: flex;

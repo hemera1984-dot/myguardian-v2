@@ -266,11 +266,15 @@
           var o = v1(c);
           var n = (c.policies.policies || []).length;
           var st = custStatus(c);
+          // 다가오는 예정 미팅 — 가장 이른 예정 건을 목록에서 바로 보여준다
+          var up = meetings(c).filter(function (m) { return m["상태"] === "예정"; })
+            .sort(function (a, b) { return (a["일자"] || "") < (b["일자"] || "") ? -1 : 1; })[0];
           return '<div class="case-row' + (c.code === state.sel ? " active" : "") + '" tabindex="0" role="button" data-code="' + esc(c.code) + '">'
             + "<h4>" + esc(o.customerName || "이름 미기재") + "</h4>"
             + '<div class="case-meta"><span>' + esc(c.code) + "</span>"
             + '<span class="badge-result">' + esc(CAT[o.category || o["카테고리"]] || o.category || o["카테고리"] || "미분류") + "</span>"
             + (st ? '<span class="badge-status ' + ST_CLASS[st] + '">' + esc(st) + "</span>" : "")
+            + (up ? '<span class="badge-status st-meet">' + up["차수"] + "차 " + esc((up["일자"] || "").slice(5)) + "</span>" : "")
             + (n ? "<span>보유보험 " + n + "건</span>" : "")
             + "</div></div>";
         }).join("");
@@ -305,6 +309,7 @@
           + "</div>"
           + "<h3>" + esc(o.customerName || "이름 미기재") + "</h3>"
           + statusSection(c)
+          + meetingSection(c)
           + '<dl class="detail-fields">' + fields.map(function (f) {
               return "<dt>" + esc(f[0]) + "</dt><dd>" + esc(f[1]) + "</dd>";
             }).join("") + "</dl>"
@@ -505,6 +510,83 @@
           + "</div>";
       }
 
+      // 미팅 차수 일정 — 빠른 일정 잡기 (2026-07-20 사용자 요구).
+      // 차수 자동 제안: 취소가 아닌 미팅의 최대 차수 + 1 (1차가 취소면 다시 1차를 제안).
+      // 등록/완료/취소가 진행상태를 함께 갱신한다 (미팅 예정/미팅 완료/일정 취소).
+      function meetings(c) { return c.profile["미팅"] || []; }
+
+      function nextRound(c) {
+        var max = 0;
+        meetings(c).forEach(function (m) {
+          if (m["상태"] !== "취소") max = Math.max(max, m["차수"] || 0);
+        });
+        return max + 1;
+      }
+
+      var MT_BADGE = { "예정": "st-meet", "완료": "st-met", "취소": "st-cancel" };
+
+      function meetingSection(c) {
+        var list = meetings(c).map(function (m, i) { return { m: m, i: i }; })
+          .sort(function (a, b) {
+            return (a.m["차수"] - b.m["차수"]) || ((a.m["일자"] || "") < (b.m["일자"] || "") ? -1 : 1);
+          });
+        var h = ["<h4 style='margin:16px 0 6px'>미팅 일정</h4>"];
+        if (!list.length) {
+          h.push('<p style="margin:0;color:var(--platform-faint);font-size:12px">기록된 미팅이 없습니다.</p>');
+        } else {
+          h.push('<div class="meeting-list">');
+          list.forEach(function (it) {
+            var m = it.m;
+            h.push('<div class="meeting-row">'
+              + '<span class="badge-grade">' + m["차수"] + "차</span>");
+            if (c.handle && m["상태"] === "예정") {
+              h.push('<input type="date" class="mt-date" value="' + esc(m["일자"] || "") + '" data-mt-idx="' + it.i + '" data-code="' + esc(c.code) + '" aria-label="' + m["차수"] + '차 미팅 일자 변경">');
+            } else {
+              h.push("<span>" + esc(m["일자"] || "") + "</span>");
+            }
+            h.push('<span class="badge-status ' + MT_BADGE[m["상태"]] + '">' + esc(m["상태"]) + "</span>");
+            if (c.handle && m["상태"] === "예정") {
+              h.push('<button type="button" class="status-btn st-met" data-mt-act="완료" data-mt-idx="' + it.i + '" data-code="' + esc(c.code) + '">완료</button>'
+                + '<button type="button" class="status-btn st-cancel" data-mt-act="취소" data-mt-idx="' + it.i + '" data-code="' + esc(c.code) + '">취소</button>');
+            }
+            h.push("</div>");
+          });
+          h.push("</div>");
+        }
+        if (c.handle) {
+          h.push('<div class="meeting-add">'
+            + '<span class="badge-grade">' + nextRound(c) + "차</span>"
+            + '<input type="date" id="mt-new-date" value="' + localDate() + '" aria-label="새 미팅 일자">'
+            + '<button type="button" class="status-btn st-meet" id="mt-add" data-code="' + esc(c.code) + '">일정 추가</button>'
+            + '<span id="mt-msg" style="font-size:0.8rem;color:var(--platform-muted)"></span>'
+            + "</div>");
+        }
+        return h.join("");
+      }
+
+      async function writeProfile(c) {
+        var fh = await c.handle.getFileHandle("profile.json", { create: true });
+        var w = await fh.createWritable();
+        await w.write(JSON.stringify(c.profile, null, 1));
+        await w.close();
+      }
+
+      async function mutateMeetings(c, mutate, statusAfter) {
+        var before = JSON.stringify(c.profile);
+        try {
+          mutate();
+          if (statusAfter) c.profile["진행상태"] = statusAfter;
+          await writeProfile(c);
+          renderDetail(c);
+          renderList();
+        } catch (e) {
+          // 쓰기 실패 시 메모리 원복 — 화면과 파일이 갈라지지 않게 한다
+          c.profile = JSON.parse(before);
+          var msg = $("mt-msg");
+          if (msg) msg.textContent = "저장 실패 - 폴더 쓰기 권한을 확인하세요.";
+        }
+      }
+
       async function saveStatus(c, value, btn) {
         if (btn.disabled) return;
         btn.disabled = true;
@@ -563,11 +645,39 @@
         if (!btn) return;
         var c = ALL.find(function (x) { return x.code === btn.dataset.code; });
         if (btn.dataset.status && c) saveStatus(c, btn.dataset.status, btn);
+        else if (btn.id === "mt-add" && c) {
+          var d = $("mt-new-date").value;
+          if (!d) { $("mt-msg").textContent = "일자를 선택하세요."; return; }
+          var round = nextRound(c);
+          mutateMeetings(c, function () {
+            if (!c.profile["미팅"]) c.profile["미팅"] = [];
+            c.profile["미팅"].push({ "차수": round, "일자": d, "상태": "예정" });
+          }, "미팅 예정");
+        }
+        else if (btn.dataset.mtAct && c) {
+          var idx = Number(btn.dataset.mtIdx);
+          var act = btn.dataset.mtAct;
+          mutateMeetings(c, function () {
+            c.profile["미팅"][idx]["상태"] = act;
+          }, act === "완료" ? "미팅 완료" : "일정 취소");
+        }
         else if (btn.id === "memo-save" && c) saveMemo(c, $("memo-edit").value, btn);
         else if (btn.id === "cust-del" && c) confirmDelete(c);
         else if (btn.id === "cust-del-yes" && c) doDelete(c, btn);
         else if (btn.id === "cust-del-no" && c) renderDetail(c);
         else if (btn.id === "cust-move" && c) doMove(c, btn);
+      });
+
+      // 예정 미팅의 일자 변경 — 날짜 입력을 바꾸면 즉시 저장 (일정 변경)
+      $("detail").addEventListener("change", function (e) {
+        var input = e.target.closest("input.mt-date");
+        if (!input || !input.value) return;
+        var c = ALL.find(function (x) { return x.code === input.dataset.code; });
+        if (!c) return;
+        var idx = Number(input.dataset.mtIdx);
+        mutateMeetings(c, function () {
+          c.profile["미팅"][idx]["일자"] = input.value;
+        }, null);
       });
 
       // 신규 고객 등록 — 폴더 생성이 곧 등록 (폴더명 = 고객코드)
