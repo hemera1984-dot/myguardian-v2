@@ -1091,6 +1091,38 @@ body.platform {
   }
 }
 
+/* 알릴의무 셀프체크 항목 — 질문과 예/아니오를 한 줄에, 좁으면 줄바꿈 */
+.check-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--platform-line);
+  padding: 12px 0;
+}
+
+.check-item:last-child {
+  border-bottom: 0;
+}
+
+.check-q {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.check-a {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 719px) {
+  .check-item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
 .case-detail-body {
   text-align: left;
   width: 100%;

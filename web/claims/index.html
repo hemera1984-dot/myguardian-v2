@@ -23,27 +23,267 @@
   <div class="platform-shell">
     <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">청구·지급</span><span class="topbar-note">근거 중심의 청구 업무 지원</span></header>
     <main class="platform-main">
-      <section class="page-heading"><p class="eyebrow">청구 업무</p><h1>청구 전에 필요한 정보를<br>한곳에서 확인하세요</h1><p>공개된 지급사례와 고지 항목, 청구 서류를 실제 데이터에 근거해 안내할 예정입니다.</p></section>
-      <div class="global-search"><input type="search" aria-label="지급사례 검색" placeholder="질병, 치료, 담보 또는 청구 상황을 검색하세요" disabled><span class="search-state">검색 준비중</span></div>
+      <section class="page-heading"><p class="eyebrow">청구 업무</p><h1>청구 전에 필요한 정보를<br>한곳에서 확인하세요</h1><p>공개된 지급사례 검색, 알릴의무 점검, 청구 서류 안내를 실제 데이터에 근거해 제공합니다.</p></section>
 
-      <section class="section-block" aria-labelledby="claim-tools-title">
-        <div class="section-head"><div><h2 id="claim-tools-title">청구 도구</h2><p>상담 상황에 맞는 도구를 선택합니다.</p></div></div>
-        <div class="action-grid">
-          <article class="action-card"><h3>지급사례 검색</h3><p>상황과 담보를 기준으로 관련 사례를 확인합니다.</p></article>
-          <article class="action-card"><h3>알릴의무 셀프체크</h3><p>확인이 필요한 질문과 기록을 순서대로 점검합니다.</p></article>
-          <article class="action-card"><h3>서류 가이드</h3><p>청구 유형별 준비 서류를 빠짐없이 확인합니다.</p></article>
+      <div class="tabs-toolbar" role="tablist" aria-label="청구 도구">
+        <button class="tab-button active" type="button" id="tab-cases" data-tool="cases" role="tab" aria-selected="true">지급사례 검색</button>
+        <button class="tab-button" type="button" id="tab-check" data-tool="check" role="tab" aria-selected="false">알릴의무 셀프체크</button>
+        <button class="tab-button" type="button" id="tab-docs" data-tool="docs" role="tab" aria-selected="false">서류 가이드</button>
+      </div>
+
+      <section class="section-block" id="panel-cases" role="tabpanel" aria-labelledby="tab-cases">
+        <div class="global-search" style="margin-top:0"><input type="search" id="q" aria-label="지급사례 검색" placeholder="질병, 치료, 담보 또는 청구 상황을 검색하세요"><span class="search-state" id="result-count">-</span></div>
+        <div class="filter-bar" aria-label="결정 결과 필터">
+          <button class="filter-chip active" type="button" data-res="">전체</button>
+          <button class="filter-chip" type="button" data-res="보험금 지급 인정">지급 인정</button>
+          <button class="filter-chip" type="button" data-res="기각">기각</button>
+          <button class="filter-chip" type="button" data-res="기타">기타·미분류</button>
+        </div>
+        <div class="workspace-grid">
+          <div class="workspace-list">
+            <div class="workspace-label"><span>검색 결과</span><span class="workspace-count" id="list-count">0건</span></div>
+            <div class="case-rows" id="rows"><div class="list-empty">사례를 불러오는 중입니다.</div></div>
+          </div>
+          <div class="workspace-detail" id="detail">
+            <div><img class="empty-illust" src="../assets/img/empty-search.png" alt=""><strong>사례를 선택하세요</strong><p>목록에서 사례를 선택하면 사건번호, 결정 결과, 요약과 원문 링크를 확인할 수 있습니다.</p></div>
+          </div>
         </div>
       </section>
 
-      <section class="section-block" aria-labelledby="claim-status-title">
-        <div class="section-head"><div><h2 id="claim-status-title">지급사례</h2><p>실제 사례 데이터 입주 후 검색 결과가 표시됩니다.</p></div></div>
-        <div class="workspace-grid"><div class="workspace-list"><div class="workspace-label"><span>검색 결과</span><span class="workspace-count">0건</span></div><div class="list-empty">검색 가능한 지급사례를 준비하고 있습니다.</div></div><div class="workspace-detail"><div><img class="empty-illust" src="../assets/img/empty-search.png" alt=""><strong>관련 사례 없음</strong><p>데이터가 입주하기 전에는 사례를 임의로 생성하거나 표시하지 않습니다.</p></div></div></div>
+      <section class="section-block" id="panel-check" role="tabpanel" aria-labelledby="tab-check" hidden>
+        <div class="section-head"><div><h2>계약 전 알릴의무 셀프체크</h2><p id="check-basis"></p></div></div>
+        <div class="surface-card">
+          <div id="check-items"></div>
+          <div class="empty-inline" id="check-result" style="margin-top:16px;min-height:0;padding:16px" aria-live="polite">
+            <div><strong>점검 전</strong><span>각 항목에 예 또는 아니오로 답하면 결과가 여기에 정리됩니다. 답변은 저장되지 않습니다.</span></div>
+          </div>
+          <p style="margin:12px 0 0"><button class="tab-button" type="button" id="check-reset">전체 초기화</button></p>
+        </div>
       </section>
+
+      <section class="section-block" id="panel-docs" role="tabpanel" aria-labelledby="tab-docs" hidden>
+        <div class="section-head"><div><h2>청구 유형별 서류 가이드</h2><p id="docs-basis"></p></div></div>
+        <div class="filter-bar" id="docs-types" aria-label="청구 유형"></div>
+        <div class="surface-card" id="docs-body">
+          <div class="empty-inline" style="min-height:0;padding:16px"><div><strong>청구 유형을 선택하세요</strong><span>위에서 유형을 고르면 공통 서류와 유형별 서류, 유의사항이 표시됩니다.</span></div></div>
+        </div>
+      </section>
+
       <p class="notice">본 자료는 공개된 분쟁 사례 정보 제공이며 개별 지급 여부 판단이 아닙니다</p>
     </main>
     <footer class="platform-footer">마이가디언 v2</footer>
   </div>
   <script>
+    (function () {
+      "use strict";
+      var $ = function (id) { return document.getElementById(id); };
+      var esc = window.mg.esc;
+
+      // 도구 탭 전환
+      var TOOLS = ["cases", "check", "docs"];
+      document.querySelectorAll(".tabs-toolbar .tab-button").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          TOOLS.forEach(function (t) {
+            var on = btn.dataset.tool === t;
+            $("panel-" + t).hidden = !on;
+            $("tab-" + t).classList.toggle("active", on);
+            $("tab-" + t).setAttribute("aria-selected", on ? "true" : "false");
+          });
+        });
+      });
+
+      // ── 도구 1: 지급사례 검색 — 사례 서비스 색인(383건)을 그대로 쓴다. 생성 금지 원칙
+      var ALL = [];
+      var state = { q: "", res: "", sel: null };
+      var GRADE_CLASS = { "검증완료": "paid", "부분검증": "partial", "미검증-참고용": "" };
+
+      function resultLabel(r) { return r && r.trim() ? r : "기타"; }
+      function resultClass(r) {
+        if (r === "보험금 지급 인정") return "paid";
+        if (r === "기각") return "denied";
+        return "";
+      }
+
+      function filtered() {
+        var q = state.q.toLowerCase();
+        return ALL.filter(function (c) {
+          var res = resultLabel(c.decision_result);
+          if (state.res === "기타" && (res === "보험금 지급 인정" || res === "기각")) return false;
+          if (state.res && state.res !== "기타" && res !== state.res) return false;
+          if (q) {
+            var hay = (c.title + " " + (c.summary || "") + " " + (c.case_number || "") + " "
+              + (c.쟁점목록 || []).join(" ")).toLowerCase();
+            if (hay.indexOf(q) < 0) return false;
+          }
+          return true;
+        });
+      }
+
+      function renderList() {
+        var list = filtered();
+        $("list-count").textContent = list.length + "건";
+        $("result-count").textContent = "결과 " + list.length + "건";
+        var rows = $("rows");
+        if (!list.length) {
+          rows.innerHTML = '<div class="list-empty">관련 사례 없음 — 검색어를 바꾸거나 필터를 넓혀 보세요.</div>';
+          return;
+        }
+        rows.innerHTML = list.slice(0, 200).map(function (c) {
+          return '<div class="case-row' + (c.id === state.sel ? " active" : "") + '" tabindex="0" role="button" data-id="' + esc(c.id) + '">'
+            + "<h4>" + esc(c.title) + "</h4>"
+            + '<div class="case-meta"><span>' + esc(c.case_number || c.source_type || "") + "</span>"
+            + '<span class="badge-result ' + resultClass(c.decision_result) + '">' + esc(resultLabel(c.decision_result)) + "</span>"
+            + '<span class="badge-grade">' + esc(c.verification_grade || "") + "</span>"
+            + "</div></div>";
+        }).join("") + (list.length > 200 ? '<div class="list-empty">상위 200건만 표시 — 검색어로 좁혀 보세요.</div>' : "");
+      }
+
+      function renderDetail(c) {
+        var fields = [
+          ["사건번호", c.case_number],
+          ["출처", c.source_type],
+          ["결정 결과", resultLabel(c.decision_result)],
+          ["신뢰도", c.verification_grade],
+          ["쟁점", (c.쟁점목록 || []).join(" · ")]
+        ].filter(function (f) { return f[1]; });
+        $("detail").innerHTML = '<div class="case-detail-body">'
+          + '<div class="detail-badges"><span class="badge-result ' + resultClass(c.decision_result) + '">' + esc(resultLabel(c.decision_result)) + "</span>"
+          + '<span class="badge-grade">' + esc(c.verification_grade || "") + "</span></div>"
+          + "<h3>" + esc(c.title) + "</h3>"
+          + '<dl class="detail-fields">' + fields.map(function (f) {
+              return "<dt>" + esc(f[0]) + "</dt><dd>" + esc(f[1]) + "</dd>";
+            }).join("") + "</dl>"
+          + (c.summary ? '<p class="detail-summary">' + esc(c.summary) + "</p>" : "")
+          + '<p style="margin:12px 0 0;display:flex;gap:14px;flex-wrap:wrap">'
+          + '<a class="detail-link" href="../cases/?id=' + encodeURIComponent(c.id) + '">사례·판례에서 자세히</a>'
+          + (c.case_source_url ? '<a class="detail-link" href="' + esc(c.case_source_url) + '" target="_blank" rel="noopener">원문 보기</a>' : "")
+          + "</p></div>";
+      }
+
+      fetch("../../data/cases/index.json")
+        .then(function (r) { return r.json(); })
+        .then(function (payload) {
+          ALL = payload.data || [];
+          renderList();
+        })
+        .catch(function () {
+          $("rows").innerHTML = '<div class="list-empty">사례 데이터를 불러오지 못했습니다. 새로고침해 보세요.</div>';
+        });
+
+      $("q").addEventListener("input", function (e) { state.q = e.target.value.trim(); renderList(); });
+      document.querySelectorAll('#panel-cases .filter-chip').forEach(function (chip) {
+        chip.addEventListener("click", function () {
+          chip.parentElement.querySelectorAll(".filter-chip").forEach(function (b) { b.classList.toggle("active", b === chip); });
+          state.res = chip.dataset.res;
+          renderList();
+        });
+      });
+      $("rows").addEventListener("click", function (e) {
+        var row = e.target.closest(".case-row");
+        if (!row) return;
+        document.querySelectorAll("#rows .case-row.active").forEach(function (r) { r.classList.remove("active"); });
+        row.classList.add("active");
+        var c = ALL.find(function (x) { return x.id === row.dataset.id; });
+        if (c) { state.sel = c.id; renderDetail(c); }
+      });
+      $("rows").addEventListener("keydown", function (e) {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        var row = e.target.closest(".case-row");
+        if (row) { e.preventDefault(); row.click(); }
+      });
+
+      // ── 도구 2: 알릴의무 셀프체크 — 답변은 화면 안에서만, 어디에도 저장하지 않는다
+      var CHECK = null;
+      var answers = {};
+      fetch("../../data/claims/disclosure-check.json")
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          CHECK = data;
+          $("check-basis").textContent = data["기준안내"];
+          renderCheck();
+        })
+        .catch(function () {
+          $("check-items").innerHTML = '<div class="list-empty">점검 항목을 불러오지 못했습니다.</div>';
+        });
+
+      function renderCheck() {
+        $("check-items").innerHTML = CHECK["항목"].map(function (it) {
+          var a = answers[it.id];
+          return '<div class="check-item" data-id="' + esc(it.id) + '">'
+            + '<div class="check-q"><span class="badge-status st-hold">' + esc(it["기간"]) + "</span> " + esc(it["질문"]) + "</div>"
+            + '<div class="check-a" role="group" aria-label="답변">'
+            + '<button type="button" class="status-btn st-reject' + (a === true ? " on" : "") + '" data-ans="yes" aria-pressed="' + (a === true) + '">예</button>'
+            + '<button type="button" class="status-btn st-met' + (a === false ? " on" : "") + '" data-ans="no" aria-pressed="' + (a === false) + '">아니오</button>'
+            + "</div></div>";
+        }).join("");
+        renderCheckResult();
+      }
+
+      function renderCheckResult() {
+        var box = $("check-result");
+        var total = CHECK["항목"].length;
+        var done = Object.keys(answers).length;
+        var yes = CHECK["항목"].filter(function (it) { return answers[it.id] === true; });
+        if (!done) {
+          box.innerHTML = "<div><strong>점검 전</strong><span>각 항목에 예 또는 아니오로 답하면 결과가 여기에 정리됩니다. 답변은 저장되지 않습니다.</span></div>";
+          return;
+        }
+        if (yes.length) {
+          box.innerHTML = "<div><strong>알려야 할 가능성이 있는 항목 " + yes.length + "건 (" + done + "/" + total + " 답변)</strong>"
+            + '<span style="text-align:left;display:block;margin-top:8px">' + yes.map(function (it) {
+                return "· [" + esc(it["기간"]) + "] " + esc(it["질문"]);
+              }).join("<br>") + "</span>"
+            + '<span style="margin-top:10px">' + esc(CHECK["결과안내"]["해당있음"]) + "</span></div>";
+        } else {
+          box.innerHTML = "<div><strong>해당 항목 없음 (" + done + "/" + total + " 답변)</strong>"
+            + "<span>" + esc(CHECK["결과안내"]["해당없음"]) + "</span></div>";
+        }
+      }
+
+      $("check-items").addEventListener("click", function (e) {
+        var btn = e.target.closest("button[data-ans]");
+        if (!btn) return;
+        var id = btn.closest(".check-item").dataset.id;
+        var val = btn.dataset.ans === "yes";
+        if (answers[id] === val) delete answers[id]; // 재클릭 = 해제
+        else answers[id] = val;
+        renderCheck();
+      });
+      $("check-reset").addEventListener("click", function () {
+        answers = {};
+        renderCheck();
+      });
+
+      // ── 도구 3: 서류 가이드
+      var DOCS = null;
+      var docSel = null;
+      fetch("../../data/claims/doc-guide.json")
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          DOCS = data;
+          $("docs-basis").textContent = data["기준안내"];
+          $("docs-types").innerHTML = data["유형"].map(function (t) {
+            return '<button class="filter-chip" type="button" data-doc="' + esc(t.id) + '">' + esc(t["이름"]) + "</button>";
+          }).join("");
+        })
+        .catch(function () {
+          $("docs-body").innerHTML = '<div class="list-empty">서류 안내를 불러오지 못했습니다.</div>';
+        });
+
+      $("docs-types").addEventListener("click", function (e) {
+        var chip = e.target.closest(".filter-chip");
+        if (!chip) return;
+        $("docs-types").querySelectorAll(".filter-chip").forEach(function (b) { b.classList.toggle("active", b === chip); });
+        docSel = DOCS["유형"].find(function (t) { return t.id === chip.dataset.doc; });
+        if (!docSel) return;
+        $("docs-body").innerHTML = "<h3 style='margin:0 0 4px'>" + esc(docSel["이름"]) + "</h3>"
+          + "<h4 style='margin:14px 0 6px'>공통 서류</h4><ul style='margin:0;padding-left:20px'>"
+          + DOCS["공통서류"].map(function (d) { return "<li>" + esc(d) + "</li>"; }).join("") + "</ul>"
+          + "<h4 style='margin:14px 0 6px'>유형별 서류</h4><ul style='margin:0;padding-left:20px'>"
+          + docSel["서류"].map(function (d) { return "<li>" + esc(d) + "</li>"; }).join("") + "</ul>"
+          + (docSel["유의"] ? "<h4 style='margin:14px 0 6px'>유의</h4><p style='margin:0;color:var(--platform-muted);font-size:13px'>" + esc(docSel["유의"]) + "</p>" : "");
+      });
+    })();
   </script>
 </body>
 </html>
