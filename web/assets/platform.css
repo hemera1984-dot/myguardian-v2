@@ -1886,14 +1886,14 @@ body.platform {
 
 .splash-center {
   text-align: center;
-  animation: splash-in 0.4s ease both;
+  animation: splash-in 0.3s ease both;
 }
 
 .splash-mark {
   position: relative;
   display: inline-block;
-  width: 88px;
-  height: 88px;
+  width: 68px;
+  height: 68px;
   overflow: hidden;
   border-radius: 22%;
 }
@@ -1908,15 +1908,15 @@ body.platform {
 .splash-shine {
   position: absolute;
   inset: 0;
-  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.5) 50%, transparent 60%);
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.45) 50%, transparent 60%);
   transform: translateX(-130%);
-  animation: splash-shine 0.65s ease 0.45s forwards;
+  animation: splash-shine 0.55s ease 0.35s forwards;
 }
 
 .splash-name {
-  margin: 14px 0 0;
+  margin: 12px 0 0;
   color: #ffffff;
-  font-size: 21px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: -0.035em;
 }
@@ -1924,11 +1924,11 @@ body.platform {
 .splash-cap {
   margin: 3px 0 0;
   color: rgba(255, 255, 255, 0.55);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .app-splash {
-  animation: splash-out 0.35s ease 1.15s forwards;
+  animation: splash-out 0.3s ease 1s forwards;
 }
 
 @keyframes splash-in {

@@ -122,9 +122,11 @@
       } catch (e) { return; }
       var el = document.getElementById("app-splash");
       el.hidden = false;
+      // 안전장치: CSS가 아직/잘못 적용된 상태(구버전 캐시 등)면 스플래시를 띄우지 않는다
+      if (getComputedStyle(el).position !== "fixed") { el.hidden = true; return; }
       var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       // 모션 줄이기: 애니메이션 없이 잠깐 정적 표시 후 제거
-      setTimeout(function () { el.hidden = true; }, still ? 700 : 1500);
+      setTimeout(function () { el.hidden = true; }, still ? 700 : 1350);
     })();
 
     // 바로가기 설치 진입점 — 설치 절차는 전용 화면(install.html)이 전담한다 (개정 10차)
