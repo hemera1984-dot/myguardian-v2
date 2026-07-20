@@ -44,15 +44,22 @@
     orgInput.addEventListener("input", onChange);
   }
 
-  function issueUrl(issue) {
-    return new URL("issue.html?id=" + encodeURIComponent(issue.id), window.location.href).href;
+  function issueUrl(issue, edition) {
+    var query = "issue.html?id=" + encodeURIComponent(issue.id)
+      + (edition ? "&fc=" + encodeURIComponent(edition["코드"]) : "");
+    return new URL(query, window.location.href).href;
   }
 
-  function kakaoText(issue) {
-    var s = loadSender();
-    var url = issueUrl(issue);
+  // 공유 발행 에디션(결정 2026-07-20): edition을 주면 발행인·링크·서명이 그 FC로 바뀐다.
+  // 내용은 원본 그대로, 편집장은 항상 안창민.
+  function kakaoText(issue, edition) {
+    var s = edition
+      ? { "이름": edition["이름"] + " FC", "소속": edition["소속"] }
+      : loadSender();
+    var url = issueUrl(issue, edition);
     var toc = issue["꼭지"] || [];
-    var mag = "『" + issue["채널"] + " " + (issue["발행인"] || "안창민") + "』";
+    var pubName = edition ? edition["이름"] : (issue["발행인"] || "안창민");
+    var mag = "『" + issue["채널"] + " " + pubName + "』";
     var lines = ["안녕하세요, " + s["이름"] + "입니다.", ""];
     if (issue["채널"] === "주간") {
       lines.push("건강 유의하시고 좋은 한 주 보내세요.", "");
@@ -83,12 +90,13 @@
   }
 
   // 카톡 작성함 열기 — compose 패널이 있는 화면에서만 동작
-  function openCompose(issue) {
+  function openCompose(issue, edition) {
     var panel = document.getElementById("compose");
     if (!panel) return;
+    var pubName = edition ? edition["이름"] : (issue["발행인"] || "안창민");
     document.getElementById("compose-title").textContent =
-      "카톡 문구 — " + issue["채널"] + " " + (issue["발행인"] || "안창민") + " " + issue["호수"] + "호 (수정 후 복사하세요)";
-    document.getElementById("compose-text").value = kakaoText(issue);
+      "카톡 문구 — " + issue["채널"] + " " + pubName + " " + issue["호수"] + "호 (수정 후 복사하세요)";
+    document.getElementById("compose-text").value = kakaoText(issue, edition);
     panel.hidden = false;
     panel.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -103,6 +111,14 @@
     closeBtn.addEventListener("click", function () {
       document.getElementById("compose").hidden = true;
     });
+  }
+
+  // 발행인 명단 (공유 발행 에디션 대상). 실패 시 빈 배열 — 에디션 기능만 조용히 꺼진다.
+  function loadPublishers() {
+    return fetch(new URL("../../data/care/publishers.json", window.location.href))
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (list) { return Array.isArray(list) ? list : []; })
+      .catch(function () { return []; });
   }
 
   function sortByDate(list) {
@@ -131,6 +147,7 @@
     kakaoText: kakaoText,
     openCompose: openCompose,
     bindCompose: bindCompose,
+    loadPublishers: loadPublishers,
     sortByDate: sortByDate,
     published: published,
     drafts: drafts,

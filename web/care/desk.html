@@ -125,17 +125,20 @@
         document.getElementById("pub-dday").textContent = label("주간", weekly) + " · " + label("월간", monthly);
       })();
 
-      fetch("../../data/care/issues.json")
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          ALL = Array.isArray(data) ? data : (data.data || []);
-          buildActions();
+      Promise.all([
+        fetch("../../data/care/issues.json").then(function (r) { return r.json(); }),
+        care.loadPublishers()
+      ])
+        .then(function (results) {
+          ALL = Array.isArray(results[0]) ? results[0] : (results[0].data || []);
+          buildActions(results[1]);
           buildDrafts();
         })
         .catch(function () {});
 
-      // 채널별 최신 발행호 카톡 문구
-      function buildActions() {
+      // 채널별 최신 발행호 카톡 문구 + 팀원 에디션 (공유 발행, 결정 2026-07-20)
+      // 에디션 버튼: 내용은 동일한 호를 해당 FC의 제호·링크·서명으로 발송한다.
+      function buildActions(publishers) {
         var actions = document.getElementById("pub-desk-actions");
         ["주간", "월간"].forEach(function (ch) {
           var latest = care.latestByChannel(ALL, ch);
@@ -145,6 +148,14 @@
           btn.textContent = ch + " 최신호 카톡 문구 (" + latest["호수"] + "호)";
           btn.addEventListener("click", function () { care.openCompose(latest); });
           actions.appendChild(btn);
+          (publishers || []).forEach(function (p) {
+            if (p["이름"] === (latest["발행인"] || "안창민")) return;
+            var eb = document.createElement("button");
+            eb.type = "button";
+            eb.textContent = ch + " " + latest["호수"] + "호 — " + p["이름"] + " 에디션 문구";
+            eb.addEventListener("click", function () { care.openCompose(latest, p); });
+            actions.appendChild(eb);
+          });
         });
       }
 

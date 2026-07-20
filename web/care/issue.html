@@ -211,14 +211,36 @@
         apply();
       })();
 
-      var id = new URLSearchParams(window.location.search).get("id");
+      var params = new URLSearchParams(window.location.search);
+      var id = params.get("id");
+      var fcCode = params.get("fc");
       if (!id) { notFound(); return; }
 
-      fetch("../../data/care/issues.json")
-        .then(function (r) { return r.json(); })
-        .then(function (list) {
+      // 공유 발행 에디션 — fc 파라미터가 명단에 있으면 발행인 표기만 그 FC로 바꾼다.
+      // 내용은 원본과 동일하고, 편집장 표기는 항상 안창민이다 (결정 2026-07-20).
+      // 명단에 없는 코드는 무시하고 원본 발행인으로 표시한다.
+      function loadEdition() {
+        if (!fcCode) return Promise.resolve(null);
+        return fetch("../../data/care/publishers.json")
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (list) {
+            return (Array.isArray(list) ? list : []).find(function (p) { return p["코드"] === fcCode; }) || null;
+          })
+          .catch(function () { return null; });
+      }
+
+      Promise.all([
+        fetch("../../data/care/issues.json").then(function (r) { return r.json(); }),
+        loadEdition()
+      ])
+        .then(function (results) {
+          var list = results[0];
+          var edition = results[1];
           var meta = (Array.isArray(list) ? list : []).find(function (i) { return i.id === id; });
           if (!meta) { notFound(); return; }
+          if (edition && edition["이름"]) {
+            meta = Object.assign({}, meta, { "발행인": edition["이름"] });
+          }
           document.title = meta["채널"] + " " + (meta["발행인"] || "안창민") + " " + meta["호수"] + "호 - 케어센터";
           return fetch("../../" + meta["본문파일"])
             .then(function (r) {

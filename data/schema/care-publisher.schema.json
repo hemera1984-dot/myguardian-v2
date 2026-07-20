@@ -1,0 +1,28 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "케어센터 발행인 명단 (data/care/publishers.json)",
+ "description": "공유 발행 대상 FC 명단. 이름·지점만 허용 — 연락처 등 개인정보 금지. 편집장은 항상 안창민(결정 2026-07-20).",
+ "type": "array",
+ "items": {
+  "type": "object",
+  "required": ["코드", "이름", "소속"],
+  "additionalProperties": false,
+  "properties": {
+   "코드": {
+    "type": "string",
+    "pattern": "^fc[0-9]{2}$",
+    "description": "FC 코드. 고객 저장소 폴더(mg-clients-<코드>)와 동일 체계"
+   },
+   "이름": {
+    "type": "string",
+    "minLength": 1,
+    "description": "FC 이름 (FC 접미 없이)"
+   },
+   "소속": {
+    "type": "string",
+    "minLength": 1,
+    "description": "지점명 (카톡 서명용)"
+   }
+  }
+ }
+}
