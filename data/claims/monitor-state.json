@@ -1,0 +1,360 @@
+{
+ "갱신일": "2026-07-21",
+ "요약": {
+  "변경": 0,
+  "신규": 34,
+  "접속실패": 0,
+  "정상": 0,
+  "수동확인": 6
+ },
+ "항목": [
+  {
+   "코드": "L01",
+   "이름": "삼성생명",
+   "url": "https://direct.samsunglife.com/customerSupport/insuranceClaimInformation/CustomerSupportInsuranceClaimInformationView",
+   "확인일": "2026-07-21",
+   "해시": "9f720038db2a07b502b229e4d8251f859c41ae19ddb935ee39a78c370960abbf",
+   "길이": 430,
+   "상태": "신규"
+  },
+  {
+   "코드": "L02",
+   "이름": "한화생명",
+   "url": "https://www.hanwhalife.com/static/main/customerCenter/documents/CU_RD00000_T1T100.jsp",
+   "확인일": "2026-07-21",
+   "해시": "1bed2828ae256d7607e39a9f1844701a2777b0aa495b18dd89d9249bef31fde3",
+   "길이": 2775,
+   "상태": "신규"
+  },
+  {
+   "코드": "L03",
+   "이름": "교보생명",
+   "url": "https://www.kyobo.com/dgt/web/customer/support/need-papers/list",
+   "확인일": "2026-07-21",
+   "해시": "eef88c338411e0cc7d47435765c6869e1f16adefaaee058263e3c50076d95572",
+   "길이": 1915,
+   "상태": "신규"
+  },
+  {
+   "코드": "L04",
+   "이름": "신한라이프",
+   "url": "https://www.shinhanlife.co.kr/hp/cdhf0020t02.do",
+   "확인일": "2026-07-21",
+   "해시": "b028e30027893240bb093d9204dea04c015565ce82036600b4173ae6d630f174",
+   "길이": 6372,
+   "상태": "신규"
+  },
+  {
+   "코드": "L05",
+   "이름": "NH농협생명",
+   "url": "https://www.nhlife.co.kr/ho/cc/HOCC0017M00.nhl",
+   "확인일": "2026-07-21",
+   "해시": "45f30913b11d1a9eebe341505926b734b6e4832cf300f5cfb112df452191ff4b",
+   "길이": 1522,
+   "상태": "신규"
+  },
+  {
+   "코드": "L06",
+   "이름": "미래에셋생명",
+   "url": "https://life.miraeasset.com/Cmmn/lifePage.do?cp=MNT-CC-012",
+   "확인일": "2026-07-21",
+   "해시": "4e64be3c975e8998a9b65d968e0963864fe7ff566ec77e4848bdb88bf98faef2",
+   "길이": 658,
+   "상태": "신규"
+  },
+  {
+   "코드": "L08",
+   "이름": "흥국생명",
+   "url": "https://www.heungkuklife.co.kr/cyber/accident/Accident_File_Info.do",
+   "확인일": "2026-07-21",
+   "해시": "f28452ac3037e5a6f4b90907b7ba43639134cd476913cdcb083e9532c6112fff",
+   "길이": 3227,
+   "상태": "신규"
+  },
+  {
+   "코드": "L09",
+   "이름": "KDB생명",
+   "url": "https://www.kdblife.com/ajax.do?scrId=HCSCT002M14M",
+   "확인일": "2026-07-21",
+   "해시": "119cecf65878b6150c5d2d62a039cf6cc19bd1935d18aafb12ea2c3955a006b3",
+   "길이": 1949,
+   "상태": "신규"
+  },
+  {
+   "코드": "L10",
+   "이름": "DB생명",
+   "url": "https://www.idblife.com/support/guide/acbf_clm_doc",
+   "확인일": "2026-07-21",
+   "해시": "e313ad98787cfad20dbad666e9e500bc8192f30ee09a2e58d0dd8c769506a295",
+   "길이": 2182,
+   "상태": "신규"
+  },
+  {
+   "코드": "L11",
+   "이름": "처브라이프생명",
+   "url": "https://www.chubblife.co.kr/front/ctmcenter/insurance/listDocu.do",
+   "확인일": "2026-07-21",
+   "해시": "551b05539e2ce689b5ade651a32a90064f5b9d4b66cd1b8fd0ff84343fb24101",
+   "길이": 900,
+   "상태": "신규"
+  },
+  {
+   "코드": "L12",
+   "이름": "AIA생명",
+   "url": "https://www.aia.co.kr/ko/customer-support/customer-guide/forms/claims.html",
+   "확인일": "2026-07-21",
+   "해시": "e55d77e5ba8281df28ce7b09b2470d50398dc288ba970a2dceb2533e69d6bb07",
+   "길이": 1160,
+   "상태": "신규"
+  },
+  {
+   "코드": "L14",
+   "이름": "라이나생명",
+   "url": "https://www.lina.co.kr/customer/required",
+   "확인일": "2026-07-21",
+   "해시": "cc040aa26e1e0cc9772501aa34d044f7c081798ed49ae425146eba66b4547d5e",
+   "길이": 4780,
+   "상태": "신규"
+  },
+  {
+   "코드": "L16",
+   "이름": "ABL생명",
+   "url": "https://www.abllife.co.kr/st/custDesk/insSrvcGudn/acdtInsmClamGudn/acdtInsmClamGudn3",
+   "확인일": "2026-07-21",
+   "해시": "fa7d25102d59583335b84edbc23ecc6baeaa0ba3758eb7e101898dbbfe54a5c0",
+   "길이": 2353,
+   "상태": "신규"
+  },
+  {
+   "코드": "L17",
+   "이름": "하나생명",
+   "url": "https://www.hanalife.co.kr/csc/accidentGuideRenew/accidentReceipt_1.do",
+   "확인일": "2026-07-21",
+   "해시": "bc54fed486facd9c1bd979d960902c39e92fec690850388371f4d476daab34c5",
+   "길이": 1008,
+   "상태": "신규"
+  },
+  {
+   "코드": "L18",
+   "이름": "KB라이프생명",
+   "url": "https://www.kblife.co.kr/customer-center/informRequiredDocument.do",
+   "확인일": "2026-07-21",
+   "해시": "75fd93738c0852044b4c05b3f3b5452f89bbd0e12741fc2dd986150d1d60943c",
+   "길이": 3977,
+   "상태": "신규"
+  },
+  {
+   "코드": "L19",
+   "이름": "iM라이프생명",
+   "url": "https://www.imlifeins.co.kr/BB/BB_D010.do",
+   "확인일": "2026-07-21",
+   "해시": "cb71d6dbeee83313fada066abc57205f1773cd8de2f4aecade919b58ee0a7dd4",
+   "길이": 1952,
+   "상태": "신규"
+  },
+  {
+   "코드": "L20",
+   "이름": "교보라이프플래닛생명",
+   "url": "https://www.lifeplanet.co.kr/contact/pet/HPCG01S0.dev",
+   "확인일": "2026-07-21",
+   "해시": "6b27956e0d0be33610cc82a5598d69d4956cf01fd327da82722c3bbf9ca1896b",
+   "길이": 4211,
+   "상태": "신규"
+  },
+  {
+   "코드": "L21",
+   "이름": "BNP파리바카디프생명",
+   "url": "https://www.cardif.co.kr/customer-center/보험금-청구.do",
+   "확인일": "2026-07-21",
+   "해시": "44cc7cfe5c6e02707bd432b8c8cc0681941160f65b80d778af16a7689fbae4f4",
+   "길이": 3635,
+   "상태": "신규"
+  },
+  {
+   "코드": "L22",
+   "이름": "IBK연금보험",
+   "url": "https://www.ibki.co.kr/process/HP_CSCETR_POSN_DOC_INS_LIST",
+   "확인일": "2026-07-21",
+   "해시": "3a1fcd345d0c11b64d702465b9cc49029e8f974aaad871aed844be49ec756c0c",
+   "길이": 102,
+   "상태": "신규"
+  },
+  {
+   "코드": "P01",
+   "이름": "삼성화재",
+   "url": "https://www.samsungfire.com/claim/P_P03_01_02_009.html",
+   "확인일": "2026-07-21",
+   "해시": "66c2092556b4cb678980bed2a102bf413dae62972916cee9ccbd220b06ca7b07",
+   "길이": 1532,
+   "상태": "신규"
+  },
+  {
+   "코드": "P02",
+   "이름": "현대해상",
+   "url": "https://www.hi.co.kr/serviceAction.do?menuId=100631",
+   "확인일": "2026-07-21",
+   "해시": "dc8c63665fea8136e82ab488e75b18e97e68f9a833e46ec5c6481ea6a4058f2f",
+   "길이": 8234,
+   "상태": "신규"
+  },
+  {
+   "코드": "P03",
+   "이름": "DB손해보험",
+   "url": "https://www.idbins.com/pc/bizxpress/ct/dc/FWCUSV1300.shtm",
+   "확인일": "2026-07-21",
+   "해시": "88dd263e2fad29af37fc2b1f2693f4f3f650a8086b8118a5e0f14639f25e20c8",
+   "길이": 4320,
+   "상태": "신규"
+  },
+  {
+   "코드": "P04",
+   "이름": "KB손해보험",
+   "url": "https://www.kbinsure.co.kr/CG205010001.ec",
+   "확인일": "2026-07-21",
+   "해시": "bb899e9f1087afad62e110ca019f0e9e5c2dd1cef33625a13d7e9525dc05e8e9",
+   "길이": 2629,
+   "상태": "신규"
+  },
+  {
+   "코드": "P05",
+   "이름": "메리츠화재",
+   "url": "https://www.meritzfire.com/compensation/longterm-insurance/request-document.do",
+   "확인일": "2026-07-21",
+   "해시": "040270448fd44ff55de756f2075d899f71ad3245d373a408dae5af8d64333042",
+   "길이": 4631,
+   "상태": "신규"
+  },
+  {
+   "코드": "P06",
+   "이름": "한화손해보험",
+   "url": "https://m.hwgeneralins.com/fplaza/compensation/receipt01.do",
+   "확인일": "2026-07-21",
+   "해시": "22a3eac41da6349c0225cc36e6933e4bac17f8ef0acb373630910b962e39f46b",
+   "길이": 1330,
+   "상태": "신규"
+  },
+  {
+   "코드": "P07",
+   "이름": "롯데손해보험",
+   "url": "https://www.lotteins.co.kr/web/C/D/C/cdc_claim_0502.jsp",
+   "확인일": "2026-07-21",
+   "해시": "0a6a43ff00ea63698bd7b4701a3b880c89b14e8aacfd29a50169cb6fc31fc407",
+   "길이": 3093,
+   "상태": "신규"
+  },
+  {
+   "코드": "P08",
+   "이름": "흥국화재",
+   "url": "https://www.heungkukfire.co.kr/FRW/helpdesk/docInfoTemplate.do",
+   "확인일": "2026-07-21",
+   "해시": "6cd2550850cb815c6ad883c39588ef34aff36077dbaf28cb287f06e1a7ccc9ae",
+   "길이": 3522,
+   "상태": "신규"
+  },
+  {
+   "코드": "P09",
+   "이름": "AXA손해보험",
+   "url": "https://www.axa.co.kr/AsianPlatformInternet/html/axacms/shcl/pa/process/index.html",
+   "확인일": "2026-07-21",
+   "해시": "91ee12fdff61597bfefe424710866299344084be1219c86e767c4f88fd531b7c",
+   "길이": 406,
+   "상태": "신규"
+  },
+  {
+   "코드": "P10",
+   "이름": "하나손해보험",
+   "url": "https://www.hanainsure.co.kr/w/claim/healthReward/accidentReceipt",
+   "확인일": "2026-07-21",
+   "해시": "0ec70a6107914211819416296530dfb1958bd8f95bf222288de127261ef00e97",
+   "길이": 2692,
+   "상태": "신규"
+  },
+  {
+   "코드": "P11",
+   "이름": "NH농협손해보험",
+   "url": "https://www.nhfire.co.kr/customer/bilgdcm/retrieveBilgDcmList.nhfire",
+   "확인일": "2026-07-21",
+   "해시": "4026a0572559e50df4a9b0722dea9f747b3c7232083ec699cde3d308e566a638",
+   "길이": 3610,
+   "상태": "신규"
+  },
+  {
+   "코드": "P13",
+   "이름": "신한EZ손해보험",
+   "url": "https://www.shinhanez.co.kr/static/cus/CUS50000M01.html?docInfoYn=Y",
+   "확인일": "2026-07-21",
+   "해시": "beb8d23853017d6958424c89359ec592610a790c9f571cc8ea81a99bf3f84b95",
+   "길이": 1237,
+   "상태": "신규"
+  },
+  {
+   "코드": "P14",
+   "이름": "캐롯손해보험",
+   "url": "https://www.carrotins.com/desktop/reward/claim/guide/",
+   "확인일": "2026-07-21",
+   "해시": "12d843f31b821fc237c622f98d1b5e481dbcb5273055770ff1e0fa0aae862009",
+   "길이": 418,
+   "상태": "신규"
+  },
+  {
+   "코드": "P15",
+   "이름": "AIG손해보험",
+   "url": "https://m.aig.co.kr/wm/content.html?contentId=DPWMS406",
+   "확인일": "2026-07-21",
+   "해시": "6c3bc8a672948c00c31e36cfd20c152af8d6037c2f4c778a1e7125389b13d28d",
+   "길이": 4411,
+   "상태": "신규"
+  },
+  {
+   "코드": "P17",
+   "이름": "서울보증보험",
+   "url": "https://www.sgic.co.kr/chp/iutf/hp/bbs/CHPINFO102VM0.mvc",
+   "확인일": "2026-07-21",
+   "해시": "390f4a42f4e1477cf693af7cf73ceab98c21c7342e6c591b7356c9fe7e69b330",
+   "길이": 540,
+   "상태": "신규"
+  },
+  {
+   "코드": "L07",
+   "이름": "동양생명",
+   "url": "https://www.myangel.co.kr/customer/service/propose/WE_CR_PS_04_02_06.jsp",
+   "상태": "수동확인",
+   "확인일": ""
+  },
+  {
+   "코드": "L13",
+   "이름": "메트라이프생명",
+   "url": null,
+   "상태": "수동확인",
+   "확인일": ""
+  },
+  {
+   "코드": "L15",
+   "이름": "푸본현대생명",
+   "url": null,
+   "상태": "수동확인",
+   "확인일": ""
+  },
+  {
+   "코드": "P12",
+   "이름": "카카오페이손해보험",
+   "url": "https://kakaopayinscorp.co.kr/customer-center/claim-info",
+   "상태": "수동확인",
+   "확인일": ""
+  },
+  {
+   "코드": "P16",
+   "이름": "처브손해보험",
+   "url": "https://www.chubb.com/kr-kr/claims/individual-insurance.html",
+   "상태": "수동확인",
+   "확인일": ""
+  },
+  {
+   "코드": "P18",
+   "이름": "MG손해보험",
+   "url": null,
+   "상태": "수동확인",
+   "확인일": ""
+  }
+ ]
+}

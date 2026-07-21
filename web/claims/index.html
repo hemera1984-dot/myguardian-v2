@@ -56,6 +56,11 @@
         <div class="surface-card" id="docs-body">
           <div class="empty-inline" style="min-height:0;padding:16px"><div><strong>청구 사유를 선택하세요</strong><span>위에서 사유를 고르면 공통 서류와 사유별 서류, 유의사항이 표시됩니다. 회사별 청구서 양식·접수 채널 안내는 준비 중입니다.</span></div></div>
         </div>
+
+        <div class="section-head" style="margin-top:32px"><div><h2>보험사 청구 안내 변경 현황</h2><p id="monitor-basis">전 생보·손보 청구 안내 페이지를 매달 자동 점검합니다. 변경이 감지된 회사는 링크를 열어 서류 안내를 확인하세요.</p></div></div>
+        <div class="surface-card" id="monitor-box">
+          <div class="empty-inline" style="min-height:0;padding:16px"><div><strong>점검 기록 없음</strong><span>pipeline/monitor_insurers.py 를 실행하면 이 자리에 최근 점검일과 변경 감지 회사가 표시됩니다.</span></div></div>
+        </div>
       </section>
 
       <p class="notice">본 자료는 공개된 분쟁 사례 정보 제공이며 개별 지급 여부 판단이 아닙니다</p>
@@ -210,6 +215,45 @@
           + docSel["서류"].map(function (d) { return "<li>" + esc(d) + "</li>"; }).join("") + "</ul>"
           + (docSel["유의"] ? "<h4 style='margin:14px 0 6px'>유의</h4><p style='margin:0;color:var(--platform-muted);font-size:13px'>" + esc(docSel["유의"]) + "</p>" : "");
       });
+
+      // ── 보험사 청구 안내 변경 현황 — monitor_insurers.py 산출물(monitor-state.json) 표시.
+      // 변경·접속실패(수동 확인 필요)를 위로, 정상은 접어둔다. 없으면 안내만.
+      fetch("../../data/claims/monitor-state.json", { cache: "no-store" })
+        .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+        .then(function (m) {
+          var items = m["항목"] || [];
+          var changed = items.filter(function (x) { return x["상태"] === "변경"; });
+          var failed = items.filter(function (x) { return x["상태"] === "접속실패"; });
+          var manual = items.filter(function (x) { return x["상태"] === "수동확인"; });
+          var okN = items.filter(function (x) { return x["상태"] === "정상" || x["상태"] === "신규"; }).length;
+          var s = m["요약"] || {};
+          var html = ['<p style="margin:0 0 12px;font-size:13px;color:var(--platform-muted)">최근 점검일 '
+            + esc(m["갱신일"] || "-") + " · 정상 " + okN + " · <strong style=\"color:var(--platform-ink)\">변경 "
+            + changed.length + "</strong> · 접속실패 " + failed.length + " · 수동확인 " + manual.length + "</p>"];
+
+          function block(title, rows, cls) {
+            if (!rows.length) return "";
+            var h = ['<div style="margin-top:8px"><h4 style="margin:0 0 6px">' + title + " " + rows.length + "건</h4>"];
+            h.push('<div class="meeting-list">');
+            rows.forEach(function (r) {
+              h.push('<div class="meeting-row"><span class="badge-status ' + cls + '">' + esc(r["이름"]) + "</span>"
+                + (r["url"] ? '<a class="detail-link" href="' + esc(r["url"]) + '" target="_blank" rel="noopener">청구 안내 열기</a>' : "")
+                + (r["오류"] ? '<span style="font-size:12px;color:var(--platform-faint)">' + esc(r["오류"]) + "</span>" : "")
+                + "</div>");
+            });
+            h.push("</div></div>");
+            return h.join("");
+          }
+
+          html.push(block("변경 감지 — 확인 필요", changed, "st-reject"));
+          html.push(block("접속 실패 — 수동 확인", failed, "st-recall"));
+          html.push(block("자동 감시 불가 — 수동 확인 대상", manual, "st-hold"));
+          if (!changed.length && !failed.length) {
+            html.push('<p style="margin:8px 0 0;font-size:13px;color:var(--platform-paid)">자동 감시 대상 페이지에 변경이 없습니다.</p>');
+          }
+          $("monitor-box").innerHTML = html.join("");
+        })
+        .catch(function () { /* 점검 기록 없음 — 기본 안내 유지 */ });
     })();
   </script>
 </body>
