@@ -1091,6 +1091,17 @@ body.platform {
   }
 }
 
+/* 조직도 노드 — 들여쓰기 트리, 좌측 연결선 */
+.org-node {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  border-left: 2px solid var(--platform-line);
+  padding: 7px 0 7px 12px;
+  margin-bottom: 2px;
+}
+
 /* 미팅 차수 일정 — 행 단위 목록 + 빠른 추가 줄 */
 .meeting-list {
   display: grid;
