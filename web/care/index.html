@@ -4,33 +4,37 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>서재 - 케어센터</title>
+  <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../assets/platform.css">
   <link rel="stylesheet" href="../assets/style.css">
   <script src="../assets/platform.js"></script>
   <script src="../assets/care.js"></script>
 </head>
-<body class="simple">
-  <aside class="sidebar" id="platform-sidebar">
-    <a class="sidebar-brand" href="./">케어<span class="accent">센터</span></a>
-    <nav class="sidebar-nav" aria-label="케어센터 메뉴">
+<body class="platform">
+  <aside class="platform-sidebar" id="platform-sidebar">
+    <a class="platform-brand" href="../" aria-label="마이가디언 홈"><span class="brand-mark"><img src="../assets/logo.svg" alt=""></span><span><span class="brand-name">마이가디언</span><span class="brand-caption">FC 업무 플랫폼</span></span></a>
+    <nav class="platform-nav" aria-label="케어센터 메뉴">
+      <p class="nav-group-label">케어센터</p>
       <a href="desk.html">발행 데스크</a>
       <a class="active" href="./">서재</a>
-    </nav>
-    <nav class="sidebar-nav" aria-label="플랫폼" style="margin-top:16px">
+      <p class="nav-group-label">플랫폼</p>
       <a href="../">마이가디언 홈</a>
     </nav>
-    <div class="sidebar-foot">편집장 안창민 FC<br>주간·월간 발행 플랫폼</div>
+    <div class="sidebar-status"><strong>편집장 안창민 FC</strong><span>주간·월간 발행 플랫폼</span></div>
   </aside>
-  <div class="sidebar-overlay" id="platform-overlay"></div>
+  <div class="platform-overlay" id="platform-overlay"></div>
 
-  <div class="main-area">
-    <header class="topbar">
-      <button class="menu-toggle" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-      <span class="site-title">서재</span>
+  <div class="platform-shell">
+    <header class="platform-topbar">
+      <button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button>
+      <span class="mobile-brand">케어센터</span>
+      <span class="topbar-context">케어센터 · 서재</span>
+      <span class="topbar-note">발행된 모든 호를 언제든 열람</span>
     </header>
 
-    <main class="container">
+    <main class="platform-main">
       <div class="photo-hero">
         <img src="../assets/img/hero-care.jpg" alt="" fetchpriority="high">
         <div class="photo-hero-text">
@@ -63,7 +67,7 @@
       </div>
     </main>
 
-    <footer class="site-footer">마이가디언 v2</footer>
+    <footer class="platform-footer">마이가디언 v2</footer>
   </div>
 
   <script>

@@ -5,20 +5,25 @@
    골드 #c9a14a는 카톡카드·인쇄물 템플릿 전용 — 플랫폼 UI 사용 금지. */
 
 :root {
-  --bg: #fafbfc;
+  /* 디자인 개정 10차(2026-07-20) 팔레트 정합 — platform.css와 동일 토큰 */
+  --bg: #f5f7fa;
   --surface: #ffffff;
-  --ink: #1a2744;
-  --ink-sub: #6b7280;
-  --ink-faint: #75808f; /* 흰 바탕 4.5:1 이상 — 보조 텍스트도 읽혀야 한다 */
-  --accent: #2563eb;      /* 버튼·활성상태·링크 전용 */
-  --accent-bg: rgba(37, 99, 235, 0.08);
+  --ink: #172033;
+  --ink-sub: #596579;
+  --ink-faint: #717d8f; /* 흰 바탕 4.5:1 이상 — 보조 텍스트도 읽혀야 한다 */
+  --accent: #0758d6;      /* 버튼·활성상태·링크 전용 */
+  --accent-dark: #0648ad;
+  --accent-bg: #edf4ff;
+  --navy: #102a4e;        /* 다크 사이드바 */
+  --cyan: #00a6c7;        /* 사이드바 상단 라인 */
   --paid: #16a34a;        /* 상태색: 지급 */
   --denied: #dc2626;      /* 상태색: 부지급 */
   --partial: #d97706;     /* 상태색: 일부지급 */
-  --line: #e8ebf0;
-  --radius: 12px;
-  --shadow: 0 1px 3px rgba(26, 39, 68, 0.06);
-  --sidebar-w: 224px;
+  --line: #dfe4eb;
+  --line-strong: #cbd3de;
+  --radius: 6px;
+  --shadow: 0 1px 3px rgba(16, 42, 78, 0.06);
+  --sidebar-w: 240px;
   --gold-print: #c9a14a;  /* 카톡카드·인쇄물 템플릿 전용 */
 }
 
