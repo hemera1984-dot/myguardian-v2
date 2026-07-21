@@ -42,7 +42,7 @@
   { "코드": "P15", "구분": "손보", "이름": "AIG손해보험", "홈페이지": "https://www.aig.co.kr", "청구안내URL": "https://m.aig.co.kr/wm/content.html?contentId=DPWMS406", "감시": "자동", "검증필요": true, "메모": "모바일 도메인 노출. 외국계(AIG그룹)" },
   { "코드": "P16", "구분": "손보", "이름": "처브손해보험", "홈페이지": "https://www.chubb.com/kr-kr", "청구안내URL": "https://www.chubb.com/kr-kr/claims/individual-insurance.html", "감시": "수동", "메모": "구 ACE. 실제 청구서류가 PDF 비중 큼 → PDF 감시 필요. 처브라이프와 별개" },
   { "코드": "P17", "구분": "손보", "이름": "서울보증보험", "홈페이지": "https://www.sgic.co.kr", "청구안내URL": "https://www.sgic.co.kr/chp/iutf/hp/bbs/CHPINFO102VM0.mvc", "감시": "자동", "메모": "보증보험 전업. 제출서류 안내는 공개, 청구는 인증서 로그인" },
-  { "코드": "P18", "구분": "손보", "이름": "MG손해보험", "홈페이지": "https://www.mggeneralins.com", "청구안내URL": null, "감시": "수동", "메모": "신규영업 중단, 전 계약 예별손해보험으로 이전(2025.9). 감시 대상은 예별손보로 대체 필요" },
+  { "코드": "P18", "구분": "손보", "이름": "예별손해보험", "홈페이지": "https://www.yebyeol.co.kr", "청구안내URL": "https://www.yebyeol.co.kr/RW031010DM.scp?menuId=MN0501020", "감시": "자동", "메모": "MG손해보험 전 계약이 2025.9 이전된 가교보험사(예금보험공사 100% 출자). 구비서류안내 공개 HTML. 구 mggeneralins.com은 여기로 302 리다이렉트. 대표 1588-5959" },
   { "코드": "P19", "구분": "손보", "이름": "코리안리재보험", "홈페이지": "https://www.koreanre.co.kr", "청구안내URL": null, "감시": "제외", "메모": "재보험 전업(B2B). 개인 청구 대상 아님. 감시 제외" }
  ]
 }

@@ -134,15 +134,28 @@ def main():
             items.append(row)
         browser.close()
 
-    # 수동·제외 회사도 상태 파일에 기록 — 화면이 전체 현황을 보여줄 수 있게
+    # --code 등으로 이번에 점검하지 않은 자동 회사는 이전 지문을 보존한다
+    # (부분 실행이 전체 state를 덮어쓰지 않도록)
+    processed = {r["코드"] for r in items}
+    all_auto = [c for c in companies if c.get("감시") == "자동" and c.get("청구안내URL")]
+    for c in all_auto:
+        if c["코드"] not in processed and prev.get(c["코드"]):
+            items.append(prev[c["코드"]])
+            processed.add(c["코드"])
+
+    # 수동 회사도 상태 파일에 기록 — 화면이 전체 현황을 보여줄 수 있게
     for c in manual:
         items.append({"코드": c["코드"], "이름": c["이름"], "url": c.get("청구안내URL"),
                       "상태": "수동확인", "확인일": prev.get(c["코드"], {}).get("확인일", "")})
 
+    # 요약은 최종 항목 전체에서 집계 (부분 실행에도 전체 현황이 맞도록)
+    def cnt(st):
+        return len([x for x in items if x.get("상태") == st])
+
     out = {
         "갱신일": today,
-        "요약": {"변경": len(changed), "신규": len(new), "접속실패": len(failed),
-                 "정상": len(ok), "수동확인": len(manual)},
+        "요약": {"변경": cnt("변경"), "신규": cnt("신규"), "접속실패": cnt("접속실패"),
+                 "정상": cnt("정상"), "수동확인": cnt("수동확인")},
         "항목": items,
     }
     STATE_PATH.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
