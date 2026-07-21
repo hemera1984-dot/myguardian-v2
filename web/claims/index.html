@@ -23,11 +23,10 @@
   <div class="platform-shell">
     <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">청구·지급</span><span class="topbar-note">근거 중심의 청구 업무 지원</span></header>
     <main class="platform-main">
-      <section class="page-heading"><p class="eyebrow">청구 업무</p><h1>청구 전에 필요한 정보를<br>한곳에서 확인하세요</h1><p>공개된 지급사례 검색, 알릴의무 점검, 청구 서류 안내를 실제 데이터에 근거해 제공합니다.</p></section>
+      <section class="page-heading"><p class="eyebrow">청구 업무</p><h1>청구 전에 필요한 정보를<br>한곳에서 확인하세요</h1><p>공개된 분쟁 사례를 열람하고, 청구 사유별 서류를 확인합니다. 지급 여부를 판정하는 도구가 아닙니다.</p></section>
 
       <div class="tabs-toolbar" role="tablist" aria-label="청구 도구">
-        <button class="tab-button active" type="button" id="tab-cases" data-tool="cases" role="tab" aria-selected="true">지급사례 검색</button>
-        <button class="tab-button" type="button" id="tab-check" data-tool="check" role="tab" aria-selected="false">알릴의무 셀프체크</button>
+        <button class="tab-button active" type="button" id="tab-cases" data-tool="cases" role="tab" aria-selected="true">분쟁 사례 자료실</button>
         <button class="tab-button" type="button" id="tab-docs" data-tool="docs" role="tab" aria-selected="false">서류 가이드</button>
       </div>
 
@@ -50,22 +49,12 @@
         </div>
       </section>
 
-      <section class="section-block" id="panel-check" role="tabpanel" aria-labelledby="tab-check" hidden>
-        <div class="section-head"><div><h2>계약 전 알릴의무 셀프체크</h2><p id="check-basis"></p></div></div>
-        <div class="surface-card">
-          <div id="check-items"></div>
-          <div class="empty-inline" id="check-result" style="margin-top:16px;min-height:0;padding:16px" aria-live="polite">
-            <div><strong>점검 전</strong><span>각 항목에 예 또는 아니오로 답하면 결과가 여기에 정리됩니다. 답변은 저장되지 않습니다.</span></div>
-          </div>
-          <p style="margin:12px 0 0"><button class="tab-button" type="button" id="check-reset">전체 초기화</button></p>
-        </div>
-      </section>
-
       <section class="section-block" id="panel-docs" role="tabpanel" aria-labelledby="tab-docs" hidden>
-        <div class="section-head"><div><h2>청구 유형별 서류 가이드</h2><p id="docs-basis"></p></div></div>
-        <div class="filter-bar" id="docs-types" aria-label="청구 유형"></div>
+        <div class="section-head"><div><h2>청구 사유별 서류 가이드</h2><p id="docs-basis"></p></div></div>
+        <p class="notice" style="text-align:left;margin:0 0 16px">참고용 안내입니다. 회사·상품·약관 발행연도·청구 금액에 따라 필요 서류가 다를 수 있으며, 최종 기준은 반드시 해당 보험사입니다.</p>
+        <div class="filter-bar" id="docs-types" aria-label="청구 사유"></div>
         <div class="surface-card" id="docs-body">
-          <div class="empty-inline" style="min-height:0;padding:16px"><div><strong>청구 유형을 선택하세요</strong><span>위에서 유형을 고르면 공통 서류와 유형별 서류, 유의사항이 표시됩니다.</span></div></div>
+          <div class="empty-inline" style="min-height:0;padding:16px"><div><strong>청구 사유를 선택하세요</strong><span>위에서 사유를 고르면 공통 서류와 사유별 서류, 유의사항이 표시됩니다. 회사별 청구서 양식·접수 채널 안내는 준비 중입니다.</span></div></div>
         </div>
       </section>
 
@@ -80,7 +69,7 @@
       var esc = window.mg.esc;
 
       // 도구 탭 전환
-      var TOOLS = ["cases", "check", "docs"];
+      var TOOLS = ["cases", "docs"];
       document.querySelectorAll(".tabs-toolbar .tab-button").forEach(function (btn) {
         btn.addEventListener("click", function () {
           TOOLS.forEach(function (t) {
@@ -192,69 +181,7 @@
         if (row) { e.preventDefault(); row.click(); }
       });
 
-      // ── 도구 2: 알릴의무 셀프체크 — 답변은 화면 안에서만, 어디에도 저장하지 않는다
-      var CHECK = null;
-      var answers = {};
-      fetch("../../data/claims/disclosure-check.json")
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          CHECK = data;
-          $("check-basis").textContent = data["기준안내"];
-          renderCheck();
-        })
-        .catch(function () {
-          $("check-items").innerHTML = '<div class="list-empty">점검 항목을 불러오지 못했습니다.</div>';
-        });
-
-      function renderCheck() {
-        $("check-items").innerHTML = CHECK["항목"].map(function (it) {
-          var a = answers[it.id];
-          return '<div class="check-item" data-id="' + esc(it.id) + '">'
-            + '<div class="check-q"><span class="badge-status st-hold">' + esc(it["기간"]) + "</span> " + esc(it["질문"]) + "</div>"
-            + '<div class="check-a" role="group" aria-label="답변">'
-            + '<button type="button" class="status-btn st-reject' + (a === true ? " on" : "") + '" data-ans="yes" aria-pressed="' + (a === true) + '">예</button>'
-            + '<button type="button" class="status-btn st-met' + (a === false ? " on" : "") + '" data-ans="no" aria-pressed="' + (a === false) + '">아니오</button>'
-            + "</div></div>";
-        }).join("");
-        renderCheckResult();
-      }
-
-      function renderCheckResult() {
-        var box = $("check-result");
-        var total = CHECK["항목"].length;
-        var done = Object.keys(answers).length;
-        var yes = CHECK["항목"].filter(function (it) { return answers[it.id] === true; });
-        if (!done) {
-          box.innerHTML = "<div><strong>점검 전</strong><span>각 항목에 예 또는 아니오로 답하면 결과가 여기에 정리됩니다. 답변은 저장되지 않습니다.</span></div>";
-          return;
-        }
-        if (yes.length) {
-          box.innerHTML = "<div><strong>알려야 할 가능성이 있는 항목 " + yes.length + "건 (" + done + "/" + total + " 답변)</strong>"
-            + '<span style="text-align:left;display:block;margin-top:8px">' + yes.map(function (it) {
-                return "· [" + esc(it["기간"]) + "] " + esc(it["질문"]);
-              }).join("<br>") + "</span>"
-            + '<span style="margin-top:10px">' + esc(CHECK["결과안내"]["해당있음"]) + "</span></div>";
-        } else {
-          box.innerHTML = "<div><strong>해당 항목 없음 (" + done + "/" + total + " 답변)</strong>"
-            + "<span>" + esc(CHECK["결과안내"]["해당없음"]) + "</span></div>";
-        }
-      }
-
-      $("check-items").addEventListener("click", function (e) {
-        var btn = e.target.closest("button[data-ans]");
-        if (!btn) return;
-        var id = btn.closest(".check-item").dataset.id;
-        var val = btn.dataset.ans === "yes";
-        if (answers[id] === val) delete answers[id]; // 재클릭 = 해제
-        else answers[id] = val;
-        renderCheck();
-      });
-      $("check-reset").addEventListener("click", function () {
-        answers = {};
-        renderCheck();
-      });
-
-      // ── 도구 3: 서류 가이드
+      // ── 도구 2: 서류 가이드
       var DOCS = null;
       var docSel = null;
       fetch("../../data/claims/doc-guide.json")

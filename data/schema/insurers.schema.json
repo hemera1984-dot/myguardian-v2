@@ -1,0 +1,33 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "보험사 청구 안내 감시 명단 (data/claims/insurers.json)",
+ "description": "cron 변경 감시(B층) 대상. 청구 서류 자체가 아니라 각 회사 청구 안내 페이지의 변경만 감시한다.",
+ "type": "object",
+ "required": ["안내", "조사일", "회사"],
+ "properties": {
+  "안내": { "type": "string" },
+  "조사일": { "type": "string", "format": "date" },
+  "회사": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "required": ["코드", "구분", "이름", "홈페이지", "청구안내URL", "감시"],
+    "additionalProperties": false,
+    "properties": {
+     "코드": { "type": "string", "pattern": "^[LP][0-9]{2}$", "description": "L=생보, P=손보 + 순번" },
+     "구분": { "type": "string", "enum": ["생보", "손보"] },
+     "이름": { "type": "string", "minLength": 1 },
+     "홈페이지": { "type": "string", "format": "uri" },
+     "청구안내URL": { "type": ["string", "null"], "description": "청구 안내 페이지. null이면 공개 URL 미확인" },
+     "감시": {
+      "type": "string",
+      "enum": ["자동", "수동", "제외"],
+      "description": "자동=공개 페이지 headless 렌더링 감지 / 수동=로그인·PDF·앱전용·URL미확인 / 제외=개인 청구 대상 아님"
+     },
+     "검증필요": { "type": "boolean", "description": "cron 첫 실행 시 URL 응답·내용을 검증할 대상 (SPA·모바일 도메인 등)" },
+     "메모": { "type": "string" }
+    }
+   }
+  }
+ }
+}
