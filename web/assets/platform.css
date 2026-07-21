@@ -1851,6 +1851,25 @@ body.platform {
   }
 }
 
+/* 모바일 터치 타겟 44px 일괄 보정 (Codex 3차 중요4) */
+@media (max-width: 767px) {
+  .profile-actions button,
+  .profile-edit input,
+  .install-primary,
+  .install-secondary,
+  .install-back,
+  .status-btn,
+  .meeting-add input[type="date"],
+  .meeting-row input.mt-date,
+  .install-guide-grid .guide-card a {
+    min-height: 44px;
+  }
+  .install-back {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
 /* 케어 위젯 표지 썸네일 */
 .empty-inline .w-cover {
   width: 52px;

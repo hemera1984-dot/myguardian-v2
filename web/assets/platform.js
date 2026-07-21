@@ -11,6 +11,17 @@
       });
     },
 
+    // JSON·수집 데이터에서 온 링크의 스킴 제한 (Codex 3차 제안) — http(s)만 허용.
+    // javascript:·data: 등은 빈 링크(#)로 무력화한다. href에 넣기 전에 통과시킨다.
+    safeUrl: function (u) {
+      try {
+        var p = new URL(String(u), window.location.href);
+        return (p.protocol === "https:" || p.protocol === "http:") ? p.href : "#";
+      } catch (e) {
+        return "#";
+      }
+    },
+
     // 클립보드 복사 + 버튼 피드백
     copy: function (text, button) {
       function done() {
@@ -36,25 +47,44 @@
     }
   };
 
-  // 모바일 사이드바 토글 (+ Escape 닫기)
+  // 모바일 사이드바 토글 (+ Escape 닫기, 닫힘 시 inert로 탭 순서에서 제외 — Codex 3차 중요4)
   document.addEventListener("DOMContentLoaded", function () {
     var button = document.getElementById("mobile-menu");
     var sidebar = document.getElementById("platform-sidebar");
     var overlay = document.getElementById("platform-overlay");
     if (!button || !sidebar || !overlay) return;
-    function closeMenu() {
+    var mobile = window.matchMedia("(max-width: 767px)");
+
+    // 데스크톱: 사이드바는 항상 보이고 접근 가능. 모바일: 닫혀 있으면 화면 밖이므로
+    // inert·aria-hidden으로 키보드 탭 순서와 스크린리더에서 제외한다.
+    function syncInert() {
+      var hideFromA11y = mobile.matches && !sidebar.classList.contains("open");
+      sidebar.inert = hideFromA11y;
+      if (hideFromA11y) sidebar.setAttribute("aria-hidden", "true");
+      else sidebar.removeAttribute("aria-hidden");
+    }
+    function closeMenu(focusButton) {
       sidebar.classList.remove("open");
       overlay.classList.remove("show");
       button.setAttribute("aria-expanded", "false");
+      syncInert();
+      if (focusButton) button.focus();
     }
     button.addEventListener("click", function () {
       var open = sidebar.classList.toggle("open");
       overlay.classList.toggle("show", open);
       button.setAttribute("aria-expanded", String(open));
+      syncInert();
+      if (open) {
+        var first = sidebar.querySelector("a, button");
+        if (first) first.focus();
+      }
     });
-    overlay.addEventListener("click", closeMenu);
+    overlay.addEventListener("click", function () { closeMenu(true); });
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape") closeMenu();
+      if (e.key === "Escape" && sidebar.classList.contains("open")) closeMenu(true);
     });
+    mobile.addEventListener("change", syncInert);
+    syncInert();
   });
 })();

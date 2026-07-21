@@ -31,7 +31,7 @@
       </div>
 
       <section class="section-block" id="panel-cases" role="tabpanel" aria-labelledby="tab-cases">
-        <div class="global-search" style="margin-top:0"><input type="search" id="q" aria-label="지급사례 검색" placeholder="질병, 치료, 담보 또는 청구 상황을 검색하세요"><span class="search-state" id="result-count">-</span></div>
+        <div class="global-search" style="margin-top:0"><input type="search" id="q" aria-label="분쟁 사례 검색" placeholder="질병, 치료, 담보 또는 분쟁 상황을 검색하세요"><span class="search-state" id="result-count">-</span></div>
         <div class="filter-bar" aria-label="결정 결과 필터">
           <button class="filter-chip active" type="button" data-res="">전체</button>
           <button class="filter-chip" type="button" data-res="보험금 지급 인정">지급 인정</button>
@@ -86,7 +86,7 @@
         });
       });
 
-      // ── 도구 1: 지급사례 검색 — 사례 서비스 색인(383건)을 그대로 쓴다. 생성 금지 원칙
+      // ── 도구 1: 분쟁 사례 자료실 — 사례 서비스 색인(383건)을 그대로 쓴다. 생성 금지·판정 금지 원칙
       var ALL = [];
       var state = { q: "", res: "", sel: null };
       var GRADE_CLASS = { "검증완료": "paid", "부분검증": "partial", "미검증-참고용": "" };
@@ -150,7 +150,7 @@
           + (c.summary ? '<p class="detail-summary">' + esc(c.summary) + "</p>" : "")
           + '<p style="margin:12px 0 0;display:flex;gap:14px;flex-wrap:wrap">'
           + '<a class="detail-link" href="../cases/?id=' + encodeURIComponent(c.id) + '">사례·판례에서 자세히</a>'
-          + (c.case_source_url ? '<a class="detail-link" href="' + esc(c.case_source_url) + '" target="_blank" rel="noopener">원문 보기</a>' : "")
+          + (c.case_source_url ? '<a class="detail-link" href="' + esc(window.mg.safeUrl(c.case_source_url)) + '" target="_blank" rel="noopener">원문 보기</a>' : "")
           + "</p></div>";
       }
 
@@ -216,7 +216,7 @@
             + '<strong style="font-size:13px">' + esc(s["이름"]) + "</strong>"
             + '<p style="margin:6px 0 0;font-size:13px;color:var(--platform-ink)">' + esc(s["안내"]) + "</p>"
             + '<p style="margin:6px 0 0;font-size:12px;color:var(--platform-muted)">' + esc(s["주의"]) + "</p>"
-            + '<a class="detail-link" style="margin-top:8px" href="' + esc(s["링크"]) + '" target="_blank" rel="noopener">실손24 열기 (silson24.or.kr)</a></div>';
+            + '<a class="detail-link" style="margin-top:8px" href="' + esc(window.mg.safeUrl(s["링크"])) + '" target="_blank" rel="noopener">실손24 열기 (silson24.or.kr)</a></div>';
         }
         $("docs-body").innerHTML = "<h3 style='margin:0 0 4px'>" + esc(docSel["이름"]) + "</h3>"
           + "<h4 style='margin:14px 0 6px'>공통 서류</h4><ul style='margin:0;padding-left:20px'>"
@@ -248,7 +248,7 @@
             h.push('<div class="meeting-list">');
             rows.forEach(function (r) {
               h.push('<div class="meeting-row"><span class="badge-status ' + cls + '">' + esc(r["이름"]) + "</span>"
-                + (r["url"] ? '<a class="detail-link" href="' + esc(r["url"]) + '" target="_blank" rel="noopener">청구 안내 열기</a>' : "")
+                + (r["url"] ? '<a class="detail-link" href="' + esc(window.mg.safeUrl(r["url"])) + '" target="_blank" rel="noopener">청구 안내 열기</a>' : "")
                 + (r["오류"] ? '<span style="font-size:12px;color:var(--platform-faint)">' + esc(r["오류"]) + "</span>" : "")
                 + "</div>");
             });

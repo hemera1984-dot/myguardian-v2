@@ -311,7 +311,7 @@
               + '<input type="checkbox" data-key="' + esc(key) + '">'
               + "<span><strong>" + esc(a["제목"]) + "</strong>"
               + '<span class="news-desc">' + esc(a["요약"] || "") + "</span>"
-              + '<span class="news-meta">' + esc((a["발행일시"] || "").slice(0, 16)) + ' · <a href="' + esc(a["링크"]) + '" target="_blank" rel="noopener">원문</a></span>'
+              + '<span class="news-meta">' + esc((a["발행일시"] || "").slice(0, 16)) + ' · <a href="' + esc(window.mg.safeUrl(a["링크"])) + '" target="_blank" rel="noopener">원문</a></span>'
               + "</span></label>");
           });
         });

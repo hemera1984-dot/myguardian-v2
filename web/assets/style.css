@@ -402,13 +402,24 @@ body.simple .container {
   background: var(--surface);
   color: var(--ink-sub);
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease;
+  transition: border-color 0.14s ease, color 0.14s ease, background-color 0.14s ease;
 }
 
 .pill-tabs button.active {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-bg);
+  background: var(--accent-bg);
+  color: var(--accent-dark);
   font-weight: 700;
+}
+
+@media (max-width: 767px) {
+  .pill-tabs button,
+  .shelf-item .shelf-kakao,
+  .btn,
+  .compose-actions button,
+  .sender-row input {
+    min-height: 44px;
+  }
 }
 
 /* 발행물 목록 */
@@ -1250,13 +1261,12 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   border-radius: 6px;
   overflow: hidden;
   aspect-ratio: 3 / 4;
-  box-shadow: 0 6px 18px rgba(26, 39, 68, 0.18);
-  transition: transform 0.2s ease;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.14s ease;
 }
 
-.shelf-item:active .shelf-cover,
 .shelf-item:hover .shelf-cover {
-  transform: translateY(-3px);
+  box-shadow: 0 2px 8px rgba(16, 42, 78, 0.12);
 }
 
 .shelf-cover img {
@@ -1324,11 +1334,12 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   font-size: 0.8rem;
   color: var(--accent);
   background: none;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 4px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  padding: 6px 12px;
   cursor: pointer;
   font-family: inherit;
+  min-height: 32px;
 }
 
 @media (min-width: 720px) {
@@ -1731,10 +1742,10 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
 
 .pub-chip {
   display: inline-block;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: rgba(37, 99, 235, 0.09);
-  color: #2563eb;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: var(--accent-bg);
+  color: var(--accent-dark);
   font-size: 0.8rem;
   font-weight: 700;
 }
@@ -1749,7 +1760,7 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
 }
 
 .pub-steps li {
-  border-top: 2px solid #1a2744;
+  border-top: 2px solid var(--ink);
   padding-top: 10px;
 }
 
@@ -1776,17 +1787,17 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   font: inherit;
   font-size: 0.88rem;
   font-weight: 600;
-  border: 1px solid var(--line, #d7dce5);
+  border: 1px solid var(--line-strong);
   background: #fff;
-  border-radius: 9px;
+  border-radius: 4px;
   padding: 9px 14px;
   cursor: pointer;
-  min-height: 42px;
+  min-height: 44px;
 }
 
 .pub-desk-actions button:hover {
-  border-color: #2563eb;
-  color: #2563eb;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 @media (max-width: 640px) {
@@ -1848,16 +1859,16 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   flex: 1;
   font: inherit;
   font-size: 0.95rem;
-  border: 1px solid var(--line, #d7dce5);
-  border-radius: 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
   padding: 10px 14px;
   min-height: 44px;
 }
 
 .topic-row input:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(7, 88, 214, 0.09);
 }
 
 .news-sub {
@@ -1886,16 +1897,16 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   gap: 10px;
   align-items: flex-start;
   padding: 10px 12px;
-  border: 1px solid var(--line, #e3e7ee);
-  border-radius: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
   background: #fff;
   margin-bottom: 8px;
   cursor: pointer;
 }
 
 .news-item:has(input:checked) {
-  border-color: #2563eb;
-  background: rgba(37, 99, 235, 0.04);
+  border-color: var(--accent);
+  background: var(--accent-bg);
 }
 
 .news-item input {
@@ -1927,7 +1938,7 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
 }
 
 .news-meta a {
-  color: #2563eb;
+  color: var(--accent);
   font-weight: 600;
 }
 
@@ -2015,13 +2026,12 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   border-radius: var(--radius);
   overflow: hidden;
   color: #fff;
-  box-shadow: 0 8px 22px rgba(26, 39, 68, 0.22);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.14s ease;
 }
 
 .latest-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 14px 30px rgba(26, 39, 68, 0.3);
+  box-shadow: 0 2px 8px rgba(16, 42, 78, 0.14);
 }
 
 .latest-card .latest-bg {
@@ -2032,26 +2042,7 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   background-position: center;
 }
 
-/* 표지 확대 모션 — 손을 올리면 표지가 다가온다 (0.4초, 감속) */
-@media (prefers-reduced-motion: no-preference) {
-  .latest-card .latest-bg {
-    transition: transform 0.4s ease;
-  }
-  .latest-card:hover .latest-bg {
-    transform: scale(1.05);
-  }
-  .shelf-cover img {
-    transition: transform 0.4s ease;
-  }
-  .shelf-item a:hover .shelf-cover img {
-    transform: scale(1.05);
-  }
-  .btn:active,
-  .shelf-kakao:active,
-  .mag-nav button:active {
-    transform: scale(0.97);
-  }
-}
+/* 개정 10차(Codex 3차 중요5): 확대·리프트·눌림 모션 제거 — 색·그림자 변화만 */
 
 .latest-card .latest-body {
   position: relative;
@@ -2083,20 +2074,4 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   color: #ffd98a;
 }
 
-/* 등장 모션 — 절제된 기능 모션 (감속, 0.4초 이내, 사용자 설정 존중) */
-@media (prefers-reduced-motion: no-preference) {
-  .container > *,
-  .shelf-item,
-  .latest-card {
-    animation: mg-rise 0.35s ease both;
-  }
-  .shelf-item:nth-child(2), .container > *:nth-child(2) { animation-delay: 0.04s; }
-  .shelf-item:nth-child(3), .container > *:nth-child(3) { animation-delay: 0.08s; }
-  .shelf-item:nth-child(4), .container > *:nth-child(4) { animation-delay: 0.12s; }
-  .shelf-item:nth-child(n+5) { animation-delay: 0.16s; }
-}
-
-@keyframes mg-rise {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: none; }
-}
+/* 개정 10차(Codex 3차 중요5): 등장 모션(mg-rise) 폐기 — 형태 변화 없는 조용한 화면 */

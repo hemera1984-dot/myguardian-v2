@@ -274,7 +274,7 @@
             + '<div class="case-meta"><span>' + esc(c.code) + "</span>"
             + '<span class="badge-result">' + esc(CAT[o.category || o["카테고리"]] || o.category || o["카테고리"] || "미분류") + "</span>"
             + (st ? '<span class="badge-status ' + ST_CLASS[st] + '">' + esc(st) + "</span>" : "")
-            + (up ? '<span class="badge-status st-meet">' + up["차수"] + "차 " + esc((up["일자"] || "").slice(5)) + "</span>" : "")
+            + (up ? '<span class="badge-status st-meet">' + esc(String(up["차수"])) + "차 " + esc((up["일자"] || "").slice(5)) + "</span>" : "")
             + (n ? "<span>보유보험 " + n + "건</span>" : "")
             + "</div></div>";
         }).join("");
@@ -538,9 +538,9 @@
           list.forEach(function (it) {
             var m = it.m;
             h.push('<div class="meeting-row">'
-              + '<span class="badge-grade">' + m["차수"] + "차</span>");
+              + '<span class="badge-grade">' + esc(String(m["차수"])) + "차</span>");
             if (c.handle && m["상태"] === "예정") {
-              h.push('<input type="date" class="mt-date" value="' + esc(m["일자"] || "") + '" data-mt-idx="' + it.i + '" data-code="' + esc(c.code) + '" aria-label="' + m["차수"] + '차 미팅 일자 변경">');
+              h.push('<input type="date" class="mt-date" value="' + esc(m["일자"] || "") + '" data-mt-idx="' + it.i + '" data-code="' + esc(c.code) + '" aria-label="' + esc(String(m["차수"])) + '차 미팅 일자 변경">');
             } else {
               h.push("<span>" + esc(m["일자"] || "") + "</span>");
             }
@@ -555,7 +555,7 @@
         }
         if (c.handle) {
           h.push('<div class="meeting-add">'
-            + '<span class="badge-grade">' + nextRound(c) + "차</span>"
+            + '<span class="badge-grade">' + esc(String(nextRound(c))) + "차</span>"
             + '<input type="date" id="mt-new-date" value="' + localDate() + '" aria-label="새 미팅 일자">'
             + '<button type="button" class="status-btn st-meet" id="mt-add" data-code="' + esc(c.code) + '">일정 추가</button>'
             + '<span id="mt-msg" style="font-size:0.8rem;color:var(--platform-muted)"></span>'
@@ -564,51 +564,49 @@
         return h.join("");
       }
 
-      async function writeProfile(c) {
-        var fh = await c.handle.getFileHandle("profile.json", { create: true });
-        var w = await fh.createWritable();
-        await w.write(JSON.stringify(c.profile, null, 1));
-        await w.close();
+      // 프로필 쓰기 직렬화 (Codex 3차 중요1) — 같은 고객 profile.json에 동시 createWritable이
+      // 열리지 않게 고객코드별 Promise 체인으로 줄 세운다. 진행상태·미팅이 이 경로를 공유한다.
+      var writeChains = {};
+      function queueProfileWrite(code, task) {
+        var prev = writeChains[code] || Promise.resolve();
+        var run = prev.catch(function () {}).then(task);
+        writeChains[code] = run.catch(function () {});
+        return run;
       }
 
-      async function mutateMeetings(c, mutate, statusAfter) {
-        var before = JSON.stringify(c.profile);
-        try {
-          mutate();
-          if (statusAfter) c.profile["진행상태"] = statusAfter;
-          await writeProfile(c);
-          renderDetail(c);
-          renderList();
-        } catch (e) {
-          // 쓰기 실패 시 메모리 원복 — 화면과 파일이 갈라지지 않게 한다
-          c.profile = JSON.parse(before);
-          var msg = $("mt-msg");
-          if (msg) msg.textContent = "저장 실패 - 폴더 쓰기 권한을 확인하세요.";
-        }
-      }
-
-      async function saveStatus(c, value, btn) {
-        if (btn.disabled) return;
-        btn.disabled = true;
-        var next = custStatus(c) === value ? null : value; // 재클릭 = 해제
-        var prev = c.profile["진행상태"];
-        try {
-          if (next) c.profile["진행상태"] = next;
-          else delete c.profile["진행상태"];
+      // 변경은 현재 객체가 아니라 복제본에 적용하고, 파일 커밋이 성공한 뒤에만 c.profile을 교체한다.
+      // 실패 시 메모리는 손대지 않으므로 다른 성공 쓰기를 되돌리지 않는다.
+      function commitProfile(c, change, msgId) {
+        return queueProfileWrite(c.code, async function () {
+          var draft = JSON.parse(JSON.stringify(c.profile));
+          change(draft);
           var fh = await c.handle.getFileHandle("profile.json", { create: true });
           var w = await fh.createWritable();
-          await w.write(JSON.stringify(c.profile, null, 1));
+          await w.write(JSON.stringify(draft, null, 1));
           await w.close();
+          c.profile = draft;
           renderDetail(c);
           renderList();
-        } catch (e) {
-          // 쓰기 실패 시 메모리 상태 원복 — 화면과 파일이 갈라지지 않게 한다
-          if (prev === undefined) delete c.profile["진행상태"];
-          else c.profile["진행상태"] = prev;
-          btn.disabled = false;
-          var msg = $("status-msg");
-          if (msg) msg.textContent = "저장 실패 - 폴더 쓰기 권한을 확인하세요.";
-        }
+        }).catch(function () {
+          var m = $(msgId);
+          if (m) m.textContent = "저장 실패 - 폴더 쓰기 권한을 확인하세요.";
+        });
+      }
+
+      // mutate(draft): 복제본을 받아 미팅 배열 등을 변경한다. statusAfter는 진행상태 동기화.
+      function mutateMeetings(c, mutate, statusAfter) {
+        return commitProfile(c, function (draft) {
+          mutate(draft);
+          if (statusAfter) draft["진행상태"] = statusAfter;
+        }, "mt-msg");
+      }
+
+      function saveStatus(c, value, btn) {
+        var next = custStatus(c) === value ? null : value; // 재클릭 = 해제
+        return commitProfile(c, function (draft) {
+          if (next) draft["진행상태"] = next;
+          else delete draft["진행상태"];
+        }, "status-msg");
       }
 
       // 메모: 쓰기 연결(FSA)이면 편집·저장, 아니면 읽기 전용 표시. 저장 대상은 memo.md
@@ -649,16 +647,16 @@
           var d = $("mt-new-date").value;
           if (!d) { $("mt-msg").textContent = "일자를 선택하세요."; return; }
           var round = nextRound(c);
-          mutateMeetings(c, function () {
-            if (!c.profile["미팅"]) c.profile["미팅"] = [];
-            c.profile["미팅"].push({ "차수": round, "일자": d, "상태": "예정" });
+          mutateMeetings(c, function (draft) {
+            if (!draft["미팅"]) draft["미팅"] = [];
+            draft["미팅"].push({ "차수": round, "일자": d, "상태": "예정" });
           }, "미팅 예정");
         }
         else if (btn.dataset.mtAct && c) {
           var idx = Number(btn.dataset.mtIdx);
           var act = btn.dataset.mtAct;
-          mutateMeetings(c, function () {
-            c.profile["미팅"][idx]["상태"] = act;
+          mutateMeetings(c, function (draft) {
+            if (draft["미팅"] && draft["미팅"][idx]) draft["미팅"][idx]["상태"] = act;
           }, act === "완료" ? "미팅 완료" : "일정 취소");
         }
         else if (btn.id === "memo-save" && c) saveMemo(c, $("memo-edit").value, btn);
@@ -675,8 +673,9 @@
         var c = ALL.find(function (x) { return x.code === input.dataset.code; });
         if (!c) return;
         var idx = Number(input.dataset.mtIdx);
-        mutateMeetings(c, function () {
-          c.profile["미팅"][idx]["일자"] = input.value;
+        var newDate = input.value;
+        mutateMeetings(c, function (draft) {
+          if (draft["미팅"] && draft["미팅"][idx]) draft["미팅"][idx]["일자"] = newDate;
         }, null);
       });
 
