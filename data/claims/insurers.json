@@ -14,7 +14,7 @@
   { "코드": "L10", "구분": "생보", "이름": "DB생명", "홈페이지": "https://www.idblife.com", "청구안내URL": "https://www.idblife.com/support/guide/acbf_clm_doc", "감시": "자동", "메모": "신청준비서류 안내. DB손해보험과 별개 법인" },
   { "코드": "L11", "구분": "생보", "이름": "처브라이프생명", "홈페이지": "https://www.chubblife.co.kr", "청구안내URL": "https://www.chubblife.co.kr/front/ctmcenter/insurance/listDocu.do", "감시": "자동", "메모": "보험금 청구 구비서류. 처브손보와 별개 법인" },
   { "코드": "L12", "구분": "생보", "이름": "AIA생명", "홈페이지": "https://www.aia.co.kr", "청구안내URL": "https://www.aia.co.kr/ko/customer-support/customer-guide/forms/claims.html", "감시": "자동", "메모": "구비서류 양식. 개별 서식은 PDF 다운로드" },
-  { "코드": "L13", "구분": "생보", "이름": "메트라이프생명", "홈페이지": "https://www.metlife.co.kr", "청구안내URL": null, "감시": "수동", "메모": "청구·구비서류가 로그인 포털(cyber.metlife.co.kr) 내부. 공개 URL 미확인" },
+  { "코드": "L13", "구분": "생보", "이름": "메트라이프생명", "홈페이지": "https://www.metlife.co.kr", "청구안내URL": "https://cyber.metlife.co.kr/claim/requiredDocumentNotice", "감시": "자동", "검증필요": true, "메모": "cyber 도메인이나 비로그인 공개 SPA(Next.js). headless 렌더링 필요. 청구절차: /claim/billNotice" },
   { "코드": "L14", "구분": "생보", "이름": "라이나생명", "홈페이지": "https://www.lina.co.kr", "청구안내URL": "https://www.lina.co.kr/customer/required", "감시": "자동", "검증필요": true, "메모": "공개 구비서류안내 SPA. 처브라이프·라이나손보와 별개 법인" },
   { "코드": "L15", "구분": "생보", "이름": "푸본현대생명", "홈페이지": "https://www.fubonhyundai.com", "청구안내URL": null, "감시": "수동", "메모": "청구는 인증 로그인. 공개 청구안내 URL 미확인. 콜센터 1577-3311" },
   { "코드": "L16", "구분": "생보", "이름": "ABL생명", "홈페이지": "https://www.abllife.co.kr", "청구안내URL": "https://www.abllife.co.kr/st/custDesk/insSrvcGudn/acdtInsmClamGudn/acdtInsmClamGudn3", "감시": "자동", "검증필요": true, "메모": "사고보험금 청구·접수안내 SPA. 접수센터 1588-4404" },
@@ -40,7 +40,7 @@
   { "코드": "P13", "구분": "손보", "이름": "신한EZ손해보험", "홈페이지": "https://www.shinhanez.co.kr", "청구안내URL": "https://www.shinhanez.co.kr/static/cus/CUS50000M01.html?docInfoYn=Y", "감시": "자동", "메모": "청구안내 정적 페이지. 디지털 손보사" },
   { "코드": "P14", "구분": "손보", "이름": "캐롯손해보험", "홈페이지": "https://www.carrotins.com", "청구안내URL": "https://www.carrotins.com/desktop/reward/claim/guide/", "감시": "자동", "메모": "한화손보 계열 디지털 손보(별도 법인). 구비서류 확인" },
   { "코드": "P15", "구분": "손보", "이름": "AIG손해보험", "홈페이지": "https://www.aig.co.kr", "청구안내URL": "https://m.aig.co.kr/wm/content.html?contentId=DPWMS406", "감시": "자동", "검증필요": true, "메모": "모바일 도메인 노출. 외국계(AIG그룹)" },
-  { "코드": "P16", "구분": "손보", "이름": "처브손해보험", "홈페이지": "https://www.chubb.com/kr-kr", "청구안내URL": "https://www.chubb.com/kr-kr/claims/individual-insurance.html", "감시": "수동", "메모": "구 ACE. 실제 청구서류가 PDF 비중 큼 → PDF 감시 필요. 처브라이프와 별개" },
+  { "코드": "P16", "구분": "손보", "이름": "처브손해보험", "홈페이지": "https://www.chubb.com/kr-kr", "청구안내URL": "https://www.chubb.com/kr-kr/claims/report-a-claim.html", "감시": "자동", "메모": "구 ACE. report-a-claim.html은 로그인 없는 서버 렌더링 HTML(구비서류 텍스트 포함). 세부 서류표 PDF 병행. 처브라이프와 별개" },
   { "코드": "P17", "구분": "손보", "이름": "서울보증보험", "홈페이지": "https://www.sgic.co.kr", "청구안내URL": "https://www.sgic.co.kr/chp/iutf/hp/bbs/CHPINFO102VM0.mvc", "감시": "자동", "메모": "보증보험 전업. 제출서류 안내는 공개, 청구는 인증서 로그인" },
   { "코드": "P18", "구분": "손보", "이름": "예별손해보험", "홈페이지": "https://www.yebyeol.co.kr", "청구안내URL": "https://www.yebyeol.co.kr/RW031010DM.scp?menuId=MN0501020", "감시": "자동", "메모": "MG손해보험 전 계약이 2025.9 이전된 가교보험사(예금보험공사 100% 출자). 구비서류안내 공개 HTML. 구 mggeneralins.com은 여기로 302 리다이렉트. 대표 1588-5959" },
   { "코드": "P19", "구분": "손보", "이름": "코리안리재보험", "홈페이지": "https://www.koreanre.co.kr", "청구안내URL": null, "감시": "제외", "메모": "재보험 전업(B2B). 개인 청구 대상 아님. 감시 제외" }

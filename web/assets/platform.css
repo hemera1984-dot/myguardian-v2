@@ -1851,7 +1851,7 @@ body.platform {
   }
 }
 
-/* 모바일 터치 타겟 44px 일괄 보정 (Codex 3차 중요4) */
+/* 모바일 터치 타겟 44px 일괄 보정 (Codex 3차 중요4·재검수) */
 @media (max-width: 767px) {
   .profile-actions button,
   .profile-edit input,
@@ -1861,7 +1861,10 @@ body.platform {
   .status-btn,
   .meeting-add input[type="date"],
   .meeting-row input.mt-date,
-  .install-guide-grid .guide-card a {
+  .install-guide-grid .guide-card a,
+  .install-main input,
+  .install-main select,
+  .install-main button {
     min-height: 44px;
   }
   .install-back {

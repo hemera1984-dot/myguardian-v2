@@ -67,17 +67,22 @@
       sidebar.classList.remove("open");
       overlay.classList.remove("show");
       button.setAttribute("aria-expanded", "false");
-      syncInert();
+      // inert를 걸기 전에 포커스를 먼저 햄버거로 옮긴다 — inert 적용 순간
+      // 사이드바 안에 있던 포커스가 body로 튕겨 나가지 않도록.
       if (focusButton) button.focus();
+      syncInert();
     }
     button.addEventListener("click", function () {
       var open = sidebar.classList.toggle("open");
       overlay.classList.toggle("show", open);
       button.setAttribute("aria-expanded", String(open));
-      syncInert();
       if (open) {
-        var first = sidebar.querySelector("a, button");
-        if (first) first.focus();
+        syncInert(); // 먼저 inert 해제해야 포커스가 들어간다
+        // 첫 포커스는 브랜드 로고가 아니라 첫 실제 메뉴 항목으로
+        var firstMenu = sidebar.querySelector(".platform-nav a, .platform-nav button");
+        if (firstMenu) firstMenu.focus();
+      } else {
+        closeMenu(true);
       }
     });
     overlay.addEventListener("click", function () { closeMenu(true); });
