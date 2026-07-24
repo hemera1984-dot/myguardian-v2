@@ -34,6 +34,7 @@
         <button type="button" class="tab-button active" id="tab-today" role="tab" aria-selected="true">오늘</button>
         <button type="button" class="tab-button" id="tab-members" role="tab" aria-selected="false">팀원</button>
         <button type="button" class="tab-button" id="tab-calendar" role="tab" aria-selected="false">캘린더</button>
+        <button type="button" class="tab-button" id="tab-org" role="tab" aria-selected="false">조직</button>
       </div>
 
       <div class="team-layout">
@@ -100,6 +101,13 @@
               </div>
               <p class="range-label" id="cal-label"></p>
               <div class="cal-wrap" id="cal-box"></div>
+            </section>
+          </div>
+
+          <div id="panel-org" role="tabpanel" hidden>
+            <section class="section-block first" aria-labelledby="org-title">
+              <div class="section-head"><div><h2 id="org-title">조직도</h2><p>직급 위계입니다. 편집은 관리자 설정에서 합니다.</p></div></div>
+              <article class="surface-card"><div id="org-tree"><p class="feed-empty">조직도를 불러오는 중입니다.</p></div></article>
             </section>
           </div>
 
@@ -446,8 +454,36 @@
         }).join("");
       }
 
+      // ── 조직 탭 (org.json 읽기 전용 트리) ──
+      function renderOrg() {
+        fetch("../../data/team/org.json", { cache: "no-store" })
+          .then(function (r) { return r.json(); })
+          .then(function (org) {
+            var ranks = {};
+            (org["직급표"] || []).forEach(function (r) { ranks[r["코드"]] = r["이름"]; });
+            var members = org["구성원"] || [];
+            function childrenOf(code) { return members.filter(function (m) { return m["상위"] === code; }); }
+            function node(m, depth) {
+              var h = ['<div class="org-node" style="margin-left:' + (depth * 24) + 'px">'
+                + '<span class="badge-status st-meet">' + esc(ranks[m["직급"]] || m["직급"]) + "</span>"
+                + '<strong style="font-size:13px">' + esc(m["이름"]) + "</strong>"
+                + (m["총관리자"] ? '<span class="badge-grade">총관리자</span>' : "")
+                + (m["상태"] === "미초대" ? '<span class="badge-status st-hold">미초대</span>' : "")
+                + "</div>"];
+              childrenOf(m["코드"]).forEach(function (c) { h.push(node(c, depth + 1)); });
+              return h.join("");
+            }
+            var roots = members.filter(function (m) { return !m["상위"] || !members.some(function (p) { return p["코드"] === m["상위"]; }); });
+            document.getElementById("org-tree").innerHTML = roots.length
+              ? roots.map(function (r) { return node(r, 0); }).join("")
+              : '<p class="feed-empty">등록된 구성원이 없습니다.</p>';
+          })
+          .catch(function () { document.getElementById("org-tree").innerHTML = '<p class="feed-empty">조직도를 불러오지 못했습니다.</p>'; });
+      }
+      renderOrg();
+
       // ── 탭 전환 ──
-      var tabs = { "tab-today": "panel-today", "tab-members": "panel-members", "tab-calendar": "panel-calendar" };
+      var tabs = { "tab-today": "panel-today", "tab-members": "panel-members", "tab-calendar": "panel-calendar", "tab-org": "panel-org" };
       Object.keys(tabs).forEach(function (tid) {
         document.getElementById(tid).addEventListener("click", function () {
           Object.keys(tabs).forEach(function (t) {
