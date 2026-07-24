@@ -1,5 +1,26 @@
 ﻿# handoff — 세션 인수인계
 
+## 2026-07-21~24 — 청구·보험사감시·Codex 3차 검수 대응 (main, push 완료)
+
+- **청구·지급 재정의**: 판정 도구 금지 원칙. 알릴의무 셀프체크 제거, "분쟁 사례 자료실"로
+  재명명, 서류 가이드 12유형(자동차·운전자·치아·배상책임·펫 + 실손24 안내).
+- **보험사 청구 안내 변경 감시(3단계 완성)**: data/claims/insurers.json(생보22+손보18=40사),
+  pipeline/monitor_insurers.py(headless 지문 비교, 부분실행 보존), monitor-state.json(baseline),
+  청구 화면 "변경 현황" 패널. **작업 스케줄러 MyGuardianInsurerMonitor 매달 1일 09:00 자동**.
+  자동 감시 37곳 / 수동 3곳(푸본현대·카카오페이·동양). MG→예별손보 갱신, 처브·메트 자동 편입.
+- **관리자 화면**(web/admin/): 운영실 문패 → 카톡 초대 문구 + 편집형 조직도(직급·소속·추가·삭제,
+  순환 방지). org.json(직급표 BM/ESL/SSL/GSL/FC + 구성원 트리).
+- **Codex 3차 검수 대응 완료**(findings-03.md): 치명1(미팅차수 XSS)·중요1~6·제안 전건 수정.
+  재검수(3-B)는 Codex가 XSS 문자열에 대한 ChatGPT 보안필터로 중단 → 시공자가 중요4(모바일
+  사이드바 inert·포커스·44px) 이어받아 보완. response-03.md에 기록. **배포 판정: 이제 가능 추정**
+  (치명·중요 전건 해소, 자동 테스트 통과). 정식 재검수는 다음에 PR 방식으로.
+- 결정 추가: 로그인=구글 OAuth+관리자 승인(실현성·비용 조사 완료), 백엔드 전부 NCP(월 12~21만원
+  견적), 외부 반출 마스킹(안*민/010-xxxx-1234), 조인웍 초대 공유.
+- 조사 완료(대화 전달, 미커밋): NCP 실비용 / 구글OAuth+NCP 실현성 / 감시 수동 5곳 재조사.
+- 검증 자산(scratchpad, 미커밋): test_xss·test_a11y·test_concurrency·test_status·test_meetings·test_org.
+- **다음 세션 우선순위**: ① 예전 PC 파일 복사(mg-clients·naver-keys — docs/migration-todo.md)
+  → 고객관리 실사용·보장분석 착공 ② 2차 공사(NCP) STEP1 착공 판단 ③ 다음 검수는 PR 방식.
+
 ## 2026-07-20 밤 — 세션 마감: 2차 설계 확정·미팅 일정·스플래시 수정 (main, push 완료)
 
 - **2차 공사 요구사항 사실상 확정** (전부 decisions.md):
