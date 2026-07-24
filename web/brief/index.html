@@ -65,6 +65,16 @@
     .local-summary strong { font-size: 15px; }
     .local-summary span { display: block; margin-top: 3px; color: var(--platform-muted); font-size: 13px; }
     .local-error { margin-top: 12px; color: var(--platform-denied); font-size: 13px; }
+    /* 내 라이브러리 목차 */
+    .library-list { border-top: 1px solid var(--platform-line); }
+    .lib-item { display: flex; align-items: baseline; gap: 14px; border-bottom: 1px solid var(--platform-line); padding: 14px 4px; }
+    .lib-num { min-width: 24px; font-weight: 700; font-size: 14px; color: var(--platform-faint); font-variant-numeric: tabular-nums; }
+    .lib-main { flex: 1; text-align: left; font: inherit; background: none; border: none; padding: 0; cursor: pointer; }
+    .lib-main:hover .l-title { color: var(--platform-blue); }
+    .lib-main .l-title { display: flex; align-items: baseline; gap: 8px; font-weight: 700; font-size: 15px; }
+    .lib-main .l-meta { display: block; margin-top: 4px; color: var(--platform-faint); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+    .lib-del { border: none; background: none; font: inherit; font-size: 12.5px; color: var(--platform-faint); cursor: pointer; padding: 2px 4px; transition: color 0.14s ease; }
+    .lib-del:hover { color: var(--platform-denied); }
   </style>
 </head>
 <body class="platform">
@@ -96,6 +106,11 @@
         </div>
       </section>
 
+      <section class="section-block" id="library-section" hidden aria-labelledby="lib-title">
+        <div class="section-head"><div><h2 id="lib-title">내 라이브러리</h2><p>탑재한 발표 자료 목차입니다. 제목을 누르면 바로 발표합니다. 이 브라우저에만 저장되며 저장소·외부로 전송되지 않습니다.</p></div></div>
+        <div id="library-list" class="library-list"></div>
+      </section>
+
       <section class="section-block" id="doc-section" hidden aria-labelledby="doc-title">
         <div class="section-head"><div><h2 id="doc-title">자료 선택</h2><p id="doc-desc"></p></div></div>
         <div class="home-panels">
@@ -117,7 +132,7 @@
               <strong id="local-title"></strong>
               <span id="local-meta"></span>
               <span id="local-script-meta"></span>
-              <div class="local-actions"><button class="local-button primary" id="local-start" type="button">발표 시작</button></div>
+              <div class="local-actions"><button class="local-button primary" id="local-start" type="button">발표 시작</button><button class="local-button" id="local-save" type="button">라이브러리에 탑재</button></div>
             </div>
             <p class="local-error" id="local-error" hidden></p>
           </article>
@@ -169,6 +184,64 @@
         });
       }
 
+      function kindLabel(k) {
+        return { doc: "브리핑 문서", pdf: "PDF", images: "이미지", html: "HTML" }[k] || "자료";
+      }
+
+      // 탑재 자료를 발표 슬롯에 싣고 발표자 화면으로 이동
+      function presentRecord(record) {
+        window.mgBrief.saveMaterial(record).then(function () {
+          window.location.href = "present.html?local=1";
+        }).catch(function (err) {
+          showLocalError("발표 자료를 여는 데 실패했습니다: " + err.message);
+        });
+      }
+
+      function renderLibrary() {
+        var box = document.getElementById("library-list");
+        window.mgBrief.libraryList().then(function (items) {
+          box.textContent = "";
+          var rows = items.filter(function (it) { return it["모드"] === mode; });
+          rows.sort(function (a, b) { return String(b["등록일"] || "").localeCompare(String(a["등록일"] || "")); });
+          if (!rows.length) {
+            var empty = el("div", "empty-inline");
+            var inner = el("div");
+            inner.appendChild(el("strong", null, "탑재한 자료 없음"));
+            inner.appendChild(el("span", null, "아래 '내 컴퓨터에서 열기'로 슬라이드·스크립트를 올린 뒤 '라이브러리에 탑재'를 누르면 목차에 남습니다."));
+            empty.appendChild(inner);
+            box.appendChild(empty);
+            return;
+          }
+          rows.forEach(function (it, i) {
+            var row = el("div", "lib-item");
+            row.appendChild(el("span", "lib-num", String(i + 1)));
+            var main = el("button", "lib-main");
+            main.type = "button";
+            var title = el("span", "l-title");
+            title.appendChild(el("span", "mode-tag", kindLabel(it.kind)));
+            title.appendChild(el("span", null, it["제목"] || it["이름"] || "제목 없음"));
+            main.appendChild(title);
+            var pages = it.kind === "doc" && it.doc && it.doc["페이지"] ? it.doc["페이지"].length + "페이지"
+              : it.kind === "images" && it.files ? it.files.length + "페이지" : null;
+            var bits = [];
+            if (pages) bits.push(pages);
+            bits.push(it["스크립트"] ? "스크립트 " + it["스크립트"].length + "구간" : "스크립트 없음");
+            bits.push(String(it["등록일"] || "").slice(0, 10) + " 탑재");
+            main.appendChild(el("span", "l-meta", bits.join(" · ")));
+            main.addEventListener("click", function () { presentRecord(it); });
+            row.appendChild(main);
+            var del = el("button", "lib-del", "삭제");
+            del.type = "button";
+            del.addEventListener("click", function () {
+              if (!window.confirm("'" + (it["제목"] || it["이름"]) + "'을(를) 라이브러리에서 삭제할까요?")) return;
+              window.mgBrief.libraryDelete(it.id).then(renderLibrary);
+            });
+            row.appendChild(del);
+            box.appendChild(row);
+          });
+        }).catch(function () {});
+      }
+
       function selectMode(next) {
         mode = next;
         document.querySelectorAll(".mode-grid .action-card").forEach(function (c) {
@@ -177,11 +250,14 @@
         document.getElementById("doc-section").hidden = false;
         var isCounsel = mode === "상담";
         document.getElementById("list-card").hidden = isCounsel;
+        // 상담 자료는 개인정보라 목차에 남기지 않는다.
+        document.getElementById("library-section").hidden = isCounsel;
         document.getElementById("doc-desc").textContent = isCounsel
           ? "상담 문서는 개인정보가 들어 있어 공개 자료로 두지 않습니다. 로컬 고객 저장소(mg-clients)의 문서를 파일로 여세요."
           : mode + " 모드로 진행할 자료를 고르세요.";
-        if (!isCounsel) renderList();
-        document.getElementById("doc-section").scrollIntoView({ behavior: "smooth", block: "start" });
+        if (!isCounsel) { renderList(); renderLibrary(); }
+        document.getElementById(isCounsel ? "doc-section" : "library-section")
+          .scrollIntoView({ behavior: "smooth", block: "start" });
       }
 
       document.querySelectorAll(".mode-grid .action-card").forEach(function (c) {
@@ -316,15 +392,37 @@
         reader.readAsText(f, "utf-8");
       });
 
+      // 탑재된 자료(record)에 발표·목차에 필요한 메타를 채운다
+      function decorate(record) {
+        record["모드"] = mode || null;
+        record["제목"] = pending["제목"];
+        if (scriptSections) record["스크립트"] = scriptSections;
+        return record;
+      }
+
       document.getElementById("local-start").addEventListener("click", function () {
         if (!pending) return;
-        var record = pending.record;
-        record["모드"] = mode || null;
-        if (scriptSections) record["스크립트"] = scriptSections;
-        window.mgBrief.saveMaterial(record).then(function () {
+        window.mgBrief.saveMaterial(decorate(pending.record)).then(function () {
           window.location.href = "present.html?local=1";
         }).catch(function (err) {
           showLocalError("자료를 저장하지 못했습니다: " + err.message);
+        });
+      });
+
+      document.getElementById("local-save").addEventListener("click", function () {
+        if (!pending || mode === "상담") return;
+        var record = decorate(pending.record);
+        record["등록일"] = new Date().toLocaleString("sv-SE"); // 로컬 "YYYY-MM-DD HH:mm:ss" — 정렬 가능
+        window.mgBrief.libraryPut(record).then(function () {
+          summary.hidden = true;
+          pending = null;
+          scriptSections = null;
+          input.value = "";
+          scriptInput.value = "";
+          renderLibrary();
+          document.getElementById("library-section").scrollIntoView({ behavior: "smooth", block: "start" });
+        }).catch(function (err) {
+          showLocalError("라이브러리에 탑재하지 못했습니다: " + err.message);
         });
       });
     })();

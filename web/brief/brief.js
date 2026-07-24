@@ -268,8 +268,13 @@
 
   function openDb() {
     return new Promise(function (resolve, reject) {
-      var req = window.indexedDB.open("mg-brief", 1);
-      req.onupgradeneeded = function () { req.result.createObjectStore("materials"); };
+      var req = window.indexedDB.open("mg-brief", 2);
+      req.onupgradeneeded = function () {
+        var db = req.result;
+        // materials: 발표 중인 자료 단일 슬롯("current"). library: 탑재한 자료 목차(record.id 키).
+        if (!db.objectStoreNames.contains("materials")) db.createObjectStore("materials");
+        if (!db.objectStoreNames.contains("library")) db.createObjectStore("library", { keyPath: "id" });
+      };
       req.onsuccess = function () { resolve(req.result); };
       req.onerror = function () { reject(req.error); };
     });
@@ -293,6 +298,45 @@
         var req = tx.objectStore("materials").get("current");
         req.onsuccess = function () { db.close(); resolve(req.result || null); };
         req.onerror = function () { db.close(); reject(req.error); };
+      });
+    });
+  }
+
+  // ---------- 라이브러리 (IndexedDB "library" 스토어) ----------
+  // 탑재한 발표 자료를 record.id 키로 여러 개 보관한다. 목차로 훑고 골라서 발표한다.
+  // 저장소(git)에는 올라가지 않고 이 브라우저에만 남는다 — 개인정보·상담 자료 보호.
+  // ponytail: 목록 조회는 getAll — 파일 blob까지 다 읽는다. 항목이 수백 개로 커지면
+  // 메타 전용 스토어를 분리한다. 개인 자료 목차 규모(수~수십 개)에선 이대로 충분.
+
+  function libraryPut(record) {
+    return openDb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction("library", "readwrite");
+        tx.objectStore("library").put(record);
+        tx.oncomplete = function () { db.close(); resolve(); };
+        tx.onerror = function () { db.close(); reject(tx.error); };
+      });
+    });
+  }
+
+  function libraryList() {
+    return openDb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction("library", "readonly");
+        var req = tx.objectStore("library").getAll();
+        req.onsuccess = function () { db.close(); resolve(req.result || []); };
+        req.onerror = function () { db.close(); reject(req.error); };
+      });
+    });
+  }
+
+  function libraryDelete(id) {
+    return openDb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction("library", "readwrite");
+        tx.objectStore("library").delete(id);
+        tx.oncomplete = function () { db.close(); resolve(); };
+        tx.onerror = function () { db.close(); reject(tx.error); };
       });
     });
   }
@@ -488,6 +532,9 @@
     channelName: channelName,
     saveMaterial: saveMaterial,
     loadMaterial: loadMaterial,
+    libraryPut: libraryPut,
+    libraryList: libraryList,
+    libraryDelete: libraryDelete,
     parseScriptText: parseScriptText,
     parseScriptHtml: parseScriptHtml,
     parseScriptPdf: parseScriptPdf,

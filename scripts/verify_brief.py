@@ -13,6 +13,7 @@
   10. PDF 업로드(3페이지)가 페이지 동기화·스크립트 사이드카("---" 구간)와 함께 동작하는가
   11. HTML 업로드의 스크롤이 청중 창에 동기화되는가
   12. 스크립트를 PDF(페이지=구간)·HTML(hr 구분)로 올려도 페이지별로 연결되는가
+  13. 라이브러리 탑재 자료가 재접속 후에도 목차에 남고, 모드가 분리되며, 목차에서 발표되는가
 seek 검증은 발표자가 실제로 이동했는지(≥1.0s)를 전제로 단언한다 — 거짓 양성 방지.
 업로드 픽스처(PDF·스크립트·HTML)는 실행 시 scripts/fixtures/brief/에 생성한다.
 추가로 3해상도(1920/1180/390) 스크린샷을 scripts/shots/에 저장한다.
@@ -452,6 +453,38 @@ def main() -> None:
                 "PDF 스크립트 페이지=구간 전환, HTML hr 구분 3구간 파싱",
             )
             se.close()
+
+            # 13. 라이브러리 탑재 → 목차 지속 → 목차에서 발표
+            le = ctx.new_page()
+            watch_console(le, errors, "library")
+            le.goto(f"{base}/web/brief/index.html", wait_until="networkidle")
+            le.locator(".mode-grid .action-card[data-mode='교육']").click()
+            le.wait_for_selector("#library-section:not([hidden])")
+            le.set_input_files("#file-input", str(pdf_path))
+            le.set_input_files("#script-input", str(txt_path))
+            le.wait_for_selector("#local-summary:not([hidden])")
+            le.locator("#local-save").click()
+            le.wait_for_selector(".lib-item")
+            # 재접속 지속 + 모드 분리(강의엔 안 보임)
+            le.reload(wait_until="networkidle")
+            le.locator(".mode-grid .action-card[data-mode='교육']").click()
+            le.wait_for_selector(".lib-item")
+            persisted = le.locator(".lib-item").count() == 1
+            le.locator(".mode-grid .action-card[data-mode='강의']").click()
+            le.wait_for_selector("#library-section:not([hidden])")
+            le.wait_for_timeout(200)
+            mode_split = le.locator(".lib-item").count() == 0
+            le.locator(".mode-grid .action-card[data-mode='교육']").click()
+            le.wait_for_selector(".lib-main")
+            le.locator(".lib-main").first.click()
+            le.wait_for_url("**/present.html?local=1", timeout=6000)
+            le.wait_for_selector("#count", timeout=8000)
+            check(
+                "라이브러리 탑재·목차 지속·목차 발표",
+                persisted and mode_split,
+                "재접속 지속 + 교육/강의 모드 분리 + 목차 클릭→발표 이동",
+            )
+            le.close()
 
             # --- 검증 7: 콘솔 오류 ---
             check("콘솔 오류 0건", not errors, "; ".join(errors[:4]))
