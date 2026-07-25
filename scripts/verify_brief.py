@@ -12,7 +12,7 @@
   9. 로컬 청중 창을 발표자보다 먼저 열어도 동기화되는가
   10. PDF 업로드(3페이지)가 페이지 동기화·스크립트 사이드카("---" 구간)와 함께 동작하는가
   11. HTML 업로드의 스크롤이 청중 창에 동기화되는가
-  12. 스크립트를 PDF(페이지=구간)·HTML(hr 구분)로 올려도 페이지별로 연결되는가
+  12. 스크립트 PDF는 전체를 두루마리로 렌더하고 슬라이드와 분리되는가(HTML은 hr 구분 파싱)
   13. 라이브러리 탑재 자료가 재접속 후에도 목차에 남고, 모드가 분리되며, 목차에서 발표되는가
 seek 검증은 발표자가 실제로 이동했는지(≥1.0s)를 전제로 단언한다 — 거짓 양성 방지.
 업로드 픽스처(PDF·스크립트·HTML)는 실행 시 scripts/fixtures/brief/에 생성한다.
@@ -441,20 +441,24 @@ def main() -> None:
             )
             se.locator("#local-start").click()
             se.wait_for_selector("#count")
-            # 스크립트 PDF는 텍스트 추출 없이 페이지를 원본 그대로 캔버스로 렌더 → 페이지별 전환
-            se.wait_for_selector("#script-body canvas", timeout=6000)
-            canvas1 = se.locator("#script-body canvas").count() == 1
+            # 스크립트 PDF는 전체 페이지를 두루마리로 렌더하고 슬라이드와 분리 — 3페이지 = 캔버스 3개
+            se.wait_for_function(
+                "() => document.querySelectorAll('#script-body canvas').length === 3",
+                timeout=6000,
+            )
+            all_pages = se.locator("#script-body canvas").count() == 3
+            # 슬라이드를 넘겨도 스크립트는 그대로(분리) — 캔버스 수·내용 불변
             se.keyboard.press("ArrowRight")
             se.wait_for_function(
                 "() => document.getElementById('count').textContent.trim().indexOf('2') === 0",
                 timeout=4000,
             )
-            se.wait_for_selector("#script-body canvas", timeout=4000)
-            canvas2 = se.locator("#script-body canvas").count() == 1
+            se.wait_for_timeout(300)
+            decoupled = se.locator("#script-body canvas").count() == 3
             check(
-                "스크립트 PDF 원본 렌더 · HTML 스크립트 파싱",
-                html_parse_ok and canvas1 and canvas2,
-                "스크립트 PDF를 페이지 캔버스로 렌더(1→2 전환), HTML hr 3구간 파싱",
+                "스크립트 PDF 두루마리 렌더 · 슬라이드와 분리 · HTML 파싱",
+                html_parse_ok and all_pages and decoupled,
+                "스크립트 PDF 3페이지 전체 렌더, 슬라이드 넘겨도 스크립트 불변, HTML hr 3구간 파싱",
             )
             se.close()
 

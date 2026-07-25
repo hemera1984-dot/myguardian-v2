@@ -162,40 +162,38 @@
           .catch(function () { scriptPdf = null; }); // 실패하면 스크립트 없음으로 진행
       }
 
-      // 스크립트 PDF의 n페이지를 원본 서식 그대로 캔버스로 렌더 (텍스트 추출 없이)
-      function renderScriptPdf(container, n) {
-        var seq = ++scriptSeq;
-        if (n > scriptPdfCount) {
-          container.textContent = "이 페이지의 스크립트가 없습니다.";
-          container.classList.add("empty");
-          return;
-        }
+      // 스크립트 PDF 전체 페이지를 세로로 이어붙여 한 번만 렌더한다 (긴 두루마리).
+      // 슬라이드와 분리 — 페이지 경계가 슬라이드와 안 맞아도 상관없이 자유 스크롤.
+      function renderScriptPdfAll() {
+        var container = document.getElementById("script-body");
+        container.textContent = "";
         container.classList.remove("empty");
-        scriptPdf.getPage(n).then(function (page) {
-          if (seq !== scriptSeq) return;
-          var width = container.clientWidth || 500;
-          var raw = page.getViewport({ scale: 1 });
-          var viewport = page.getViewport({ scale: (width / raw.width) * 2 }); // 2배 렌더 — 선명도
-          var canvas = document.createElement("canvas");
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          canvas.style.width = (100 * scriptZoom) + "%"; // 줌 배율만큼 확대(넘치면 스크롤)
-          canvas.style.height = "auto";
-          canvas.style.display = "block";
-          return page.render({ canvasContext: canvas.getContext("2d"), viewport: viewport }).promise.then(function () {
-            if (seq !== scriptSeq) return;
-            container.textContent = "";
+        var width = container.clientWidth || 500;
+        for (var n = 1; n <= scriptPdfCount; n += 1) {
+          (function (pageNum) {
+            // 순서 보장: 캔버스를 먼저 순서대로 붙이고, 렌더는 비동기로 채운다
+            var canvas = document.createElement("canvas");
+            canvas.className = "pr-script-page";
+            canvas.style.width = (100 * scriptZoom) + "%";
+            canvas.style.height = "auto";
+            canvas.style.display = "block";
             container.appendChild(canvas);
-          });
-        }).catch(function () {});
+            scriptPdf.getPage(pageNum).then(function (page) {
+              var raw = page.getViewport({ scale: 1 });
+              var viewport = page.getViewport({ scale: (width / raw.width) * 2 }); // 2배 — 선명도
+              canvas.width = viewport.width;
+              canvas.height = viewport.height;
+              page.render({ canvasContext: canvas.getContext("2d"), viewport: viewport });
+            }).catch(function () {});
+          })(n);
+        }
       }
 
       // 스크립트 확대/축소 — 텍스트는 폰트, PDF(캔버스)는 표시 폭에 배율 적용. 설정은 저장.
       function applyScriptZoom() {
         var sb = document.getElementById("script-body");
         sb.style.fontSize = Math.round(SCRIPT_BASE * scriptZoom) + "px";
-        var c = sb.querySelector("canvas");
-        if (c) c.style.width = (100 * scriptZoom) + "%";
+        sb.querySelectorAll("canvas").forEach(function (c) { c.style.width = (100 * scriptZoom) + "%"; });
         try { localStorage.setItem("mg-brief-script-zoom", String(scriptZoom)); } catch (e) {}
       }
 
@@ -205,12 +203,10 @@
       }
 
       function updateScript() {
+        // 스크립트 PDF는 슬라이드와 분리 — 페이지를 넘겨도 그대로 둔다(직접 스크롤).
+        if (scriptPdf) return;
         var scriptBody = document.getElementById("script-body");
-        scriptBody.scrollTop = 0; // 페이지가 바뀌면 스크립트도 맨 위부터 보이게
-        if (scriptPdf) {
-          renderScriptPdf(scriptBody, current);
-          return;
-        }
+        scriptBody.scrollTop = 0; // 페이지별 스크립트(문서/텍스트)는 넘길 때 맨 위부터
         var text = driver.scriptFor(current);
         if (text) {
           scriptBody.textContent = text;
@@ -323,6 +319,7 @@
         }
 
         goTo(1);
+        if (scriptPdf) renderScriptPdfAll(); // 스크립트 PDF는 시작 시 전체를 한 번 렌더
         applyScriptZoom();
         document.getElementById("script-bigger").addEventListener("click", function () { zoomScript(0.15); this.blur(); });
         document.getElementById("script-smaller").addEventListener("click", function () { zoomScript(-0.15); this.blur(); });

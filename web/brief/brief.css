@@ -459,6 +459,13 @@ body.brief-present {
   font-size: 14px;
 }
 
+/* 스크립트 PDF 두루마리 — 페이지 사이 간격 */
+.pr-script-page + .pr-script-page {
+  margin-top: 14px;
+  border-top: 1px solid var(--brief-line);
+  padding-top: 14px;
+}
+
 .pr-next {
   flex: 0 0 auto;
 }
