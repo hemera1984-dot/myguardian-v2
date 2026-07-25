@@ -1,10 +1,10 @@
 // 마이가디언 서비스 워커 — 앱 셸 캐시 (디자인 개정 10차, 스레드 인텔리전스 방식 계승)
-// 전략: 화면 이동(navigate) = 네트워크 우선 + 캐시 폴백 (오프라인에서도 열림)
-//       정적 자산(css/js/img) = 캐시 응답 + 백그라운드 갱신 (다음 로드에 최신 반영)
-//       데이터(JSON) = 네트워크 우선 + 캐시 폴백 (항상 최신, 끊기면 마지막 사본)
-// v2 → v3(Codex 3차 중요2): 오류 응답이 정상 캐시를 덮던 문제 + 백그라운드 갱신을
-//   waitUntil로 보장. cacheable() 게이트로 2xx·basic 응답만 저장한다.
-var CACHE_NAME = "myguardian-shell-v3";
+// 전략(v4): 동일 출처 GET 전부 = 네트워크 우선 + 캐시 폴백.
+//   온라인이면 항상 최신을 받고(배포 즉시 반영), 끊기면 마지막 정상 사본을 쓴다.
+// v3까지 정적 자산(css/js)을 "캐시 우선"으로 두어, 배포해도 낡은 CSS·JS가 남아
+//   화면이 안 바뀌던 문제(다음 로드까지 지연)를 없앤다. 오프라인 지원은 캐시 폴백으로 유지.
+// cacheable() 게이트로 2xx·basic 응답만 저장한다(오류 응답이 정상 캐시를 덮지 않게).
+var CACHE_NAME = "myguardian-shell-v4";
 var APP_SHELL = [
   "./",
   "index.html",
@@ -43,42 +43,21 @@ self.addEventListener("fetch", function (e) {
   var url = new URL(req.url);
   if (url.origin !== location.origin) return; // CDN 등 외부는 브라우저 기본 동작
 
-  // 화면 이동·데이터: 네트워크 우선, 실패·오류(4xx/5xx) 시 캐시 폴백
-  var isData = url.pathname.indexOf("/data/") !== -1 || url.pathname.slice(-5) === ".json";
-  if (req.mode === "navigate" || isData) {
-    e.respondWith(
-      fetch(req).then(function (resp) {
-        if (cacheable(resp)) {
-          var copy = resp.clone();
-          e.waitUntil(caches.open(CACHE_NAME).then(function (cache) { return cache.put(req, copy); }));
-          return resp;
-        }
-        // 비정상 HTTP 응답은 캐시하지 않고, 기존 정상 캐시가 있으면 그걸 반환
-        return caches.match(req).then(function (hit) { return hit || resp; });
-      }).catch(function () {
-        return caches.match(req).then(function (hit) {
-          return hit || caches.match("index.html");
-        });
-      })
-    );
-    return;
-  }
-
-  // 정적 자산: 캐시 응답 + 백그라운드 갱신 (stale-while-revalidate)
-  // 캐시가 있으면 즉시 쓰되, 갱신 완료를 waitUntil로 보장해 다음 로드에 최신 반영
+  // 동일 출처 GET 전부: 네트워크 우선, 오류(4xx/5xx)·오프라인 시 캐시 폴백.
+  // 배포 즉시 최신을 받도록 캐시 우선을 쓰지 않는다. 정상 응답은 다음 오프라인을 위해 캐시.
   e.respondWith(
-    caches.match(req).then(function (hit) {
-      var refresh = fetch(req).then(function (resp) {
-        if (cacheable(resp)) {
-          var copy = resp.clone();
-          return caches.open(CACHE_NAME).then(function (cache) {
-            return cache.put(req, copy);
-          }).then(function () { return resp; });
-        }
+    fetch(req).then(function (resp) {
+      if (cacheable(resp)) {
+        var copy = resp.clone();
+        e.waitUntil(caches.open(CACHE_NAME).then(function (cache) { return cache.put(req, copy); }));
         return resp;
-      }).catch(function () { return hit; });
-      if (hit) e.waitUntil(refresh); // 캐시 반환 시에도 갱신은 끝까지 진행
-      return hit || refresh;
+      }
+      // 비정상 HTTP 응답은 캐시하지 않고, 기존 정상 캐시가 있으면 그걸 반환
+      return caches.match(req).then(function (hit) { return hit || resp; });
+    }).catch(function () {
+      return caches.match(req).then(function (hit) {
+        return hit || (req.mode === "navigate" ? caches.match("index.html") : Response.error());
+      });
     })
   );
 });
