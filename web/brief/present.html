@@ -26,19 +26,21 @@
       <div class="pr-stage-wrap stage-wrap" id="stage-wrap">
         <div class="stage" id="stage"></div>
       </div>
-      <p class="pr-hint" id="hint">새로 열린 청중 창을 빔프로젝터·확장 모니터로 끌어 놓고 F 키를 누르면 전체화면이 됩니다. 화면 클릭 또는 →/Space로 다음 페이지.</p>
+      <section class="pr-panel pr-next" id="next-panel" aria-label="다음 페이지 미리보기">
+        <div class="pr-next-row">
+          <p class="pr-panel-label">다음 페이지</p>
+          <div class="pr-next-wrap stage-wrap" id="next-wrap">
+            <div class="stage" id="next-stage"></div>
+            <div class="pr-next-empty" id="next-empty" hidden>마지막</div>
+          </div>
+        </div>
+      </section>
+      <p class="pr-hint" id="hint">새로 열린 청중 창을 빔프로젝터·확장 모니터로 끌어 놓고 F 키를 누르면 전체화면이 됩니다. ←/→ 슬라이드 넘김, ↑/↓ 스크립트 스크롤.</p>
     </div>
     <aside class="pr-side">
       <section class="pr-panel pr-script" aria-label="발표 스크립트">
-        <p class="pr-panel-label">스크립트 — 청중 화면에는 표시되지 않습니다</p>
+        <p class="pr-panel-label">스크립트 — 청중 화면에는 표시되지 않습니다 · ↑/↓ 스크롤</p>
         <div class="pr-script-body" id="script-body"></div>
-      </section>
-      <section class="pr-panel pr-next" id="next-panel" aria-label="다음 페이지 미리보기">
-        <p class="pr-panel-label">다음 페이지</p>
-        <div class="pr-next-wrap stage-wrap" id="next-wrap">
-          <div class="stage" id="next-stage"></div>
-          <div class="pr-next-empty" id="next-empty" hidden>마지막 페이지입니다</div>
-        </div>
       </section>
     </aside>
   </main>
@@ -334,6 +336,13 @@
           } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
             e.preventDefault();
             goTo(current - 1);
+          } else if (e.key === "ArrowDown") {
+            // 스크립트만 스크롤 — 슬라이드는 그대로
+            e.preventDefault();
+            document.getElementById("script-body").scrollBy({ top: 140, behavior: "smooth" });
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            document.getElementById("script-body").scrollBy({ top: -140, behavior: "smooth" });
           }
         });
 

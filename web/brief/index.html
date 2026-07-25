@@ -125,14 +125,14 @@
             <input type="file" id="file-input" accept=".json,application/json,.pdf,application/pdf,.html,.htm,text/html,image/*" multiple>
             <input type="file" id="script-input" accept=".txt,.md,.pdf,.html,.htm,text/plain,text/markdown,application/pdf,text/html">
             <div class="local-actions">
-              <button class="local-button" id="file-open" type="button">자료 파일 선택</button>
+              <button class="local-button" id="file-open" type="button">슬라이드 파일 선택</button>
               <button class="local-button" id="script-open" type="button">스크립트 파일 선택 (선택)</button>
             </div>
             <div class="local-summary" id="local-summary" hidden>
               <strong id="local-title"></strong>
               <span id="local-meta"></span>
               <span id="local-script-meta"></span>
-              <div class="local-actions"><button class="local-button primary" id="local-start" type="button">발표 시작</button><button class="local-button" id="local-save" type="button">라이브러리에 탑재</button></div>
+              <div class="local-actions"><button class="local-button primary" id="local-start" type="button">발표 시작</button><button class="local-button" id="local-save" type="button">라이브러리에 탑재</button><button class="local-button" id="local-clear" type="button">선택 비우기</button></div>
             </div>
             <p class="local-error" id="local-error" hidden></p>
           </article>
@@ -301,8 +301,20 @@
         summary.hidden = false;
       }
 
+      // 선택 초기화 — 입력값까지 비워 같은 이름의 수정본도 다시 잡히게 한다
+      function resetSelection() {
+        pending = null;
+        scriptSections = null;
+        scriptPdfFile = null;
+        input.value = "";
+        scriptInput.value = "";
+        errorEl.hidden = true;
+        summary.hidden = true;
+      }
+
       document.getElementById("file-open").addEventListener("click", function () { input.click(); });
       document.getElementById("script-open").addEventListener("click", function () { scriptInput.click(); });
+      document.getElementById("local-clear").addEventListener("click", resetSelection);
 
       input.addEventListener("change", function () {
         errorEl.hidden = true;
@@ -418,12 +430,7 @@
         var record = decorate(pending.record);
         record["등록일"] = new Date().toLocaleString("sv-SE"); // 로컬 "YYYY-MM-DD HH:mm:ss" — 정렬 가능
         window.mgBrief.libraryPut(record).then(function () {
-          summary.hidden = true;
-          pending = null;
-          scriptSections = null;
-          scriptPdfFile = null;
-          input.value = "";
-          scriptInput.value = "";
+          resetSelection();
           renderLibrary();
           document.getElementById("library-section").scrollIntoView({ behavior: "smooth", block: "start" });
         }).catch(function (err) {

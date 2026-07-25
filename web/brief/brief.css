@@ -345,8 +345,8 @@ body.brief-present {
   flex: 1;
   min-height: 0;
   display: grid;
-  /* 발표자는 스크립트가 주력 — 슬라이드는 참고용으로 줄이고 스크립트 폭을 키운다 */
-  grid-template-columns: minmax(0, 0.85fr) minmax(500px, 1.1fr);
+  /* 발표자는 스크립트가 주력 — 왼쪽에 슬라이드+다음 페이지 미리보기, 오른쪽은 스크립트 전용 */
+  grid-template-columns: minmax(0, 0.82fr) minmax(520px, 1.3fr);
   gap: 14px;
   padding: 14px;
 }
@@ -405,7 +405,7 @@ body.brief-present {
 }
 
 .pr-script {
-  flex: 1 1 78%;
+  flex: 1; /* 오른쪽 열을 스크립트가 단독으로 채운다 */
 }
 
 .pr-script-body {
@@ -431,14 +431,26 @@ body.brief-present {
   flex: 0 0 auto;
 }
 
+/* 슬라이드 아래 가로 스트립 — 라벨 + 작은 다음 페이지 썸네일 */
+.pr-next-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+}
+
+.pr-next-row .pr-panel-label {
+  border-bottom: none;
+  padding: 0;
+}
+
 .pr-next-wrap {
   position: relative;
   overflow: hidden;
   aspect-ratio: 16 / 10;
-  width: 260px;      /* 미리보기는 참고용 — 스크립트가 세로를 차지하도록 작게 캡 */
-  max-width: 100%;
-  margin: 12px;
-  border-radius: 8px;
+  width: 190px;      /* 참고용 — 조그맣게 */
+  flex: 0 0 auto;
+  border-radius: 6px;
   background: #0b0f15;
   pointer-events: none;
 }
