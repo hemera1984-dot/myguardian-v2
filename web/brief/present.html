@@ -183,6 +183,7 @@
 
       function updateScript() {
         var scriptBody = document.getElementById("script-body");
+        scriptBody.scrollTop = 0; // 페이지가 바뀌면 스크립트도 맨 위부터 보이게
         if (scriptPdf) {
           renderScriptPdf(scriptBody, current);
           return;
