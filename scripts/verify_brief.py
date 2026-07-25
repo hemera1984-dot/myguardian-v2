@@ -436,21 +436,25 @@ def main() -> None:
             se.set_input_files("#file-input", str(pdf_path))
             se.set_input_files("#script-input", str(script_pdf_path))
             se.wait_for_function(
-                "() => !document.getElementById('local-script-meta').textContent.includes('없음')",
+                "() => document.getElementById('local-script-meta').textContent.includes('스크립트 PDF')",
                 timeout=6000,
             )
             se.locator("#local-start").click()
             se.wait_for_selector("#count")
-            sec1 = "Section 1" in se.locator("#script-body").inner_text()
+            # 스크립트 PDF는 텍스트 추출 없이 페이지를 원본 그대로 캔버스로 렌더 → 페이지별 전환
+            se.wait_for_selector("#script-body canvas", timeout=6000)
+            canvas1 = se.locator("#script-body canvas").count() == 1
             se.keyboard.press("ArrowRight")
             se.wait_for_function(
-                "() => document.getElementById('script-body').textContent.includes('Section 2')",
+                "() => document.getElementById('count').textContent.trim().indexOf('2') === 0",
                 timeout=4000,
             )
+            se.wait_for_selector("#script-body canvas", timeout=4000)
+            canvas2 = se.locator("#script-body canvas").count() == 1
             check(
-                "PDF·HTML 스크립트 사이드카",
-                html_parse_ok and sec1,
-                "PDF 스크립트 페이지=구간 전환, HTML hr 구분 3구간 파싱",
+                "스크립트 PDF 원본 렌더 · HTML 스크립트 파싱",
+                html_parse_ok and canvas1 and canvas2,
+                "스크립트 PDF를 페이지 캔버스로 렌더(1→2 전환), HTML hr 3구간 파싱",
             )
             se.close()
 

@@ -121,7 +121,7 @@
           </article>
           <article class="surface-card local-open" id="local-card">
             <h3>내 컴퓨터에서 열기</h3>
-            <p class="surface-desc" id="local-desc">브리핑 문서(JSON)·PDF·HTML·이미지(여러 장)를 열어 발표합니다. 스크립트 파일(.txt/.md/.pdf/.html)을 함께 올리면 페이지별 발표자 스크립트가 됩니다 — 텍스트는 "---" 구분, PDF는 페이지가 구간, HTML은 수평선(hr) 구분. 파일은 이 브라우저 안에서만 처리되며 어디에도 전송되지 않습니다.</p>
+            <p class="surface-desc" id="local-desc">브리핑 문서(JSON)·PDF·HTML·이미지(여러 장)를 열어 발표합니다. 스크립트 파일(.txt/.md/.pdf/.html)을 함께 올리면 페이지별 발표자 스크립트가 됩니다 — PDF는 페이지를 원본 서식 그대로 표시하고, 텍스트는 "---", HTML은 수평선(hr)으로 구간을 나눠 순서대로 연결합니다. 파일은 이 브라우저 안에서만 처리되며 어디에도 전송되지 않습니다.</p>
             <input type="file" id="file-input" accept=".json,application/json,.pdf,application/pdf,.html,.htm,text/html,image/*" multiple>
             <input type="file" id="script-input" accept=".txt,.md,.pdf,.html,.htm,text/plain,text/markdown,application/pdf,text/html">
             <div class="local-actions">
@@ -225,7 +225,7 @@
               : it.kind === "images" && it.files ? it.files.length + "페이지" : null;
             var bits = [];
             if (pages) bits.push(pages);
-            bits.push(it["스크립트"] ? "스크립트 " + it["스크립트"].length + "구간" : "스크립트 없음");
+            bits.push(it["스크립트문서"] ? "스크립트 PDF" : it["스크립트"] ? "스크립트 " + it["스크립트"].length + "구간" : "스크립트 없음");
             bits.push(String(it["등록일"] || "").slice(0, 10) + " 탑재");
             main.appendChild(el("span", "l-meta", bits.join(" · ")));
             main.addEventListener("click", function () { presentRecord(it); });
@@ -272,7 +272,8 @@
       // 로컬 자료 열기 — 브라우저 안에서만 처리, 외부 전송 없음.
       // 선택한 자료는 IndexedDB 한 슬롯에 저장되고 발표자·청중 창이 직접 읽는다.
       var pending = null;         // { record, 제목, 메타 }
-      var scriptSections = null;  // 스크립트 파일의 "---" 구간 배열
+      var scriptSections = null;  // 스크립트 텍스트(.txt/.md/.html)의 "---" 구간 배열
+      var scriptPdfFile = null;   // 스크립트 PDF는 파싱하지 않고 원본 그대로 — 발표 화면에서 페이지로 렌더
       var input = document.getElementById("file-input");
       var scriptInput = document.getElementById("script-input");
       var errorEl = document.getElementById("local-error");
@@ -292,9 +293,11 @@
         if (!pending) return;
         document.getElementById("local-title").textContent = pending["제목"];
         document.getElementById("local-meta").textContent = pending["메타"];
-        document.getElementById("local-script-meta").textContent = scriptSections
-          ? "스크립트 " + scriptSections.length + "구간 — 순서대로 1·2·3…페이지에 연결됩니다."
-          : "스크립트 파일 없음 (선택 사항)";
+        document.getElementById("local-script-meta").textContent = scriptPdfFile
+          ? "스크립트 PDF — 페이지를 원본 그대로 표시합니다. 슬라이드와 순서대로 연결됩니다."
+          : scriptSections
+            ? "스크립트 " + scriptSections.length + "구간 — 순서대로 1·2·3…페이지에 연결됩니다."
+            : "스크립트 파일 없음 (선택 사항)";
         summary.hidden = false;
       }
 
@@ -364,6 +367,7 @@
 
       scriptInput.addEventListener("change", function () {
         scriptSections = null;
+        scriptPdfFile = null;
         var f = scriptInput.files && scriptInput.files[0];
         if (!f) {
           updateSummary();
@@ -371,14 +375,8 @@
         }
         var scriptExt = fileExt(f.name);
         if (scriptExt === "pdf") {
-          f.arrayBuffer().then(function (buf) {
-            return window.mgBrief.parseScriptPdf(buf);
-          }).then(function (sections) {
-            scriptSections = sections;
-            updateSummary();
-          }).catch(function (err) {
-            showLocalError("스크립트 PDF를 읽지 못했습니다: " + err.message);
-          });
+          scriptPdfFile = f; // 파싱하지 않고 원본 PDF 그대로 — 발표 화면이 페이지로 렌더한다
+          updateSummary();
           return;
         }
         var reader = new FileReader();
@@ -396,7 +394,8 @@
       function decorate(record) {
         record["모드"] = mode || null;
         record["제목"] = pending["제목"];
-        if (scriptSections) record["스크립트"] = scriptSections;
+        if (scriptPdfFile) record["스크립트문서"] = scriptPdfFile;
+        else if (scriptSections) record["스크립트"] = scriptSections;
         return record;
       }
 
@@ -411,12 +410,18 @@
 
       document.getElementById("local-save").addEventListener("click", function () {
         if (!pending || mode === "상담") return;
+        // 서비스워커가 옛 brief.js를 캐시로 주면 libraryPut이 없다 — 조용히 죽지 말고 안내
+        if (typeof window.mgBrief.libraryPut !== "function") {
+          showLocalError("업데이트가 아직 적용되지 않았습니다. 새로고침(Ctrl+Shift+R) 후 다시 시도하세요.");
+          return;
+        }
         var record = decorate(pending.record);
         record["등록일"] = new Date().toLocaleString("sv-SE"); // 로컬 "YYYY-MM-DD HH:mm:ss" — 정렬 가능
         window.mgBrief.libraryPut(record).then(function () {
           summary.hidden = true;
           pending = null;
           scriptSections = null;
+          scriptPdfFile = null;
           input.value = "";
           scriptInput.value = "";
           renderLibrary();

@@ -65,6 +65,10 @@
 
       var driver = null;
       var channelId = null;
+      var briefRecord = null;
+      var scriptPdf = null;       // 스크립트 PDF(원본 그대로 페이지 렌더). 텍스트 스크립트면 null
+      var scriptPdfCount = 0;
+      var scriptSeq = 0;
       var current = 1;
       var renderSeq = 0;
       var protocol = null;
@@ -136,8 +140,51 @@
         document.getElementById("count").textContent = current + " / " + driver.count;
       }
 
+      // 스크립트 PDF 문서를 미리 로드 (발표자 화면 전용 — 청중 창은 이 파일을 읽지 않는다)
+      function loadScriptPdf() {
+        var f = briefRecord && briefRecord["스크립트문서"];
+        if (!f || !window.pdfjsLib) return Promise.resolve();
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = "../assets/vendor/pdfjs/pdf.worker.min.js";
+        return f.arrayBuffer()
+          .then(function (buf) { return window.pdfjsLib.getDocument({ data: buf }).promise; })
+          .then(function (pdf) { scriptPdf = pdf; scriptPdfCount = pdf.numPages; })
+          .catch(function () { scriptPdf = null; }); // 실패하면 스크립트 없음으로 진행
+      }
+
+      // 스크립트 PDF의 n페이지를 원본 서식 그대로 캔버스로 렌더 (텍스트 추출 없이)
+      function renderScriptPdf(container, n) {
+        var seq = ++scriptSeq;
+        if (n > scriptPdfCount) {
+          container.textContent = "이 페이지의 스크립트가 없습니다.";
+          container.classList.add("empty");
+          return;
+        }
+        container.classList.remove("empty");
+        scriptPdf.getPage(n).then(function (page) {
+          if (seq !== scriptSeq) return;
+          var width = container.clientWidth || 500;
+          var raw = page.getViewport({ scale: 1 });
+          var viewport = page.getViewport({ scale: (width / raw.width) * 2 }); // 2배 렌더 — 선명도
+          var canvas = document.createElement("canvas");
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          canvas.style.width = "100%";
+          canvas.style.height = "auto";
+          canvas.style.display = "block";
+          return page.render({ canvasContext: canvas.getContext("2d"), viewport: viewport }).promise.then(function () {
+            if (seq !== scriptSeq) return;
+            container.textContent = "";
+            container.appendChild(canvas);
+          });
+        }).catch(function () {});
+      }
+
       function updateScript() {
         var scriptBody = document.getElementById("script-body");
+        if (scriptPdf) {
+          renderScriptPdf(scriptBody, current);
+          return;
+        }
         var text = driver.scriptFor(current);
         if (text) {
           scriptBody.textContent = text;
@@ -308,9 +355,12 @@
         recordPromise.then(function (record) {
           if (!record) throw new Error("발표할 자료가 없습니다. 진입 화면에서 자료를 열어주세요.");
           channelId = chFrom(record);
+          briefRecord = record;
           return B.createDriver(record, { audience: false });
         }).then(function (d) {
           driver = d;
+          return loadScriptPdf();
+        }).then(function () {
           start();
         }).catch(function (err) {
           fail(err && err.message ? err.message : String(err));
