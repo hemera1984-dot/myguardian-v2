@@ -410,10 +410,40 @@ body.brief-present {
   flex: 1; /* 오른쪽 열을 스크립트가 단독으로 채운다 */
 }
 
+.pr-script-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pr-script-zoom {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+}
+
+.pr-script-zoom button {
+  min-width: 30px;
+  height: 26px;
+  border: 1px solid var(--brief-line-strong);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--brief-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  cursor: pointer;
+  transition: border-color 0.14s ease, color 0.14s ease;
+}
+
+.pr-script-zoom button:hover { border-color: var(--brief-blue); color: var(--brief-blue); }
+
 .pr-script-body {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: auto;
   padding: 22px 26px 26px;
   font-size: 22px;
   line-height: 2;
