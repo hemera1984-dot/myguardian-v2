@@ -237,12 +237,14 @@ body.brief-view {
 /* 발표자 포인터 (청중 창 표시) — 포인트 블루 점 + 옅은 원 */
 .pointer-dot {
   position: absolute;
-  width: 14px;
-  height: 14px;
-  margin: -7px 0 0 -7px;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
   border-radius: 50%;
   background: var(--page-blue);
-  box-shadow: 0 0 0 9px rgba(37, 99, 235, 0.18);
+  /* 레이저 포인터처럼 잘 보이게 — 흰 테두리로 어떤 슬라이드에서도 대비 확보 + 넓은 광채 */
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.35), 0 0 26px 10px rgba(37, 99, 235, 0.55);
   pointer-events: none;
   opacity: 0;
   transition: left 0.09s linear, top 0.09s linear, opacity 0.15s ease;
