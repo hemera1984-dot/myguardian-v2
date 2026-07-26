@@ -1908,6 +1908,22 @@ body.platform {
   border-color: var(--platform-blue-dark);
 }
 
+/* 초대 버튼 — 설치 버튼 위. 주액션은 설치 하나만 두고 이쪽은 테두리형 */
+.invite-btn {
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.invite-btn:hover {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #ffffff;
+}
+
+.install-btn + .install-btn { margin-top: 0; }
+
 /* 설치 안내 겹침창 — 화면을 떠나지 않고 그 자리에서 처리한다 */
 .install-modal-back {
   position: fixed;

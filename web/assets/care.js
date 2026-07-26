@@ -61,8 +61,10 @@
     var pubName = edition ? edition["이름"] : (issue["발행인"] || "안창민");
     var mag = "『" + issue["채널"] + " " + pubName + "』";
     var lines = ["안녕하세요, " + s["이름"] + "입니다.", ""];
+    // 계절·시기 안부인사는 호마다 다르다 — 호 데이터의 "인사"를 쓰고, 없으면 기본 문장.
+    var greet = issue["인사"];
     if (issue["채널"] === "주간") {
-      lines.push("건강 유의하시고 좋은 한 주 보내세요.", "");
+      lines.push(greet || "건강 유의하시고 좋은 한 주 보내세요.", "");
       lines.push(mag + " " + (issue["주차라벨"] || "") + " (통권 " + issue["호수"] + "호)");
       lines.push("이번 주 뉴스 브리핑이 발행되었습니다.", "");
       lines.push("[이번 주 주요 뉴스]", BAR);
@@ -72,7 +74,7 @@
       lines.push(BAR, "");
       if (toc.length) lines.push("이번 주 핵심: " + toc[0]["제목"], "");
     } else {
-      lines.push("환절기 건강 잘 챙기고 계신가요?", "");
+      lines.push(greet || "환절기 건강 잘 챙기고 계신가요?", "");
       lines.push(mag + " " + (issue["주차라벨"] || "") + "(통권 " + issue["호수"] + "호)가");
       lines.push("발행되었습니다.", "");
       lines.push("이번 호 주요 칼럼", BAR);

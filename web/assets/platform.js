@@ -223,17 +223,50 @@
     var existing = sidebar.querySelector("#btn-install");
     if (existing) existing.remove();
 
+    // 초대는 누구나 할 수 있다. 승인은 총관리자·팀장급만 (서버가 판정).
+    var invite = document.createElement("button");
+    invite.type = "button";
+    invite.id = "btn-invite";
+    invite.className = "install-btn invite-btn";
+    invite.textContent = "팀원 초대하기";
+    invite.addEventListener("click", function () {
+      window.mg.copy(inviteText(), invite);
+    });
+
     var btn = document.createElement("button");
     btn.type = "button";
     btn.id = "btn-install";
     btn.className = "install-btn";
     btn.textContent = "홈 화면에 바로가기 설치";
 
-    // 업무공간 표시를 걷어내고 그 자리(하단)에 버튼을 둔다
-    if (status) status.replaceWith(btn);
-    else sidebar.appendChild(btn);
+    // 업무공간 표시를 걷어내고 그 자리(하단)에 초대·설치 버튼을 둔다
+    if (status) status.replaceWith(invite);
+    else sidebar.appendChild(invite);
+    invite.after(btn);
 
     var open = buildInstallModal(prompt);
     btn.addEventListener("click", open);
   });
+
+  // 초대 문구 — 받는 사람이 주소를 열고 구글로 로그인하면 승인 대기로 잡힌다
+  function inviteText() {
+    var sender = "";
+    try {
+      var s = JSON.parse(localStorage.getItem("mg_care_sender") || "{}");
+      if (s["이름"]) sender = s["이름"];
+    } catch (e) {}
+    var url = new URL("intro.html", window.location.href).href;
+    return [
+      "[마이가디언 초대]",
+      "",
+      "안녕하세요" + (sender ? ", " + sender + "입니다" : "") + ".",
+      "우리 팀 업무 플랫폼 마이가디언에 초대합니다.",
+      "",
+      "아래 주소를 열고 구글 계정으로 로그인해 주세요.",
+      url,
+      "",
+      "로그인하면 승인 대기 상태가 됩니다.",
+      "관리자가 승인하면 바로 이용할 수 있습니다."
+    ].join("\n");
+  }
 })();
