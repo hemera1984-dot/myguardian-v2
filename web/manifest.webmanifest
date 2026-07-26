@@ -2,7 +2,7 @@
   "name": "마이가디언",
   "short_name": "마이가디언",
   "description": "신한라이프 FC팀 보험 업무 플랫폼",
-  "start_url": "./",
+  "start_url": "intro.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f5f7fa",
