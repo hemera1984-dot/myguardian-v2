@@ -78,8 +78,22 @@
       var ALL = [];
       var channel = "";
       var publisher = "";
+      // 공유 발행 에디션 — ?fc=코드로 열면 이 서재 전체가 그 FC의 제호로 보인다.
+      // 고객은 로그인하지 않으므로 발행인 표기는 링크가 실어 나른다 (결정 2026-07-20).
+      var fcCode = new URLSearchParams(window.location.search).get("fc");
+      var edition = null;
 
       care.bindCompose();
+
+      // 에디션이면 발행인 표기를 그 FC로 바꾼다. 내용·편집장(안창민)은 그대로다.
+      function pubName(issue) {
+        return edition ? edition["이름"] : (issue["발행인"] || "안창민");
+      }
+
+      function issueHref(id) {
+        return "issue.html?id=" + encodeURIComponent(id)
+          + (edition ? "&fc=" + encodeURIComponent(edition["코드"]) : "");
+      }
 
       function render() {
         var box = document.getElementById("issue-list");
@@ -93,8 +107,8 @@
           return;
         }
         box.innerHTML = list.map(function (i, idx) {
-          var href = "issue.html?id=" + encodeURIComponent(i.id);
-          var pub = i["발행인"] || "안창민";
+          var href = issueHref(i.id);
+          var pub = pubName(i);
           var cover = i["커버이미지"]
             ? '<span class="shelf-cover"><img src="../../' + esc(i["커버이미지"]) + '" alt="" loading="lazy">'
               + '<span class="shelf-band"><span class="vol">' + esc(i["호수"]) + '호</span><span class="ch">' + esc(i["채널"]) + " " + esc(pub) + "</span></span></span>"
@@ -108,16 +122,40 @@
         }).join("");
         box.querySelectorAll("button[data-idx]").forEach(function (btn) {
           btn.addEventListener("click", function () {
-            care.openCompose(list[Number(btn.dataset.idx)]);
+            care.openCompose(list[Number(btn.dataset.idx)], edition);
           });
         });
       }
 
-      fetch("../../data/care/issues.json")
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
+      // 명단에 없는 코드는 무시하고 원본 발행인으로 표시한다 (issue.html과 같은 규칙)
+      function loadEdition() {
+        if (!fcCode) return Promise.resolve(null);
+        return fetch("../../data/care/publishers.json")
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (list) {
+            return (Array.isArray(list) ? list : []).find(function (p) { return p["코드"] === fcCode; }) || null;
+          })
+          .catch(function () { return null; });
+      }
+
+      // 에디션 서재는 그 FC 한 사람의 제호로 보여준다 — 채널 탭·발행인 필터를 그에 맞춘다
+      function applyEditionLabels() {
+        if (!edition) return;
+        channelTabs.querySelectorAll("button[data-ch]").forEach(function (b) {
+          if (b.dataset.ch) b.textContent = b.dataset.ch + " " + edition["이름"];
+        });
+      }
+
+      Promise.all([
+        fetch("../../data/care/issues.json").then(function (r) { return r.json(); }),
+        loadEdition()
+      ])
+        .then(function (res) {
+          var data = res[0];
+          edition = res[1];
           ALL = Array.isArray(data) ? data : (data.data || []);
-          buildPublisherTabs();
+          applyEditionLabels();
+          if (!edition) buildPublisherTabs(); // 개인 에디션 서재에는 발행인 필터를 두지 않는다
           buildLatestDuo();
           render();
         })
@@ -144,9 +182,9 @@
           var i = care.latestByChannel(ALL, ch);
           if (!i) return "";
           var bg = i["커버이미지"] ? ' style="background-image:url(../../' + esc(i["커버이미지"]) + ')"' : "";
-          return '<a class="latest-card" href="issue.html?id=' + encodeURIComponent(i.id) + '">'
+          return '<a class="latest-card" href="' + issueHref(i.id) + '">'
             + '<span class="latest-bg"' + bg + "></span>"
-            + '<span class="latest-body"><span class="latest-ch">' + esc(ch) + " " + esc(i["발행인"] || "안창민") + " · " + esc(i["호수"]) + "호</span>"
+            + '<span class="latest-body"><span class="latest-ch">' + esc(ch) + " " + esc(pubName(i)) + " · " + esc(i["호수"]) + "호</span>"
             + '<span class="latest-title serif">' + esc(i["제목"]) + "</span>"
             + '<span class="latest-go">최신호 바로 읽기</span></span></a>';
         }).join("");
