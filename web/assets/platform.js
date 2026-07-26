@@ -219,6 +219,8 @@
       prompt.event = e;
     });
 
+    addAdminMenu(sidebar);
+
     var status = sidebar.querySelector(".sidebar-status");
     var existing = sidebar.querySelector("#btn-install");
     if (existing) existing.remove();
@@ -247,6 +249,32 @@
     var open = buildInstallModal(prompt);
     btn.addEventListener("click", open);
   });
+
+  // 관리자 메뉴 — 승인 권한이 있는 계정에만 보인다.
+  // 화면을 가리는 것일 뿐 차단이 아니다. 주소를 직접 열어도 서버가 데이터를 주지 않는다.
+  function addAdminMenu(sidebar) {
+    var isAdmin = false;
+    try { isAdmin = localStorage.getItem("mg_is_admin") === "1"; } catch (e) {}
+    if (!isAdmin) return;
+    var nav = sidebar.querySelector(".platform-nav");
+    if (!nav || nav.querySelector('[data-admin-link]')) return;
+
+    // 화면 위치에 상관없이 맞는 경로를 만든다 (web/ 아래 어느 깊이에서든)
+    var here = window.location.pathname;
+    var depth = (here.replace(/\/[^/]*$/, "/").split("/web/")[1] || "").split("/").filter(Boolean).length;
+    var prefix = depth ? new Array(depth + 1).join("../") : "";
+
+    var label = document.createElement("p");
+    label.className = "nav-group-label";
+    label.textContent = "관리";
+    var link = document.createElement("a");
+    link.href = prefix + "admin/";
+    link.textContent = "관리자 설정";
+    link.setAttribute("data-admin-link", "");
+    if (/\/admin\//.test(here)) link.className = "active";
+    nav.appendChild(label);
+    nav.appendChild(link);
+  }
 
   // 초대 문구 — 받는 사람이 주소를 열고 구글로 로그인하면 승인 대기로 잡힌다
   function inviteText() {

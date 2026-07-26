@@ -11,7 +11,7 @@ import { createServer } from "node:http";
 import {
   openDb, seedGrades, upsertAccount, createSession, accountForToken, deleteSession,
   listGrades, listPending, listMembers, getAccount, approve, suspend, setAdmin,
-  isDescendantOf
+  setApprover, isDescendantOf
 } from "./db.js";
 
 const PORT = Number(process.env.PORT || 8787);
@@ -27,13 +27,13 @@ if (!CLIENT_ID) {
 }
 
 // 직급표 — 이름·구조를 코드에 박지 않는다는 원칙에 따라 여기서 주입하고 DB에 싣는다.
-// 팀원승인: 이 직급이 자기 하위 트리의 대기 계정을 승인할 수 있는가.
+// 승인 권한은 직급이 아니라 계정에 붙는다(accounts.can_approve). 총관리자가 화면에서 준다.
 const GRADES = [
-  { code: "BM", name: "지점장", rank: 1, "팀원승인": true },
-  { code: "ESL", name: "부지점장", rank: 2, "팀원승인": true },
-  { code: "SSL", name: "팀장", rank: 3, "팀원승인": true },
-  { code: "GSL", name: "부팀장", rank: 4, "팀원승인": false },
-  { code: "FC", name: "팀원", rank: 5, "팀원승인": false }
+  { code: "BM", name: "지점장", rank: 1 },
+  { code: "ESL", name: "부지점장", rank: 2 },
+  { code: "SSL", name: "팀장", rank: 3 },
+  { code: "GSL", name: "부팀장", rank: 4 },
+  { code: "FC", name: "팀원", rank: 5 }
 ];
 
 const db = openDb(DB_FILE);
@@ -121,13 +121,10 @@ function publicAccount(db, a) {
   };
 }
 
-// 승인 권한: 총관리자이거나, 직급에 팀원승인 플래그가 있는 승인 계정.
+// 승인 권한: 총관리자이거나, 총관리자가 승인 권한을 준 승인 계정.
 function canApprove(db, me) {
   if (me.status !== "승인") return false;
-  if (me.is_admin) return true;
-  if (!me.grade) return false;
-  const g = db.prepare("SELECT can_approve FROM grades WHERE code = ?").get(me.grade);
-  return !!(g && g.can_approve);
+  return !!(me.is_admin || me.can_approve);
 }
 
 // 총관리자는 전 범위. 팀장급은 자기 자신 또는 자기 하위 트리 아래로만 붙일 수 있다.
@@ -173,7 +170,7 @@ async function route(req, res, url) {
     return send(res, 200, {
       계정: publicAccount(db, me),
       승인권한: canApprove(db, me),
-      직급표: listGrades(db).map((g) => ({ 코드: g.code, 이름: g.name, 팀원승인: !!g.can_approve }))
+      직급표: listGrades(db).map((g) => ({ 코드: g.code, 이름: g.name }))
     });
   }
 
@@ -216,6 +213,17 @@ async function route(req, res, url) {
     }
     if (target.is_admin && !me.is_admin) return send(res, 403, { error: "권한이 없습니다." });
     suspend(db, target.id);
+    return send(res, 200, { ok: true });
+  }
+
+  // 승인 권한 부여·회수 — 총관리자 전용. 직급과 무관하게 사람에게 붙인다.
+  if (req.method === "POST" && path === "/admin/set-approver") {
+    if (!me.is_admin) return send(res, 403, { error: "총관리자만 가능합니다." });
+    const { 대상, 부여 } = await readJson(req);
+    const target = getAccount(db, Number(대상));
+    if (!target) return send(res, 404, { error: "대상 계정을 찾을 수 없습니다." });
+    if (target.status !== "승인") return send(res, 400, { error: "승인된 계정에만 줄 수 있습니다." });
+    setApprover(db, target.id, !!부여);
     return send(res, 200, { ok: true });
   }
 

@@ -93,10 +93,23 @@
     });
   }
 
+  // 관리자 메뉴를 보일지 판단할 힌트. 보안 값이 아니다 — 실제 권한은 서버가 판정한다.
+  var ADMIN_KEY = "mg_is_admin";
+
+  function cacheAdmin(info) {
+    try {
+      if (info && (info["계정"]["총관리자"] || info["승인권한"])) localStorage.setItem(ADMIN_KEY, "1");
+      else localStorage.removeItem(ADMIN_KEY);
+    } catch (e) {}
+  }
+
   function me() {
-    if (!token()) return Promise.resolve(null);
-    return api("/me").catch(function (err) {
-      if (err.status === 401) { setToken(null); return null; }  // 만료·폐기된 세션 정리
+    if (!token()) { cacheAdmin(null); return Promise.resolve(null); }
+    return api("/me").then(function (info) {
+      cacheAdmin(info);
+      return info;
+    }).catch(function (err) {
+      if (err.status === 401) { setToken(null); cacheAdmin(null); return null; }  // 만료·폐기된 세션 정리
       throw err;
     });
   }
@@ -105,6 +118,7 @@
     var done = token() ? api("/auth/logout", { method: "POST" }).catch(function () {}) : Promise.resolve();
     return done.then(function () {
       setToken(null);
+      cacheAdmin(null);
       try { if (window.google && window.google.accounts) window.google.accounts.id.disableAutoSelect(); } catch (e) {}
     });
   }

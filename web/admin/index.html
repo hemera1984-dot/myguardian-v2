@@ -133,8 +133,13 @@
                   + '<span style="font-size:12px;color:var(--platform-muted)">' + esc(m.email) + "</span>"
                   + (m.grade ? '<span class="badge-grade">' + esc(m.grade) + "</span>" : "")
                   + (m.is_admin ? '<span class="badge-grade">총관리자</span>' : "")
+                  + (m.can_approve && !m.is_admin ? '<span class="badge-status st-meet">승인권한</span>' : "")
                   + (isMe ? '<span style="font-size:12px;color:var(--platform-faint)">본인</span>'
                      : (m.status === "승인" ? '<button type="button" class="status-btn st-reject" data-suspend="' + m.id + '">정지</button>' : ""))
+                  + (!isMe && AUTH.me["계정"]["총관리자"] && m.status === "승인" && !m.is_admin
+                     ? '<button type="button" class="status-btn" data-approver="' + m.id + '" data-on="' + (m.can_approve ? "0" : "1") + '">'
+                       + (m.can_approve ? "승인권한 회수" : "승인권한 부여") + "</button>"
+                     : "")
                   + (!isMe && AUTH.me["계정"]["총관리자"]
                      ? '<button type="button" class="status-btn" data-admin="' + m.id + '" data-on="' + (m.is_admin ? "0" : "1") + '">'
                        + (m.is_admin ? "관리자 회수" : "관리자 임명") + "</button>"
@@ -161,6 +166,11 @@
             id = Number(btn.dataset.suspend);
             if (!window.confirm("이 계정을 정지하시겠습니까? 즉시 접근이 차단됩니다.")) return;
             req = window.mgAuth.api("/admin/suspend", { method: "POST", body: { "대상": id } });
+          } else if (btn.dataset.approver) {
+            id = Number(btn.dataset.approver);
+            req = window.mgAuth.api("/admin/set-approver", {
+              method: "POST", body: { "대상": id, "부여": btn.dataset.on === "1" }
+            });
           } else if (btn.dataset.admin) {
             id = Number(btn.dataset.admin);
             req = window.mgAuth.api("/admin/set-admin", {
