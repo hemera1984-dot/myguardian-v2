@@ -4,3 +4,7 @@ scripts/fixtures/
 data/care/desk/
 pipeline/naver-keys.json
 pipeline/monitor.log
+server/.env
+*.db
+*.db-wal
+*.db-shm
