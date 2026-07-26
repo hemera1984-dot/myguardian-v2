@@ -12,7 +12,7 @@
 
   // 인증 서버 주소. 로컬에서 개발할 때는 같은 PC의 서버를 본다.
   // NCP 배포 후 PROD 값을 실제 도메인으로 바꾼다.
-  var PROD_API = "";  // 예: https://api.example.com
+  var PROD_API = "https://api.insurguard.life";
   var LOCAL_API = "http://localhost:8787";
 
   function apiBase() {
