@@ -1883,24 +1883,138 @@ body.platform {
   box-shadow: var(--platform-shadow);
 }
 
-/* 사이드바 바로가기 설치 버튼 */
+/* 사이드바 바로가기 설치 버튼 — 하단 고정 (업무공간 표시 자리를 대체) */
 .install-btn {
+  display: block;
+  width: calc(100% - 20px);
   margin: 14px 10px 0;
+  margin-top: auto;
   padding: 11px 14px;
   font: inherit;
   font-size: 12px;
   font-weight: 700;
+  text-align: center;
+  text-decoration: none;
   color: #ffffff;
   background: var(--platform-blue);
   border: 1px solid var(--platform-blue);
   border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.14s ease, border-color 0.14s ease;
 }
 
 .install-btn:hover {
   background: var(--platform-blue-dark);
   border-color: var(--platform-blue-dark);
 }
+
+/* 설치 안내 겹침창 — 화면을 떠나지 않고 그 자리에서 처리한다 */
+.install-modal-back {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(16, 42, 78, 0.45);
+}
+
+.install-modal-back[hidden] { display: none; }
+
+.install-modal {
+  width: min(720px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid var(--platform-line);
+  border-radius: 6px;
+  background: var(--platform-surface);
+  padding: 22px 24px 24px;
+}
+
+.install-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.install-modal-head h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+.install-modal-x {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--platform-line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--platform-muted);
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.14s ease, color 0.14s ease;
+}
+
+.install-modal-x:hover { border-color: var(--platform-blue); color: var(--platform-blue); }
+
+.install-modal-desc {
+  margin: 8px 0 0;
+  color: var(--platform-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.install-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.install-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0;
+  margin-top: 18px;
+  border: 1px solid var(--platform-line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.install-modal-grid > div {
+  border-left: 1px solid var(--platform-line);
+  padding: 14px 16px;
+}
+
+.install-modal-grid > div:first-child { border-left: none; }
+
+.install-modal-grid h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.install-modal-grid ol {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--platform-muted);
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.install-modal-note {
+  margin: 14px 0 0;
+  color: var(--platform-faint);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.install-modal-note:empty { display: none; }
 
 /* 개정 10차: 등장 모션 폐기 — 형태 변화 없는 조용한 화면 (0.14초 색 전환만) */
 
