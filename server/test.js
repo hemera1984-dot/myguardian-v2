@@ -7,7 +7,8 @@ import assert from "node:assert";
 import { rmSync } from "node:fs";
 import {
   openDb, seedGrades, upsertAccount, findByGoogleSub, createSession, accountForToken,
-  listPending, approve, suspend, isDescendantOf, getAccount, deleteSessionsFor
+  listPending, approve, suspend, isDescendantOf, getAccount, deleteSessionsFor,
+  setApprover, listMembers
 } from "./db.js";
 
 const FILE = "./test-auth.db";
@@ -17,9 +18,9 @@ rmSync(FILE + "-shm", { force: true });
 
 const db = openDb(FILE);
 seedGrades(db, [
-  { code: "SSL", name: "팀장", rank: 3, "팀원승인": true },
-  { code: "GSL", name: "부팀장", rank: 4, "팀원승인": false },
-  { code: "FC", name: "팀원", rank: 5, "팀원승인": false }
+  { code: "SSL", name: "팀장", rank: 3 },
+  { code: "GSL", name: "부팀장", rank: 4 },
+  { code: "FC", name: "팀원", rank: 5 }
 ]);
 
 const BOOTSTRAP = ["boss@example.com"];
@@ -105,6 +106,16 @@ check("정지하면 상태가 바뀌고 기존 세션이 즉시 끊긴다", () =
   suspend(db, member.id);
   assert.equal(getAccount(db, member.id).status, "정지");
   assert.equal(accountForToken(db, s.token), null, "정지 후에도 세션이 살아 있으면 안 된다");
+});
+
+check("승인 권한은 직급이 아니라 계정에 붙는다 — 총관리자가 주고 뺀다", () => {
+  const lead = findByGoogleSub(db, "g-fc1"); // SSL(팀장)이지만 기본은 권한 없음
+  assert.equal(getAccount(db, lead.id).can_approve, 0, "직급만으로 권한이 생기면 안 된다");
+  setApprover(db, lead.id, true);
+  assert.equal(getAccount(db, lead.id).can_approve, 1);
+  assert.ok(listMembers(db).some((m) => m.id === lead.id && m.can_approve === 1));
+  setApprover(db, lead.id, false);
+  assert.equal(getAccount(db, lead.id).can_approve, 0, "회수되어야 한다");
 });
 
 check("세션 일괄 삭제 — 퇴사·회수 시 접근 차단", () => {

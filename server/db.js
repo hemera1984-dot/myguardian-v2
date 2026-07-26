@@ -32,6 +32,7 @@ export function openDb(file) {
       grade       TEXT REFERENCES grades(code),
       parent_id   INTEGER REFERENCES accounts(id),
       is_admin    INTEGER NOT NULL DEFAULT 0,
+      can_approve INTEGER NOT NULL DEFAULT 0,
       created_at  TEXT NOT NULL,
       approved_at TEXT,
       approved_by INTEGER REFERENCES accounts(id)
@@ -46,19 +47,21 @@ export function openDb(file) {
     CREATE INDEX IF NOT EXISTS idx_accounts_status ON accounts(status);
     CREATE INDEX IF NOT EXISTS idx_sessions_account ON sessions(account_id);
   `);
+
+  // 이미 만들어진 DB에 컬럼 추가 (있으면 그냥 실패하므로 삼킨다)
+  try { db.exec("ALTER TABLE accounts ADD COLUMN can_approve INTEGER NOT NULL DEFAULT 0"); }
+  catch (e) { /* 이미 있음 */ }
+
   return db;
 }
 
-// 직급표 시딩 — 이름·구조를 코드에 박지 않는다. can_approve가 팀원승인 플래그다.
+// 직급표 시딩 — 이름·구조를 코드에 박지 않는다. 승인 권한은 계정에 붙으므로 여기 없다.
 export function seedGrades(db, grades) {
   const stmt = db.prepare(
-    `INSERT INTO grades (code, name, rank, can_approve) VALUES (?, ?, ?, ?)
-     ON CONFLICT(code) DO UPDATE SET name = excluded.name, rank = excluded.rank,
-       can_approve = excluded.can_approve`
+    `INSERT INTO grades (code, name, rank) VALUES (?, ?, ?)
+     ON CONFLICT(code) DO UPDATE SET name = excluded.name, rank = excluded.rank`
   );
-  for (const g of grades) {
-    stmt.run(g.code, g.name, g.rank, g["팀원승인"] ? 1 : 0);
-  }
+  for (const g of grades) stmt.run(g.code, g.name, g.rank);
 }
 
 const now = () => new Date().toISOString();
@@ -133,9 +136,13 @@ export function listPending(db) {
 
 export function listMembers(db) {
   return db.prepare(
-    `SELECT id, email, name, status, grade, parent_id, is_admin, approved_at
+    `SELECT id, email, name, status, grade, parent_id, is_admin, can_approve, approved_at
      FROM accounts WHERE status <> '대기' ORDER BY id`
   ).all();
+}
+
+export function setApprover(db, targetId, canApprove) {
+  db.prepare("UPDATE accounts SET can_approve = ? WHERE id = ?").run(canApprove ? 1 : 0, targetId);
 }
 
 export function getAccount(db, id) {
