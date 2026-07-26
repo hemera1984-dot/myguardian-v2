@@ -54,6 +54,8 @@ GOOGLE_CLIENT_ID=370923160679-3h1hn1flheb4d01bq1amtutr992kldj1.apps.googleuserco
 ALLOWED_ORIGINS=https://app.insurguard.life,https://hemera1984-dot.github.io,http://localhost:8080
 BOOTSTRAP_ADMINS=hemera1984@gmail.com
 EOF
+  # 서비스가 myguardian 계정으로 도므로 소유권을 넘긴다 (root 소유면 읽지 못해 부팅 실패)
+  chown myguardian:myguardian "$APP_DIR/server/.env"
   chmod 600 "$APP_DIR/server/.env"
   echo "  .env 생성됨 — 승인 도메인이 바뀌면 이 파일을 고치고 재시작한다"
 else
