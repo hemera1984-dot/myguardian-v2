@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
   <link rel="stylesheet" href="../assets/platform.css">
   <script src="../assets/platform.js"></script>
+  <script src="../assets/auth.js"></script>
 </head>
 <body class="platform">
   <div class="install-shell">
@@ -24,6 +25,19 @@
         <p>이 화면은 메뉴에 노출되지 않으며 총관리자만 주소로 접근합니다.
           로그인(구글 계정 + 승인)이 붙는 2차 공사에서 승인 대기·직급 부여·조인웍 관리가 이 화면에 들어옵니다.</p>
       </div>
+
+      <section class="section-block">
+        <div class="section-head"><div><h2>계정 승인</h2><p>구글로 로그인한 계정은 승인 전까지 아무것도 열리지 않습니다. 승인하면서 직급과 소속 상위자를 지정하세요.</p></div></div>
+        <div class="surface-card">
+          <p id="auth-state" style="margin:0;font-size:13px;color:var(--platform-muted)">인증 서버에 연결하는 중입니다.</p>
+          <div id="auth-body" hidden>
+            <h3 style="margin:14px 0 8px;font-size:14px">승인 대기</h3>
+            <div id="pending-list"></div>
+            <h3 style="margin:18px 0 8px;font-size:14px">구성원</h3>
+            <div id="member-list"></div>
+          </div>
+        </div>
+      </section>
 
       <section class="section-block">
         <div class="section-head"><div><h2>팀원 초대 — 카톡 문구</h2><p>이름을 넣고 문구를 복사해 카카오톡으로 보내세요. 발송은 수동입니다.</p></div></div>
@@ -69,6 +83,118 @@
       "use strict";
       var esc = window.mg.esc;
       var $ = function (id) { return document.getElementById(id); };
+
+      // ── 계정 승인 — 인증 서버(2차 STEP 1)와 통신한다.
+      // 이 화면에서 하는 일은 요청일 뿐이고, 권한 판정은 전부 서버가 한다.
+      var AUTH = { me: null, grades: [] };
+
+      function authState(msg) { $("auth-state").textContent = msg; }
+
+      function gradeSelect(id) {
+        return '<select id="' + id + '" aria-label="직급" style="font:inherit;font-size:12px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:5px 8px">'
+          + AUTH.grades.map(function (g) {
+              return '<option value="' + esc(g["코드"]) + '">' + esc(g["이름"]) + " (" + esc(g["코드"]) + ")</option>";
+            }).join("")
+          + "</select>";
+      }
+
+      function parentSelect(id, members) {
+        return '<select id="' + id + '" aria-label="소속 상위" style="font:inherit;font-size:12px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:5px 8px">'
+          + (AUTH.me["계정"]["총관리자"] ? '<option value="">최상위</option>' : "")
+          + members.filter(function (m) { return m.status === "승인"; }).map(function (m) {
+              var sel = m.id === AUTH.me["계정"].id ? " selected" : "";
+              return '<option value="' + m.id + '"' + sel + ">" + esc(m.name || m.email) + "</option>";
+            }).join("")
+          + "</select>";
+      }
+
+      function loadPending() {
+        return window.mgAuth.api("/admin/pending").then(function (data) {
+          var pending = data["대기"] || [];
+          var members = data["구성원"] || [];
+
+          $("pending-list").innerHTML = pending.length
+            ? pending.map(function (p) {
+                return '<div class="org-node" style="flex-wrap:wrap">'
+                  + '<strong style="font-size:13px">' + esc(p.name || "(이름 없음)") + "</strong>"
+                  + '<span style="font-size:12px;color:var(--platform-muted)">' + esc(p.email) + "</span>"
+                  + gradeSelect("g-" + p.id) + parentSelect("p-" + p.id, members)
+                  + '<button type="button" class="status-btn st-met" data-approve="' + p.id + '">승인</button>'
+                  + "</div>";
+              }).join("")
+            : '<span style="color:var(--platform-faint);font-size:12px">승인 대기 중인 계정이 없습니다.</span>';
+
+          $("member-list").innerHTML = members.length
+            ? members.map(function (m) {
+                var isMe = m.id === AUTH.me["계정"].id;
+                return '<div class="org-node" style="flex-wrap:wrap">'
+                  + '<span class="badge-status ' + (m.status === "승인" ? "st-meet" : "st-hold") + '">' + esc(m.status) + "</span>"
+                  + '<strong style="font-size:13px">' + esc(m.name || m.email) + "</strong>"
+                  + '<span style="font-size:12px;color:var(--platform-muted)">' + esc(m.email) + "</span>"
+                  + (m.grade ? '<span class="badge-grade">' + esc(m.grade) + "</span>" : "")
+                  + (m.is_admin ? '<span class="badge-grade">총관리자</span>' : "")
+                  + (isMe ? '<span style="font-size:12px;color:var(--platform-faint)">본인</span>'
+                     : (m.status === "승인" ? '<button type="button" class="status-btn st-reject" data-suspend="' + m.id + '">정지</button>' : ""))
+                  + (!isMe && AUTH.me["계정"]["총관리자"]
+                     ? '<button type="button" class="status-btn" data-admin="' + m.id + '" data-on="' + (m.is_admin ? "0" : "1") + '">'
+                       + (m.is_admin ? "관리자 회수" : "관리자 임명") + "</button>"
+                     : "")
+                  + "</div>";
+              }).join("")
+            : '<span style="color:var(--platform-faint);font-size:12px">구성원이 없습니다.</span>';
+        });
+      }
+
+      function bindAuthActions() {
+        $("auth-body").addEventListener("click", function (e) {
+          var btn = e.target.closest("button");
+          if (!btn) return;
+          var id, req;
+          if (btn.dataset.approve) {
+            id = Number(btn.dataset.approve);
+            var pv = $("p-" + id).value;
+            req = window.mgAuth.api("/admin/approve", {
+              method: "POST",
+              body: { "대상": id, "직급": $("g-" + id).value, "상위": pv === "" ? null : Number(pv) }
+            });
+          } else if (btn.dataset.suspend) {
+            id = Number(btn.dataset.suspend);
+            if (!window.confirm("이 계정을 정지하시겠습니까? 즉시 접근이 차단됩니다.")) return;
+            req = window.mgAuth.api("/admin/suspend", { method: "POST", body: { "대상": id } });
+          } else if (btn.dataset.admin) {
+            id = Number(btn.dataset.admin);
+            req = window.mgAuth.api("/admin/set-admin", {
+              method: "POST", body: { "대상": id, "임명": btn.dataset.on === "1" }
+            });
+          } else { return; }
+
+          btn.disabled = true;
+          req.then(loadPending).catch(function (err) {
+            btn.disabled = false;
+            window.alert(err.message || "처리에 실패했습니다.");
+          });
+        });
+      }
+
+      window.mgAuth.me().then(function (info) {
+        if (!info) {
+          authState("로그인이 필요합니다. 진입 화면에서 구글 계정으로 로그인하세요.");
+          return;
+        }
+        AUTH.me = info;
+        AUTH.grades = info["직급표"] || [];
+        if (!info["승인권한"]) {
+          authState("승인 권한이 없는 계정입니다. (" + info["계정"]["이메일"] + ")");
+          return;
+        }
+        authState("승인 권한 계정으로 접속 중 — " + (info["계정"]["이름"] || info["계정"]["이메일"])
+          + (info["계정"]["총관리자"] ? " (총관리자)" : ""));
+        $("auth-body").hidden = false;
+        bindAuthActions();
+        return loadPending();
+      }).catch(function (err) {
+        authState("인증 서버에 연결하지 못했습니다. " + (err.message || ""));
+      });
 
       // 초대 문구 — 설치 링크는 현재 배포 주소 기준으로 자동 생성
       function inviteText(name) {
