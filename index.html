@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <title>마이가디언</title>
-  <link rel="canonical" href="web/">
-  <!-- 저장소 루트를 도메인에 연결했으므로 실제 화면(web/)으로 넘긴다.
-       자바스크립트가 꺼져 있어도 새로고침 헤더로 이동한다. -->
-  <meta http-equiv="refresh" content="0; url=web/">
-  <script>location.replace("web/" + location.search + location.hash);</script>
+  <link rel="canonical" href="web/intro.html">
+  <!-- 진입 주소는 로그인 화면으로 보낸다. 이미 로그인한 사람은 그 화면에서
+       "메인으로 들어가기"로 넘어간다. 자바스크립트가 꺼져 있어도 새로고침 헤더로 이동한다. -->
+  <meta http-equiv="refresh" content="0; url=web/intro.html">
+  <script>location.replace("web/intro.html" + location.search + location.hash);</script>
 </head>
 <body>
-  <p><a href="web/">마이가디언으로 이동</a></p>
+  <p><a href="web/intro.html">마이가디언으로 이동</a></p>
 </body>
 </html>
