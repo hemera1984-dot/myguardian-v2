@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>마이가디언</title>
+  <link rel="canonical" href="web/">
+  <!-- 저장소 루트를 도메인에 연결했으므로 실제 화면(web/)으로 넘긴다.
+       자바스크립트가 꺼져 있어도 새로고침 헤더로 이동한다. -->
+  <meta http-equiv="refresh" content="0; url=web/">
+  <script>location.replace("web/" + location.search + location.hash);</script>
+</head>
+<body>
+  <p><a href="web/">마이가디언으로 이동</a></p>
+</body>
+</html>
