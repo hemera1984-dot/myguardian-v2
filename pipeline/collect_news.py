@@ -56,7 +56,7 @@ QUERIES = {
 
 # NAVER API HUB (네이버 클라우드) — 구 openapi.naver.com에서 이전된 검색 API
 API_BASE = "https://naverapihub.apigw.ntruss.com/search/v1/"
-SOURCES = {"news": "뉴스", "encyc": "백과사전"}
+SOURCES = {"news": "뉴스", "encyc": "백과사전", "image": "이미지"}
 
 
 def load_keys():
@@ -81,6 +81,8 @@ def search(cid, secret, query, display, source="news"):
     params = {"query": query, "display": display, "format": "json"}
     if source == "news":
         params["sort"] = "date"  # 백과사전은 정확도순이 낫다
+    if source == "image":
+        params["filter"] = "large"  # 지면에 쓰려면 큰 이미지만
     url = API_BASE + source + "?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers={
         "X-NCP-APIGW-API-KEY-ID": cid,
@@ -91,6 +93,14 @@ def search(cid, secret, query, display, source="news"):
 
 
 def to_item(raw):
+    # 이미지 검색은 응답 모양이 다르다 (description·pubDate 없음, 원본/썸네일 주소를 준다)
+    if raw.get("thumbnail") or raw.get("sizewidth"):
+        return {
+            "제목": strip_tags(raw.get("title")),
+            "이미지주소": raw.get("link") or "",
+            "썸네일": raw.get("thumbnail") or "",
+            "크기": (raw.get("sizewidth") or "?") + "x" + (raw.get("sizeheight") or "?"),
+        }
     try:
         pub = parsedate_to_datetime(raw.get("pubDate", "")).strftime("%Y-%m-%d %H:%M")
     except Exception:
@@ -105,7 +115,7 @@ def to_item(raw):
 
 def query_mode(cid, secret, query, display, source):
     """가제 키워드 검색 — 집필 세션이 근거로 쓴다. 결과는 표준 출력 JSON."""
-    sources = list(SOURCES) if source == "all" else [source]
+    sources = list(SOURCES) if source == "all" else [s for s in source.split(",") if s in SOURCES]
     out = {"검색어": query, "출처별": {}}
     for s in sources:
         try:
@@ -121,8 +131,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--display", type=int, default=8, help="검색어당 수집 건수 (기본 8)")
     parser.add_argument("--query", default="", help="가제 키워드 검색 모드 — 결과를 표준 출력으로")
-    parser.add_argument("--source", default="all", choices=["news", "encyc", "all"],
-                        help="--query 모드의 검색 출처 (기본 all)")
+    parser.add_argument("--source", default="news,encyc", choices=["news", "encyc", "image", "all", "news,encyc"],
+                        help="--query 모드의 검색 출처 (기본 news,encyc — 이미지는 --source image)")
     args = parser.parse_args()
 
     cid, secret = load_keys()

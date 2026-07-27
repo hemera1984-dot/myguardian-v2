@@ -237,6 +237,10 @@
         lines.push("각 가제는 제목을 다듬어 확정하고, 근거는 아래 두 경로로 수집해 교차 확인한다:");
         lines.push('  1) python pipeline/collect_news.py --query "가제 키워드" (네이버 뉴스+백과사전)');
         lines.push("  2) 웹검색 (최신 수치·발표 확인)");
+        lines.push("기사마다 지면 사진을 붙인다. 후보는 아래로 찾고, 고른 파일은");
+        lines.push("data/care/issues/<id>/ 에 두고 기사의 이미지 경로에 기록한다:");
+        lines.push('  python pipeline/collect_news.py --query "키워드" --source image');
+        lines.push("  출처가 분명하지 않거나 워터마크가 박힌 사진은 쓰지 않는다.");
         lines.push("작성 원칙은 docs/care-workflow.md 2~3단계. 완성 후 publish_care_issue.py 검증까지.", "");
         lines.push("[가제]");
         filled.forEach(function (s) {
