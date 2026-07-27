@@ -209,10 +209,58 @@
         box.innerHTML = TOPIC_SLOTS[planChannel].map(function (slot) {
           var val = (topics[planChannel] || {})[slot] || "";
           return '<div class="topic-row"><span class="topic-cat">' + esc(slot) + "</span>"
-            + '<input type="text" data-slot="' + esc(slot) + '" value="' + esc(val) + '" placeholder="가제를 쓰세요 — 예: 국민연금 개편, 내 보험료는 어떻게 되나" aria-label="' + esc(slot) + ' 가제"></div>';
+            + '<input type="text" data-slot="' + esc(slot) + '" value="' + esc(val) + '" placeholder="가제를 쓰세요 — 예: 국민연금 개편, 내 보험료는 어떻게 되나" aria-label="' + esc(slot) + ' 가제">'
+            + '<button type="button" class="btn topic-polish" data-polish="' + esc(slot) + '">제목 다듬기</button>'
+            + '<div class="topic-suggest" data-suggest="' + esc(slot) + '" hidden></div></div>';
         }).join("");
       }
+
+      // 제목 다듬기 — 서버가 Claude에 중계한다. 후보를 누르면 가제 칸에 들어간다.
+      function polishTitle(slot, btn) {
+        var input = document.querySelector('input[data-slot="' + slot + '"]');
+        var box = document.querySelector('[data-suggest="' + slot + '"]');
+        var draft = (input.value || "").trim();
+        if (!draft) { input.focus(); return; }
+        if (!window.mgAuth || !window.mgAuth.token()) {
+          box.hidden = false;
+          box.textContent = "로그인이 필요합니다.";
+          return;
+        }
+        btn.disabled = true;
+        var label = btn.textContent;
+        btn.textContent = "다듬는 중…";
+        box.hidden = false;
+        box.textContent = "";
+        window.mgAuth.api("/ai/title", {
+          method: "POST",
+          body: { "가제": draft, "카테고리": slot, "채널": planChannel }
+        }).then(function (data) {
+          box.textContent = "";
+          (data["후보"] || []).forEach(function (t) {
+            var b = document.createElement("button");
+            b.type = "button";
+            b.className = "topic-cand";
+            b.textContent = t;
+            b.addEventListener("click", function () {
+              input.value = t;
+              input.dispatchEvent(new Event("input", { bubbles: true }));
+              box.hidden = true;
+            });
+            box.appendChild(b);
+          });
+        }).catch(function (err) {
+          box.textContent = err.message || "다듬지 못했습니다.";
+        }).finally(function () {
+          btn.disabled = false;
+          btn.textContent = label;
+        });
+      }
       renderTopics();
+
+      document.getElementById("topic-inputs").addEventListener("click", function (e) {
+        var btn = e.target.closest("button[data-polish]");
+        if (btn) polishTitle(btn.dataset.polish, btn);
+      });
 
       document.getElementById("topic-inputs").addEventListener("input", function (e) {
         var input = e.target.closest("input[data-slot]");
