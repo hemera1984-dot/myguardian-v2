@@ -1844,9 +1844,39 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
 .topic-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 8px;
 }
+
+.topic-polish { flex: 0 0 auto; }
+
+/* 다듬은 제목 후보 — 누르면 가제 칸에 들어간다 */
+.topic-suggest {
+  flex: 1 0 100%;
+  margin-left: 74px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ink-sub);
+  font-size: 0.85rem;
+}
+
+.topic-suggest[hidden] { display: none; }
+
+.topic-cand {
+  text-align: left;
+  font: inherit;
+  font-size: 0.92rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fbfcfe;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: border-color 0.14s ease, background-color 0.14s ease;
+}
+
+.topic-cand:hover { border-color: var(--accent); background: #f2f7ff; }
 
 .topic-cat {
   flex: 0 0 64px;

@@ -23,6 +23,10 @@ const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const ORIGINS = (process.env.ALLOWED_ORIGINS || "").split(",").map((s) => s.trim()).filter(Boolean);
 const BOOTSTRAP = (process.env.BOOTSTRAP_ADMINS || "").split(",")
   .map((s) => s.trim().toLowerCase()).filter(Boolean);
+// 기사 제목 다듬기 중계 — API 키는 서버에만 두고 브라우저에 노출하지 않는다.
+const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || "";
+const TITLE_MODEL = process.env.TITLE_MODEL || "claude-opus-5";
+
 const MEDIA_DIR = process.env.MEDIA_DIR || "./media";
 const MEDIA_BASE = process.env.MEDIA_BASE || "";  // 예: https://api.insurguard.life/media
 
@@ -208,6 +212,73 @@ async function route(req, res, url) {
 
   // 승인 대기 상태에서는 여기까지만 — 데이터 경로는 열지 않는다
   if (me.status !== "승인") return send(res, 403, { error: "승인 대기 중입니다." });
+
+  // 기사 제목 다듬기 — 가제를 넣으면 다듬은 제목 3안을 준다.
+  // 승인된 계정이면 누구나. 키는 서버에만 있고 응답에 실리지 않는다.
+  if (req.method === "POST" && path === "/ai/title") {
+    if (!ANTHROPIC_KEY) return send(res, 503, { error: "AI 기능이 설정되지 않았습니다." });
+    const { 가제, 카테고리, 채널 } = await readJson(req);
+    const draft = String(가제 || "").trim();
+    if (!draft) return send(res, 400, { error: "가제를 입력하세요." });
+    if (draft.length > 200) return send(res, 400, { error: "가제가 너무 깁니다." });
+
+    const prompt = [
+      `보험 설계사가 고객에게 보내는 ${채널 || "주간"} 뉴스레터의 ${카테고리 || ""} 기사 제목을 다듬는다.`,
+      `가제: ${draft}`,
+      "",
+      "조건:",
+      "- 경제지 기사 제목 문법. 사실 전달이 우선이고 과장·낚시는 쓰지 않는다.",
+      "- 30자 안팎. 이모지·영문 장식 표기 금지.",
+      "- 가제의 사실관계를 바꾸지 않는다. 없는 내용을 지어내지 않는다.",
+      "- 서로 다른 각도로 3개를 제시한다."
+    ].join("\n");
+
+    // 외부 패키지를 쓰지 않는 서버라 공식 SDK 대신 원시 HTTP로 호출한다
+    // (서버에서 npm install 하지 않는 배포 방식을 유지하기 위한 선택).
+    const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": ANTHROPIC_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        model: TITLE_MODEL,
+        max_tokens: 2000,
+        output_config: {
+          effort: "low",
+          format: {
+            type: "json_schema",
+            schema: {
+              type: "object",
+              properties: {
+                후보: { type: "array", items: { type: "string" } }
+              },
+              required: ["후보"],
+              additionalProperties: false
+            }
+          }
+        },
+        messages: [{ role: "user", content: prompt }]
+      }),
+      signal: AbortSignal.timeout(60000)
+    });
+
+    if (!upstream.ok) {
+      const detail = await upstream.text().catch(() => "");
+      console.error("제목 다듬기 실패:", upstream.status, detail.slice(0, 300));
+      return send(res, 502, { error: "제목을 다듬지 못했습니다. 잠시 후 다시 시도하세요." });
+    }
+    const data = await upstream.json();
+    if (data.stop_reason === "refusal") {
+      return send(res, 422, { error: "이 내용으로는 제목을 만들 수 없습니다." });
+    }
+    const textBlock = (data.content || []).find((b) => b.type === "text");
+    let 후보 = [];
+    try { 후보 = JSON.parse(textBlock.text)["후보"] || []; } catch (e) { 후보 = []; }
+    if (!후보.length) return send(res, 502, { error: "결과를 읽지 못했습니다." });
+    return send(res, 200, { 후보: 후보.slice(0, 3) });
+  }
 
   // 지면 사진 업로드 — 승인된 계정이면 누구나(자기 호에 쓸 사진이다)
   if (req.method === "POST" && path === "/media/upload") {
