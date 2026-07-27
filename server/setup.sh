@@ -53,6 +53,8 @@ DB_FILE=$DATA_DIR/myguardian.db
 GOOGLE_CLIENT_ID=370923160679-3h1hn1flheb4d01bq1amtutr992kldj1.apps.googleusercontent.com
 ALLOWED_ORIGINS=https://app.insurguard.life,https://hemera1984-dot.github.io,http://localhost:8080
 BOOTSTRAP_ADMINS=hemera1984@gmail.com
+MEDIA_DIR=$DATA_DIR/media
+MEDIA_BASE=https://$DOMAIN/media
 EOF
   # 서비스가 myguardian 계정으로 도므로 소유권을 넘긴다 (root 소유면 읽지 못해 부팅 실패)
   chown myguardian:myguardian "$APP_DIR/server/.env"
@@ -103,7 +105,14 @@ fi
 
 cat > /etc/caddy/Caddyfile <<EOF
 $DOMAIN {
-	reverse_proxy 127.0.0.1:8787
+	# 지면 사진은 파일로 바로 내보낸다 (앱을 거치지 않는다)
+	handle_path /media/* {
+		root * $DATA_DIR/media
+		file_server
+	}
+	handle {
+		reverse_proxy 127.0.0.1:8787
+	}
 }
 EOF
 

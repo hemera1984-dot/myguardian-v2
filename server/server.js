@@ -8,6 +8,9 @@
 // 서버에서 npm install 할 일이 없어 배포가 단순하다.
 
 import { createServer } from "node:http";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { randomBytes } from "node:crypto";
 import {
   openDb, seedGrades, upsertAccount, createSession, accountForToken, deleteSession,
   listGrades, listPending, listMembers, getAccount, approve, suspend, setAdmin,
@@ -20,6 +23,19 @@ const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const ORIGINS = (process.env.ALLOWED_ORIGINS || "").split(",").map((s) => s.trim()).filter(Boolean);
 const BOOTSTRAP = (process.env.BOOTSTRAP_ADMINS || "").split(",")
   .map((s) => s.trim().toLowerCase()).filter(Boolean);
+const MEDIA_DIR = process.env.MEDIA_DIR || "./media";
+const MEDIA_BASE = process.env.MEDIA_BASE || "";  // 예: https://api.insurguard.life/media
+
+// 지면 사진 업로드 — 받아들일 형식과 크기. 확장자는 서버가 정한다(파일명을 믿지 않는다).
+const IMAGE_TYPES = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+  "image/gif": ".gif"
+};
+const MAX_IMAGE = 12 * 1024 * 1024;
+
+mkdirSync(MEDIA_DIR, { recursive: true });
 
 if (!CLIENT_ID) {
   console.error("GOOGLE_CLIENT_ID가 없습니다. .env를 확인하세요.");
@@ -72,6 +88,22 @@ function readJson(req, limit = 64 * 1024) {
       try { resolve(JSON.parse(Buffer.concat(chunks).toString("utf8"))); }
       catch { reject(new Error("JSON 형식 오류")); }
     });
+    req.on("error", reject);
+  });
+}
+
+// 사진은 원시 바이트로 받는다 — multipart를 직접 파싱하지 않는다(코드가 길고 사고가 잦다).
+// 브라우저가 File 객체를 그대로 본문에 실으면 되고, 형식은 Content-Type으로 판단한다.
+function readBytes(req, limit) {
+  return new Promise((resolve, reject) => {
+    let size = 0;
+    const chunks = [];
+    req.on("data", (c) => {
+      size += c.length;
+      if (size > limit) { reject(new Error("파일이 너무 큽니다.")); req.destroy(); return; }
+      chunks.push(c);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks)));
     req.on("error", reject);
   });
 }
@@ -176,6 +208,24 @@ async function route(req, res, url) {
 
   // 승인 대기 상태에서는 여기까지만 — 데이터 경로는 열지 않는다
   if (me.status !== "승인") return send(res, 403, { error: "승인 대기 중입니다." });
+
+  // 지면 사진 업로드 — 승인된 계정이면 누구나(자기 호에 쓸 사진이다)
+  if (req.method === "POST" && path === "/media/upload") {
+    const type = String(req.headers["content-type"] || "").split(";")[0].trim();
+    const ext = IMAGE_TYPES[type];
+    if (!ext) return send(res, 400, { error: "지원하지 않는 형식입니다. (JPG·PNG·WebP·GIF)" });
+    const bytes = await readBytes(req, MAX_IMAGE);
+    if (!bytes.length) return send(res, 400, { error: "빈 파일입니다." });
+    // 파일명은 서버가 만든다 — 올린 이름을 그대로 쓰면 경로 이탈·덮어쓰기 위험이 있다
+    const name = new Date().toISOString().slice(0, 10).replace(/-/g, "")
+      + "-" + randomBytes(6).toString("hex") + ext;
+    writeFileSync(join(MEDIA_DIR, name), bytes);
+    return send(res, 200, {
+      파일명: name,
+      주소: (MEDIA_BASE ? MEDIA_BASE.replace(/\/$/, "") + "/" : "/media/") + name,
+      크기: bytes.length
+    });
+  }
 
   if (req.method === "GET" && path === "/admin/pending") {
     if (!canApprove(db, me)) return send(res, 403, { error: "승인 권한이 없습니다." });

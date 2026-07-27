@@ -1892,6 +1892,109 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   padding-top: 8px;
 }
 
+/* 카테고리 접기·펼치기 — 후보가 많아 다 펼치면 화면이 길어진다 */
+.news-group > summary.news-cat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.news-group > summary.news-cat::-webkit-details-marker { display: none; }
+
+.news-group > summary.news-cat::before {
+  content: "+";
+  width: 18px;
+  color: var(--ink-sub);
+  font-weight: 700;
+  text-align: center;
+}
+
+.news-group[open] > summary.news-cat::before { content: "−"; }
+
+.news-cat-count {
+  margin-left: auto;
+  color: var(--ink-sub);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.news-group[open] { padding-bottom: 6px; }
+
+/* 지면 사진 — 끌어다 놓기 · 붙여넣기 */
+.drop-zone {
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  background: #fbfcfe;
+  padding: 26px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.14s ease, background-color 0.14s ease;
+}
+
+.drop-zone:hover,
+.drop-zone:focus-visible,
+.drop-zone.over {
+  border-color: var(--accent);
+  background: #f2f7ff;
+}
+
+.drop-zone .drop-main {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.drop-zone .drop-sub {
+  margin: 6px 0 0;
+  color: var(--ink-sub);
+  font-size: 0.83rem;
+}
+
+.media-msg {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-sub);
+}
+
+.media-msg.bad { color: #b42318; }
+
+.media-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.media-item {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.media-item img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 4px;
+  display: block;
+}
+
+.media-item code {
+  display: block;
+  margin: 8px 0;
+  color: var(--ink-sub);
+  font-size: 0.72rem;
+  word-break: break-all;
+}
+
+.media-item .btn { width: 100%; }
+
 .news-item {
   display: flex;
   gap: 10px;
