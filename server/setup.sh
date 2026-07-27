@@ -105,7 +105,12 @@ fi
 
 cat > /etc/caddy/Caddyfile <<EOF
 $DOMAIN {
-	# 지면 사진은 파일로 바로 내보낸다 (앱을 거치지 않는다)
+	# 업로드는 앱이 처리한다 — 아래 파일 서비스보다 먼저 걸러야 한다
+	@upload path /media/upload
+	handle @upload {
+		reverse_proxy 127.0.0.1:8787
+	}
+	# 올라간 사진은 파일로 바로 내보낸다 (앱을 거치지 않는다)
 	handle_path /media/* {
 		root * $DATA_DIR/media
 		file_server
