@@ -37,23 +37,41 @@
     }
 
     /* 표지 밴드 — 첫 뷰포트 1/3 미만 (≤280px). masthead 문법: 아이브로우 제호 + 한 행 내 600/800 대비 */
-    /* 데스크톱: 좌 텍스트 + 우 CTA 가로 플렉스 — 우측 빈 면 제거 (샤프 비평 RED-5). 모바일은 세로 적층 */
+    /* 네이비 커버 밴드 (라운드 4, 사용자 선택) — 사이드바와 같은 앵커색 + 상단 시안 라인의 2톤 문법 확장.
+       순색 네이비(그라데이션·이미지 금지), 콘텐츠 영역 안의 radius 6px 커버 카드.
+       데스크톱: 좌 텍스트 + 우 CTA 가로 플렉스 (라운드 3). 모바일은 세로 적층 */
     .home-cover {
+      position: relative;
+      overflow: hidden; /* 워터마크 카드 밖 클리핑 */
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 24px;
       margin-top: 12px;
-      border: 1px solid var(--platform-line);
+      border: 0;
+      border-top: 3px solid var(--platform-cyan);
       border-radius: var(--platform-radius);
-      background: var(--platform-surface);
+      background: var(--platform-navy);
+      color: rgba(255, 255, 255, 0.85); /* 기조 — 강조부(순백)와 대비 층 */
       box-shadow: var(--platform-shadow);
       padding: 20px 24px;
+    }
+    /* 질감 — 커버 카드 한정 (시그니처는 한 곳). 그라데이션·애니메이션 없음.
+       층 1 = 방패 워터마크(로고 외곽선, 우측 상단 걸침, white 0.05), 층 2 = feTurbulence 화이트 그레인(알파 0.05 소부).
+       ::before는 정적 자식보다 먼저 페인트 — 텍스트·CTA 픽셀에 영향 없음 */
+    .home-cover::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Cpath d='M48 20 L72 28 V47 C72 61 63 71 48 76 C33 71 24 61 24 47 V28 Z' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-opacity='0.05' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right -28px top -34px / 190px auto,
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E") repeat;
     }
     .cover-ctas { flex-shrink: 0; }
     .cover-eyebrow {
       display: block;
-      color: var(--platform-muted);
+      color: #a8b4c4; /* 네이비 위 6.8:1 — AA */
       font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
     }
     .cover-greet {
@@ -61,7 +79,7 @@
       font-size: 28px; font-weight: 600; letter-spacing: -0.04em; line-height: 1.3;
       font-variant-numeric: tabular-nums;
     }
-    .cover-greet b { font-weight: 800; } /* 시그니처: 이름·날짜만 800 */
+    .cover-greet b { font-weight: 800; color: #ffffff; } /* 시그니처: 이름·날짜만 800 + 순백 강조 층 */
     .cover-ctas { display: flex; flex-wrap: wrap; gap: 10px; }
     .cta {
       display: inline-flex; align-items: center; justify-content: center;
@@ -74,6 +92,9 @@
     a.cta-primary:hover { background: var(--platform-blue-dark); border-color: var(--platform-blue-dark); }
     a.cta-secondary { background: var(--platform-surface); border: 1px solid var(--platform-line-strong); color: var(--platform-ink); }
     a.cta-secondary:hover { border-color: var(--platform-faint); }
+    /* 네이비 커버 위 secondary — 화이트 아웃라인 (라운드 4) */
+    .home-cover .cta-secondary { background: transparent; border-color: rgba(255, 255, 255, 0.35); color: #ffffff; }
+    .home-cover .cta-secondary:hover { border-color: rgba(255, 255, 255, 0.6); }
 
     /* 기능 카드 그리드 — 지배 앵커. 여백 구분(축 2=a): 화이트 카드 + gap 16, 셀 높이는 콘텐츠에 맞춘다 */
     .menu-grid {
