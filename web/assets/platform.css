@@ -4,7 +4,7 @@
   --platform-surface: #ffffff;
   --platform-ink: #172033;
   --platform-muted: #596579;
-  --platform-faint: #717d8f; /* 흰 바탕 4.5:1 이상 — 보조 텍스트 대비 확보 */
+  --platform-faint: #647082; /* 흰 바탕 5.0:1 · 캔버스(#f5f7fa) 4.7:1 — 구값 #717d8f는 실측 4.17로 AA 미달이었다 (2026-07-29 교정) */
   --platform-blue: #0758d6;
   --platform-blue-dark: #0648ad;
   --platform-blue-soft: #edf4ff;
@@ -128,7 +128,7 @@ body.platform {
 .platform-nav a {
   position: relative;
   display: flex;
-  min-height: 43px;
+  min-height: 44px; /* 터치 타깃 44px 플로어 (omd check HIT-002, 2026-07-29) */
   align-items: center;
   border-radius: 4px;
   padding: 0 14px;
@@ -1895,17 +1895,19 @@ body.platform {
   font-weight: 700;
   text-align: center;
   text-decoration: none;
-  color: #ffffff;
-  background: var(--platform-blue);
-  border: 1px solid var(--platform-blue);
+  /* 아웃라인 급 — 필 primary는 화면당 1개(홈: "케어센터 열기")만. 설치는 1회성 태스크 (샤프 비평 상-2, 전 화면 공용) */
+  color: rgba(255, 255, 255, 0.9);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.14s ease, border-color 0.14s ease;
+  transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
 }
 
 .install-btn:hover {
-  background: var(--platform-blue-dark);
-  border-color: var(--platform-blue-dark);
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #ffffff;
 }
 
 /* 초대 버튼 — 설치 버튼 위. 주액션은 설치 하나만 두고 이쪽은 테두리형 */
