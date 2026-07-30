@@ -48,7 +48,8 @@ body.platform {
   /* 개정 10차: 배경 질감 제거 — 순수 플랫 면, 선으로 구획한다 */
   background: var(--platform-bg);
   color: var(--platform-ink);
-  font-family: "Pretendard", "Pretendard Variable", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+  /* 가변 폰트 우선 — 타입 증명 §4: Pretendard Variable 선행 (2026-07-30 공용 승격, 종전 홈·인트로 한정) */
+  font-family: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
   line-height: 1.6;
   letter-spacing: -0.02em;
   word-break: keep-all;
@@ -1467,7 +1468,7 @@ body.platform {
   padding: 44px 48px;
   display: flex;
   flex-direction: column;
-  font-family: "Pretendard", sans-serif;
+  font-family: "Pretendard Variable", "Pretendard", sans-serif;
 }
 
 .namecard .n-kicker {
@@ -1618,6 +1619,34 @@ body.platform {
 
 [data-theme="dark"] .platform-topbar {
   background: rgba(24, 34, 48, 0.97);
+}
+
+/* 모바일 62px 네이비 슬림 상단바 — 홈 구현의 공용 승격 (2026-07-30 통일 패스).
+   사이드바의 네이비+시안 4px 문법을 모바일 상단바가 이어받는다.
+   위의 .platform-topbar 재선언(마감 폴리시)이 배경을 덮지 않도록 이 위치(뒤)에 둔다. */
+@media (max-width: 767px) {
+  .platform-topbar,
+  [data-theme="dark"] .platform-topbar {
+    height: 62px;
+    border-bottom: 0;
+    border-top: 4px solid var(--platform-cyan);
+    background: var(--platform-navy);
+  }
+
+  .mobile-brand {
+    color: #ffffff;
+  }
+
+  .mobile-menu {
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.28);
+  }
+
+  .mobile-menu::before,
+  .mobile-menu::after,
+  .mobile-menu span {
+    background: #ffffff;
+  }
 }
 
 /* 개정 10차: 조용한 모션 — 색만 바뀌고 형태는 움직이지 않는다.
