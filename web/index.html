@@ -16,10 +16,7 @@
        토큰은 platform.css :root 변수만 참조한다. 면 구분은 1px 선 중심.
        타입 계약: 7단 10/11/13/15/18/21/28(모바일 디스플레이 24), 웨이트 400/600/800. */
 
-    /* 타입 증명 §4 시공 지침 ①: 가변 폰트를 실제로 쓰도록 Pretendard Variable 선행 (홈 한정) */
-    body.platform {
-      font-family: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
-    }
+    /* 타입 증명 §4 시공 지침 ① Pretendard Variable 선행 — platform.css 공용 승격 완료 (2026-07-30) */
 
     /* 콘텐츠 열: max 1120px, 외곽 여백 24~30px (컴포지션 그리드) */
     .platform-main {
@@ -208,18 +205,9 @@
       .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
-    /* 모바일 767 이하: 62px 네이비 슬림 상단바 + 1열 적층 (형태 전환, 축소 아님) */
+    /* 모바일 767 이하: 1열 적층 (형태 전환, 축소 아님).
+       62px 네이비 슬림 상단바는 platform.css 공용 승격 완료 (2026-07-30) */
     @media (max-width: 767px) {
-      .platform-topbar {
-        height: 62px;
-        border-bottom: 0;
-        border-top: 4px solid var(--platform-cyan);
-        background: var(--platform-navy);
-      }
-      .mobile-brand { color: #ffffff; }
-      .mobile-menu { background: transparent; border-color: rgba(255, 255, 255, 0.28); }
-      .mobile-menu::before, .mobile-menu::after, .mobile-menu span { background: #ffffff; }
-
       .platform-main { width: auto; padding: 12px 16px 48px; }
       .global-search { max-width: none; }
       .home-cover { display: block; padding: 18px; } /* 모바일: 세로 적층 유지 */
