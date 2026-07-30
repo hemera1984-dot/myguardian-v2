@@ -5,84 +5,72 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <title>마이가디언</title>
-  <meta name="theme-color" content="#0a1d37">
+  <meta name="theme-color" content="#102a4e">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
   <style>
+    /* 인트로 리스킨 — 홈 네이비 커버 시그니처 확장: 순색 #102a4e + 그레인 + 방패 워터마크 + 상단 3px 시안.
+       그라데이션·등장 애니메이션 제거(헌법 모션: 0.14s 색 전환만). 로직 무변경 — 시각만.
+       질감 레시피는 홈(web/index.html)과 동일 복제 — 사용처 2곳이라 공용 파일화 보류(3곳째에 공용화). */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; }
     body {
-      font-family: "Pretendard", "Pretendard Variable", sans-serif;
-      background: #0a1d37;
+      font-family: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+      background: #102a4e;
       color: #fff;
       overflow: hidden;
       word-break: keep-all;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* 조용히 흐르는 배경 (영상 대신) */
+    /* 상단 3px 시안 라인 — 사이드바·홈 커버와 짝 */
+    body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: 3px; background: #00a6c7; z-index: 10; }
+
+    /* 배경 — 순색 네이비 + 방패 워터마크(우측, white 0.05) + 그레인(알파 0.05 소부) */
     .bg { position: fixed; inset: 0; z-index: 0;
       background:
-        radial-gradient(1100px 640px at 70% 20%, rgba(0,166,199,0.16), transparent 60%),
-        radial-gradient(950px 760px at 22% 92%, rgba(7,88,214,0.22), transparent 60%),
-        linear-gradient(160deg, #0a1d37, #102a4e 55%, #0a1d37);
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Cpath d='M48 20 L72 28 V47 C72 61 63 71 48 76 C33 71 24 61 24 47 V28 Z' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-opacity='0.05' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right -120px center / 560px auto,
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E") repeat;
     }
-    .bg::after { content:""; position:absolute; inset:0;
-      background: linear-gradient(115deg, transparent 45%, rgba(255,255,255,0.045) 50%, transparent 55%);
-      transform: translateX(-50%); animation: sweep 11s ease-in-out infinite; }
-    @keyframes sweep { 0%,100%{transform:translateX(-50%)} 50%{transform:translateX(50%)} }
 
     .top { position: absolute; top: 26px; left:0; right:0; z-index:3;
-      display:flex; justify-content:center; align-items:center; gap:9px;
-      opacity:0; animation: fade 0.8s ease 0.2s forwards; }
+      display:flex; justify-content:center; align-items:center; gap:9px; }
     .top img { width:26px; height:26px; display:block; }
     .top span { font-size:13px; font-weight:700; letter-spacing:0.02em; color:rgba(255,255,255,0.7); }
 
     .page { position:relative; z-index:2; height:100%;
       display:flex; flex-direction:column; align-items:center; justify-content:center; gap:38px; padding:32px; }
 
-    /* 키네틱 타이포 무대 */
+    /* 브랜드 블록 — 기존 문자열 그대로, 정적 표시 */
     .type { text-align:center; min-height: 34vh; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-    .line { opacity:0; }
-    .kicker { font-size: clamp(14px,2.4vw,18px); font-weight:600; letter-spacing:0.06em;
-      color:#43c8df; animation: rise 0.7s ease 0.5s forwards; }
+    .kicker { font-size: clamp(14px,2.4vw,18px); font-weight:600; letter-spacing:0.06em; color:#43c8df; }
     .title { font-size: clamp(44px,9vw,88px); font-weight:800; letter-spacing:-0.03em; line-height:1.05;
-      margin: 10px 0 4px; animation: rise 0.8s ease 0.9s forwards; }
-    .desc { font-size: clamp(16px,3vw,24px); font-weight:500; color:rgba(255,255,255,0.82);
-      overflow:hidden; }
-    .desc .seg { display:inline-block; opacity:0; transform: translateY(12px); }
-    .desc .seg.a { animation: rise 0.6s ease 1.6s forwards; }
-    .desc .seg.b { animation: rise 0.6s ease 2.1s forwards; }
+      margin: 10px 0 4px; }
+    .desc { font-size: clamp(16px,3vw,24px); font-weight:500; color:rgba(255,255,255,0.82); }
     .desc .dot { color:#43c8df; margin:0 2px; }
 
-    @keyframes rise { from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none} }
-    @keyframes fade { to{opacity:1} }
-
-    .actions { display:flex; flex-direction:column; gap:12px; align-items:center;
-      opacity:0; animation: rise 0.7s ease 2.7s forwards; }
+    .actions { display:flex; flex-direction:column; gap:12px; align-items:center; }
     .actions-row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+    /* 구글 GIS 버튼 받침 — 구글 버튼은 밝은 배경 전제. 버튼 자체는 구글이 그리는 그대로 */
+    .gis-panel { background:#ffffff; border-radius:6px; padding:18px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .gis-panel:empty { display:none; }
     .status-note { max-width:420px; text-align:center; font-size:14px; line-height:1.65;
-      color:rgba(255,255,255,0.78); }
+      color:rgba(255,255,255,0.82); }
     .status-note strong { display:block; margin-bottom:4px; font-size:15px; color:#fff; }
     .status-note.warn strong { color:#ffb4a2; }
     .btn { display:inline-flex; align-items:center; gap:10px; height:52px; padding:0 26px;
-      border-radius:8px; font:inherit; font-size:15px; font-weight:700; cursor:pointer;
+      border-radius:4px; font:inherit; font-size:15px; font-weight:700; cursor:pointer;
       border:1px solid transparent; text-decoration:none;
-      transition: background-color 0.16s ease, border-color 0.16s ease; }
-    .btn-google { background:#fff; color:#1f2937; }
-    .btn-google:hover { background:#f1f3f5; }
+      transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease; }
     .btn-enter { background:#0758d6; color:#fff; }
     .btn-enter:hover { background:#0648ad; }
-    .btn-ghost { background:transparent; color:rgba(255,255,255,0.78); border-color:rgba(255,255,255,0.25); }
-    .btn-ghost:hover { border-color:rgba(255,255,255,0.5); color:#fff; }
+    .btn-ghost { background:transparent; color:rgba(255,255,255,0.82); border-color:rgba(255,255,255,0.28); }
+    .btn-ghost:hover { border-color:rgba(255,255,255,0.6); color:#fff; }
     .btn svg { width:18px; height:18px; }
 
     @media (max-width:640px) {
       .actions { flex-direction:column; align-items:stretch; width:min(100%,320px); }
       .btn { justify-content:center; width:100%; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .bg::after { animation:none; }
-      .line, .top, .actions, .desc .seg { animation:none !important; opacity:1 !important; transform:none !important; }
+      .gis-panel { display:flex; justify-content:center; }
     }
   </style>
 </head>
@@ -169,7 +157,7 @@
       function showLogin(message) {
         clear();
         if (message) actions.appendChild(note("로그인할 수 없습니다", message, true));
-        var holder = el("div");
+        var holder = el("div", "gis-panel"); // 화이트 받침 패널 — 시각만, 로직 무변경
         actions.appendChild(holder);
         window.mgAuth.renderButton(holder, showAccount, function (err) {
           showLogin(err && err.message ? err.message : "잠시 후 다시 시도해 주세요.");
