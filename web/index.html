@@ -170,6 +170,17 @@
     .news-no { font-weight: 600; color: var(--platform-muted); font-variant-numeric: tabular-nums; }
     .news-dt { color: var(--platform-muted); font-size: 11px; white-space: nowrap; } /* 행두 중점 금칙: "· 날짜" 한 단위. 보조 토큰 = AA 확보 */
 
+    /* 자료 현황 — 칸막이형 격자(gap 0 + 1px 셀 선, platform.css .stat-row 계승).
+       카드 그리드(여백 구분)와 의도적 밀도 대비: 목차(공기) ↔ 현황(조밀) */
+    .home-stats { margin-top: 14px; }
+    .home-stats .stat-label, .home-stats .stat-sub { font-size: 11px; } /* 셀 해부: 라벨 11 → 수치 27+/700 tabular → 보조 11 */
+    @media (max-width: 720px) {
+      /* 수치 타일은 좁아도 성립 — 모바일도 3셀 가로 유지 */
+      .home-stats .stat-row { grid-template-columns: repeat(3, 1fr); }
+      .home-stats .stat-tile { border-right: 1px solid var(--platform-line); border-bottom: 0; padding: 14px 12px; }
+      .home-stats .stat-row .stat-tile:last-child { border-right: 0; }
+    }
+
     /* 태블릿 1024: 사이드바 유지, 카드 2열 */
     @media (max-width: 1024px) {
       .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -323,6 +334,18 @@
         </div>
         <div class="news-list" id="news-list"></div>
       </section>
+
+      <!-- 자료 현황 — 구 홈 구획 verbatim 계승 (라운드 5, 사용자 승인). 칸막이형 격자 = 헌법 지표 타일 문법 -->
+      <section class="section-block home-stats" id="home-stats" aria-labelledby="data-status-title">
+        <div class="section-head">
+          <div><h2 id="data-status-title">자료 현황</h2><p>플랫폼에 입주한 실데이터 규모입니다.</p></div>
+        </div>
+        <div class="stat-row" id="stat-row">
+          <div class="stat-tile"><span class="stat-label">사례·판례</span><div class="stat-value" id="stat-cases">-</div><span class="stat-sub" id="stat-cases-sub"></span></div>
+          <div class="stat-tile"><span class="stat-label">보험 용어</span><div class="stat-value" id="stat-terms">-</div><span class="stat-sub">용어 사전</span></div>
+          <div class="stat-tile"><span class="stat-label">질병 정보</span><div class="stat-value" id="stat-diseases">-</div><span class="stat-sub">질병 사전</span></div>
+        </div>
+      </section>
     </main>
     <footer class="platform-footer">마이가디언 v2</footer>
   </div>
@@ -439,6 +462,30 @@
           section.hidden = false;
         })
         .catch(function () { section.remove(); });
+    })();
+
+    // 자료 현황 — 구 홈 구현 계승: data/stats.json 실데이터 집계만 표시.
+    // 수치는 실제 값을 즉시 표시한다 — 중간값을 지어내는 카운트업은 가짜 수치 금지 원칙 위반 (Codex 4차, 구 홈 주석 계승)
+    (function () {
+      fetch("../data/stats.json")
+        .then(function (r) { return r.json(); })
+        .then(function (s) {
+          var cells = [["사례", "stat-cases"], ["용어", "stat-terms"], ["질병", "stat-diseases"]];
+          var alive = 0;
+          cells.forEach(function (c) {
+            var el = document.getElementById(c[1]);
+            if (s[c[0]] > 0) { el.textContent = s[c[0]].toLocaleString(); alive++; }
+            else el.closest(".stat-tile").remove(); // 0건 셀은 그 셀만 생략
+          });
+          if (!alive) { document.getElementById("home-stats").remove(); return; } // 전 셀 0건이면 구획 생략
+          var by = s["사례_출처별"] || {};
+          var sub = document.getElementById("stat-cases-sub");
+          if (sub) sub.textContent = Object.keys(by).slice(0, 3).map(function (k) { return k + " " + by[k]; }).join(" · ");
+        })
+        .catch(function () {
+          document.getElementById("stat-row").innerHTML =
+            '<div class="stat-tile"><span class="stat-label">자료 현황</span><span class="stat-sub">데이터를 불러오지 못했습니다.</span></div>';
+        });
     })();
 
     // 통합검색 — 용어·질병 즉석 제안, 사례는 사례 화면으로. 사전은 첫 입력 시에만 로드.
