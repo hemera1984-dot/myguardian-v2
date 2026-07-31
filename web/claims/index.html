@@ -40,7 +40,7 @@
         </div>
         <div class="workspace-grid">
           <div class="workspace-list">
-            <div class="workspace-label"><span>검색 결과</span><span class="workspace-count" id="list-count">0건</span></div>
+            <div class="workspace-label"><h2>검색 결과</h2><span class="workspace-count" id="list-count">0건</span></div>
             <div class="case-rows" id="rows"><div class="list-empty">사례를 불러오는 중입니다.</div></div>
           </div>
           <div class="workspace-detail" id="detail">
@@ -124,7 +124,7 @@
         }
         rows.innerHTML = list.slice(0, 200).map(function (c) {
           return '<div class="case-row' + (c.id === state.sel ? " active" : "") + '" tabindex="0" role="button" data-id="' + esc(c.id) + '">'
-            + "<h4>" + esc(c.title) + "</h4>"
+            + "<h3>" + esc(c.title) + "</h3>"
             + '<div class="case-meta"><span>' + esc(c.case_number || c.source_type || "") + "</span>"
             + '<span class="badge-result ' + resultClass(c.decision_result) + '">' + esc(resultLabel(c.decision_result)) + "</span>"
             + '<span class="badge-grade">' + esc(c.verification_grade || "") + "</span>"
@@ -143,7 +143,7 @@
         $("detail").innerHTML = '<div class="case-detail-body">'
           + '<div class="detail-badges"><span class="badge-result ' + resultClass(c.decision_result) + '">' + esc(resultLabel(c.decision_result)) + "</span>"
           + '<span class="badge-grade">' + esc(c.verification_grade || "") + "</span></div>"
-          + "<h3>" + esc(c.title) + "</h3>"
+          + "<h2>" + esc(c.title) + "</h2>"
           + '<dl class="detail-fields">' + fields.map(function (f) {
               return "<dt>" + esc(f[0]) + "</dt><dd>" + esc(f[1]) + "</dd>";
             }).join("") + "</dl>"
@@ -244,7 +244,7 @@
 
           function block(title, rows, cls) {
             if (!rows.length) return "";
-            var h = ['<div style="margin-top:8px"><h4 style="margin:0 0 6px">' + title + " " + rows.length + "건</h4>"];
+            var h = ['<div style="margin-top:8px"><h3 style="margin:0 0 6px;font-size:14px">' + title + " " + rows.length + "건</h3>"];
             h.push('<div class="meeting-list">');
             rows.forEach(function (r) {
               h.push('<div class="meeting-row"><span class="badge-status ' + cls + '">' + esc(r["이름"]) + "</span>"

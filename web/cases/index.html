@@ -23,7 +23,13 @@
   <div class="platform-shell">
     <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">사례·판례</span><span class="topbar-note">공개된 분쟁 자료 통합 검색</span></header>
     <main class="platform-main">
-      <div class="global-search"><input type="search" id="q" aria-label="사례 및 판례 검색" placeholder="질병, 담보, 쟁점 또는 사건번호를 검색하세요"><span class="search-state" id="result-count">-</span></div>
+      <!-- 3단 헤딩 — eyebrow → 제목 → 설명 (플랫폼 공통 문법, 2026-07-31 정돈) -->
+      <div class="page-heading">
+        <p class="eyebrow">근거 자료</p>
+        <h1>사례·판례</h1>
+        <p>공개된 분쟁사례와 판례를 조건별로 조회합니다. 모든 자료에 사건번호와 신뢰도 등급을 표기합니다.</p>
+      </div>
+      <div class="global-search" style="margin-top:18px"><input type="search" id="q" aria-label="사례 및 판례 검색" placeholder="질병, 담보, 쟁점 또는 사건번호를 검색하세요"><span class="search-state" id="result-count">-</span></div>
 
       <div class="tabs-toolbar" role="tablist" aria-label="자료 유형">
         <button class="tab-button active" type="button" role="tab" aria-selected="true" data-tab="전체">전체</button>
@@ -40,7 +46,7 @@
 
       <div class="workspace-grid">
         <div class="workspace-list">
-          <div class="workspace-label"><span>검색 결과</span><span class="workspace-count" id="list-count">0건</span></div>
+          <div class="workspace-label"><h2>검색 결과</h2><span class="workspace-count" id="list-count">0건</span></div>
           <div class="case-rows" id="rows"></div>
         </div>
         <div class="workspace-detail" id="detail">
@@ -110,7 +116,7 @@
           var badge = c.decision_result && c.decision_result !== "기타"
             ? '<span class="badge-result ' + resultClass(c.decision_result) + '">' + esc(c.decision_result) + "</span>" : "";
           return '<div class="case-row' + (c.id === state.sel ? " active" : "") + '" tabindex="0" role="button" data-id="' + esc(c.id) + '">'
-            + "<h4>" + esc(c.title) + "</h4>"
+            + "<h3>" + esc(c.title) + "</h3>"
             + '<div class="case-meta"><span>' + esc(c.publisher || "출처 미기재") + "</span>"
             + "<span>" + esc(c.case_number) + "</span>"
             + (c.decision_date ? "<span>" + esc(c.decision_date) + "</span>" : "")
@@ -138,7 +144,7 @@
           ? '<span class="badge-result ' + resultClass(c.decision_result) + '">' + esc(c.decision_result) + "</span>" : "";
         $("detail").innerHTML = '<div class="case-detail-body">'
           + '<div class="detail-badges"><span class="badge-grade">' + esc(c.verification_grade || "미검증-참고용") + "</span>" + badge + "</div>"
-          + "<h3>" + esc(c.title) + "</h3>"
+          + "<h2>" + esc(c.title) + "</h2>"
           + '<dl class="detail-fields">'
           + "<dt>" + (c.source_type === "금감원" ? "자료 번호" : "사건번호") + "</dt><dd>" + esc(c.case_number) + "</dd>"
           + "<dt>기관</dt><dd>" + esc(c.publisher || "미기재") + "</dd>"
@@ -150,7 +156,7 @@
           + "</dl>"
           + '<div class="detail-summary">' + esc(c.summary || "요약 없음") + "</div>"
           + links.join(" ")
-          + '<p style="margin:16px 0 0"><button class="tab-button" type="button" id="btn-share" data-id="' + esc(c.id) + '">카톡 문구 복사</button></p>'
+          + '<p style="margin:16px 0 0"><button class="btn" type="button" id="btn-share" data-id="' + esc(c.id) + '">카톡 문구 복사</button></p>'
           + "</div>";
       }
 

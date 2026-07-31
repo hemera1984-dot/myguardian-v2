@@ -23,6 +23,12 @@
   <div class="platform-shell">
     <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">고객관리</span><span class="topbar-note">로컬 고객 폴더 기반 — 외부 전송 없음</span></header>
     <main class="platform-main">
+      <!-- 3단 헤딩 — eyebrow → 제목 → 설명 (플랫폼 공통 문법, 2026-07-31 정돈) -->
+      <div class="page-heading">
+        <p class="eyebrow">내 고객</p>
+        <h1>고객관리</h1>
+        <p>내 고객 저장소를 연결해 등록·진행상태·미팅·메모를 처리합니다. 모든 처리는 브라우저 안에서만 이루어지고 어디에도 전송되지 않습니다.</p>
+      </div>
 
       <section class="section-block" id="connect-block">
         <div class="section-head"><div><h2>내 고객 저장소</h2><p>내 PC의 고객 저장소(mg-clients)를 한 번 연결하면 기존 고객 전체가 목록에 올라옵니다. 이후 등록·삭제·이관은 이 화면에서 처리하며, 모든 처리는 브라우저 안에서만 이루어지고 어디에도 전송되지 않습니다.</p></div></div>
@@ -31,20 +37,20 @@
             <div><strong>연결된 저장소 없음</strong><span>저장소 폴더를 선택해 시작합니다. 폴더명(C-YYYY-NNN)이 곧 고객코드이며, 기존 고객은 한 번에 등록됩니다.</span></div>
           </div>
           <p style="margin:14px 0 0">
-            <button class="tab-button active" type="button" id="btn-connect">고객 저장소 연결</button>
-            <button class="tab-button" type="button" id="btn-new" hidden>신규 고객 등록</button>
+            <button class="btn btn-primary" type="button" id="btn-connect">고객 저장소 연결</button>
+            <button class="btn" type="button" id="btn-new" hidden>신규 고객 등록</button>
           </p>
           <div id="new-form" hidden style="margin-top:14px;flex-wrap:wrap;gap:8px;align-items:center;display:flex">
-            <input type="text" id="new-name" placeholder="고객 이름" aria-label="고객 이름" style="font:inherit;font-size:0.9rem;border:1px solid var(--platform-line);border-radius:8px;padding:8px 12px">
-            <select id="new-cat" aria-label="카테고리" style="font:inherit;font-size:0.9rem;border:1px solid var(--platform-line);border-radius:8px;padding:8px 12px">
+            <input type="text" id="new-name" placeholder="고객 이름" aria-label="고객 이름" style="font:inherit;font-size:0.9rem;border:1px solid var(--platform-line-strong);border-radius:4px;padding:8px 12px">
+            <select id="new-cat" aria-label="카테고리" style="font:inherit;font-size:0.9rem;border:1px solid var(--platform-line-strong);border-radius:4px;padding:8px 12px">
               <option value="referral">지인</option>
               <option value="transfer">이관</option>
               <option value="valueup">밸류업</option>
               <option value="contract">계약</option>
             </select>
-            <input type="text" id="new-phone" placeholder="연락처 (선택)" aria-label="연락처" style="font:inherit;font-size:0.9rem;border:1px solid var(--platform-line);border-radius:8px;padding:8px 12px">
-            <button class="tab-button active" type="button" id="new-save">등록</button>
-            <button class="tab-button" type="button" id="new-cancel">취소</button>
+            <input type="text" id="new-phone" placeholder="연락처 (선택)" aria-label="연락처" style="font:inherit;font-size:0.9rem;border:1px solid var(--platform-line-strong);border-radius:4px;padding:8px 12px">
+            <button class="btn" type="button" id="new-save">등록</button>
+            <button class="btn" type="button" id="new-cancel">취소</button>
             <span id="new-msg" style="font-size:0.83rem;color:var(--platform-muted)"></span>
           </div>
           <input type="file" id="dir-input" webkitdirectory multiple hidden>
@@ -75,7 +81,7 @@
 
         <div class="workspace-grid">
           <div class="workspace-list">
-            <div class="workspace-label"><span>고객</span><span class="workspace-count" id="list-count">0명</span></div>
+            <div class="workspace-label"><h2>고객</h2><span class="workspace-count" id="list-count">0명</span></div>
             <div class="case-rows" id="rows"></div>
           </div>
           <div class="workspace-detail" id="detail">
@@ -270,7 +276,7 @@
           var up = meetings(c).filter(function (m) { return m["상태"] === "예정"; })
             .sort(function (a, b) { return (a["일자"] || "") < (b["일자"] || "") ? -1 : 1; })[0];
           return '<div class="case-row' + (c.code === state.sel ? " active" : "") + '" tabindex="0" role="button" data-code="' + esc(c.code) + '">'
-            + "<h4>" + esc(o.customerName || "이름 미기재") + "</h4>"
+            + "<h3>" + esc(o.customerName || "이름 미기재") + "</h3>"
             + '<div class="case-meta"><span>' + esc(c.code) + "</span>"
             + '<span class="badge-result">' + esc(CAT[o.category || o["카테고리"]] || o.category || o["카테고리"] || "미분류") + "</span>"
             + (st ? '<span class="badge-status ' + ST_CLASS[st] + '">' + esc(st) + "</span>" : "")
@@ -307,13 +313,13 @@
           + '<div class="detail-badges"><span class="badge-grade">' + esc(CAT[o.category || o["카테고리"]] || "미분류") + "</span>"
           + (st ? '<span class="badge-status ' + ST_CLASS[st] + '">' + esc(st) + "</span>" : "")
           + "</div>"
-          + "<h3>" + esc(o.customerName || "이름 미기재") + "</h3>"
+          + "<h2>" + esc(o.customerName || "이름 미기재") + "</h2>"
           + statusSection(c)
           + meetingSection(c)
           + '<dl class="detail-fields">' + fields.map(function (f) {
               return "<dt>" + esc(f[0]) + "</dt><dd>" + esc(f[1]) + "</dd>";
             }).join("") + "</dl>"
-          + "<h4 style='margin:16px 0 6px'>보유보험 " + pols.length + "건</h4><ul style='margin:0;padding-left:20px'>" + polHtml + "</ul>"
+          + "<h3>보유보험 " + pols.length + "건</h3><ul style='margin:0;padding-left:20px'>" + polHtml + "</ul>"
           + memoSection(c, o)
           + mgmtSection(c, o)
           + "</div>";
@@ -324,10 +330,10 @@
       // FSA에는 잠금이 없어 검증과 자동 삭제를 잇는 어떤 구현도 경합 창이 생긴다 (Codex 6차)
       function mgmtSection(c, o) {
         if (!c.handle || !c.parent) return "";
-        return "<h4 style='margin:20px 0 6px'>관리</h4>"
+        return "<h3>관리</h3>"
           + '<div id="mgmt-box" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
-          + '<button class="tab-button" type="button" id="cust-move" data-code="' + esc(c.code) + '">다른 FC 저장소로 이관 (사본 생성)</button>'
-          + '<button class="tab-button" type="button" id="cust-del" data-code="' + esc(c.code) + '" style="color:#b42318">고객 삭제</button>'
+          + '<button class="btn" type="button" id="cust-move" data-code="' + esc(c.code) + '">다른 FC 저장소로 이관 (사본 생성)</button>'
+          + '<button class="btn btn-danger" type="button" id="cust-del" data-code="' + esc(c.code) + '">고객 삭제</button>'
           + '<span id="mgmt-msg" style="font-size:0.83rem;color:var(--platform-muted)"></span>'
           + "</div>";
       }
@@ -411,10 +417,10 @@
       function confirmDelete(c) {
         var box = $("mgmt-box");
         var o = v1(c);
-        box.innerHTML = '<span style="font-size:0.88rem;color:#b42318;font-weight:600">'
+        box.innerHTML = '<span style="font-size:0.88rem;color:var(--platform-denied);font-weight:600">'
           + esc(c.code) + " " + esc(o.customerName || "") + " 폴더를 통째로 삭제합니다. 되돌릴 수 없습니다.</span>"
-          + '<button class="tab-button" type="button" id="cust-del-yes" data-code="' + esc(c.code) + '" style="color:#b42318">삭제 확정</button>'
-          + '<button class="tab-button" type="button" id="cust-del-no" data-code="' + esc(c.code) + '">취소</button>';
+          + '<button class="btn btn-danger" type="button" id="cust-del-yes" data-code="' + esc(c.code) + '">삭제 확정</button>'
+          + '<button class="btn" type="button" id="cust-del-no" data-code="' + esc(c.code) + '">취소</button>';
       }
 
       async function doDelete(c, btn) {
@@ -530,7 +536,7 @@
           .sort(function (a, b) {
             return (a.m["차수"] - b.m["차수"]) || ((a.m["일자"] || "") < (b.m["일자"] || "") ? -1 : 1);
           });
-        var h = ["<h4 style='margin:16px 0 6px'>미팅 일정</h4>"];
+        var h = ["<h3>미팅 일정</h3>"];
         if (!list.length) {
           h.push('<p style="margin:0;color:var(--platform-faint);font-size:12px">기록된 미팅이 없습니다.</p>');
         } else {
@@ -613,11 +619,11 @@
       function memoSection(c, o) {
         var memoVal = c.memoText != null ? c.memoText : (o.memo || "");
         if (c.handle) {
-          return "<h4 style='margin:16px 0 6px'>메모</h4>"
-            + '<textarea id="memo-edit" aria-label="상담 메모" style="width:100%;min-height:130px;font:inherit;font-size:0.93rem;line-height:1.6;border:1px solid var(--platform-line);border-radius:8px;padding:10px 12px;resize:vertical">' + esc(memoVal) + "</textarea>"
-            + '<p style="margin:8px 0 0"><button class="tab-button" type="button" id="memo-save" data-code="' + esc(c.code) + '">메모 저장</button></p>';
+          return "<h3>메모</h3>"
+            + '<textarea id="memo-edit" aria-label="상담 메모" style="width:100%;min-height:130px;font:inherit;font-size:0.93rem;line-height:1.6;border:1px solid var(--platform-line-strong);border-radius:4px;padding:10px 12px;resize:vertical">' + esc(memoVal) + "</textarea>"
+            + '<p style="margin:8px 0 0"><button class="btn" type="button" id="memo-save" data-code="' + esc(c.code) + '">메모 저장</button></p>';
         }
-        return memoVal ? "<h4 style='margin:16px 0 6px'>메모</h4><div class='detail-summary' style='margin:0'>" + esc(memoVal) + "</div>" : "";
+        return memoVal ? "<h3>메모</h3><div class='detail-summary' style='margin:0'>" + esc(memoVal) + "</div>" : "";
       }
 
       async function saveMemo(c, text, btn) {
