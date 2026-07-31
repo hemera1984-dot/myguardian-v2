@@ -269,6 +269,7 @@ body.simple .container {
 .section-title {
   font-size: 1.33rem; /* 20px */
   font-weight: 700;
+  letter-spacing: -0.035em; /* 헌법: 섹션 제목 자간 */
   margin-bottom: 16px;
 }
 
@@ -398,7 +399,7 @@ body.simple .container {
   font-size: 0.93rem;
   padding: 8px 18px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 3px; /* 헌법: 탭 3px (구 999px 알약 정합, 2026-07-30) */
   background: var(--surface);
   color: var(--ink-sub);
   cursor: pointer;
@@ -472,7 +473,7 @@ body.simple .container {
   font-family: inherit;
   font-size: 0.87rem;
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: 4px; /* 헌법: 버튼 4px (구 8px 정합, 2026-07-30 데스크 정돈) */
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--ink);
@@ -484,14 +485,17 @@ body.simple .container {
   border-color: var(--accent);
 }
 
-.btn-primary {
+/* .btn.btn-primary — platform.css의 `.platform button { color: inherit }`(0,1,1)가
+   단일 클래스(0,1,0)를 이겨 파랑 위 잉크 글자가 되던 대비 결함 교정 (2026-07-30) */
+.btn.btn-primary {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
 }
 
-.btn-primary:hover {
-  background: #1d4fd8;
+.btn.btn-primary:hover {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
 }
 
 /* 발행물 본문 (고객 열람 화면) */
@@ -1562,7 +1566,7 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 4px; /* 헌법: 입력창 4px */
   padding: 7px 10px;
   outline: none;
   min-width: 0;
@@ -1598,7 +1602,7 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   color: var(--ink);
   background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 4px; /* 헌법: 입력창 4px */
   padding: 12px 14px;
   resize: vertical;
   outline: none;
@@ -1717,27 +1721,50 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   display: none !important;
 }
 
-/* 발행 데스크 — 케어센터의 주 업무는 발행이다 */
-.pub-desk {
-  background: #fff;
-  border: 1px solid var(--line, #e3e7ee);
-  border-radius: var(--radius);
-  padding: 22px 24px;
-  margin-bottom: 26px;
-  box-shadow: 0 1px 2px rgba(26, 39, 68, 0.05);
-}
+/* 발행 데스크 — 케어센터의 주 업무는 발행이다 (2026-07-30 정돈: 플랫폼 문법 정합) */
 
-.pub-desk-head {
+/* 3단 헤딩 보조 — 제목 옆 D-day 칩 한 행 */
+.desk-title-row {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.pub-desk-head h2 {
-  margin: 0;
-  font-size: 1.25rem;
+/* 워크플로 단계감 — 구획 사이 간격은 홈 .section-block(28px)과 동일 */
+.platform-main.desk .page-heading {
+  margin-bottom: 4px;
+}
+
+.platform-main.desk .section {
+  margin-top: 28px;
+}
+
+/* 구획 제목의 단계 라벨 — eyebrow 문법 (10~11px 800, 자간 확장, 포인트 블루) */
+.step-no {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--accent);
+  font-size: 0.73rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+.desk-sub-title {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
   letter-spacing: -0.02em;
+}
+
+.pub-desk {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-top: 18px;
+  box-shadow: var(--shadow);
 }
 
 .pub-chip {
@@ -1748,11 +1775,12 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   color: var(--accent-dark);
   font-size: 0.8rem;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .pub-steps {
   list-style: none;
-  margin: 16px 0 0;
+  margin: 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1760,7 +1788,7 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
 }
 
 .pub-steps li {
-  border-top: 2px solid var(--ink);
+  border-top: 1px solid var(--line-strong);
   padding-top: 10px;
 }
 
@@ -1772,7 +1800,7 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
 
 .pub-steps span {
   font-size: 0.85rem;
-  color: #5b6576;
+  color: var(--ink-sub);
   line-height: 1.55;
 }
 
@@ -1780,7 +1808,11 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: 16px;
+  margin: 0 0 14px;
+}
+
+.pub-desk-actions:empty {
+  display: none;
 }
 
 .pub-desk-actions button {
@@ -1807,15 +1839,15 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   }
 }
 
-/* 발행 데스크 — 작성 중인 호 */
+/* 발행 데스크 — 작성 중인 호 (좌측 3px 막대 = 진행 중 상태 신호, 일부지급 앰버 동색) */
 .draft-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 14px;
   flex-wrap: wrap;
-  background: #fff;
-  border: 1px solid var(--line, #e3e7ee);
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-left: 3px solid #b45309;
   border-radius: var(--radius);
   padding: 16px 18px;
@@ -1830,7 +1862,7 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
 .draft-meta {
   display: block;
   font-size: 0.85rem;
-  color: #5b6576;
+  color: var(--ink-sub);
   margin-top: 2px;
 }
 
@@ -1876,13 +1908,13 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   transition: border-color 0.14s ease, background-color 0.14s ease;
 }
 
-.topic-cand:hover { border-color: var(--accent); background: #f2f7ff; }
+.topic-cand:hover { border-color: var(--accent); background: var(--accent-bg); }
 
 .topic-cat {
   flex: 0 0 64px;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #1a2744;
+  color: var(--ink);
 }
 
 .topic-row input {
@@ -1904,34 +1936,51 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
 .news-sub {
   font-size: 0.8rem;
   font-weight: 500;
-  color: #8a93a3;
+  color: var(--ink-sub);
   margin-left: 8px;
 }
 
 /* 발행 데스크 — 뉴스 후보 */
 .news-collected {
   font-size: 0.87rem;
-  color: #5b6576;
+  color: var(--ink-sub);
   margin: 0 0 6px;
 }
 
-.news-cat {
-  margin: 18px 0 8px;
-  font-size: 0.95rem;
-  border-top: 2px solid #1a2744;
-  padding-top: 8px;
+/* 카테고리 접기·펼치기 — 플랫폼 문법: 1px 선 상자, 열림 = 좌측 3px 인셋 막대 */
+.news-group {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  margin-bottom: 8px;
 }
 
-/* 카테고리 접기·펼치기 — 후보가 많아 다 펼치면 화면이 길어진다 */
+.news-group[open] {
+  padding-bottom: 12px;
+}
+
 .news-group > summary.news-cat {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 0;
+  min-height: 44px;
+  padding: 10px 14px;
+  font-size: 0.93rem;
   font-weight: 700;
   cursor: pointer;
   list-style: none;
   user-select: none;
+  transition: background-color 0.14s ease;
+}
+
+.news-group > summary.news-cat:hover {
+  background: #fafbfd;
+}
+
+.news-group[open] > summary.news-cat {
+  border-bottom: 1px solid var(--line);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .news-group > summary.news-cat::-webkit-details-marker { display: none; }
@@ -1954,8 +2003,6 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   font-variant-numeric: tabular-nums;
 }
 
-.news-group[open] { padding-bottom: 6px; }
-
 /* 지면 사진 — 끌어다 놓기 · 붙여넣기 */
 .drop-zone {
   border: 1px dashed var(--line);
@@ -1971,7 +2018,7 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
 .drop-zone:focus-visible,
 .drop-zone.over {
   border-color: var(--accent);
-  background: #f2f7ff;
+  background: var(--accent-bg);
 }
 
 .drop-zone .drop-main {
@@ -2031,15 +2078,22 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   align-items: flex-start;
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: 6px;
-  background: #fff;
-  margin-bottom: 8px;
+  border-radius: 4px;
+  background: var(--surface);
+  margin: 8px 12px 0;
   cursor: pointer;
+  transition: border-color 0.14s ease, background-color 0.14s ease;
 }
 
+.news-item:hover {
+  border-color: var(--line-strong);
+}
+
+/* 선택 표시 — 좌측 3px 인셋 포인트 막대 (플랫폼 선택 문법) */
 .news-item:has(input:checked) {
   border-color: var(--accent);
   background: var(--accent-bg);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .news-item input {
@@ -2058,7 +2112,7 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
 .news-desc {
   display: block;
   font-size: 0.85rem;
-  color: #5b6576;
+  color: var(--ink-sub);
   line-height: 1.55;
   margin-top: 2px;
 }
@@ -2066,8 +2120,9 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
 .news-meta {
   display: block;
   font-size: 0.78rem;
-  color: #8a93a3;
+  color: var(--ink-sub);
   margin-top: 4px;
+  font-variant-numeric: tabular-nums;
 }
 
 .news-meta a {
@@ -2078,13 +2133,23 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
 .news-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 14px;
 }
 
 .news-actions #news-count {
   font-size: 0.85rem;
-  color: #5b6576;
+  color: var(--ink-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 모바일 — 구획 제목의 보조 설명은 줄을 내린다 */
+@media (max-width: 767px) {
+  .section-title .news-sub {
+    display: block;
+    margin: 2px 0 0;
+  }
 }
 
 /* 실사 헤더 배너 — 서재·리포트 입구의 첫인상 */
