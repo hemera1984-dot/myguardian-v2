@@ -239,7 +239,7 @@
         window.mg.copy($("invite-text").value, this);
       });
 
-      // ── 조직도 — data/team/org.json 기준 + 이 기기의 수정본(localStorage) 오버레이.
+      // ── 조직도 — data/org.json 기준 + 이 기기의 수정본(localStorage) 오버레이.
       // 정적 1차에서는 브라우저가 저장소 파일을 고칠 수 없으므로, 수정은 기기에 저장하고
       // "변경 JSON 복사"로 저장소에 반영한다. 2차(서버)에서 즉시 저장으로 교체 예정.
       var ORG_KEY = "mg_admin_org";
@@ -329,14 +329,14 @@
         return h.join("");
       }
 
-      fetch("../../data/team/org.json")
+      fetch("../../data/org.json")
         .then(function (r) { return r.json(); })
         .then(function (base) {
           var local = loadLocal();
           ORG = local || base;
           $("org-mode").textContent = local
             ? "이 기기의 수정본을 보는 중입니다. 저장소 반영 전까지 다른 기기에는 보이지 않습니다."
-            : "저장소 조직도(data/team/org.json)를 보는 중입니다.";
+            : "저장소 조직도(data/org.json)를 보는 중입니다.";
           renderOrg();
         })
         .catch(function () {
