@@ -598,6 +598,54 @@
         });
       }
 
+      // ── 하랑지점 일정 연동 (C:\projects\ourbranch\docs\myguardian-schedule-interop.md 계약) ──
+      // 서버에는 고객코드 + 마스킹 표기(안*민, 010-****-3016)만 — 원본 이름·번호는 이 기기 로컬에만.
+      // 로컬 우선: 전송 실패는 미팅 저장을 막지 않고 큐(localStorage)에 쌓였다가 재전송된다.
+      var BRANCH_API = ""; // ourbranch 배포 후 채운다 (예: https://branch-api.insurguard.life) — 빈 값이면 비활성
+      function maskName(n) {
+        if (!n) return "";
+        if (n.length < 2) return n;
+        if (n.length === 2) return n[0] + "*";
+        return n[0] + new Array(n.length - 1).join("*") + n[n.length - 1];
+      }
+      function maskPhone(p) {
+        var d = String(p || "").replace(/\D/g, "");
+        if (d.length < 8) return "";
+        return d.slice(0, 3) + "-****-" + d.slice(-4);
+      }
+      function branchPush(c, round, date, status) {
+        var o = v1(c);
+        var key = "mg:" + c.code + ":" + round;
+        var q;
+        try { q = JSON.parse(localStorage.getItem("mg_event_queue") || "{}"); } catch (e) { q = {}; }
+        q[key] = { "출처": "myguardian", "출처키": key, "종류": "고객미팅", "고객코드": c.code,
+          "표시명": maskName(o.customerName), "연락처": maskPhone(o.phone),
+          "차수": round, "일시": date, "상태": status };
+        try { localStorage.setItem("mg_event_queue", JSON.stringify(q)); } catch (e) {}
+        branchFlush();
+      }
+      function branchFlush() {
+        if (!BRANCH_API) return;
+        var token; try { token = localStorage.getItem("mg_session"); } catch (e) {}
+        if (!token) return;
+        var q;
+        try { q = JSON.parse(localStorage.getItem("mg_event_queue") || "{}"); } catch (e) { return; }
+        Object.keys(q).forEach(function (key) {
+          fetch(BRANCH_API + "/events/upsert", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+            body: JSON.stringify(q[key])
+          }).then(function (r) {
+            if (!r.ok) return; // 실패분은 큐에 남긴다
+            var cur;
+            try { cur = JSON.parse(localStorage.getItem("mg_event_queue") || "{}"); } catch (e) { return; }
+            delete cur[key];
+            try { localStorage.setItem("mg_event_queue", JSON.stringify(cur)); } catch (e) {}
+          }).catch(function () {});
+        });
+      }
+      branchFlush(); // 화면 진입 시 밀린 전송 재시도
+
       // mutate(draft): 복제본을 받아 미팅 배열 등을 변경한다. statusAfter는 진행상태 동기화.
       function mutateMeetings(c, mutate, statusAfter) {
         return commitProfile(c, function (draft) {
@@ -656,13 +704,16 @@
             if (!draft["미팅"]) draft["미팅"] = [];
             draft["미팅"].push({ "차수": round, "일자": d, "상태": "예정" });
           }, "미팅 예정");
+          branchPush(c, round, d, "예정");
         }
         else if (btn.dataset.mtAct && c) {
           var idx = Number(btn.dataset.mtIdx);
           var act = btn.dataset.mtAct;
+          var mt = meetings(c)[idx];
           mutateMeetings(c, function (draft) {
             if (draft["미팅"] && draft["미팅"][idx]) draft["미팅"][idx]["상태"] = act;
           }, act === "완료" ? "미팅 완료" : "일정 취소");
+          if (mt) branchPush(c, mt["차수"], mt["일자"], act);
         }
         else if (btn.id === "memo-save" && c) saveMemo(c, $("memo-edit").value, btn);
         else if (btn.id === "cust-del" && c) confirmDelete(c);
@@ -679,9 +730,11 @@
         if (!c) return;
         var idx = Number(input.dataset.mtIdx);
         var newDate = input.value;
+        var mt = meetings(c)[idx];
         mutateMeetings(c, function (draft) {
           if (draft["미팅"] && draft["미팅"][idx]) draft["미팅"][idx]["일자"] = newDate;
         }, null);
+        if (mt) branchPush(c, mt["차수"], newDate, "예정");
       });
 
       // 신규 고객 등록 — 폴더 생성이 곧 등록 (폴더명 = 고객코드)
