@@ -111,6 +111,8 @@
     /* 케어센터 리드 셀 — 커버 스토리 문법: 2칸 확장 + 상단 3px 포인트 스트립(화면당 1곳, 강조 패널 문법).
        마지막 행 빈 셀(3+3+2) 해소 + primary 카드 구분 (샤프 비평 상-1·중-3) */
     [data-card="care"] { grid-column: span 2; border-top: 3px solid var(--platform-blue); }
+    /* 우리팀 분리로 비권한자 7카드 — 마지막 카드가 2열에 걸리면 남은 폭을 채운다 (관리자 8카드는 미적용) */
+    .menu-grid > a:nth-child(7):last-child { grid-column: span 2; }
     .menu-card h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
     .menu-card p { margin: 5px 0 0; color: var(--platform-muted); font-size: 13px; line-height: 1.6; }
     /* 칩은 설명줄 인라인 — 독립 행이 같은 그리드 행 전체를 늘려 형제 카드 하단 공백을 만들던 결함 교정 */
@@ -217,6 +219,7 @@
       .menu-grid { grid-template-columns: 1fr; gap: 12px; margin-top: 12px; }
       .menu-card { padding: 16px 18px; }
       [data-card="care"] { grid-column: auto; } /* 1열에서 span 2가 암시적 칼럼을 만들지 않게 */
+      .menu-grid > a:nth-child(7):last-child { grid-column: auto; }
       .home-news { display: block; margin-top: 12px; padding: 18px; }
       .news-title { margin-bottom: 10px; }
       /* 모바일 터치 타깃 44px 플로어 */
@@ -255,7 +258,6 @@
       <a href="cases/">사례·판례</a>
       <a href="learn/">학습</a>
       <a href="brief/">브리핑</a>
-      <a href="team/">우리팀</a>
       <p class="nav-group-label">발행</p>
       <a href="care/">케어센터</a>
       <a href="card/">카톡카드</a>
@@ -325,10 +327,6 @@
         <a class="menu-card" href="learn/" aria-label="학습">
           <h2>학습</h2>
           <p>보험 용어 사전과 질병 사전</p>
-        </a>
-        <a class="menu-card" href="team/" aria-label="우리팀">
-          <h2>우리팀</h2>
-          <p>팀 일정 관리</p>
         </a>
         <a class="menu-card" href="card/" aria-label="카톡카드">
           <h2>카톡카드</h2>
