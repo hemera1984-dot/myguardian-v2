@@ -100,6 +100,17 @@
           <h3 class="desk-sub-title">작성 중인 호</h3>
           <div id="draft-list"></div>
         </div>
+
+        <div class="compose-panel publish-panel">
+          <h3>발행하기</h3>
+          <p class="news-collected">집필 세션이 만든 발행 JSON을 붙여넣고 누르면 서버에 올라가 서재와 지면에 즉시 반영됩니다. 같은 id를 다시 올리면 그 호가 교체됩니다.</p>
+          <textarea id="publish-json" aria-label="발행 JSON" placeholder='{ "목록항목": { "id": "weekly-14", … }, "본문": { "id": "weekly-14", "기사": [ … ] } }'></textarea>
+          <div class="compose-actions">
+            <button class="btn" type="button" id="publish-btn">발행하기</button>
+          </div>
+          <p class="media-msg" id="publish-msg" hidden></p>
+        </div>
+
         <div class="pub-desk-actions" id="pub-desk-actions"></div>
         <div class="sender-row" id="sender-row">
           <span>카톡 서명</span>
@@ -154,10 +165,10 @@
         document.getElementById("pub-dday").textContent = label("주간", weekly) + " · " + label("월간", monthly);
       })();
 
-      fetch("../../data/care/issues.json")
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          ALL = Array.isArray(data) ? data : (data.data || []);
+      // 서버 발행분 + 정적 저장소 병합 목록 (서버가 죽어도 정적분은 그대로)
+      care.loadIssueList()
+        .then(function (list) {
+          ALL = list;
           buildActions();
           buildDrafts();
         })
@@ -168,6 +179,7 @@
       // 총관리자가 팀원 것까지 대신 만들 이유가 없다.
       function buildActions() {
         var actions = document.getElementById("pub-desk-actions");
+        actions.innerHTML = "";
         ["주간", "월간"].forEach(function (ch) {
           var latest = care.latestByChannel(ALL, ch);
           if (!latest) return;
@@ -182,8 +194,7 @@
       // 작성 중인 호 (상태: 초안) — 검토 링크와 발행 전환 안내
       function buildDrafts() {
         var drafts = care.drafts(ALL);
-        if (!drafts.length) return;
-        document.getElementById("draft-block").hidden = false;
+        document.getElementById("draft-block").hidden = !drafts.length;
         document.getElementById("draft-list").innerHTML = drafts.map(function (i) {
           return '<div class="draft-item">'
             + '<div><strong>' + esc(i["채널"]) + " " + esc(i["발행인"] || "안창민") + " " + esc(i["호수"]) + "호</strong>"
@@ -193,12 +204,57 @@
             + '<button class="btn" type="button" data-pub-cmd="' + esc(i.id) + '">발행 명령 복사</button>'
             + "</div></div>";
         }).join("");
-        document.getElementById("draft-list").addEventListener("click", function (e) {
-          var btn = e.target.closest("button[data-pub-cmd]");
-          if (!btn) return;
-          window.mg.copy("python pipeline/publish_care_issue.py --id " + btn.dataset.pubCmd, btn);
-        });
       }
+      document.getElementById("draft-list").addEventListener("click", function (e) {
+        var btn = e.target.closest("button[data-pub-cmd]");
+        if (!btn) return;
+        window.mg.copy("python pipeline/publish_care_issue.py --id " + btn.dataset.pubCmd, btn);
+      });
+
+      // 발행하기 — 붙여넣은 발행 JSON({ 목록항목, 본문 })을 서버에 올린다.
+      // 성공하면 지면 링크를 보여주고 최신호·초안 구획을 다시 그린다.
+      var pubBtn = document.getElementById("publish-btn");
+      var pubMsg = document.getElementById("publish-msg");
+      function publishNote(text, bad) {
+        pubMsg.textContent = text;
+        pubMsg.hidden = false;
+        pubMsg.classList.toggle("bad", !!bad);
+      }
+      pubBtn.addEventListener("click", function () {
+        var box = document.getElementById("publish-json");
+        var raw = box.value.trim();
+        if (!raw) { publishNote("발행 JSON을 먼저 붙여넣으세요.", true); box.focus(); return; }
+        var payload;
+        try { payload = JSON.parse(raw); }
+        catch (e) { publishNote("JSON 형식 오류 — 붙여넣은 내용을 확인하세요.", true); return; }
+        if (!window.mgAuth || !window.mgAuth.token()) {
+          publishNote("로그인이 필요합니다. 진입 화면에서 구글 계정으로 로그인하세요.", true);
+          return;
+        }
+        pubBtn.disabled = true;
+        pubBtn.textContent = "발행 중…";
+        window.mgAuth.api("/care/publish", { method: "POST", body: payload })
+          .then(function (d) {
+            box.value = "";
+            pubMsg.hidden = false;
+            pubMsg.classList.remove("bad");
+            pubMsg.innerHTML = "발행되었습니다. "
+              + '<a href="issue.html?id=' + encodeURIComponent(d.id) + '" target="_blank" rel="noopener">지면 열기</a>'
+              + " — 카톡 문구는 아래 최신호 버튼으로 만드세요.";
+            return care.loadIssueList().then(function (list) {
+              ALL = list;
+              buildActions();
+              buildDrafts();
+            });
+          })
+          .catch(function (err) {
+            publishNote(err.message || "발행에 실패했습니다.", true);
+          })
+          .finally(function () {
+            pubBtn.disabled = false;
+            pubBtn.textContent = "발행하기";
+          });
+      });
 
       // 이번 호 기획 — 가제 입력이 공정의 시작이다. 입력값은 브라우저에 저장된다
       var TOPIC_SLOTS = {

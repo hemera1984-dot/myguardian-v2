@@ -127,6 +127,49 @@
     return list.slice().sort(function (a, b) { return (b["발행일"] || "") < (a["발행일"] || "") ? -1 : 1; });
   }
 
+  // ── 발행물 읽기 — 서버 우선, 정적 폴백 (2026-07-31 발행 버튼)
+  // 서버 발행분은 API에만 있고, 과거 호는 정적 저장소에만 있다.
+  // 목록은 둘을 id 기준으로 병합(서버 우선)하고, 서버가 죽어도 정적 열람은 그대로다.
+  function apiBase() {
+    return window.mgAuth ? window.mgAuth.apiBase() : "";
+  }
+
+  function loadIssueList() {
+    var staticP = fetch(new URL("../../data/care/issues.json", window.location.href))
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (d) { return Array.isArray(d) ? d : (d.data || []); })
+      .catch(function () { return []; });
+    var base = apiBase();
+    var serverP = !base ? Promise.resolve([]) : fetch(base + "/care/issues")
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .then(function (d) { return Array.isArray(d) ? d : []; })
+      .catch(function () { return []; });
+    return Promise.all([serverP, staticP]).then(function (res) {
+      var seen = {};
+      var merged = [];
+      res[0].concat(res[1]).forEach(function (i) {
+        if (!i || !i.id || seen[i.id]) return;
+        seen[i.id] = 1;
+        merged.push(i);
+      });
+      return sortByDate(merged);
+    });
+  }
+
+  // 본문 — 서버에 있으면 서버, 없거나(404) 죽었으면 정적 경로
+  function loadIssueBody(meta) {
+    function fromStatic() {
+      if (!meta["본문파일"]) return Promise.reject(new Error("본문 없음"));
+      return fetch(new URL("../../" + meta["본문파일"], window.location.href))
+        .then(function (r) { if (!r.ok) throw new Error("본문 없음"); return r.json(); });
+    }
+    var base = apiBase();
+    if (!base) return fromStatic();
+    return fetch(base + "/care/issues/" + encodeURIComponent(meta.id))
+      .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+      .catch(fromStatic);
+  }
+
   // 발행된 호만 (초안 제외) — 서재·홈·최신호 공통 규칙
   function published(list) {
     return list.filter(function (i) { return i["상태"] !== "초안"; });
@@ -150,6 +193,8 @@
     openCompose: openCompose,
     bindCompose: bindCompose,
     loadPublishers: loadPublishers,
+    loadIssueList: loadIssueList,
+    loadIssueBody: loadIssueBody,
     sortByDate: sortByDate,
     published: published,
     drafts: drafts,
