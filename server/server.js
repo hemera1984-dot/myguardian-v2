@@ -8,7 +8,7 @@
 // 서버에서 npm install 할 일이 없어 배포가 단순하다.
 
 import { createServer } from "node:http";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, renameSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import {
@@ -30,6 +30,13 @@ const TITLE_MODEL = process.env.TITLE_MODEL || "claude-opus-5";
 const MEDIA_DIR = process.env.MEDIA_DIR || "./media";
 const MEDIA_BASE = process.env.MEDIA_BASE || "";  // 예: https://api.insurguard.life/media
 
+// 케어센터 발행물 저장소 — 발행 버튼이 올린 호를 여기 둔다.
+// 정적 저장소(data/care)는 그대로 두고, 서버 발행분만 이 디렉토리에 쌓인다.
+// 서재·지면은 서버 목록을 우선 읽고 정적 목록과 병합한다.
+const CARE_DIR = process.env.CARE_DIR || "./care";
+const CARE_ISSUES_DIR = join(CARE_DIR, "issues");
+const CARE_LIST = join(CARE_DIR, "issues.json");
+
 // 지면 사진 업로드 — 받아들일 형식과 크기. 확장자는 서버가 정한다(파일명을 믿지 않는다).
 const IMAGE_TYPES = {
   "image/jpeg": ".jpg",
@@ -40,6 +47,7 @@ const IMAGE_TYPES = {
 const MAX_IMAGE = 12 * 1024 * 1024;
 
 mkdirSync(MEDIA_DIR, { recursive: true });
+mkdirSync(CARE_ISSUES_DIR, { recursive: true });
 
 if (!CLIENT_ID) {
   console.error("GOOGLE_CLIENT_ID가 없습니다. .env를 확인하세요.");
@@ -110,6 +118,22 @@ function readBytes(req, limit) {
     req.on("end", () => resolve(Buffer.concat(chunks)));
     req.on("error", reject);
   });
+}
+
+// ---------- 케어센터 발행물 저장 ----------
+
+function readCareList() {
+  try {
+    const list = JSON.parse(readFileSync(CARE_LIST, "utf8"));
+    return Array.isArray(list) ? list : [];
+  } catch { return []; }
+}
+
+// 임시 파일에 쓴 뒤 원자적으로 교체한다 — 절반만 쓰인 파일을 남기지 않는다 (pipeline과 같은 원칙)
+function atomicWrite(file, text) {
+  const tmp = file + ".tmp";
+  writeFileSync(tmp, text);
+  renameSync(tmp, file);
 }
 
 function bearer(req) {
@@ -197,6 +221,19 @@ async function route(req, res, url) {
     return send(res, 200, { ok: true });
   }
 
+  // 케어센터 발행물 읽기 — 공개 경로. 독자는 고객이라 로그인이 없다.
+  // 서재·지면이 이 목록을 정적 목록과 병합해 보여준다.
+  if (req.method === "GET" && path === "/care/issues") {
+    return send(res, 200, readCareList());
+  }
+  const careBody = req.method === "GET" && /^\/care\/issues\/([a-z0-9-]{1,64})$/.exec(path);
+  if (careBody) {
+    const file = join(CARE_ISSUES_DIR, careBody[1] + ".json");
+    if (!existsSync(file)) return send(res, 404, { error: "없는 발행물입니다." });
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    return res.end(readFileSync(file));
+  }
+
   // 이 아래는 세션 필요
   const me = accountForToken(db, bearer(req));
   if (!me) return send(res, 401, { error: "로그인이 필요합니다." });
@@ -278,6 +315,38 @@ async function route(req, res, url) {
     try { 후보 = JSON.parse(textBlock.text)["후보"] || []; } catch (e) { 후보 = []; }
     if (!후보.length) return send(res, 502, { error: "결과를 읽지 못했습니다." });
     return send(res, 200, { 후보: 후보.slice(0, 3) });
+  }
+
+  // 발행하기 — 승인된 계정이면 누구나(자기 호를 발행한다. 발행인은 목록항목에 실려 있다).
+  // body = { 목록항목, 본문 } — 기존 issues.json 스키마 그대로.
+  // 같은 id가 이미 있으면 교체한다(재발행). 발행 즉시 서재·지면에 반영된다.
+  if (req.method === "POST" && path === "/care/publish") {
+    const { 목록항목, 본문 } = await readJson(req, 1024 * 1024);
+    if (!목록항목 || typeof 목록항목 !== "object" || Array.isArray(목록항목)
+      || !본문 || typeof 본문 !== "object" || Array.isArray(본문)) {
+      return send(res, 400, { error: "형식 오류: { 목록항목, 본문 } 객체가 필요합니다." });
+    }
+    // id는 파일명이 된다 — 소문자·숫자·하이픈만 허용해 경로 이탈을 원천 차단한다
+    const id = String(목록항목.id || "");
+    if (!/^[a-z0-9-]{1,64}$/.test(id)) {
+      return send(res, 400, { error: "id 형식 오류: 소문자·숫자·하이픈 1~64자만 허용됩니다." });
+    }
+    if (본문.id !== id) return send(res, 400, { error: "목록항목과 본문의 id가 다릅니다." });
+    if (!String(목록항목["제목"] || "").trim()) return send(res, 400, { error: "제목이 비어 있습니다." });
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(목록항목["발행일"] || ""))) {
+      return send(res, 400, { error: "발행일 형식 오류: YYYY-MM-DD" });
+    }
+    if (목록항목["채널"] !== "주간" && 목록항목["채널"] !== "월간") {
+      return send(res, 400, { error: "채널은 주간 또는 월간이어야 합니다." });
+    }
+    const entry = { ...목록항목 };
+    delete entry["상태"]; // 발행하기를 눌렀다 = 발행 확정. 발행 목록에 초안 표기를 남기지 않는다.
+    atomicWrite(join(CARE_ISSUES_DIR, id + ".json"), JSON.stringify(본문, null, 1));
+    const list = readCareList().filter((i) => i && i.id !== id);
+    list.unshift(entry);
+    atomicWrite(CARE_LIST, JSON.stringify(list, null, 1));
+    console.log(`발행: ${entry["채널"]} ${entry["호수"]}호 (${id}) — ${me.email}`);
+    return send(res, 200, { ok: true, id });
   }
 
   // 지면 사진 업로드 — 승인된 계정이면 누구나(자기 호에 쓸 사진이다)

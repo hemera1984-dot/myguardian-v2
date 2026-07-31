@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="../assets/platform.css">
   <link rel="stylesheet" href="../assets/style.css">
   <script src="../assets/platform.js"></script>
+  <script src="../assets/auth.js"></script>
   <script src="../assets/care.js"></script>
 </head>
 <body class="platform">
@@ -146,14 +147,14 @@
         });
       }
 
+      // 서버 발행분 + 정적 저장소 병합 (서버가 죽어도 정적 열람은 그대로)
       Promise.all([
-        fetch("../../data/care/issues.json").then(function (r) { return r.json(); }),
+        care.loadIssueList(),
         loadEdition()
       ])
         .then(function (res) {
-          var data = res[0];
           edition = res[1];
-          ALL = Array.isArray(data) ? data : (data.data || []);
+          ALL = res[0];
           applyEditionLabels();
           if (!edition) buildPublisherTabs(); // 개인 에디션 서재에는 발행인 필터를 두지 않는다
           buildLatestDuo();

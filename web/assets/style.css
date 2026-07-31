@@ -1543,6 +1543,12 @@ body.magazine :focus-visible {
   gap: 8px;
 }
 
+/* 발행하기 패널 — compose-panel을 재사용하되 붙여넣기용이라 낮게 */
+.publish-panel textarea {
+  min-height: 140px;
+  font-size: 0.85rem;
+}
+
 /* 고정 면책 문구 */
 .disclaimer {
   margin-top: 48px;

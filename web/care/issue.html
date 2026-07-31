@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="../assets/style.css">
   <script src="../assets/platform.js"></script>
+  <script src="../assets/auth.js"></script>
+  <script src="../assets/care.js"></script>
 </head>
 <body class="magazine">
   <header class="mag-topbar">
@@ -234,12 +236,13 @@
           .catch(function () { return null; });
       }
 
+      // 목록·본문 모두 서버 우선 → 정적 폴백 (서버가 죽어도 기존 호 열람은 그대로)
       Promise.all([
-        fetch("../../data/care/issues.json").then(function (r) { return r.json(); }),
+        window.care.loadIssueList(),
         loadEdition()
       ])
         .then(function (results) {
-          var list = Array.isArray(results[0]) ? results[0] : [];
+          var list = results[0];
           var edition = results[1];
           var meta = list.find(function (i) { return i.id === id; });
           if (!meta) { notFound(); return; }
@@ -247,11 +250,7 @@
             meta = Object.assign({}, meta, { "발행인": edition["이름"] });
           }
           document.title = meta["채널"] + " " + (meta["발행인"] || "안창민") + " " + meta["호수"] + "호 - 케어센터";
-          return fetch("../../" + meta["본문파일"])
-            .then(function (r) {
-              if (!r.ok) throw new Error("본문 없음");
-              return r.json();
-            })
+          return window.care.loadIssueBody(meta)
             .then(function (data) { render(meta, data, list, edition); });
         })
         .catch(notFound);
