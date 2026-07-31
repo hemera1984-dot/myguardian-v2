@@ -405,3 +405,9 @@
 ### 유의
 - 홈 새소식·자료 현황은 정적 경로 그대로 (다음 단계 통합 검토).
 - 서버 발행분은 정적 저장소(data/care)에 없다 — 영구 보존 원하면 주기적으로 끌어와 커밋.
+
+### 하랑지점 일정 연동 대기 (2026-07-31)
+- 고객 미팅 → ourbranch 캘린더 전송 훅 시공 완료 (마스킹 표기만, 오프라인 큐).
+- 계약: C:\projects\ourbranch\docs\myguardian-schedule-interop.md
+- ourbranch 완성 후 이 저장소에서 활성화: web/customers/index.html의 BRANCH_API 채우기
+  + 고객관리 안내 문구 갱신("전송되지 않습니다" → 일정만 마스킹 전송) + 통합 테스트.
