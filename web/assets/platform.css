@@ -608,6 +608,13 @@ body.platform {
   font-weight: 650;
 }
 
+/* 목록 칼럼 라벨을 h2로 승격 (헤딩 스킵 해소, 2026-07-31 잔여 화면 정돈) — 시각은 기존 라벨 그대로 */
+.workspace-label h2 {
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+}
+
 .workspace-count {
   color: var(--platform-faint);
   font-variant-numeric: tabular-nums;
@@ -975,6 +982,54 @@ body.platform {
   color: var(--platform-blue);
 }
 
+/* 플랫폼 공용 버튼 — 아웃라인 기본 + 필 primary(화면당 1개) (2026-07-31 잔여 화면 정돈).
+   care 화면은 style.css의 동명 .btn(뒤 로드)이 이겨 기존 시각 유지 — 회귀 없음.
+   .btn.btn-primary 이중 클래스: `.platform button { color: inherit }`(0,1,1) 특이도 대응 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border: 1px solid var(--platform-line-strong);
+  border-radius: 4px;
+  background: var(--platform-surface);
+  color: var(--platform-ink);
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.14s ease, background-color 0.14s ease, border-color 0.14s ease;
+}
+
+.btn:hover {
+  border-color: var(--platform-faint);
+}
+
+.btn.btn-primary {
+  background: var(--platform-blue);
+  border-color: var(--platform-blue);
+  color: #ffffff;
+}
+
+.btn.btn-primary:hover {
+  background: var(--platform-blue-dark);
+  border-color: var(--platform-blue-dark);
+}
+
+.btn.btn-danger {
+  color: var(--platform-denied);
+}
+
+/* 앵커형 .btn — `.platform a { color: inherit }`(0,1,1)가 muted 부모색을 상속시키는 것 차단 */
+.platform a.btn {
+  color: var(--platform-ink);
+}
+
+.platform a.btn.btn-primary {
+  color: #ffffff;
+}
+
 .case-rows {
   overflow-y: auto;
   max-height: 640px;
@@ -995,6 +1050,7 @@ body.platform {
   box-shadow: inset 3px 0 0 var(--platform-blue);
 }
 
+.case-row h3,
 .case-row h4 {
   margin: 0 0 4px;
   font-size: 0.95rem;
@@ -1020,7 +1076,9 @@ body.platform {
   font-weight: 700;
   border-radius: 3px;
   padding: 2px 7px;
-  background: var(--platform-bg);
+  /* 캔버스 배경(#f5f7fa) 위 muted는 4.4999:1로 AA 0.0001 미달 — 흰 배경으로 뿌리 교정 (2026-07-31).
+     paid/denied/partial 동색 텍스트도 흰 바탕에서 전부 4.5:1 이상 */
+  background: var(--platform-surface);
   color: var(--platform-muted);
   border: 1px solid var(--platform-line);
 }
@@ -1178,10 +1236,19 @@ body.platform {
   margin-bottom: 10px;
 }
 
-.case-detail-body h3 {
+/* 상세 제목 h2 + 소제목 h3 — 헤딩 스킵 해소 (2026-07-31 잔여 화면 정돈). 구 h3 제목 선택자는 호환 유지 */
+.case-detail-body h2,
+.case-detail-body h3.detail-title {
   margin: 0 0 16px;
   font-size: 1.2rem;
+  font-weight: 700;
   line-height: 1.4;
+}
+
+.case-detail-body h3:not(.detail-title) {
+  margin: 16px 0 6px;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .detail-fields {
@@ -1882,6 +1949,7 @@ body.platform {
 
 /* 모바일 터치 타겟 44px 일괄 보정 (Codex 3차 중요4·재검수) */
 @media (max-width: 767px) {
+  .platform .btn,
   .profile-actions button,
   .profile-edit input,
   .install-primary,
@@ -2227,7 +2295,14 @@ body.platform {
   border-color: var(--platform-blue-dark);
 }
 
-.install-primary:disabled {
+/* `.platform button { color: inherit }`(0,1,1)가 .install-primary(0,1,0)를 이겨
+   파랑 필 위 잉크 글자(대비 2.62)가 되던 결함 — .btn-primary와 동일 계열 특이도 교정 (2026-07-31) */
+.platform .install-primary {
+  color: #ffffff;
+}
+
+.install-primary:disabled,
+.platform .install-primary:disabled {
   border-color: var(--platform-line);
   background: var(--platform-bg);
   color: var(--platform-muted);

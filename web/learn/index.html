@@ -23,7 +23,13 @@
   <div class="platform-shell">
     <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">학습</span><span class="topbar-note">상담에 필요한 보험 지식</span></header>
     <main class="platform-main">
-      <div class="global-search"><input type="search" id="q" aria-label="지식 검색" placeholder="용어, 질병명, 태그를 검색하세요"><span class="search-state" id="result-count">-</span></div>
+      <!-- 3단 헤딩 — eyebrow → 제목 → 설명 (플랫폼 공통 문법, 2026-07-31 정돈) -->
+      <div class="page-heading">
+        <p class="eyebrow">지식 자료</p>
+        <h1>학습</h1>
+        <p>보험 용어 사전과 질병 사전 — 상담에 필요한 지식을 빠르게 찾습니다.</p>
+      </div>
+      <div class="global-search" style="margin-top:18px"><input type="search" id="q" aria-label="지식 검색" placeholder="용어, 질병명, 태그를 검색하세요"><span class="search-state" id="result-count">-</span></div>
 
       <div class="tabs-toolbar" role="tablist" aria-label="사전 종류">
         <button class="tab-button active" type="button" role="tab" aria-selected="true" data-tab="term">용어 사전</button>
@@ -32,7 +38,7 @@
 
       <div class="workspace-grid">
         <div class="workspace-list">
-          <div class="workspace-label"><span id="list-title">용어</span><span class="workspace-count" id="list-count">0건</span></div>
+          <div class="workspace-label"><h2 id="list-title">용어</h2><span class="workspace-count" id="list-count">0건</span></div>
           <div class="case-rows" id="rows"></div>
         </div>
         <div class="workspace-detail" id="detail">
@@ -92,7 +98,7 @@
           var risk = state.tab === "term" && RISK[x.disputeRisk]
             ? '<span class="badge-result ' + RISK[x.disputeRisk][1] + '">' + RISK[x.disputeRisk][0] + "</span>" : "";
           return '<div class="case-row' + (x.id === state.sel ? " active" : "") + '" tabindex="0" role="button" data-id="' + x.id + '">'
-            + "<h4>" + esc(name) + "</h4>"
+            + "<h3>" + esc(name) + "</h3>"
             + '<div class="case-meta"><span>' + esc(String(sub).slice(0, 46)) + "</span>" + risk + "</div></div>";
         }).join("");
       }
@@ -111,7 +117,7 @@
             + (x.termReliability ? '<span class="badge-grade">신뢰도 ' + esc(x.termReliability) + "</span>" : "")
             + (risk ? '<span class="badge-result ' + risk[1] + '">' + risk[0] + "</span>" : "")
             + "</div>");
-          html.push("<h3>" + esc(x.termName) + (x.termNameEn ? ' <span style="font-size:0.8em;color:var(--platform-muted);font-weight:500">' + esc(x.termNameEn) + "</span>" : "") + "</h3>");
+          html.push("<h2>" + esc(x.termName) + (x.termNameEn ? ' <span style="font-size:0.8em;color:var(--platform-muted);font-weight:500">' + esc(x.termNameEn) + "</span>" : "") + "</h2>");
           html.push('<dl class="detail-fields">');
           if (x.bodyPart) html.push("<dt>부위</dt><dd>" + esc(x.bodyPart) + "</dd>");
           if (x.kcdCode) html.push("<dt>질병코드</dt><dd>" + esc(x.kcdCode) + "</dd>");
@@ -120,30 +126,30 @@
           html.push("</dl>");
           html.push('<div class="detail-summary">' + esc(x.definition || "") + "</div>");
           if (x.insurancePractice) {
-            html.push("<h4 style='margin:14px 0 6px'>실무 안내</h4><div class='detail-summary' style='margin:0'>" + esc(x.insurancePractice) + "</div>");
+            html.push("<h3>실무 안내</h3><div class='detail-summary' style='margin:0'>" + esc(x.insurancePractice) + "</div>");
           }
           if (x.disputeNote) {
-            html.push("<h4 style='margin:14px 0 6px'>분쟁 유의</h4><div class='detail-summary' style='margin:0'>" + esc(x.disputeNote) + "</div>");
+            html.push("<h3>분쟁 유의</h3><div class='detail-summary' style='margin:0'>" + esc(x.disputeNote) + "</div>");
           }
           if (x.requiredDocuments && x.requiredDocuments.length) {
-            html.push("<h4 style='margin:14px 0 6px'>필요 서류</h4><div class='detail-summary' style='margin:0'>" + esc(listField(x.requiredDocuments)) + "</div>");
+            html.push("<h3>필요 서류</h3><div class='detail-summary' style='margin:0'>" + esc(listField(x.requiredDocuments)) + "</div>");
           }
-          html.push('<p style="margin:16px 0 0"><a class="tab-button" style="text-decoration:none" href="../cases/?q=' + encodeURIComponent(x.termName) + '">사례에서 검색</a></p>');
+          html.push('<p style="margin:16px 0 0"><a class="btn" href="../cases/?q=' + encodeURIComponent(x.termName) + '">사례에서 검색</a></p>');
         } else {
-          html.push("<h3>" + esc(x.name) + "</h3>");
+          html.push("<h2>" + esc(x.name) + "</h2>");
           html.push('<dl class="detail-fields">');
           if (x.procedureSurgeryType) html.push("<dt>시술·수술</dt><dd>" + esc(x.procedureSurgeryType) + "</dd>");
           if (x.surgeryClassification) html.push("<dt>수술 분류</dt><dd>" + esc(x.surgeryClassification) + "</dd>");
           if (x.insuranceRiders) html.push("<dt>관련 특약</dt><dd>" + esc(x.insuranceRiders) + "</dd>");
           html.push("</dl>");
           if (x.currentTreatment) {
-            html.push("<h4 style='margin:14px 0 6px'>현재 치료</h4><div class='detail-summary' style='margin:0'>" + esc(x.currentTreatment) + "</div>");
+            html.push("<h3>현재 치료</h3><div class='detail-summary' style='margin:0'>" + esc(x.currentTreatment) + "</div>");
           }
           if (x.futureTreatment) {
-            html.push("<h4 style='margin:14px 0 6px'>치료 전망</h4><div class='detail-summary' style='margin:0'>" + esc(x.futureTreatment) + "</div>");
+            html.push("<h3>치료 전망</h3><div class='detail-summary' style='margin:0'>" + esc(x.futureTreatment) + "</div>");
           }
           var kw = String(x.name).split("(")[0];
-          html.push('<p style="margin:16px 0 0"><a class="tab-button" style="text-decoration:none" href="../cases/?q=' + encodeURIComponent(kw) + '">사례에서 검색</a></p>');
+          html.push('<p style="margin:16px 0 0"><a class="btn" href="../cases/?q=' + encodeURIComponent(kw) + '">사례에서 검색</a></p>');
         }
         html.push("</div>");
         $("detail").innerHTML = html.join("");

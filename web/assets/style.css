@@ -10,7 +10,7 @@
   --surface: #ffffff;
   --ink: #172033;
   --ink-sub: #596579;
-  --ink-faint: #717d8f; /* 흰 바탕 4.5:1 이상 — 보조 텍스트도 읽혀야 한다 */
+  --ink-faint: #647082; /* 구값 #717d8f는 흰 바탕 실측 4.17:1로 AA 미달 — platform.css --platform-faint 교정(2026-07-29)과 동일 값으로 정합 (2026-07-31) */
   --accent: #0758d6;      /* 버튼·활성상태·링크 전용 */
   --accent-dark: #0648ad;
   --accent-bg: #edf4ff;
@@ -230,6 +230,13 @@ a {
   letter-spacing: -0.02em;
 }
 
+/* 제호 링크 터치 타깃 44px — 시각 이동 없이 패딩으로 확장 (HIT-002, 2026-07-31) */
+.site-header .site-title {
+  display: inline-block;
+  padding: 8px 0;
+  margin: -8px 0;
+}
+
 .site-title .accent {
   color: var(--accent);
 }
@@ -418,7 +425,9 @@ body.simple .container {
   .shelf-kakao,
   .btn,
   .compose-actions button,
-  .sender-row input {
+  .sender-row input,
+  .kcard-form input,
+  .kcard-form select {
     min-height: 44px;
   }
 }
@@ -1298,6 +1307,13 @@ body.magazine :focus-visible {
   margin-bottom: 20px;
 }
 
+/* 데스크톱: 단일 값 입력 폼이 960px 전폭으로 늘어지던 결함 — 읽기 폭으로 제한 (2026-07-31 정돈) */
+@media (min-width: 768px) {
+  .kcard-form {
+    max-width: 560px;
+  }
+}
+
 .kcard-form label {
   font-size: 0.87rem;
   font-weight: 600;
@@ -1313,7 +1329,7 @@ body.magazine :focus-visible {
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 4px; /* 헌법: 입력창 4px (구 8px 정합, 2026-07-31 잔여 화면 정돈) */
   padding: 10px 14px;
   outline: none;
 }
