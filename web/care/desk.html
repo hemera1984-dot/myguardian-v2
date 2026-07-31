@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -35,42 +35,56 @@
       <span class="topbar-note">주간·월간 발행 공정</span>
     </header>
 
-    <main class="platform-main">
-      <div class="pub-desk">
-        <div class="pub-desk-head">
-          <h2>발행 데스크</h2>
+    <main class="platform-main desk">
+      <!-- 3단 헤딩 — eyebrow → 제목 → 설명 (플랫폼 공통 문법) -->
+      <div class="page-heading">
+        <p class="eyebrow">케어센터</p>
+        <div class="desk-title-row">
+          <h1>발행 데스크</h1>
           <span class="pub-chip" id="pub-dday"></span>
         </div>
-        <ol class="pub-steps">
-          <li><strong>1 기획</strong><span>꼭지별 가제를 쓰고 집필 지시문을 복사합니다. 뉴스 후보는 참조용으로 골라 끼웁니다.</span></li>
-          <li><strong>2 집필·검토</strong><span>지시문을 발행 세션에 붙여넣으면 제목 다듬기부터 근거 수집·집필까지 진행됩니다. 초안은 리더에서 검토합니다.</span></li>
-          <li><strong>3 발행·발송</strong><span>검증 통과 후 발행 전환, 카톡 문구를 복사해 전송합니다.</span></li>
-        </ol>
-        <div class="pub-desk-actions" id="pub-desk-actions"></div>
+        <p>주간·월간 발행 공정 — 후보 수집부터 발송까지 순서대로 진행합니다.</p>
       </div>
 
-      <div class="section" id="draft-block" hidden>
-        <h3 class="section-title">작성 중인 호</h3>
-        <div id="draft-list"></div>
+      <!-- 공정 개요 — 3단계 요약 (단계 번호는 아래 STEP 구획이 가진다) -->
+      <div class="pub-desk">
+        <ol class="pub-steps">
+          <li><strong>기획</strong><span>꼭지별 가제를 쓰고 집필 지시문을 복사합니다. 뉴스 후보는 참조용으로 골라 끼웁니다.</span></li>
+          <li><strong>집필·검토</strong><span>지시문을 발행 세션에 붙여넣으면 제목 다듬기부터 근거 수집·집필까지 진행됩니다. 초안은 리더에서 검토합니다.</span></li>
+          <li><strong>발행·발송</strong><span>검증 통과 후 발행 전환, 카톡 문구를 복사해 전송합니다.</span></li>
+        </ol>
       </div>
 
       <div class="section">
-        <h3 class="section-title">이번 호 기획</h3>
+        <h2 class="section-title"><span class="step-no">STEP 1</span>뉴스 후보 <span class="news-sub">참조용 — 선택하면 지시문에 포함됩니다</span></h2>
+        <div id="news-box">
+          <div class="placeholder-panel">후보를 불러오는 중입니다.</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title"><span class="step-no">STEP 2</span>이번 호 기획 <span class="news-sub">채널을 고르고 꼭지별 가제를 씁니다</span></h2>
         <div class="pill-tabs" id="plan-channel" role="tablist" aria-label="발행 채널">
           <button type="button" class="active" data-ch="주간">주간</button>
           <button type="button" data-ch="월간">월간</button>
         </div>
         <div id="topic-inputs"></div>
         <div class="news-actions">
-          <button class="btn btn-primary" type="button" id="news-brief">집필 지시문 복사</button>
           <button class="btn" type="button" id="topic-suggest">주제 추천 지시문 복사</button>
-          <span id="news-count">참조 기사 0건 선택</span>
         </div>
-        <p class="news-collected">제목은 가제면 됩니다. 집필 세션이 제목을 다듬어 확정하고, 가제 키워드로 네이버 뉴스·백과사전과 웹검색 근거를 수집해 기사를 작성합니다.</p>
       </div>
 
       <div class="section">
-        <h3 class="section-title">지면 사진 <span class="news-sub">끌어다 놓거나 붙여넣으면 올라갑니다</span></h3>
+        <h2 class="section-title"><span class="step-no">STEP 3</span>집필 지시문 <span class="news-sub">가제와 참조 기사를 한 덩어리로 복사합니다</span></h2>
+        <p class="news-collected">제목은 가제면 됩니다. 집필 세션이 제목을 다듬어 확정하고, 가제 키워드로 네이버 뉴스·백과사전과 웹검색 근거를 수집해 기사를 작성합니다.</p>
+        <div class="news-actions">
+          <button class="btn btn-primary" type="button" id="news-brief">집필 지시문 복사</button>
+          <span id="news-count">참조 기사 0건 선택</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title"><span class="step-no">STEP 4</span>지면 사진 <span class="news-sub">끌어다 놓거나 붙여넣으면 올라갑니다</span></h2>
         <div class="drop-zone" id="drop-zone" tabindex="0" role="button" aria-label="사진 올리기">
           <p class="drop-main">여기에 사진을 끌어다 놓으세요</p>
           <p class="drop-sub">복사한 이미지를 붙여넣거나(Ctrl+V), 눌러서 파일을 고를 수도 있습니다</p>
@@ -81,13 +95,12 @@
       </div>
 
       <div class="section">
-        <h3 class="section-title">뉴스 후보 <span class="news-sub">참조용 — 선택하면 지시문에 포함됩니다</span></h3>
-        <div id="news-box">
-          <div class="placeholder-panel">후보를 불러오는 중입니다.</div>
+        <h2 class="section-title"><span class="step-no">STEP 5</span>발행·발송 <span class="news-sub">검토를 마친 호를 발행하고 카톡으로 알립니다</span></h2>
+        <div id="draft-block" hidden>
+          <h3 class="desk-sub-title">작성 중인 호</h3>
+          <div id="draft-list"></div>
         </div>
-      </div>
-
-      <div class="section">
+        <div class="pub-desk-actions" id="pub-desk-actions"></div>
         <div class="sender-row" id="sender-row">
           <span>카톡 서명</span>
           <input class="name" id="sender-name" type="text" aria-label="발신자 이름" placeholder="이름">
@@ -99,7 +112,7 @@
           <h3 id="compose-title">카톡 문구</h3>
           <textarea id="compose-text" aria-label="카톡 발송 문구"></textarea>
           <div class="compose-actions">
-            <button class="btn btn-primary" type="button" id="compose-copy">복사하기</button>
+            <button class="btn" type="button" id="compose-copy">복사하기</button>
             <button class="btn" type="button" id="compose-close">닫기</button>
           </div>
         </div>
