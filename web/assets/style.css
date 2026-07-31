@@ -415,7 +415,7 @@ body.simple .container {
 
 @media (max-width: 767px) {
   .pill-tabs button,
-  .shelf-item .shelf-kakao,
+  .shelf-kakao,
   .btn,
   .compose-actions button,
   .sender-row input {
@@ -616,390 +616,25 @@ body.simple .container {
 }
 
 /* ==============================
-   매거진 조판 — 고객 열람 화면 (케어센터 발행물)
-   기준: 경제지 편집 문법 (제호·킥커·표제 위계·1단 본문·인용·헤어라인·캡션·칼럼 박스)
+   케어 지면 — 고객 열람 화면 (경제지 편집 문법, 2026-07-31 재조판)
+   근거: .omd/scout.md "케어 지면 브릭" 결정 1~7 (longblack·newneek·stripe·mk 실측)
+   제호 → 호수·발행일 → 킥커 → 세리프 표제 → 부제 → 필자의 수직 스택,
+   1단 본문(Pretendard 17~18/1.75~1.8), 골드 칼럼 박스, 캡션, 여백 우선 + 최소 헤어라인.
+   골드 #c9a14a는 케어 지면 전용(막대·스트립 등 비텍스트),
+   텍스트용 골드는 진한 --gold-ink(#8a6620, 종이 바탕 대비 약 5.0:1 AA).
    ============================== */
 
 body.magazine {
-  background: #f7f4ee;
-}
-
-.mag {
-  max-width: 680px;
-  margin: 0 auto;
-  padding: 0 20px 64px;
-}
-
-/* 제호 표지 */
-.mag-cover {
-  text-align: center;
-  padding: 44px 0 36px;
-}
-
-.mag-cover .mag-kicker {
-  font-size: 0.8rem;
-  letter-spacing: 0.28em;
-  color: var(--ink-sub);
-  margin-bottom: 18px;
-}
-
-.mag-cover .mag-masthead {
-  font-family: "Noto Serif KR", serif;
-  font-size: 3rem;
-  font-weight: 700;
-  line-height: 1.15;
-  color: var(--ink);
-  letter-spacing: 0.02em;
-}
-
-.mag-cover .mag-issue-line {
-  display: inline-block;
-  margin-top: 16px;
-  padding: 8px 0;
-  border-top: 1px solid var(--ink);
-  border-bottom: 1px solid var(--ink);
-  font-size: 0.93rem;
-  letter-spacing: 0.12em;
+  --paper: #faf8f4;
+  --gold: #c9a14a;
+  --gold-ink: #8a6620;
+  --hairline: rgba(23, 32, 51, 0.14);
+  --body-ink: #232c40;
+  background: var(--paper);
   color: var(--ink);
 }
 
-.mag-cover .mag-cover-img {
-  width: 100%;
-  border-radius: 4px;
-  margin-top: 28px;
-}
-
-.mag-cover .mag-editor {
-  margin-top: 18px;
-  font-size: 0.87rem;
-  color: var(--ink-sub);
-  letter-spacing: 0.06em;
-}
-
-/* 목차 */
-.mag-toc {
-  border-top: 2px solid var(--ink);
-  padding: 24px 0 8px;
-  margin-bottom: 8px;
-}
-
-.mag-toc .mag-toc-title {
-  font-family: "Noto Serif KR", serif;
-  font-size: 1.05rem;
-  font-weight: 700;
-  margin-bottom: 16px;
-}
-
-.mag-toc ol {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.mag-toc li {
-  display: flex;
-  gap: 14px;
-  align-items: baseline;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(26, 39, 68, 0.12);
-}
-
-.mag-toc .toc-no {
-  font-family: "Noto Serif KR", serif;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-
-.mag-toc .toc-cat {
-  font-size: 0.73rem;
-  letter-spacing: 0.14em;
-  color: var(--accent);
-  white-space: nowrap;
-}
-
-.mag-toc .toc-title {
-  font-size: 0.97rem;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-/* 편집장의 말 */
-.mag-note {
-  margin: 40px 0;
-  padding: 28px 24px;
-  background: #ffffff;
-  border-radius: 4px;
-}
-
-.mag-note .mag-note-label {
-  font-family: "Noto Serif KR", serif;
-  font-size: 0.93rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  margin-bottom: 14px;
-}
-
-.mag-note p {
-  font-size: 1rem;
-  line-height: 1.9;
-  margin: 0 0 14px;
-  color: var(--ink);
-}
-
-.mag-note .mag-note-sign {
-  font-family: "Noto Serif KR", serif;
-  text-align: right;
-  font-weight: 600;
-  color: var(--ink-sub);
-}
-
-/* 기사 */
-.mag-article {
-  background: #ffffff;
-  border-radius: 4px;
-  padding: 36px 26px;
-  margin: 28px 0;
-}
-
-.mag-article .art-kicker {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.77rem;
-  letter-spacing: 0.16em;
-  color: var(--accent);
-  margin-bottom: 16px;
-}
-
-.mag-article .art-kicker::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: rgba(26, 39, 68, 0.15);
-}
-
-.mag-article h2 {
-  font-family: "Noto Serif KR", serif;
-  font-size: 1.73rem;
-  font-weight: 700;
-  line-height: 1.3;
-  margin: 0 0 12px;
-  letter-spacing: -0.01em;
-}
-
-.mag-article .art-standfirst {
-  font-size: 1.05rem;
-  line-height: 1.6;
-  color: var(--ink-sub);
-  margin: 0 0 22px;
-}
-
-.mag-article .art-img {
-  width: 100%;
-  border-radius: 4px;
-  margin: 4px 0 24px;
-}
-
-.mag-article .art-summary {
-  background: #f4f1ea;
-  border-radius: 4px;
-  padding: 18px 20px;
-  margin-bottom: 26px;
-}
-
-.mag-article .art-summary .label {
-  font-size: 0.77rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  color: var(--ink-sub);
-  display: block;
-  margin-bottom: 8px;
-}
-
-.mag-article .art-summary p {
-  font-size: 0.97rem;
-  line-height: 1.75;
-  margin: 0 0 10px;
-}
-
-.mag-article .art-summary p:last-child {
-  margin-bottom: 0;
-}
-
-.mag-article .art-body p {
-  font-size: 1.13rem; /* 17px — 독자층(40대 이상) 가독 기준 */
-  line-height: 1.9;
-  margin: 0 0 20px;
-  color: #232c40;
-}
-
-/* 글자 크기 조절 — 크게 / 아주 크게 (localStorage 저장) */
-body.fs-2 .mag-article .art-body p { font-size: 1.27rem; line-height: 1.95; }
-body.fs-2 .mag-article .art-summary p,
-body.fs-2 .mag-comment p,
-body.fs-2 .mag-note p { font-size: 1.13rem; line-height: 1.85; }
-body.fs-3 .mag-article .art-body p { font-size: 1.45rem; line-height: 2; }
-body.fs-3 .mag-article .art-summary p,
-body.fs-3 .mag-comment p,
-body.fs-3 .mag-note p { font-size: 1.27rem; line-height: 1.9; }
-
-.mag-topbar .font-toggle {
-  font: inherit;
-  font-weight: 700;
-  color: var(--ink);
-  background: none;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 4px 10px;
-  cursor: pointer;
-  font-variant-numeric: tabular-nums;
-}
-
-.mag-topbar .font-toggle.on {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-/* 면 진행 표시줄 */
-.mag-progress {
-  position: fixed;
-  top: 48px;
-  left: 0;
-  height: 3px;
-  background: var(--accent);
-  z-index: 21;
-  transition: width 0.25s ease;
-}
-
-.mag-article .art-body h3 {
-  font-family: "Noto Serif KR", serif;
-  font-size: 1.2rem;
-  font-weight: 700;
-  margin: 34px 0 14px;
-  padding-top: 18px;
-  border-top: 1px solid rgba(26, 39, 68, 0.12);
-}
-
-/* 안창민 FC의 한마디 — 칼럼 박스 */
-.mag-comment {
-  margin-top: 30px;
-  background: #fbf6ea;
-  border-left: 3px solid var(--ink);
-  border-radius: 0 4px 4px 0;
-  padding: 22px 22px 18px;
-}
-
-.mag-comment .label {
-  font-family: "Noto Serif KR", serif;
-  font-size: 0.93rem;
-  font-weight: 700;
-  margin-bottom: 10px;
-}
-
-.mag-comment p {
-  font-size: 0.99rem;
-  line-height: 1.8;
-  margin: 0 0 12px;
-}
-
-.mag-comment .sign {
-  text-align: right;
-  font-family: "Noto Serif KR", serif;
-  font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--ink-sub);
-  margin: 0;
-}
-
-/* 판권·마무리 */
-.mag-colophon {
-  text-align: center;
-  padding: 36px 0 8px;
-  border-top: 2px solid var(--ink);
-  margin-top: 40px;
-}
-
-.mag-colophon .mag-colophon-title {
-  font-family: "Noto Serif KR", serif;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
-.mag-colophon p {
-  font-size: 0.83rem;
-  color: var(--ink-sub);
-  margin: 6px 0 0;
-}
-
-/* 아카이브 목록 썸네일 */
-.issue-item {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
-
-.issue-thumb {
-  width: 84px;
-  height: 84px;
-  object-fit: cover;
-  border-radius: 8px;
-  flex-shrink: 0;
-}
-
-.issue-item .issue-main {
-  flex: 1;
-  min-width: 0;
-}
-
-@media (min-width: 720px) {
-  .mag-cover .mag-masthead {
-    font-size: 3.7rem;
-  }
-  .mag-article {
-    padding: 44px 48px;
-  }
-}
-
-@media print {
-  body.magazine {
-    background: #fff;
-  }
-  .mag-article,
-  .mag-note {
-    border: none;
-    padding: 24px 0;
-    break-inside: auto;
-  }
-  .mag-comment {
-    break-inside: avoid;
-  }
-}
-
-/* ==============================
-   매거진 스와이프 리더 + 서재 + 섹션 컬러
-   모바일 우선: 실제 잡지처럼 좌우 스와이프로 면을 넘긴다
-   ============================== */
-
-:root {
-  --mag-weekly: #16223c;   /* 주간 표지: 딥 네이비 */
-  --mag-monthly: #4a1f2e;  /* 월간 표지: 딥 버건디 */
-  --mag-red: #c2402a;
-  --mag-blue: #1d64c2;
-  --mag-violet: #6d4bb8;
-  --mag-green: #177a4c;
-  --mag-red-tint: rgba(194, 64, 42, 0.07);
-  --mag-blue-tint: rgba(29, 100, 194, 0.07);
-  --mag-violet-tint: rgba(109, 75, 184, 0.07);
-  --mag-green-tint: rgba(23, 122, 76, 0.07);
-}
-
-body.magazine {
-  overflow: hidden; /* 세로 스크롤은 면 안에서만 */
-}
-
-/* 상단 바: 서재로 · 호 표기 · 면 표시 */
+/* 상단 바: 서재로 · 호 표기 · 글자 크기 */
 .mag-topbar {
   position: fixed;
   top: 0;
@@ -1010,19 +645,21 @@ body.magazine {
   align-items: center;
   gap: 12px;
   padding: 0 14px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(250, 248, 244, 0.94);
   backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--line);
   z-index: 20;
 }
 
 .mag-topbar .mag-home {
-  font-size: 0.87rem;
+  font-size: 14px;
   font-weight: 700;
   color: var(--ink);
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-height: 44px; /* 터치 타깃 플로어 — 바 높이 48px 안에서 충족 */
+  padding-right: 4px;
 }
 
 .mag-topbar .mag-home svg {
@@ -1038,7 +675,7 @@ body.magazine {
   flex: 1;
   text-align: center;
   font-family: "Noto Serif KR", serif;
-  font-size: 0.9rem;
+  font-size: 14px;
   font-weight: 600;
   color: var(--ink);
   white-space: nowrap;
@@ -1046,336 +683,608 @@ body.magazine {
   text-overflow: ellipsis;
 }
 
-.mag-topbar .mag-pageno {
-  font-size: 0.83rem;
+.mag-topbar .font-toggle {
+  font: inherit;
+  font-weight: 700;
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  min-width: 44px;  /* 터치 타깃 플로어 — 독자층(40대 이상)의 핵심 컨트롤 */
+  min-height: 44px;
+  padding: 0 10px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.14s ease, color 0.14s ease;
+}
+
+.mag-topbar .font-toggle.on {
+  border-color: var(--gold-ink);
+  color: var(--gold-ink);
+}
+
+/* 읽기 진행 표시줄 — 상태 표시만 0.3초 허용 (헌법) */
+.mag-progress {
+  position: fixed;
+  top: 48px;
+  left: 0;
+  height: 2px;
+  background: var(--gold);
+  z-index: 21;
+  transition: width 0.3s ease;
+}
+
+/* 지면 열 — 1단, 측정폭 = 뷰포트 - 여백 */
+.issue {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 68px 20px 56px;
+  word-break: keep-all;
+}
+
+.issue-loading {
+  text-align: center;
+  padding: 80px 0;
   color: var(--ink-sub);
+}
+
+/* 지면 헤더 — 제호(小) → 호수·발행일 괘선부 → 대표 기사 표제부 */
+.issue-head {
+  padding-top: 6px;
+}
+
+.issue-masthead {
+  font-family: "Noto Serif KR", serif;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: center;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+
+.issue-line {
+  text-align: center;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  color: var(--ink-sub);
+  font-variant-numeric: tabular-nums;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--ink);
+  margin: 0 0 22px;
+}
+
+/* 킥커 — 골드 단부호 + 번호 + 카테고리 (크기가 아니라 웨이트·색으로 구분) */
+.a-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--gold-ink);
+  margin: 0 0 10px;
+}
+
+.a-kicker::before {
+  content: "";
+  width: 22px;
+  height: 3px;
+  background: var(--gold);
+}
+
+.a-kicker .a-no {
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
 
-/* 면 덱: 가로 스와이프 + 스냅 */
-.mag-deck {
+/* 표제 — 세리프는 제목·인용 전용 (본문 세리프 금지, 실측 근거) */
+.a-head {
+  font-family: "Noto Serif KR", serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.42;
+  letter-spacing: -0.01em;
+  text-wrap: pretty;
+  margin: 0 0 10px;
+  color: var(--ink);
+}
+
+.issue-head h1.a-head {
+  font-size: 28px;
+  line-height: 1.4;
+}
+
+.a-standfirst {
+  font-size: 15.5px;
+  line-height: 1.62;
+  color: var(--ink-sub);
+  text-wrap: pretty;
+  margin: 0 0 14px;
+}
+
+.a-byline {
+  font-size: 13px;
+  color: var(--ink-sub);
+  margin: 0 0 18px;
+}
+
+/* 이번 호 목차 — 면 이동 앵커 칩 */
+.issue-toc {
   display: flex;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  height: 100dvh;
-  padding-top: 48px;
-  box-sizing: border-box;
-  scrollbar-width: none;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 22px;
 }
 
-.mag-deck::-webkit-scrollbar {
-  display: none;
+.issue-toc a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  min-height: 44px; /* 터치 타깃 플로어 */
+  padding: 0 13px;
+  text-decoration: none;
+  transition: border-color 0.14s ease, color 0.14s ease;
 }
 
-.mag-page {
-  flex: 0 0 100%;
+.issue-toc a:hover {
+  border-color: var(--gold-ink);
+  color: var(--gold-ink);
+}
+
+.issue-toc .a-no {
+  font-weight: 700;
+  color: var(--gold-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 이미지 — 본문 측정폭 맞춤(풀블리드 금지) + 좌정렬 캡션 */
+.a-figure {
+  margin: 0 0 22px;
+}
+
+.a-figure img {
+  display: block;
   width: 100%;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
-  padding-bottom: 96px;
+  border-radius: 2px;
 }
 
-.mag-page .page-inner {
-  max-width: 680px;
-  margin: 0 auto;
-  padding: 0 20px;
+.a-figure figcaption {
+  margin-top: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-sub);
+  text-align: left;
 }
 
-/* 표지 면 — 채널 아이덴티티 컬러 */
-.mag-page.cover-page {
-  color: #f2ede2;
+.issue-cover {
+  margin: 2px 0 26px;
 }
 
-body[data-ch="주간"] .mag-page.cover-page { background: var(--mag-weekly) url("img/texture-navy.jpg") center / cover no-repeat; }
-body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
-
-.cover-page .mag-cover {
-  padding-top: 40px;
+/* 편집장의 말 — 칼럼 박스 문법 (1px 테두리 + 상단 3px 골드 스트립) */
+.issue-note {
+  margin: 0 0 30px;
+  padding: 18px 20px 12px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--gold);
 }
 
-.cover-page .mag-kicker {
-  color: rgba(242, 237, 226, 0.65);
+.issue-note .issue-note-label {
+  font-family: "Noto Serif KR", serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--gold-ink);
+  margin: 0 0 10px;
 }
 
-.cover-page .mag-masthead {
-  color: #ffffff;
+.issue-note p {
+  font-size: 16px;
+  line-height: 1.8;
+  margin: 0 0 12px;
 }
 
-.cover-page .mag-issue-line {
-  color: #f2ede2;
-  border-color: rgba(242, 237, 226, 0.55);
-}
-
-.cover-page .mag-editor {
-  color: rgba(242, 237, 226, 0.7);
-}
-
-/* 표지 속 목차 — 누르면 해당 면으로 */
-.cover-page .mag-toc {
-  border-top: 1px solid rgba(242, 237, 226, 0.35);
-  margin-top: 36px;
-}
-
-.cover-page .mag-toc .mag-toc-title {
-  color: rgba(242, 237, 226, 0.75);
-}
-
-.cover-page .mag-toc li {
-  border-bottom: 1px solid rgba(242, 237, 226, 0.16);
-  cursor: pointer;
-}
-
-.cover-page .mag-toc .toc-no {
-  color: #ffffff;
-}
-
-.cover-page .mag-toc .toc-title {
-  color: #f5f1e8;
-}
-
-.cover-page .mag-note {
-  background: rgba(255, 255, 255, 0.07);
-  margin: 32px 0 48px;
-}
-
-.cover-page .mag-note p,
-.cover-page .mag-note .mag-note-label {
-  color: #f2ede2;
-}
-
-.cover-page .mag-note .mag-note-sign {
-  color: rgba(242, 237, 226, 0.7);
-}
-
-/* 섹션 컬러 — 색은 면의 정체성 신호 */
-.cat-red { --cat: var(--mag-red); --cat-tint: var(--mag-red-tint); }
-.cat-blue { --cat: var(--mag-blue); --cat-tint: var(--mag-blue-tint); }
-.cat-violet { --cat: var(--mag-violet); --cat-tint: var(--mag-violet-tint); }
-.cat-green { --cat: var(--mag-green); --cat-tint: var(--mag-green-tint); }
-
-.toc-cat { color: var(--cat, var(--accent)); }
-
-.article-page .mag-article {
-  background: none;
-  padding: 28px 0;
+.issue-note .issue-note-sign {
+  font-family: "Noto Serif KR", serif;
+  text-align: right;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink-sub);
   margin: 0;
 }
 
-.article-page .art-kicker {
-  color: var(--cat, var(--accent));
+/* 기사 — 구획은 여백 우선, 기사 사이 1px 헤어라인 1회 */
+.a {
+  padding: 30px 0 34px;
+  border-top: 1px solid var(--hairline);
 }
 
-.article-page .art-kicker::after {
-  background: var(--cat, rgba(26, 39, 68, 0.15));
-  opacity: 0.35;
+.a.a-lead {
+  border-top: 0;
+  padding-top: 0;
 }
 
-.article-page h2 {
-  border-left: 4px solid var(--cat, var(--ink));
-  padding-left: 14px;
+/* 요약 — 본문이 있는 호의 요지부 (괘선 상하) */
+.a-summary {
+  border-top: 2px solid var(--ink);
+  border-bottom: 1px solid var(--hairline);
+  padding: 14px 0 6px;
+  margin: 0 0 24px;
 }
 
-.article-page .art-summary {
-  background: var(--cat-tint, #f4f1ea);
-  border-left: 3px solid var(--cat, var(--ink));
-  border-radius: 0 4px 4px 0;
+.a-summary .label {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--gold-ink);
+  display: block;
+  margin-bottom: 8px;
 }
 
-.article-page .art-body h3 {
-  border-top-color: var(--cat, rgba(26, 39, 68, 0.12));
+.a-summary p {
+  font-size: 15.5px;
+  line-height: 1.7;
+  margin: 0 0 12px;
+  color: var(--body-ink);
+}
+
+/* 1단 본문 — Pretendard 17.4/1.78 (독자층 40대 이상 가독 기준) */
+.a-body p {
+  font-size: 17.5px;
+  line-height: 1.78;
+  margin: 0 0 20px;
+  color: var(--body-ink);
+}
+
+.a-body p:last-child {
+  margin-bottom: 0;
+}
+
+.a-body h3 {
+  font-family: "Noto Serif KR", serif;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.5;
+  margin: 32px 0 12px;
   color: var(--ink);
 }
 
-/* 면 하단 이동 버튼 */
-.page-next {
-  display: block;
-  width: 100%;
-  max-width: 680px;
-  margin: 8px auto 0;
-  padding: 14px;
-  font: inherit;
-  font-size: 0.95rem;
+/* FC의 한마디 — 골드 좌측 막대 칼럼 박스 (케어 전용 골드 문법) */
+.a-note {
+  margin-top: 28px;
+  border-left: 3px solid var(--gold);
+  /* 종이 #faf8f4 위 골드 7% 블렌드의 솔리드 환산 — rgba를 쓰면 대비 검사기가
+     알파를 풀지 못해 오탐하므로 확정 헥스로 못박는다 (라벨 4.7:1, 서명 5.2:1 AA) */
+  background: #f7f2e8;
+  padding: 20px 20px 14px;
+}
+
+.a-note .a-note-label {
+  font-size: 13px;
   font-weight: 700;
-  color: #ffffff;
-  background: var(--ink);
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
+  letter-spacing: 0.1em;
+  color: var(--gold-ink);
+  margin: 0 0 10px;
 }
 
-.cover-page .page-next {
-  background: rgba(255, 255, 255, 0.14);
-  color: #f2ede2;
+.a-note p {
+  font-size: 16.5px;
+  line-height: 1.75;
+  margin: 0 0 12px;
+  color: var(--body-ink);
 }
 
-/* 하단 플로팅 내비게이션 */
-.mag-nav {
-  position: fixed;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 6px;
-  background: rgba(26, 39, 68, 0.88);
-  border-radius: 999px;
-  padding: 6px;
-  z-index: 20;
-}
-
-.mag-nav button {
-  font: inherit;
-  font-size: 0.83rem;
+.a-note .a-note-sign {
+  font-family: "Noto Serif KR", serif;
+  text-align: right;
   font-weight: 600;
-  color: #ffffff;
-  background: none;
-  border: none;
-  border-radius: 999px;
-  padding: 8px 14px;
-  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink-sub);
+  margin: 0;
 }
 
-.mag-nav button:disabled {
-  opacity: 0.35;
+/* 지면 말미 — 필자 서명 카드(뉴닉형) → 다음 호 → 판권 */
+.issue-end {
+  margin-top: 6px;
 }
 
-.mag-nav button.primary {
-  background: rgba(255, 255, 255, 0.16);
+.sig-card {
+  padding-top: 6px;
+}
+
+.sig-card::before {
+  content: "";
+  display: block;
+  width: 26px;
+  height: 3px;
+  background: var(--gold);
+  margin-bottom: 14px;
+}
+
+.sig-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.sig-role {
+  font-size: 13px;
+  color: var(--ink-sub);
+  margin: 3px 0 0;
+}
+
+/* 다음 호 — 실데이터가 있을 때만 렌더되는 이동 카드 (칼럼 박스 문법 재사용) */
+.next-issue {
+  display: block;
+  margin-top: 26px;
+  padding: 16px 18px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--gold);
+  text-decoration: none;
+  transition: border-color 0.14s ease;
+}
+
+.next-issue:hover {
+  border-color: var(--gold-ink);
+}
+
+.next-issue .next-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--gold-ink);
+  margin-bottom: 6px;
+}
+
+.next-issue .next-title {
+  display: block;
+  font-family: "Noto Serif KR", serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.next-issue .next-meta {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink-sub);
+  font-variant-numeric: tabular-nums;
+  margin-top: 6px;
+}
+
+/* 판권 */
+.colophon {
+  margin-top: 36px;
+  border-top: 2px solid var(--ink);
+  padding-top: 20px;
+  text-align: center;
+}
+
+.colophon .colophon-title {
+  font-family: "Noto Serif KR", serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin: 0 0 6px;
+}
+
+.colophon p {
+  font-size: 12.5px;
+  color: var(--ink-sub);
+  line-height: 1.6;
+  margin: 4px 0 0;
+}
+
+.issue-return {
+  display: inline-block;
+  margin-top: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  padding: 11px 20px;
+  text-decoration: none;
+  transition: border-color 0.14s ease, color 0.14s ease;
+}
+
+.issue-return:hover {
+  border-color: var(--gold-ink);
+  color: var(--gold-ink);
+}
+
+/* 미발행·잘못된 주소 */
+.issue-missing {
+  text-align: center;
+  padding: 16px 0 64px;
+  color: var(--ink-sub);
+  line-height: 1.7;
+}
+
+/* 글자 크기 조절 — 크게 / 아주 크게 (localStorage 저장) */
+body.fs-2 .a-body p { font-size: 19.5px; line-height: 1.85; }
+body.fs-2 .a-note p,
+body.fs-2 .a-summary p,
+body.fs-2 .issue-note p { font-size: 18px; line-height: 1.8; }
+body.fs-3 .a-body p { font-size: 22px; line-height: 1.9; }
+body.fs-3 .a-note p,
+body.fs-3 .a-summary p,
+body.fs-3 .issue-note p { font-size: 20px; line-height: 1.85; }
+
+/* 앵커 이동 — 고정 상단 바만큼 내려 앉힌다 */
+.issue [id] {
+  scroll-margin-top: 64px;
+}
+
+/* 키보드 초점 — 지면 스코프 (platform.css 미로드 화면) */
+body.magazine :focus-visible {
+  outline: 2px solid var(--gold-ink);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* 데스크톱 열람 — 측정폭 유지, 표제만 반 단계 상향 */
+@media (min-width: 720px) {
+  .issue {
+    padding: 84px 24px 72px;
+  }
+  .issue-masthead {
+    font-size: 21px;
+  }
+  .issue-head h1.a-head {
+    font-size: 32px;
+  }
+  .a-head {
+    font-size: 28px;
+  }
+}
+
+/* 인쇄 — 이동 요소 제거, 종이 흰 바탕 */
+@media print {
+  body.magazine {
+    background: #fff;
+  }
+  .mag-topbar,
+  .mag-progress,
+  .issue-toc,
+  .next-issue,
+  .issue-return {
+    display: none;
+  }
+  .issue {
+    padding: 0;
+    max-width: none;
+  }
+  .a {
+    break-inside: auto;
+  }
+  .a-note,
+  .a-summary,
+  .sig-card {
+    break-inside: avoid;
+  }
 }
 
 /* ==============================
-   서재 — 발행물 서가
+   서재 — 과월호 아카이브 리스트 (대표 최신호는 .latest-duo가 담당)
    ============================== */
 
-.shelf-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 18px 14px;
+.arch-list {
+  border-top: 2px solid var(--ink);
 }
 
-.shelf-item {
-  display: block;
+.arch-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
 }
 
-.shelf-cover {
+.arch-cover {
   display: block;
-  position: relative;
-  border-radius: 6px;
+  width: 52px;
+  height: 69px;
+  border-radius: 2px;
   overflow: hidden;
-  aspect-ratio: 3 / 4;
+  flex-shrink: 0;
   box-shadow: var(--shadow);
-  transition: box-shadow 0.14s ease;
 }
 
-.shelf-item:hover .shelf-cover {
-  box-shadow: 0 2px 8px rgba(16, 42, 78, 0.12);
-}
-
-.shelf-cover img {
+.arch-cover img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 
-.shelf-cover .shelf-band {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  padding: 8px 10px;
-  background: rgba(10, 16, 30, 0.72);
-  color: #fff;
-}
-
-.shelf-cover .shelf-band .ch {
-  font-family: "Noto Serif KR", serif;
-  font-weight: 700;
-  font-size: 0.87rem;
-}
-
-.shelf-cover .shelf-band .vol {
-  float: right;
-  font-size: 0.77rem;
-  opacity: 0.85;
-  font-variant-numeric: tabular-nums;
-}
-
-.shelf-cover.no-img {
+.arch-cover.no-img {
   display: flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
   font-family: "Noto Serif KR", serif;
-  font-size: 1.2rem;
+  font-size: 0.63rem;
   font-weight: 700;
-  color: #f2ede2;
-}
-
-.shelf-cover.no-img.ch-주간 { background: var(--mag-weekly); }
-.shelf-cover.no-img.ch-월간 { background: var(--mag-monthly); }
-
-.shelf-item .shelf-label {
-  margin-top: 8px;
-  font-size: 0.83rem;
-  color: var(--ink-sub);
-}
-
-.shelf-item .shelf-title {
-  display: block;
-  font-size: 0.93rem;
-  font-weight: 700;
-  color: var(--ink);
   line-height: 1.4;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  color: #f2ede2;
+  padding: 4px;
 }
 
-.shelf-item .shelf-kakao {
-  margin-top: 6px;
+.arch-cover.no-img.ch-주간 { background: var(--mag-weekly); }
+.arch-cover.no-img.ch-월간 { background: var(--mag-monthly); }
+
+.arch-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.arch-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.arch-kicker {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+.arch-title {
+  display: block;
+  margin-top: 2px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--ink);
+  transition: color 0.14s ease;
+}
+
+.arch-main:hover .arch-title {
+  color: var(--accent);
+}
+
+.shelf-kakao {
+  flex-shrink: 0;
+  font-family: inherit;
   font-size: 0.8rem;
   color: var(--accent);
   background: none;
   border: 1px solid var(--line-strong);
   border-radius: 4px;
   padding: 6px 12px;
+  min-height: 44px; /* 터치 타깃 플로어 — 태블릿 열람 포함 전 뷰포트 공통 */
   cursor: pointer;
-  font-family: inherit;
-  min-height: 32px;
+  transition: border-color 0.14s ease;
 }
 
-@media (min-width: 720px) {
-  .shelf-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
+.shelf-kakao:hover {
+  border-color: var(--accent);
 }
 
-/* 인쇄: 스와이프 덱을 세로로 풀어서 출력 */
-@media print {
-  body.magazine {
-    overflow: visible;
-  }
-  .mag-topbar,
-  .mag-nav,
-  .page-next {
-    display: none;
-  }
-  .mag-deck {
-    display: block;
-    height: auto;
-    overflow: visible;
-    padding-top: 0;
-  }
-  .mag-page {
-    overflow: visible;
-    padding-bottom: 0;
-  }
-  .mag-page.cover-page {
-    background: none !important;
-    color: var(--ink);
-  }
+/* 서가 표지색 — 표지 이미지가 없는 호의 채널 아이덴티티 */
+:root {
+  --mag-weekly: #16223c;
+  --mag-monthly: #4a1f2e;
 }
 
 /* ==============================
@@ -2217,7 +2126,9 @@ body[data-ch="월간"] .mag-page.cover-page { background: var(--mag-monthly); }
   }
 }
 
-.latest-card {
+/* a.latest-card — platform.css `.platform a { color: inherit }`(0,1,1)가 단일 클래스(0,1,0)를
+   이겨 네이비 표지 위 잉크 글자가 되던 대비 결함 교정 (2026-07-31, .btn-primary와 동일 계열) */
+a.latest-card {
   position: relative;
   display: block;
   min-height: 148px;

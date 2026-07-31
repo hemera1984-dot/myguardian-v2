@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -16,29 +16,17 @@
     </a>
     <span class="mag-top-title" id="top-title">케어센터</span>
     <button type="button" class="font-toggle" id="font-toggle" aria-label="글자 크기 조절">가</button>
-    <span class="mag-pageno" id="pageno"></span>
   </header>
   <div class="mag-progress" id="mag-progress" style="width:0"></div>
 
-  <div class="mag-deck" id="deck">
-    <section class="mag-page cover-page">
-      <div class="page-inner">
-        <p style="text-align:center;padding:80px 0;color:inherit">발행물을 불러오는 중입니다.</p>
-      </div>
-    </section>
-  </div>
-
-  <nav class="mag-nav" id="mag-nav" hidden>
-    <button type="button" id="nav-first">처음</button>
-    <button type="button" id="nav-prev">이전</button>
-    <button type="button" class="primary" id="nav-next">다음 기사</button>
-  </nav>
+  <main class="issue" id="issue">
+    <p class="issue-loading">발행물을 불러오는 중입니다.</p>
+  </main>
 
   <script>
     (function () {
       "use strict";
-      var deck = document.getElementById("deck");
-
+      var root = document.getElementById("issue");
       var esc = window.mg.esc;
 
       // 월간 원본의 영문 라벨은 한글 기능 라벨로 표시한다 (데이터는 무변형, 표시만 변환)
@@ -47,146 +35,163 @@
         return CAT_DISPLAY[String(cat || "").toUpperCase()] || cat;
       }
 
-      // 섹션 컬러: 카테고리 → 색 클래스
-      function catClass(cat) {
-        var c = String(cat || "");
-        if (/시사|HOT/i.test(c)) return "cat-red";
-        if (/경제|INSIGHT/i.test(c)) return "cat-blue";
-        if (/교양|LIFE/i.test(c)) return "cat-violet";
-        if (/보험|건강/.test(c)) return "cat-green";
-        return "cat-blue";
+      function pad2(n) { return String(n).padStart(2, "0"); }
+
+      // 발행일 "2026-07-27" → "2026년 7월 27일" (표시만 변환).
+      // 주차라벨이 같은 연도를 이미 실었으면 연도를 생략해 발행선 중복을 줄인다.
+      function displayDate(iso, weekLabel) {
+        var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ""));
+        if (!m) return iso || "";
+        var year = String(weekLabel || "").indexOf(m[1] + "년") === 0 ? "" : m[1] + "년 ";
+        return year + Number(m[2]) + "월 " + Number(m[3]) + "일";
       }
 
       function notFound() {
-        document.body.dataset.ch = "주간"; // 표지 배경색을 살려 오류 화면도 충분한 대비 확보
-        deck.innerHTML = '<section class="mag-page cover-page"><div class="page-inner">'
-          + '<header class="mag-cover"><p class="mag-kicker">케어센터</p>'
-          + '<h1 class="mag-masthead">발행물을<br>찾을 수 없습니다</h1>'
-          + '<p class="mag-editor">주소가 잘못되었거나 아직 발행되지 않은 호입니다.<br>전달받은 링크를 다시 확인하시거나 담당 설계사에게 문의해 주십시오.</p>'
-          + '<a class="page-next" href="./" style="margin-top:32px;text-align:center;text-decoration:none">케어센터 서재로 이동</a>'
-          + "</header></div></section>";
+        document.title = "발행물을 찾을 수 없습니다 - 케어센터";
+        root.innerHTML = '<header class="issue-head">'
+          + '<p class="issue-masthead">케어센터</p>'
+          + '<p class="issue-line">발행물을 찾을 수 없습니다</p>'
+          + "</header>"
+          + '<div class="issue-missing"><p>주소가 잘못되었거나 아직 발행되지 않은 호입니다.<br>'
+          + "전달받은 링크를 다시 확인하시거나 담당 설계사에게 문의해 주십시오.</p>"
+          + '<a class="issue-return" href="./">케어센터 서재로 이동</a></div>';
       }
 
-      function render(meta, data) {
-        document.body.dataset.ch = meta["채널"];
-        var pub = meta["발행인"] || "안창민";
-        var masthead = esc(meta["채널"]) + "<br>" + esc(pub);
-        var arts = data["기사"] || [];
-        var note = data["편집장의말"] || [];
-        var pages = [];
+      // 기사 표제 블록 — 킥커(번호·카테고리) → 세리프 표제 → 부제
+      function headBlock(a, i, tag) {
+        var h = [];
+        h.push('<p class="a-kicker"><span class="a-no">' + pad2(i + 1) + "</span>" + esc(displayCat(a["카테고리"])) + "</p>");
+        h.push("<" + tag + ' class="a-head">' + esc(a["제목"]) + "</" + tag + ">");
+        if (a["부제"]) h.push('<p class="a-standfirst">' + esc(a["부제"]) + "</p>");
+        return h.join("");
+      }
 
-        // 1면: 표지 + 목차 (+ 편집장의 말)
-        var cover = [];
-        cover.push('<header class="mag-cover">');
-        cover.push('<p class="mag-kicker">신한라이프 ' + esc(pub) + " FC 발행</p>");
-        cover.push('<h1 class="mag-masthead">' + masthead + "</h1>");
-        cover.push('<p class="mag-issue-line">' + esc(meta["주차라벨"]) + " · 통권 " + esc(meta["호수"]) + "호</p>");
-        if (meta["커버이미지"]) cover.push('<img class="mag-cover-img" src="../../' + esc(meta["커버이미지"]) + '" alt="표지">');
-        // 편집장은 항상 안창민. 팀원 호에는 발행자를 병기한다.
-        var editorLine = "편집장 안창민 FC" + (pub !== "안창민" ? " · 발행 " + esc(pub) + " FC" : "");
-        cover.push('<p class="mag-editor">' + editorLine + "</p>");
-        cover.push("</header>");
-        cover.push('<nav class="mag-toc"><p class="mag-toc-title">이번 호</p><ol>');
-        arts.forEach(function (a, i) {
-          cover.push('<li data-goto="' + (i + 1) + '"><span class="toc-no">' + String(i + 1).padStart(2, "0") + "</span>"
-            + '<span class="toc-cat ' + catClass(a["카테고리"]) + '">' + esc(displayCat(a["카테고리"])) + "</span>"
-            + '<span class="toc-title">' + esc(a["제목"]) + "</span></li>");
-        });
-        cover.push("</ol></nav>");
-        if (note.length) {
-          cover.push('<section class="mag-note"><p class="mag-note-label">편집장의 말</p>');
-          note.forEach(function (p) { cover.push("<p>" + esc(p) + "</p>"); });
-          cover.push('<p class="mag-note-sign">편집장 안창민</p></section>');
+      // 기사 몸통 — 이미지(figure)·요약·본문·한마디(골드 칼럼 박스)
+      function bodyBlock(a, pub) {
+        var h = [];
+        if (a["이미지"]) {
+          h.push('<figure class="a-figure"><img src="../../' + esc(a["이미지"]) + '" alt="" loading="lazy">');
+          if (a["이미지캡션"]) h.push("<figcaption>" + esc(a["이미지캡션"]) + "</figcaption>");
+          h.push("</figure>");
         }
-        cover.push('<button class="page-next" type="button" data-goto="1">첫 기사 읽기</button>');
-        pages.push({ cls: "cover-page", html: cover.join("") });
-
-        // 기사 면
-        arts.forEach(function (a, i) {
-          var h = [];
-          h.push('<article class="mag-article">');
-          h.push('<p class="art-kicker">' + (i + 1) + "면 · " + esc(displayCat(a["카테고리"])) + "</p>");
-          h.push("<h2>" + esc(a["제목"]) + "</h2>");
-          if (a["부제"]) h.push('<p class="art-standfirst">' + esc(a["부제"]) + "</p>");
-          if (a["이미지"]) h.push('<img class="art-img" src="../../' + esc(a["이미지"]) + '" alt="">');
-          var summary = a["요약"] || [];
-          if (summary.length) {
-            h.push('<div class="art-summary"><span class="label">요약</span>');
-            summary.forEach(function (p) { h.push("<p>" + esc(p) + "</p>"); });
-            h.push("</div>");
+        var segs = a["본문"] || [];
+        var sum = a["요약"] || [];
+        if (segs.length) {
+          // 본문이 있는 호 — 요약은 표제 아래 요지 박스로
+          if (sum.length) {
+            h.push('<aside class="a-summary"><p class="label">요약</p>');
+            sum.forEach(function (p) { h.push("<p>" + esc(p) + "</p>"); });
+            h.push("</aside>");
           }
-          h.push('<div class="art-body">');
-          (a["본문"] || []).forEach(function (seg) {
+          h.push('<div class="a-body">');
+          segs.forEach(function (seg) {
             h.push(seg.t === "h" ? "<h3>" + esc(seg.x) + "</h3>" : "<p>" + esc(seg.x) + "</p>");
           });
           h.push("</div>");
-          var comment = a["한마디"] || [];
-          if (comment.length) {
-            h.push('<aside class="mag-comment"><p class="label">' + esc(pub) + " FC의 한마디</p>");
-            comment.forEach(function (p) { h.push("<p>" + esc(p) + "</p>"); });
-            h.push('<p class="sign">' + esc(pub) + " FC</p></aside>");
-          }
-          h.push("</article>");
-          if (i < arts.length - 1) {
-            h.push('<button class="page-next" type="button" data-goto="' + (i + 2) + '">다음 기사 — ' + esc(arts[i + 1]["제목"]) + "</button>");
-          } else {
-            h.push('<footer class="mag-colophon">');
-            h.push('<p class="mag-colophon-title">' + esc(meta["채널"]) + " " + esc(pub) + "</p>");
-            h.push("<p>" + esc(meta["주차라벨"]) + " · 통권 " + esc(meta["호수"]) + "호 · " + editorLine + "</p>");
-            h.push("<p>본 콘텐츠는 정보 제공 목적이며 개별 상품 권유가 아닙니다. 문의는 담당 설계사에게 연락해 주십시오.</p>");
-            h.push('<button class="page-next" type="button" data-goto="0" style="margin-top:20px">표지로 돌아가기</button>');
-            h.push("</footer>");
-          }
-          pages.push({ cls: "article-page " + catClass(a["카테고리"]), html: h.join("") });
-        });
-
-        deck.innerHTML = pages.map(function (p) {
-          return '<section class="mag-page ' + p.cls + '"><div class="page-inner">' + p.html + "</div></section>";
-        }).join("");
-
-        document.getElementById("top-title").textContent =
-          meta["채널"] + " " + pub + " · 통권 " + meta["호수"] + "호";
-        document.getElementById("mag-nav").hidden = false;
-        initNav(pages.length, arts);
+        } else if (sum.length) {
+          // 요약만 있는 호 — 요약이 곧 기사 본문이다
+          h.push('<div class="a-body">');
+          sum.forEach(function (p) { h.push("<p>" + esc(p) + "</p>"); });
+          h.push("</div>");
+        }
+        var comment = a["한마디"] || [];
+        if (comment.length) {
+          h.push('<aside class="a-note"><p class="a-note-label">' + esc(pub) + " FC의 한마디</p>");
+          comment.forEach(function (p) { h.push("<p>" + esc(p) + "</p>"); });
+          h.push('<p class="a-note-sign">' + esc(pub) + " FC</p></aside>");
+        }
+        return h.join("");
       }
 
-      function initNav(total, arts) {
-        var pageno = document.getElementById("pageno");
-        var first = document.getElementById("nav-first");
-        var prev = document.getElementById("nav-prev");
-        var next = document.getElementById("nav-next");
+      function render(meta, data, list, edition) {
+        document.body.dataset.ch = meta["채널"];
+        var pub = meta["발행인"] || "안창민";
+        var mast = meta["채널"] + " " + pub;
+        var editorLine = "편집장 안창민 FC" + (pub !== "안창민" ? " · 발행 " + esc(pub) + " FC" : "");
+        var arts = data["기사"] || [];
+        var note = data["편집장의말"] || [];
+        var h = [];
 
-        function current() {
-          return Math.round(deck.scrollLeft / deck.clientWidth);
+        // 지면 헤더 — 제호 → 호수·발행일 → (대표 기사) 킥커 → 표제 → 부제 → 필자
+        h.push('<header class="issue-head" id="a1">');
+        h.push('<p class="issue-masthead">' + esc(mast) + "</p>");
+        h.push('<p class="issue-line">통권 ' + esc(meta["호수"]) + "호 · " + esc(meta["주차라벨"]) + " · " + esc(displayDate(meta["발행일"], meta["주차라벨"])) + " 발행</p>");
+        if (arts.length) {
+          h.push(headBlock(arts[0], 0, "h1"));
+          h.push('<p class="a-byline">' + editorLine + "</p>");
         }
-        function goto(i) {
-          i = Math.max(0, Math.min(total - 1, i));
-          deck.scrollTo({ left: i * deck.clientWidth, behavior: "smooth" });
+        if (arts.length > 1) {
+          h.push('<nav class="issue-toc" aria-label="이번 호 기사">');
+          arts.forEach(function (a, i) {
+            h.push('<a href="#a' + (i + 1) + '"><span class="a-no">' + pad2(i + 1) + "</span>" + esc(displayCat(a["카테고리"])) + "</a>");
+          });
+          h.push("</nav>");
         }
+        // 표지 이미지는 폴드 직하 1장 — 대표 기사가 자체 이미지를 실으면 중복 질량이라 생략
+        if (meta["커버이미지"] && !(arts[0] && arts[0]["이미지"])) {
+          h.push('<figure class="a-figure issue-cover"><img src="../../' + esc(meta["커버이미지"]) + '" alt="표지" fetchpriority="high"></figure>');
+        }
+        h.push("</header>");
+
+        if (note.length) {
+          h.push('<section class="issue-note"><p class="issue-note-label">편집장의 말</p>');
+          note.forEach(function (p) { h.push("<p>" + esc(p) + "</p>"); });
+          h.push('<p class="issue-note-sign">편집장 안창민</p></section>');
+        }
+
+        // 기사 — 대표 기사의 표제는 지면 헤더가 이미 실었다
+        arts.forEach(function (a, i) {
+          h.push('<article class="a' + (i === 0 ? " a-lead" : "") + '"' + (i > 0 ? ' id="a' + (i + 1) + '"' : "") + ">");
+          if (i > 0) h.push(headBlock(a, i, "h2"));
+          h.push(bodyBlock(a, pub));
+          h.push("</article>");
+        });
+
+        // 지면 말미 — 필자 서명 → 다음 호 → 판권
+        var org = edition ? (edition["소속"] || "") : "신한라이프 하랑지점";
+        h.push('<footer class="issue-end">');
+        h.push('<div class="sig-card"><p class="sig-name">' + esc(pub) + ' FC</p>');
+        h.push('<p class="sig-role">' + (pub === "안창민" ? "편집장 · " : "발행 · ") + esc(org) + "</p></div>");
+
+        // 다음 호 — 같은 채널의 실제 다음 발행분이 서재에 있을 때만 (실데이터 없으면 생략)
+        var next = null;
+        (list || []).forEach(function (i) {
+          if (i["상태"] === "초안" || i["채널"] !== meta["채널"]) return;
+          if ((i["발행일"] || "") <= (meta["발행일"] || "")) return;
+          if (!next || (i["발행일"] || "") < (next["발행일"] || "")) next = i;
+        });
+        if (next) {
+          var fc = new URLSearchParams(window.location.search).get("fc");
+          var href = "issue.html?id=" + encodeURIComponent(next.id)
+            + (edition && fc ? "&fc=" + encodeURIComponent(fc) : "");
+          h.push('<a class="next-issue" href="' + href + '">');
+          h.push('<span class="next-label">다음 호</span>');
+          h.push('<span class="next-title">' + esc(next["제목"]) + "</span>");
+          h.push('<span class="next-meta">통권 ' + esc(next["호수"]) + "호 · " + esc(next["주차라벨"]) + "</span></a>");
+        }
+
+        h.push('<div class="colophon">');
+        h.push('<p class="colophon-title">' + esc(mast) + "</p>");
+        h.push("<p>통권 " + esc(meta["호수"]) + "호 · " + esc(meta["주차라벨"]) + " · " + editorLine + "</p>");
+        h.push("<p>본 콘텐츠는 정보 제공 목적이며 개별 상품 권유가 아닙니다. 문의는 담당 설계사에게 연락해 주십시오.</p>");
+        h.push('<a class="issue-return" href="./">케어센터 서재로</a>');
+        h.push("</div></footer>");
+
+        root.innerHTML = h.join("");
+        document.getElementById("top-title").textContent = mast + " · 통권 " + meta["호수"] + "호";
+        initProgress();
+      }
+
+      // 읽기 진행 표시줄 — 세로 스크롤 기준
+      function initProgress() {
+        var bar = document.getElementById("mag-progress");
         function update() {
-          var i = current();
-          pageno.textContent = (i + 1) + " / " + total;
-          document.getElementById("mag-progress").style.width = ((i + 1) / total * 100) + "%";
-          first.disabled = i === 0;
-          prev.disabled = i === 0;
-          next.disabled = i === total - 1;
-          next.textContent = i === 0 ? "첫 기사" : (i < total - 1 ? "다음 기사" : "마지막");
+          var max = document.documentElement.scrollHeight - window.innerHeight;
+          var p = max > 0 ? Math.min(1, window.scrollY / max) : 1;
+          bar.style.width = (p * 100) + "%";
         }
-        deck.addEventListener("scroll", function () {
-          clearTimeout(update._t);
-          update._t = setTimeout(update, 80);
-        });
-        first.addEventListener("click", function () { goto(0); });
-        prev.addEventListener("click", function () { goto(current() - 1); });
-        next.addEventListener("click", function () { goto(current() + 1); });
-        deck.addEventListener("click", function (e) {
-          var el = e.target.closest("[data-goto]");
-          if (el) goto(Number(el.dataset.goto));
-        });
-        document.addEventListener("keydown", function (e) {
-          if (e.key === "ArrowRight") goto(current() + 1);
-          if (e.key === "ArrowLeft") goto(current() - 1);
-        });
+        window.addEventListener("scroll", update, { passive: true });
+        window.addEventListener("resize", update);
         update();
       }
 
@@ -234,9 +239,9 @@
         loadEdition()
       ])
         .then(function (results) {
-          var list = results[0];
+          var list = Array.isArray(results[0]) ? results[0] : [];
           var edition = results[1];
-          var meta = (Array.isArray(list) ? list : []).find(function (i) { return i.id === id; });
+          var meta = list.find(function (i) { return i.id === id; });
           if (!meta) { notFound(); return; }
           if (edition && edition["이름"]) {
             meta = Object.assign({}, meta, { "발행인": edition["이름"] });
@@ -247,7 +252,7 @@
               if (!r.ok) throw new Error("본문 없음");
               return r.json();
             })
-            .then(function (data) { render(meta, data); });
+            .then(function (data) { render(meta, data, list, edition); });
         })
         .catch(notFound);
     })();
