@@ -48,7 +48,9 @@
       border: 0;
       border-top: 3px solid var(--platform-cyan);
       border-radius: var(--platform-radius);
-      background: var(--platform-navy);
+      /* 실크 정지 프레임 (인트로 배경 영상의 포스터) — 인트로와 시각 연속, 업무 화면이라 모션 없음.
+         2026-08-02 사용자 승인. 대비는 ::before의 네이비 틴트가 보증 */
+      background: var(--platform-navy) url("assets/intro-bg-poster.jpg") center 70% / cover no-repeat;
       color: rgba(255, 255, 255, 0.85); /* 기조 — 강조부(순백)와 대비 층 */
       box-shadow: var(--platform-shadow);
       padding: 20px 24px;
@@ -61,9 +63,10 @@
       position: absolute;
       inset: 0;
       pointer-events: none;
+      /* 마지막 층에 틴트 색 — background 축약형은 앞선 background-color를 덮으므로 색은 여기에 둔다 */
       background:
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Cpath d='M48 20 L72 28 V47 C72 61 63 71 48 76 C33 71 24 61 24 47 V28 Z' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-opacity='0.05' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right -28px top -34px / 190px auto,
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E") repeat;
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E") repeat rgba(16, 42, 78, 0.45);
     }
     .cover-ctas { flex-shrink: 0; }
     .cover-eyebrow {
