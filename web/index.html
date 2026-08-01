@@ -48,9 +48,10 @@
       border: 0;
       border-top: 3px solid var(--platform-cyan);
       border-radius: var(--platform-radius);
-      /* 실크 정지 프레임 (인트로 배경 영상의 포스터) — 인트로와 시각 연속, 업무 화면이라 모션 없음.
-         2026-08-02 사용자 승인. 대비는 ::before의 네이비 틴트가 보증 */
-      background: var(--platform-navy) url("assets/intro-bg-poster.jpg") center 70% / cover no-repeat;
+      /* 도시 야경 정지 이미지 (힉스필드, 2400x800 원본 → webp 67KB) — 2026-08-02 사용자 지정.
+         위쪽 절반이 어두운 하늘이라 좌측 타이포 영역 대비 유지, 스카이라인 불빛은 하단에.
+         대비는 ::before의 네이비 틴트가 보증. 업무 화면이라 모션 없음 */
+      background: var(--platform-navy) url("assets/home-cover-city.webp") center 52% / cover no-repeat;
       color: rgba(255, 255, 255, 0.85); /* 기조 — 강조부(순백)와 대비 층 */
       box-shadow: var(--platform-shadow);
       padding: 20px 24px;
