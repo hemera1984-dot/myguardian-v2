@@ -26,10 +26,20 @@
     body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: 3px; background: #00a6c7; z-index: 10; }
 
     /* 배경 — 순색 네이비 + 방패 워터마크(우측, white 0.05) + 그레인(알파 0.05 소부) */
-    .bg { position: fixed; inset: 0; z-index: 0;
+    /* 배경 영상 (헌법 2026-08-02 예외 조항: 인트로 한정·무음·심리스 루프·5MB 이하·자체 호스팅)
+       힉스필드 생성 실크 웨이브 1920x1080 8s 0.7MB. 중앙·상단이 전 구간 어두워 타이포 대비 유지.
+       영상 실패·미로드 시 poster가 같은 장면의 정지 프레임이라 시각 연속. */
+    .bg-video { position: fixed; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; }
+    .bg { position: fixed; inset: 0; z-index: 1;
+      /* 영상 위 대비 보증 오버레이(네이비 틴트) + 방패 워터마크 유지. 그레인은 영상 질감과 겹쳐 제거 */
       background:
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Cpath d='M48 20 L72 28 V47 C72 61 63 71 48 76 C33 71 24 61 24 47 V28 Z' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-opacity='0.05' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right -120px center / 560px auto,
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E") repeat;
+        rgba(16, 42, 78, 0.38);
+    }
+    /* reduced-motion: 영상 대신 포스터 정지 프레임 (헌법 조항) */
+    @media (prefers-reduced-motion: reduce) {
+      .bg-video { display: none; }
+      body { background: #0a1626 url("assets/intro-bg-poster.jpg") center / cover no-repeat; }
     }
 
     .top { position: absolute; top: 26px; left:0; right:0; z-index:3;
@@ -75,6 +85,10 @@
   </style>
 </head>
 <body>
+  <video class="bg-video" autoplay muted loop playsinline preload="auto"
+    poster="assets/intro-bg-poster.jpg" aria-hidden="true">
+    <source src="assets/intro-bg.mp4" type="video/mp4">
+  </video>
   <div class="bg" aria-hidden="true"></div>
   <div class="top"><img src="assets/logo.svg" alt=""><span>마이가디언</span></div>
 
