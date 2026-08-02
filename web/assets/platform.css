@@ -2646,3 +2646,26 @@ body.platform .action-grid > * + *,
 body.platform .install-guide-grid > * + * {
   border-left: 1px solid var(--platform-line); padding-left: 28px;
 }
+
+/* 케어 화면 탭은 tab-button 클래스가 없다 — 직계 버튼까지 밑줄 문법 적용 (코덱스 검수 2026-08-02) */
+body.platform .pill-tabs > button {
+  border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+  background: none; padding: 12px 8px; margin-right: 16px;
+  min-width: 44px; min-height: 44px;
+  font-weight: 600; color: var(--platform-muted);
+}
+body.platform .pill-tabs > button.active,
+body.platform .pill-tabs > button[aria-selected="true"] {
+  background: none; color: var(--platform-blue); font-weight: 700;
+  border-bottom-color: var(--platform-blue);
+}
+
+/* 제호 행에 h1을 감싼 래퍼가 있는 화면(발행 데스크) — 래퍼를 1번 자리에 둔다 */
+body.platform .page-heading .desk-title-row {
+  order: 1; display: flex; align-items: baseline; gap: 10px;
+}
+body.platform .page-heading .desk-title-row h1 { margin: 0; }
+
+body.platform .profile-card {
+  border: 0; border-radius: 0; background: none; box-shadow: none;
+}
