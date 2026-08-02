@@ -11,8 +11,8 @@
   --brief-ink: #f1f5f9;
   --brief-muted: #a6b0c1;
   --brief-faint: #7b8798;
-  --brief-blue: #60a5fa;
-  --brief-blue-deep: #2563eb;
+  --brief-blue: #f4849a;
+  --brief-blue-deep: #bc003a;
   --brief-radius: 12px;
 
   /* 지면(캔버스) — 청중이 보는 종이. 라이트 고정 */
@@ -20,7 +20,7 @@
   --page-ink: #1a2744;
   --page-muted: #667085;
   --page-line: #e4e7ec;
-  --page-blue: #2563eb;
+  --page-blue: #bc003a;
 }
 
 * { box-sizing: border-box; }
@@ -35,7 +35,7 @@ html, body {
 body.brief-present,
 body.brief-view {
   margin: 0;
-  font-family: "Pretendard", "Pretendard Variable", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+  font-family: "Paperlogy", "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
   line-height: 1.55;
   letter-spacing: -0.012em;
   word-break: keep-all;
@@ -244,7 +244,7 @@ body.brief-view {
   background: var(--page-blue);
   /* 레이저 포인터처럼 잘 보이게 — 흰 테두리로 어떤 슬라이드에서도 대비 확보 + 넓은 광채 */
   border: 2px solid #ffffff;
-  box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.35), 0 0 26px 10px rgba(37, 99, 235, 0.55);
+  box-shadow: 0 0 0 5px rgba(188, 0, 58, 0.35), 0 0 26px 10px rgba(188, 0, 58, 0.55);
   pointer-events: none;
   opacity: 0;
   transition: left 0.09s linear, top 0.09s linear, opacity 0.15s ease;
@@ -338,7 +338,7 @@ body.brief-present {
 }
 
 .pr-button[aria-pressed="true"] {
-  background: rgba(37, 99, 235, 0.2);
+  background: rgba(188, 0, 58, 0.2);
   border-color: var(--brief-blue);
   color: var(--brief-blue);
 }
@@ -542,7 +542,7 @@ body.brief-present {
 .pr-page-btn:hover { border-color: var(--brief-line-strong); color: var(--brief-ink); }
 
 .pr-page-btn.active {
-  background: rgba(37, 99, 235, 0.2);
+  background: rgba(188, 0, 58, 0.2);
   border-color: var(--brief-blue);
   color: var(--brief-blue);
 }

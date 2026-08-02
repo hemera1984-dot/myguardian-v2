@@ -447,3 +447,19 @@ dynamic-subset CDN, 폴백 Pretendard. 케어 지면 서체 전환은 저녁 세
 
 ### 사용자 취향 (메모리 anti-ai-tic-design-rules에도 기록)
 두 자리 번호(01·02) 금지 — 1·2·3. 로고 워터마크 금지. 3px 색줄 금지. 카드 격자 남발 금지.
+
+### 코덱스 검수 반영 (2026-08-02)
+코덱스에 read-only 감사를 맡겨 높음 2·중간 8·낮음 3건 발견. 내가 렌더로 못 본 것들을 잡았다.
+- [높음] style.css 옛 토큰 → 버건디·종이색·Paperlogy (card/·care/ 커버). 자체 점검에서 선반영.
+- [높음] brief.css 발표자·청중 화면이 옛 파랑(#60a5fa/#2563eb)+Pretendard → 로즈·버건디·Paperlogy.
+- [중간] logo.svg가 #0758d6 파랑 → 버건디 (버건디 레일 위에 파란 로고가 떠 있었다).
+- [중간] 발행 데스크 pub-desk·compose-panel·news-group·news-item 카드 면 → 괘선.
+- [중간] 서재 shelf-hero·latest-card 라운드·그림자 제거.
+- [중간] .pill-tabs 직계 버튼(케어 화면은 tab-button 클래스가 없다) 밑줄 문법 적용.
+- [중간] install.html theme-color #102a4e → #481820.
+- [중간] 다크모드 soft 포인트 rgba(37,99,235,.16) 잔재.
+- [낮음] 포커스 링·선택 배경 하드코딩 옛 파랑 rgba 7종.
+- [낮음] AGENTS.md·디자인시스템 문서에 개편 고지 삽입(다음 세션의 되돌림 방지).
+- 결함 없음 확인: buildRail이 지우는 자식 요소 없음, RAIL_ICONS 전 메뉴 커버, 레일 라벨 폭 여유.
+- 미해결(판단 보류): 포인트 버건디(#bc003a)와 부지급 레드(#dc2626)의 색상축이 가깝다(1.36:1).
+  텍스트 라벨이 있어 의미 전달 실패는 아니지만, 상태색을 주황 쪽으로 벌리는 안 검토 필요.

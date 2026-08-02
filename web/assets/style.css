@@ -2206,3 +2206,26 @@ a.latest-card {
 }
 
 /* 개정 10차(Codex 3차 중요5): 등장 모션(mg-rise) 폐기 — 형태 변화 없는 조용한 화면 */
+
+/* ══ 에디토리얼 통일 — 케어 계열 (2026-08-02 코덱스 검수 반영) ═══════════════
+   발행 데스크·서재의 카드 면을 걷어내고 괘선 조판으로. 지면(issue.html)의 매거진
+   조판은 건드리지 않는다 — 고객 화면은 잡지 문법이 맞다(헌법). */
+.pub-desk, .compose-panel, .news-group, .news-item, .desk-overview > * {
+  border-radius: 0; box-shadow: none;
+}
+.pub-desk, .compose-panel {
+  border: 0; border-top: 1px solid var(--line); background: none; padding: 16px 0 0;
+}
+.news-group {
+  border: 0; border-bottom: 1px solid var(--line); background: none;
+}
+.news-item {
+  border: 0; border-bottom: 1px solid var(--line); background: none;
+  border-radius: 0;
+}
+.news-item:last-child { border-bottom: 0; }
+/* 서재 — 사진은 유지하되 라운드·그림자 제거 (괘선으로 구획) */
+.shelf-hero, .latest-card, .shelf-row {
+  border-radius: 0; box-shadow: none;
+}
+.shelf-row { border-bottom: 1px solid var(--line); }
