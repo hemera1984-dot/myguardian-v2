@@ -18,7 +18,7 @@
   --platform-partial: #b45309; /* 작은 배지 텍스트 대비 4.5:1 확보 */
   --platform-radius: 6px;
   --platform-sidebar: 92px; /* 안B 아이콘 레일 (2026-08-02) — 종전 240px 패널 폐기 */
-  --platform-shadow: 0 1px 3px rgba(16, 42, 78, 0.06);
+  --platform-shadow: 0 1px 3px rgba(23, 24, 31, 0.06);
 }
 
 [data-theme="dark"] {
@@ -28,7 +28,7 @@
   --platform-muted: #a6b0c1;
   --platform-faint: #7b8798;
   --platform-blue: #f4849a;
-  --platform-blue-soft: rgba(37, 99, 235, 0.16);
+  --platform-blue-soft: rgba(188, 0, 58, 0.16);
   --platform-line: #2a3545;
   --platform-line-strong: #3a4657;
   --platform-shadow: none;
@@ -329,7 +329,7 @@ body.platform {
 
 .global-search input:focus {
   border-color: var(--platform-blue);
-  box-shadow: 0 0 0 2px rgba(7, 88, 214, 0.09);
+  box-shadow: 0 0 0 2px rgba(188, 0, 58, 0.10);
 }
 
 .search-state {
@@ -1672,7 +1672,7 @@ body.platform {
 
 /* 텍스트 선택 색 */
 .platform ::selection {
-  background: rgba(7, 88, 214, 0.14);
+  background: rgba(188, 0, 58, 0.14);
 }
 
 /* 상단바 고정 + 블러 */
@@ -1768,7 +1768,7 @@ body.platform {
   background: var(--platform-surface);
   border: 1px solid var(--platform-line);
   border-radius: var(--platform-radius);
-  box-shadow: 0 8px 24px rgba(16, 42, 78, 0.1);
+  box-shadow: 0 8px 24px rgba(23, 24, 31, 0.10);
   z-index: 25;
   max-height: 420px;
   overflow-y: auto;
@@ -2614,4 +2614,35 @@ body.platform .tab-button[aria-selected="true"] {
 body.platform .search-state {
   border: 0; background: none; padding: 0;
   color: var(--platform-faint); font-size: 12px; font-weight: 600;
+}
+
+/* 잔여 카드 문법 정리 (2026-08-02 검수) — 오버라이드가 놓친 화면별 컴포넌트 */
+body.platform .action-card,
+body.platform .guide-card,
+body.platform .home-panels > *,
+body.platform .library-list > li {
+  border: 0; border-radius: 0; background: none; box-shadow: none;
+}
+body.platform .action-grid,
+body.platform .install-guide-grid { gap: 0 36px; }
+body.platform .action-card {
+  border-top: 1px solid var(--platform-line); padding: 16px 0 18px;
+}
+body.platform .guide-card {
+  border-top: 1px solid var(--platform-line); padding: 14px 0 16px;
+}
+body.platform .install-note {
+  border: 0; border-top: 1px solid var(--platform-line); border-radius: 0;
+  background: none; padding: 14px 0 0; margin-top: 22px;
+}
+body.platform .local-button, body.platform .install-primary,
+body.platform .install-secondary, body.platform .install-back { border-radius: 0; }
+body.platform .notice {
+  border: 0; border-top: 1px solid var(--platform-line); border-radius: 0;
+  background: none; padding: 14px 0 0; text-align: left;
+}
+/* 3열 안내 그리드의 세로 구분선 — 카드 테두리 대신 헤어라인 1줄만 */
+body.platform .action-grid > * + *,
+body.platform .install-guide-grid > * + * {
+  border-left: 1px solid var(--platform-line); padding-left: 28px;
 }
