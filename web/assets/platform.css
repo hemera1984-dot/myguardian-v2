@@ -2471,3 +2471,147 @@ body.platform .install-btn .u-short { display: inline; }
   body.platform .install-btn .u-full { display: inline; }
   body.platform .install-btn .u-short { display: none; }
 }
+
+
+/* ══ 에디토리얼 통일 (2026-08-02) ═══════════════════════════════════════════
+   홈에서 검증한 괘선 조판을 전 화면 공용 컴포넌트에 적용한다.
+   카드(흰 면 + 테두리 + 그림자 + 라운드)를 걷어내고 굵은 괘선 2px = 구획 시작,
+   헤어라인 1px = 항목 사이로 통일. 화면마다 같은 문법을 쓰게 되어 8화면이 한 벌이 된다.
+   원 정의는 위에 남겨 두었다 — 이 블록만 걷으면 종전 카드 문법으로 돌아간다. */
+
+/* 제호 행 — eyebrow→제목→설명 3단을 한 줄 조판으로 (반복되면 서식이 된다) */
+body.platform .page-heading {
+  max-width: none;
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 14px;
+  padding-bottom: 11px; border-bottom: 2px solid var(--platform-ink);
+}
+body.platform .page-heading .eyebrow {
+  order: 2; margin: 0;
+  color: var(--platform-faint); font-size: 12px; font-weight: 600; letter-spacing: 0;
+}
+body.platform .page-heading h1 {
+  order: 1; font-size: 19px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.3;
+}
+body.platform .page-heading p:not(.eyebrow) {
+  order: 3; width: 100%; margin: 2px 0 0;
+  font-size: 12.5px; line-height: 1.6; color: var(--platform-muted);
+}
+
+/* 구획 — 굵은 괘선 아래로 */
+body.platform .section-block { margin-top: 32px; }
+body.platform .section-head {
+  align-items: baseline; gap: 12px; margin-bottom: 0;
+  padding-bottom: 9px; border-bottom: 2px solid var(--platform-ink);
+}
+body.platform .section-head h2 { font-size: 15px; font-weight: 800; letter-spacing: -0.02em; }
+body.platform .section-head p, body.platform .section-link { font-size: 12px; }
+
+/* 면 폐기 — 카드는 배경 없는 구획이 된다 */
+body.platform .surface-card {
+  border: 0; border-radius: 0; background: none; box-shadow: none;
+  padding: 16px 0 0;
+}
+body.platform .surface-card + .surface-card { border-top: 1px solid var(--platform-line); margin-top: 16px; }
+
+/* 빈 상태 — 점선 상자 폐기, 조판으로 */
+body.platform .empty-inline {
+  min-height: 0; margin-top: 14px; padding: 22px 0;
+  border: 0; border-bottom: 1px solid var(--platform-line);
+  border-radius: 0; background: none; justify-content: flex-start; text-align: left;
+}
+
+/* 필터 — 알약 폐기, 밑줄 탭 문법 */
+body.platform .filter-chip {
+  border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+  background: none; padding: 12px 8px; margin-right: 12px;
+  min-width: 44px; min-height: 44px; /* 터치 타깃 플로어 (HIT-002) */
+  font-size: 13px; font-weight: 600;
+}
+body.platform .filter-chip.active {
+  border-bottom-color: var(--platform-blue);
+  color: var(--platform-blue); font-weight: 700;
+}
+body.platform .filter-bar { gap: 0; border-bottom: 1px solid var(--platform-line); }
+body.platform .pill-tabs { border-bottom: 1px solid var(--platform-line); gap: 0; }
+body.platform .pill-tabs .tab-button {
+  border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+  background: none; padding: 10px 2px; margin-right: 20px; font-weight: 600;
+}
+body.platform .pill-tabs .tab-button.active {
+  background: none; border-bottom-color: var(--platform-blue); color: var(--platform-blue);
+}
+
+/* 2단 작업 영역 — 카드 상자 폐기, 세로 괘선으로만 분할 */
+body.platform .workspace-grid {
+  margin-top: 0; overflow: visible;
+  border: 0; border-radius: 0; background: none; box-shadow: none;
+  column-gap: 32px;
+}
+body.platform .workspace-list { border-right: 1px solid var(--platform-line); padding: 14px 32px 0 0; }
+body.platform .workspace-detail { padding: 26px 0; place-items: start; text-align: left; }
+body.platform .workspace-detail > div { text-align: left; }
+
+/* 목록 행 — 헤어라인 + 좌측 인셋 막대(선택 문법 유지) */
+body.platform .case-row {
+  border: 0; border-bottom: 1px solid var(--platform-line); border-radius: 0;
+  background: none; box-shadow: none; padding: 13px 12px 13px 0;
+}
+body.platform .case-row:hover { background: none; color: var(--platform-blue); }
+body.platform .case-row.active { background: var(--platform-blue-soft); }
+
+/* 지표 — 칸막이 격자 폐기, 조판으로 */
+body.platform .stat-row {
+  display: flex; flex-wrap: wrap; gap: 20px 56px;
+  border: 0; border-radius: 0; background: none; box-shadow: none;
+  padding: 18px 0 0;
+}
+body.platform .stat-tile { border: 0; padding: 0; background: none; }
+body.platform .stat-tile:hover { background: none; }
+body.platform .stat-tile .stat-label { font-size: 11px; letter-spacing: 0.06em; }
+body.platform .stat-tile .stat-value { font-size: 32px; letter-spacing: -0.05em; }
+body.platform .stat-tile .stat-sub { font-size: 11.5px; }
+
+/* 검색 — 라운드 상자 폐기, 밑줄 입력 */
+body.platform .global-search input {
+  border: 0; border-bottom: 1px solid var(--platform-line-strong);
+  border-radius: 0; background: none; padding-left: 26px;
+}
+body.platform .global-search input:focus { border-bottom-color: var(--platform-ink); outline: none; }
+body.platform .global-search::before { left: 2px; }
+body.platform .global-search::after { left: 16px; }
+
+/* 버튼 — 라운드 폐기(각진 조판). 필 primary는 화면당 1개 원칙 유지 */
+body.platform .btn { border-radius: 0; }
+
+@media (max-width: 900px) {
+  body.platform .workspace-grid { grid-template-columns: 1fr; }
+  body.platform .workspace-list { border-right: 0; border-bottom: 1px solid var(--platform-line); padding: 14px 0 18px; }
+  body.platform .workspace-detail { padding: 18px 0; }
+}
+
+/* 제호 행 보강 — h1에 <br>이 있는 화면에서 아이브로우가 행 사이로 끼는 것 방지 */
+body.platform .page-heading h1 { flex: 0 1 auto; }
+body.platform .page-heading .eyebrow { margin-left: auto; align-self: baseline; }
+
+/* 탭 — 알약·색면 폐기, 밑줄 문법 (tabs-toolbar 계열까지) */
+body.platform .tabs-toolbar {
+  gap: 0; border-bottom: 1px solid var(--platform-line); margin-bottom: 0;
+  background: none; padding: 0;
+}
+body.platform .tab-button {
+  border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+  background: none; padding: 12px 8px; margin-right: 16px;
+  min-width: 44px; min-height: 44px;
+  font-size: 13.5px; font-weight: 600; color: var(--platform-muted);
+}
+body.platform .tab-button.active,
+body.platform .tab-button[aria-selected="true"] {
+  background: none; color: var(--platform-blue); font-weight: 700;
+  border-bottom-color: var(--platform-blue);
+}
+
+/* 검색 우측 상태 표기 — 상자 폐기 */
+body.platform .search-state {
+  border: 0; background: none; padding: 0;
+  color: var(--platform-faint); font-size: 12px; font-weight: 600;
+}
