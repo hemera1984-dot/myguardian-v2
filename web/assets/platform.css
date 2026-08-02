@@ -49,7 +49,7 @@ body.platform {
   background: var(--platform-bg);
   color: var(--platform-ink);
   /* 가변 폰트 우선 — 타입 증명 §4: Pretendard Variable 선행 (2026-07-30 공용 승격, 종전 홈·인트로 한정) */
-  font-family: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+  font-family: "Paperlogy", "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
   line-height: 1.6;
   letter-spacing: -0.02em;
   word-break: keep-all;
@@ -1535,7 +1535,7 @@ body.platform {
   padding: 44px 48px;
   display: flex;
   flex-direction: column;
-  font-family: "Pretendard Variable", "Pretendard", sans-serif;
+  font-family: "Paperlogy", "Pretendard Variable", "Pretendard", sans-serif;
 }
 
 .namecard .n-kicker {
