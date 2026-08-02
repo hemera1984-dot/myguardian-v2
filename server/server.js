@@ -317,6 +317,187 @@ async function route(req, res, url) {
     return send(res, 200, { 후보: 후보.slice(0, 3) });
   }
 
+  // ── 케어 발행 AI (2026-08-02, v1 기능 복구) ─────────────────────────────
+  // 공통 호출부. 외부 패키지를 쓰지 않는 서버라 공식 SDK 대신 원시 HTTP를 쓴다.
+  async function claude(prompt, schema, opts) {
+    const o = opts || {};
+    const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": ANTHROPIC_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        model: TITLE_MODEL,
+        max_tokens: o.maxTokens || 2000,
+        output_config: {
+          effort: o.effort || "low",
+          format: { type: "json_schema", schema: schema }
+        },
+        messages: [{ role: "user", content: prompt }]
+      }),
+      signal: AbortSignal.timeout(o.timeout || 60000)
+    });
+    if (!upstream.ok) {
+      const detail = await upstream.text().catch(() => "");
+      console.error("AI 호출 실패:", upstream.status, detail.slice(0, 300));
+      return { error: 502 };
+    }
+    const data = await upstream.json();
+    if (data.stop_reason === "refusal") return { error: 422 };
+    const textBlock = (data.content || []).find((b) => b.type === "text");
+    try { return { value: JSON.parse(textBlock.text) }; } catch (e) { return { error: 502 }; }
+  }
+
+  // 칼럼 성격 — 채널·칼럼 번호로 무엇을 쓸 자리인지 정한다 (주간은 고정 주제, 월간은 자유)
+  function 칼럼성격(채널, 카테고리) {
+    const c = String(카테고리 || "").trim();
+    if (c) return c;
+    return String(채널 || "").indexOf("월간") >= 0 ? "자유 주제" : "시사";
+  }
+
+  // 주제 추천 — 제목을 아직 정하지 않았을 때
+  if (req.method === "POST" && path === "/ai/topic") {
+    if (!ANTHROPIC_KEY) return send(res, 503, { error: "AI 기능이 설정되지 않았습니다." });
+    const body = await readJson(req);
+    const 채널 = String(body["채널"] || "주간 안창민").slice(0, 40);
+    const 카테고리 = 칼럼성격(채널, body["카테고리"]);
+    const 지난주제 = Array.isArray(body["지난주제"]) ? body["지난주제"].slice(0, 20) : [];
+    const 월간 = 채널.indexOf("월간") >= 0;
+
+    const prompt = [
+      `보험 설계사 안창민이 고객에게 보내는 뉴스레터 "${채널}"의 "${카테고리}" 칼럼 주제를 제안한다.`,
+      월간
+        ? "월간이라 한 주제를 깊게 파고든다. 흐름과 구조를 설명할 수 있는 큰 주제를 고른다."
+        : "주간이라 최근 2주 안의 사안을 다룬다. 시의성이 우선이다.",
+      지난주제.length ? "\n지난 호에서 다룬 주제(겹치지 않게 한다):\n- " + 지난주제.join("\n- ") : "",
+      "",
+      "조건:",
+      "- 독자는 보험 고객이다. 전문 용어를 늘어놓지 않되 내용은 얕지 않게.",
+      "- 사실관계가 분명한 사안만. 확인되지 않은 소문·전망은 주제로 삼지 않는다.",
+      "- 특정 정당·정치인을 옹호하거나 비난하는 각도는 피한다.",
+      "- 서로 다른 각도로 3개. 각각 제목과 한 줄 방향을 함께 낸다.",
+      "- 이모지·영문 장식 표기 금지."
+    ].join("\n");
+
+    const r = await claude(prompt, {
+      type: "object",
+      properties: {
+        후보: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { 제목: { type: "string" }, 방향: { type: "string" } },
+            required: ["제목", "방향"],
+            additionalProperties: false
+          }
+        }
+      },
+      required: ["후보"],
+      additionalProperties: false
+    }, { effort: "medium", maxTokens: 3000 });
+
+    if (r.error === 422) return send(res, 422, { error: "이 조건으로는 주제를 제안할 수 없습니다." });
+    if (r.error) return send(res, 502, { error: "주제를 받아오지 못했습니다. 잠시 후 다시 시도하세요." });
+    return send(res, 200, { 후보: (r.value["후보"] || []).slice(0, 3) });
+  }
+
+  // 본문 생성 — v1의 핵심 기능. 제목에서 본문·요약·부제까지.
+  // 본문은 지면 렌더러가 쓰는 블록 배열로 받는다: [{t:"h"|"p", x:"..."}]
+  if (req.method === "POST" && path === "/ai/column") {
+    if (!ANTHROPIC_KEY) return send(res, 503, { error: "AI 기능이 설정되지 않았습니다." });
+    const body = await readJson(req);
+    const 제목 = String(body["제목"] || "").trim();
+    if (!제목) return send(res, 400, { error: "제목을 입력하세요." });
+    if (제목.length > 200) return send(res, 400, { error: "제목이 너무 깁니다." });
+    const 채널 = String(body["채널"] || "주간 안창민").slice(0, 40);
+    const 카테고리 = 칼럼성격(채널, body["카테고리"]);
+    const 방향 = String(body["방향"] || "").slice(0, 500);
+    const 월간 = 채널.indexOf("월간") >= 0;
+    const 분량 = 월간 ? "8000자에서 10000자" : "1800자에서 2800자";
+
+    const prompt = [
+      `보험 설계사 안창민이 고객에게 보내는 뉴스레터 "${채널}"의 "${카테고리}" 칼럼 본문을 쓴다.`,
+      `제목: ${제목}`,
+      방향 ? `방향: ${방향}` : "",
+      "",
+      `분량: 본문 합계 ${분량}. ${월간 ? "월간이므로 배경·현황·전망·시사점을 두루 짚고, 소제목으로 흐름을 나눈다." : "주간이므로 핵심을 빠르게 전달한다."}`,
+      "",
+      "조건:",
+      "- 독자는 보험 고객이다. 설명은 쉽게, 내용은 얕지 않게.",
+      "- **확인되지 않은 수치·통계·발언을 지어내지 않는다.** 확실하지 않으면 수치를 쓰지 말고 서술로 대체한다.",
+      "- 특정 정당·정치인을 옹호하거나 비난하지 않는다. 세금·투자 권유로 읽힐 표현을 쓰지 않는다.",
+      "- 문체는 평서형 존댓말. 이모지·영문 장식 표기·과장된 수식 금지.",
+      "- 마지막 문단은 보험 설계사의 시각으로 독자에게 주는 시사점으로 맺는다.",
+      "",
+      "출력 형식:",
+      "- 부제: 제목을 보완하는 한 줄.",
+      "- 요약: 150자에서 200자. 서재 카드에 실린다.",
+      "- 본문: 블록 배열. t가 h면 소제목, p면 문단이다. 소제목으로 흐름을 나눈다.",
+      "- 한마디: 설계사가 덧붙이는 한 문장."
+    ].filter(Boolean).join("\n");
+
+    const r = await claude(prompt, {
+      type: "object",
+      properties: {
+        부제: { type: "string" },
+        요약: { type: "string" },
+        한마디: { type: "string" },
+        본문: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { t: { type: "string", enum: ["h", "p"] }, x: { type: "string" } },
+            required: ["t", "x"],
+            additionalProperties: false
+          }
+        }
+      },
+      required: ["부제", "요약", "한마디", "본문"],
+      additionalProperties: false
+    }, { effort: 월간 ? "high" : "medium", maxTokens: 월간 ? 32000 : 12000, timeout: 300000 });
+
+    if (r.error === 422) return send(res, 422, { error: "이 제목으로는 본문을 쓸 수 없습니다." });
+    if (r.error) return send(res, 502, { error: "본문을 받아오지 못했습니다. 잠시 후 다시 시도하세요." });
+    return send(res, 200, r.value);
+  }
+
+  // 편집장의 말 — 확정된 칼럼 제목들을 보고 서문을 쓴다
+  if (req.method === "POST" && path === "/ai/preface") {
+    if (!ANTHROPIC_KEY) return send(res, 503, { error: "AI 기능이 설정되지 않았습니다." });
+    const body = await readJson(req);
+    const 채널 = String(body["채널"] || "주간 안창민").slice(0, 40);
+    const 호수 = String(body["호수"] || "").slice(0, 20);
+    const 제목들 = (Array.isArray(body["제목들"]) ? body["제목들"] : []).slice(0, 5)
+      .map((t) => String(t).slice(0, 200)).filter(Boolean);
+    if (!제목들.length) return send(res, 400, { error: "칼럼 제목이 먼저 필요합니다." });
+
+    const prompt = [
+      `보험 설계사 안창민이 발행하는 "${채널}" ${호수 ? 호수 + "호 " : ""}편집장의 말을 쓴다.`,
+      "이번 호 칼럼:",
+      ...제목들.map((t) => "- " + t),
+      "",
+      "조건:",
+      "- 3문단에서 4문단, 합계 350자에서 500자.",
+      "- 이번 호를 왜 이렇게 구성했는지 자연스럽게 풀어낸다. 목차를 나열하지 않는다.",
+      "- 평서형 존댓말. 이모지·영문 장식 표기·과장된 수식 금지.",
+      "- 없는 사실을 지어내지 않는다.",
+      "- 문단 배열로 낸다."
+    ].join("\n");
+
+    const r = await claude(prompt, {
+      type: "object",
+      properties: { 문단: { type: "array", items: { type: "string" } } },
+      required: ["문단"],
+      additionalProperties: false
+    }, { effort: "medium", maxTokens: 3000 });
+
+    if (r.error === 422) return send(res, 422, { error: "서문을 쓸 수 없습니다." });
+    if (r.error) return send(res, 502, { error: "서문을 받아오지 못했습니다." });
+    return send(res, 200, { 문단: r.value["문단"] || [] });
+  }
+
   // 발행하기 — 승인된 계정이면 누구나(자기 호를 발행한다. 발행인은 목록항목에 실려 있다).
   // body = { 목록항목, 본문 } — 기존 issues.json 스키마 그대로.
   // 같은 id가 이미 있으면 교체한다(재발행). 발행 즉시 서재·지면에 반영된다.
