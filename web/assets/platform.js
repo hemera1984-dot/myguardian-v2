@@ -220,6 +220,8 @@
     });
 
     addAdminMenu(sidebar);
+    buildRail(sidebar);
+    fillTopbar();
 
     var status = sidebar.querySelector(".sidebar-status");
     var existing = sidebar.querySelector("#btn-install");
@@ -230,7 +232,7 @@
     invite.type = "button";
     invite.id = "btn-invite";
     invite.className = "install-btn invite-btn";
-    invite.textContent = "팀원 초대하기";
+    invite.innerHTML = '<span class="u-full">팀원 초대하기</span><span class="u-short">초대</span>';
     invite.addEventListener("click", function () {
       window.mg.copy(inviteText(), invite);
     });
@@ -239,7 +241,7 @@
     btn.type = "button";
     btn.id = "btn-install";
     btn.className = "install-btn";
-    btn.textContent = "홈 화면에 바로가기 설치";
+    btn.innerHTML = '<span class="u-full">홈 화면에 바로가기 설치</span><span class="u-short">설치</span>';
 
     // 업무공간 표시를 걷어내고 그 자리(하단)에 초대·설치 버튼을 둔다
     if (status) status.replaceWith(invite);
@@ -249,6 +251,64 @@
     var open = buildInstallModal(prompt);
     btn.addEventListener("click", open);
   });
+
+
+  // ── 아이콘 레일 (안B 채택, 2026-08-02) ────────────────────────────────
+  // 메뉴 이름으로 스트로크 아이콘을 주입한다. 16개 화면 HTML을 고치지 않기 위해
+  // 여기 한 곳에서만 처리한다. 이름이 목록에 없으면 아이콘 없이 라벨만 남는다.
+  var RAIL_ICONS = {
+    "홈": "M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1v-9z",
+    "고객관리": "M9 11.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4zM3.5 19c.7-3 2.9-4.5 5.5-4.5s4.8 1.5 5.5 4.5M17 8h4M19 6v4",
+    "청구·지급": "M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM3 10h18M8 15h3",
+    "사례·판례": "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6",
+    "학습": "M4 6.5A2.5 2.5 0 0 1 6.5 4H20v15H6.5A2.5 2.5 0 0 0 4 21.5zM9 9h7",
+    "브리핑": "M3 5h18v12H3zM8 21h8M12 17v4",
+    "케어센터": "M4 5h8v15H6a2 2 0 0 1-2-2zM12 5h8v13a2 2 0 0 1-2 2h-6zM7 9h3M7 13h3",
+    "카톡카드": "M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 4z",
+    "발행 데스크": "M4 4h16v5H4zM4 12h7v8H4zM13 12h7v8h-7z",
+    "서재": "M5 4h3v16H5zM10 4h3v16h-3zM16.5 4.6l2.9.8-3.2 15.5-2.9-.8z",
+    "마이가디언 홈": "M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1v-9z",
+    "관리자 설정": "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 13.5l1.4 1-1.5 2.6-1.7-.5-1.5.9-.4 1.7h-3l-.4-1.7-1.5-.9-1.7.5-1.5-2.6 1.4-1v-3l-1.4-1 1.5-2.6 1.7.5 1.5-.9.4-1.7h3l.4 1.7 1.5.9 1.7-.5 1.5 2.6-1.4 1z"
+  };
+  function railIcon(name) {
+    var d = RAIL_ICONS[name];
+    if (!d) return null;
+    var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("class", "nav-icon");
+    svg.setAttribute("aria-hidden", "true");
+    var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", d);
+    svg.appendChild(path);
+    return svg;
+  }
+  function buildRail(sidebar) {
+    var links = sidebar.querySelectorAll(".platform-nav a");
+    Array.prototype.forEach.call(links, function (a) {
+      if (a.querySelector(".nav-icon")) return;
+      var name = (a.textContent || "").trim();
+      var icon = railIcon(name);
+      var label = document.createElement("span");
+      label.className = "nav-label";
+      label.textContent = name;
+      a.textContent = "";
+      if (icon) a.appendChild(icon);
+      a.appendChild(label);
+      a.setAttribute("title", name);
+      if (a.classList.contains("active")) a.setAttribute("aria-current", "page");
+    });
+  }
+  // 상단바에 현재 위치와 브랜드를 둔다 — 레일은 탐색만 맡는다 (역할 분리)
+  function fillTopbar() {
+    var bar = document.querySelector(".platform-topbar");
+    if (!bar || bar.querySelector(".topbar-brand")) return;
+    var brand = document.createElement("span");
+    brand.className = "topbar-brand";
+    brand.textContent = "마이가디언";
+    var ctx = bar.querySelector(".topbar-context");
+    if (ctx) bar.insertBefore(brand, ctx);
+    else bar.appendChild(brand);
+  }
 
   // 관리자 메뉴 — 승인 권한이 있는 계정에만 보인다.
   // 화면을 가리는 것일 뿐 차단이 아니다. 주소를 직접 열어도 서버가 데이터를 주지 않는다.

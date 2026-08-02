@@ -212,20 +212,29 @@
       .cover-greet { order: 1; width: 100%; font-size: 20px; min-height: 2.6em; }
       .cover-eyebrow { order: 2; margin-left: 0; }
       .cover-ctas { order: 3; width: 100%; margin-left: 0; }
-      .cta { flex: 1; height: 42px; }
+      .cta { flex: 1; height: 44px; }
       .menu-grid { grid-template-columns: 1fr; }
       .menu-card { padding: 14px 0; }
       .menu-card p { font-size: 12px; }
       .home-news, .home-profile, .home-stats { margin-top: 26px; }
       .news-featured h3 { font-size: 20px; }
-      .news-title a { padding: 8px 0 8px 12px; }
+      .news-title a { padding: 13px 0 13px 12px; } /* 터치 타깃 44px 플로어 */
       .home-stats .stat-row { gap: 18px 36px; }
       .home-stats .stat-value { font-size: 30px; }
     }
 
+    @media (max-width: 480px) {
+      /* 목차 행: 설명을 제목 아래로 내린다 (숨기면 D-day 칩까지 사라진다) */
+      .menu-card { flex-wrap: wrap; row-gap: 3px; }
+      .menu-card h2 { flex: 1; }
+      .menu-card p {
+        width: 100%; margin: 0; padding-left: 29px; text-align: left;
+        font-size: 12px;
+      }
+      .menu-card .dday-chip { margin-left: 6px; }
+    }
     @media (max-width: 400px) {
       .news-rows .news-no { width: 58px; }
-      .menu-card p { display: none; }
     }
 
     @media (prefers-reduced-motion: reduce) {

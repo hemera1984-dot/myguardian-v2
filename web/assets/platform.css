@@ -17,7 +17,7 @@
   --platform-denied: #dc2626;
   --platform-partial: #b45309; /* 작은 배지 텍스트 대비 4.5:1 확보 */
   --platform-radius: 6px;
-  --platform-sidebar: 240px;
+  --platform-sidebar: 92px; /* 안B 아이콘 레일 (2026-08-02) — 종전 240px 패널 폐기 */
   --platform-shadow: 0 1px 3px rgba(16, 42, 78, 0.06);
 }
 
@@ -2384,4 +2384,90 @@ body.platform {
   .install-topbar {
     padding: 0 16px;
   }
+}
+
+/* ══ 아이콘 레일 (안B 채택, 2026-08-02) ═══════════════════════════════════
+   탐색은 좁은 버건디 레일이, 현재 위치·브랜드는 흰 상단바가 맡는다(역할 분리).
+   콘텐츠 폭이 종전보다 148px 넓어진다. 라벨은 아이콘 아래 10px로 남겨 학습 비용을 없앤다. */
+.platform.platform { --rail-w: 92px; }
+body.platform .platform-sidebar {
+  width: var(--rail-w);
+  padding: 0;
+  overflow: hidden;
+}
+body.platform .platform-brand {
+  display: grid; place-items: center;
+  min-height: 60px; padding: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+body.platform .platform-brand .brand-mark { margin: 0; }
+body.platform .platform-brand > span:last-child { display: none; } /* 브랜드 문자는 상단바로 이관 */
+
+body.platform .platform-nav { padding: 10px 8px; }
+body.platform .nav-group-label {
+  margin: 12px 0 6px; text-align: center;
+  font-size: 9px; letter-spacing: 0.1em; color: rgba(255, 255, 255, 0.42);
+}
+body.platform .platform-nav a {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; min-height: 56px; padding: 7px 4px;
+  border-radius: 6px; text-align: center;
+}
+body.platform .platform-nav a::before { content: none; } /* 좌측 인셋 막대 → 면 강조로 교체 */
+body.platform .platform-nav a.active {
+  color: var(--platform-navy-deep);
+  background: var(--platform-blue-soft);
+}
+body.platform .nav-icon {
+  width: 21px; height: 21px; flex-shrink: 0;
+  fill: none; stroke: currentColor; stroke-width: 1.7;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+body.platform .nav-label {
+  font-size: 10px; font-weight: 650; letter-spacing: -0.02em;
+  white-space: nowrap; overflow: hidden; max-width: 100%;
+}
+body.platform .sidebar-status { display: none; } /* 레일에는 설명문을 두지 않는다 */
+
+/* 하단 도구 — 아이콘 급으로 축소 (초대·설치는 1회성) */
+body.platform .install-btn {
+  width: calc(100% - 16px); margin: 6px 8px 0;
+  min-height: 38px; padding: 8px 4px;
+  font-size: 10px; font-weight: 700;
+}
+body.platform .install-btn:last-of-type { margin-bottom: 12px; }
+
+/* 상단바 — 브랜드 + 현재 위치 */
+body.platform .platform-topbar { padding-left: 26px; }
+body.platform .topbar-brand {
+  font-size: 15px; font-weight: 800; letter-spacing: -0.02em;
+  color: var(--platform-ink);
+}
+body.platform .topbar-brand + .topbar-context {
+  padding-left: 12px; margin-left: 12px;
+  border-left: 1px solid var(--platform-line);
+  color: var(--platform-muted); font-weight: 600;
+}
+
+@media (max-width: 767px) {
+  /* 모바일은 레일을 남기지 않는다 — 상단바 + 전폭 드로어 (터치 영역 확보) */
+  body.platform .platform-sidebar { width: min(78vw, 300px); }
+  body.platform .platform-brand { min-height: 62px; }
+  body.platform .platform-brand > span:last-child { display: block; }
+  body.platform .platform-nav a {
+    flex-direction: row; justify-content: flex-start;
+    gap: 12px; min-height: 46px; padding: 0 14px; text-align: left;
+  }
+  body.platform .nav-label { font-size: 14px; font-weight: 600; }
+  body.platform .nav-group-label { text-align: left; margin-left: 14px; font-size: 10px; }
+  body.platform .install-btn { font-size: 12px; min-height: 44px; }
+  body.platform .topbar-brand { display: none; } /* 모바일 상단바는 기존 mobile-brand 사용 */
+}
+
+/* 하단 도구 라벨 — 레일은 짧게, 모바일 드로어는 전체 */
+body.platform .install-btn .u-full { display: none; }
+body.platform .install-btn .u-short { display: inline; }
+@media (max-width: 767px) {
+  body.platform .install-btn .u-full { display: inline; }
+  body.platform .install-btn .u-short { display: none; }
 }
