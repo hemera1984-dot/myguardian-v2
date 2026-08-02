@@ -5,17 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
   <title>마이가디언</title>
-  <meta name="theme-color" content="#102a4e">
+  <meta name="theme-color" content="#481820">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <style>
-    /* 인트로 리스킨 — 홈 네이비 커버 시그니처 확장: 순색 #102a4e + 그레인 + 방패 워터마크 + 상단 3px 시안.
+    /* 인트로 리스킨 — 홈 네이비 커버 시그니처 확장: 순색 #481820 + 그레인 + 방패 워터마크 + 상단 3px 시안.
        그라데이션·등장 애니메이션 제거(헌법 모션: 0.14s 색 전환만). 로직 무변경 — 시각만.
        질감 레시피는 홈(web/index.html)과 동일 복제 — 사용처 2곳이라 공용 파일화 보류(3곳째에 공용화). */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; }
     body {
       font-family: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
-      background: #102a4e;
+      background: #481820;
       color: #fff;
       overflow: hidden;
       word-break: keep-all;
@@ -23,7 +23,6 @@
     }
 
     /* 상단 3px 시안 라인 — 사이드바·홈 커버와 짝 */
-    body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: 3px; background: #00a6c7; z-index: 10; }
 
     /* 배경 — 순색 네이비 + 방패 워터마크(우측, white 0.05) + 그레인(알파 0.05 소부) */
     /* 배경 영상 (헌법 2026-08-02 예외 조항: 인트로 한정·무음·심리스 루프·5MB 이하·자체 호스팅)
@@ -50,11 +49,11 @@
 
     /* 브랜드 블록 — 기존 문자열 그대로, 정적 표시 */
     .type { text-align:center; min-height: 34vh; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-    .kicker { font-size: clamp(14px,2.4vw,18px); font-weight:600; letter-spacing:0.06em; color:#43c8df; }
+    .kicker { font-size: clamp(14px,2.4vw,18px); font-weight:600; letter-spacing:0.06em; color:rgba(255,255,255,0.66); }
     .title { font-size: clamp(44px,9vw,88px); font-weight:800; letter-spacing:-0.03em; line-height:1.05;
       margin: 10px 0 4px; }
     .desc { font-size: clamp(16px,3vw,24px); font-weight:500; color:rgba(255,255,255,0.82); }
-    .desc .dot { color:#43c8df; margin:0 2px; }
+    .desc .dot { color:#f095a5; margin:0 2px; }
 
     .actions { display:flex; flex-direction:column; gap:12px; align-items:center; }
     .actions-row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
@@ -69,8 +68,8 @@
       border-radius:4px; font:inherit; font-size:15px; font-weight:700; cursor:pointer;
       border:1px solid transparent; text-decoration:none;
       transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease; }
-    .btn-enter { background:#0758d6; color:#fff; }
-    .btn-enter:hover { background:#0648ad; }
+    .btn-enter { background:#bc003a; color:#fff; }
+    .btn-enter:hover { background:#980130; }
     .btn-ghost { background:transparent; color:rgba(255,255,255,0.82); border-color:rgba(255,255,255,0.28); }
     .btn-ghost:hover { border-color:rgba(255,255,255,0.6); color:#fff; }
     .btn svg { width:18px; height:18px; }

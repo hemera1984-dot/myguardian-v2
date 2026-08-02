@@ -5,12 +5,12 @@
   --platform-ink: #172033;
   --platform-muted: #596579;
   --platform-faint: #647082; /* 흰 바탕 5.0:1 · 캔버스(#f5f7fa) 4.7:1 — 구값 #717d8f는 실측 4.17로 AA 미달이었다 (2026-07-29 교정) */
-  --platform-blue: #0758d6;
-  --platform-blue-dark: #0648ad;
-  --platform-blue-soft: #edf4ff;
-  --platform-navy: #102a4e;
-  --platform-navy-deep: #0a1d37;
-  --platform-cyan: #00a6c7;
+  --platform-blue: #bc003a;
+  --platform-blue-dark: #980130;
+  --platform-blue-soft: #ffeff0;
+  --platform-navy: #481820;
+  --platform-navy-deep: #331016;
+  --platform-cyan: #e05c72;
   --platform-line: #dfe4eb;
   --platform-line-strong: #cbd3de;
   --platform-paid: #15803d;
@@ -27,7 +27,7 @@
   --platform-ink: #f1f5f9;
   --platform-muted: #a6b0c1;
   --platform-faint: #7b8798;
-  --platform-blue: #60a5fa;
+  --platform-blue: #f4849a;
   --platform-blue-soft: rgba(37, 99, 235, 0.16);
   --platform-line: #2a3545;
   --platform-line-strong: #3a4657;
@@ -1107,7 +1107,7 @@ body.platform {
 }
 
 .st-recall { color: #8a4c07; background: #f7ead6; }
-.st-meet { color: #0648ad; background: #edf4ff; }
+.st-meet { color: #980130; background: #ffeff0; }
 .st-met { color: #087a55; background: #e1f2eb; }
 .st-hold { color: #596579; background: #eef1f5; }
 .st-reject { color: #b3261e; background: #f8dfd9; }
@@ -1138,7 +1138,7 @@ body.platform {
 }
 
 .status-btn.on.st-recall { color: #8a4c07; background: #f7ead6; border-color: #e5cfa4; }
-.status-btn.on.st-meet { color: #0648ad; background: #edf4ff; border-color: #b9d4f8; }
+.status-btn.on.st-meet { color: #980130; background: #ffeff0; border-color: #b9d4f8; }
 .status-btn.on.st-met { color: #087a55; background: #e1f2eb; border-color: #b2ddcb; }
 .status-btn.on.st-hold { color: #435066; background: #eef1f5; border-color: #cbd3de; }
 .status-btn.on.st-reject { color: #b3261e; background: #f8dfd9; border-color: #edbcb3; }
