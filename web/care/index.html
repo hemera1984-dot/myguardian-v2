@@ -112,7 +112,7 @@
           var href = issueHref(i.id);
           var pub = pubName(i);
           var cover = i["커버이미지"]
-            ? '<span class="arch-cover"><img src="../../' + esc(i["커버이미지"]) + '" alt="" loading="lazy"></span>'
+            ? '<span class="arch-cover"><img src="' + esc(care.mediaSrc(i["커버이미지"])) + '" alt="" loading="lazy"></span>'
             : '<span class="arch-cover no-img ch-' + esc(i["채널"]) + '">' + esc(i["채널"]) + "<br>" + esc(i["호수"]) + "호</span>";
           return '<article class="arch-row">'
             + '<a class="arch-main" href="' + href + '">' + cover
@@ -183,7 +183,7 @@
         var html = ["주간", "월간"].map(function (ch) {
           var i = care.latestByChannel(ALL, ch);
           if (!i) return "";
-          var bg = i["커버이미지"] ? ' style="background-image:url(../../' + esc(i["커버이미지"]) + ')"' : "";
+          var bg = i["커버이미지"] ? ' style="background-image:url(' + esc(care.mediaSrc(i["커버이미지"])) + ')"' : "";
           return '<a class="latest-card" href="' + issueHref(i.id) + '">'
             + '<span class="latest-bg"' + bg + "></span>"
             + '<span class="latest-body"><span class="latest-ch">' + esc(ch) + " " + esc(pubName(i)) + " · " + esc(i["호수"]) + "호</span>"

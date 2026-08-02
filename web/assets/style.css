@@ -1652,7 +1652,9 @@ body.magazine :focus-visible {
   display: none !important;
 }
 
-/* 발행 데스크 — 케어센터의 주 업무는 발행이다 (2026-07-30 정돈: 플랫폼 문법 정합) */
+/* ══ 발행 데스크 (2026-08-02 재건) ═══════════════════════════════════════════
+   호 목록 → 호 편집 → 칼럼 편집 → 미리보기 → 발행. 카드 면 없이 괘선으로만 구획한다.
+   흰 카드·라운드·그림자 금지(헌법), 필 primary는 화면당 1개(발행하기). */
 
 /* 3단 헤딩 보조 — 제목 옆 D-day 칩 한 행 */
 .desk-title-row {
@@ -1662,306 +1664,58 @@ body.magazine :focus-visible {
   flex-wrap: wrap;
 }
 
-/* 워크플로 단계감 — 구획 사이 간격은 홈 .section-block(28px)과 동일 */
 .platform-main.desk .page-heading {
   margin-bottom: 4px;
 }
 
 .platform-main.desk .section {
-  margin-top: 28px;
+  margin-top: 26px;
 }
 
-/* 구획 제목의 단계 라벨 — eyebrow 문법 (10~11px 800, 자간 확장, 포인트 블루) */
-.step-no {
-  display: block;
-  margin-bottom: 2px;
-  color: var(--accent);
-  font-size: 0.73rem;
+/* 구획 제목 — 굵은 괘선 2px 아래로 (전 화면 공통 문법) */
+.platform-main.desk .section-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 0;
+  padding-bottom: 9px;
+  border-bottom: 2px solid var(--ink);
+  font-size: 0.98rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.sec-sub {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ink-sub);
+}
+
+.desk-note {
+  font-size: 0.85rem;
+  color: var(--ink-sub);
+  margin: 12px 0 0;
 }
 
 .desk-sub-title {
-  margin: 0 0 8px;
-  font-size: 0.95rem;
+  margin: 16px 0 6px;
+  font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
-.pub-desk {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 16px 20px;
-  margin-top: 18px;
-  box-shadow: var(--shadow);
-}
+/* 제호 행의 h1은 order:1을 상속받는다(platform.css) — 칩은 그 뒤로 */
+.desk-title-row .pub-chip { order: 2; }
 
 .pub-chip {
   display: inline-block;
   padding: 3px 8px;
-  border-radius: 3px;
   background: var(--accent-bg);
   color: var(--accent-dark);
   font-size: 0.8rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-
-.pub-steps {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-}
-
-.pub-steps li {
-  border-top: 1px solid var(--line-strong);
-  padding-top: 10px;
-}
-
-.pub-steps strong {
-  display: block;
-  font-size: 0.93rem;
-  margin-bottom: 3px;
-}
-
-.pub-steps span {
-  font-size: 0.85rem;
-  color: var(--ink-sub);
-  line-height: 1.55;
-}
-
-.pub-desk-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 0 0 14px;
-}
-
-.pub-desk-actions:empty {
-  display: none;
-}
-
-.pub-desk-actions button {
-  font: inherit;
-  font-size: 0.88rem;
-  font-weight: 600;
-  border: 1px solid var(--line-strong);
-  background: #fff;
-  border-radius: 4px;
-  padding: 9px 14px;
-  cursor: pointer;
-  min-height: 44px;
-}
-
-.pub-desk-actions button:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-@media (max-width: 640px) {
-  .pub-steps {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-}
-
-/* 발행 데스크 — 작성 중인 호 (좌측 3px 막대 = 진행 중 상태 신호, 일부지급 앰버 동색) */
-.draft-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-left: 3px solid #b45309;
-  border-radius: var(--radius);
-  padding: 16px 18px;
-  margin-bottom: 10px;
-}
-
-.draft-item strong {
-  display: block;
-  font-size: 1rem;
-}
-
-.draft-meta {
-  display: block;
-  font-size: 0.85rem;
-  color: var(--ink-sub);
-  margin-top: 2px;
-}
-
-.draft-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-/* 발행 데스크 — 이번 호 기획 (가제 입력) */
-.topic-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-.topic-polish { flex: 0 0 auto; }
-
-/* 다듬은 제목 후보 — 누르면 가제 칸에 들어간다 */
-.topic-suggest {
-  flex: 1 0 100%;
-  margin-left: 74px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  color: var(--ink-sub);
-  font-size: 0.85rem;
-}
-
-.topic-suggest[hidden] { display: none; }
-
-.topic-cand {
-  text-align: left;
-  font: inherit;
-  font-size: 0.92rem;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: #fbfcfe;
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: border-color 0.14s ease, background-color 0.14s ease;
-}
-
-.topic-cand:hover { border-color: var(--accent); background: var(--accent-bg); }
-
-.topic-cat {
-  flex: 0 0 64px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.topic-row input {
-  flex: 1;
-  font: inherit;
-  font-size: 0.95rem;
-  border: 1px solid var(--line-strong);
-  border-radius: 4px;
-  padding: 10px 14px;
-  min-height: 44px;
-}
-
-.topic-row input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(188, 0, 58, 0.10);
-}
-
-.news-sub {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--ink-sub);
-  margin-left: 8px;
-}
-
-/* 발행 데스크 — 뉴스 후보 */
-.news-collected {
-  font-size: 0.87rem;
-  color: var(--ink-sub);
-  margin: 0 0 6px;
-}
-
-/* 카테고리 접기·펼치기 — 플랫폼 문법: 1px 선 상자, 열림 = 좌측 3px 인셋 막대 */
-.news-group {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  margin-bottom: 8px;
-}
-
-.news-group[open] {
-  padding-bottom: 12px;
-}
-
-.news-group > summary.news-cat {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  min-height: 44px;
-  padding: 10px 14px;
-  font-size: 0.93rem;
-  font-weight: 700;
-  cursor: pointer;
-  list-style: none;
-  user-select: none;
-  transition: background-color 0.14s ease;
-}
-
-.news-group > summary.news-cat:hover {
-  background: #fafbfd;
-}
-
-.news-group[open] > summary.news-cat {
-  border-bottom: 1px solid var(--line);
-  box-shadow: inset 3px 0 0 var(--accent);
-}
-
-.news-group > summary.news-cat::-webkit-details-marker { display: none; }
-
-.news-group > summary.news-cat::before {
-  content: "+";
-  width: 18px;
-  color: var(--ink-sub);
-  font-weight: 700;
-  text-align: center;
-}
-
-.news-group[open] > summary.news-cat::before { content: "−"; }
-
-.news-cat-count {
-  margin-left: auto;
-  color: var(--ink-sub);
-  font-size: 0.8rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-/* 지면 사진 — 끌어다 놓기 · 붙여넣기 */
-.drop-zone {
-  border: 1px dashed var(--line);
-  border-radius: 6px;
-  background: #fbfcfe;
-  padding: 26px 20px;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color 0.14s ease, background-color 0.14s ease;
-}
-
-.drop-zone:hover,
-.drop-zone:focus-visible,
-.drop-zone.over {
-  border-color: var(--accent);
-  background: var(--accent-bg);
-}
-
-.drop-zone .drop-main {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 700;
-}
-
-.drop-zone .drop-sub {
-  margin: 6px 0 0;
-  color: var(--ink-sub);
-  font-size: 0.83rem;
 }
 
 .media-msg {
@@ -1972,115 +1726,437 @@ body.magazine :focus-visible {
 
 .media-msg.bad { color: #b42318; }
 
-.media-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 12px;
-  margin-top: 14px;
+/* ── 새 호 만들기 — 채널에 따라 발행일(주간) 또는 연·월(월간) */
+.new-issue {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  padding: 14px 0 0;
 }
 
-.media-item {
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 10px;
-}
-
-.media-item img {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  border-radius: 4px;
+.new-issue label {
   display: block;
-}
-
-.media-item code {
-  display: block;
-  margin: 8px 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   color: var(--ink-sub);
-  font-size: 0.72rem;
+  margin-bottom: 4px;
+}
+
+.new-issue input {
+  font: inherit;
+  font-size: 0.9rem;
+  min-height: 44px; /* 터치 타깃 플로어 */
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.new-issue input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.new-issue .new-note {
+  flex: 1 0 100%;
+  margin: 0;
+  font-size: 0.83rem;
+  color: var(--ink-sub);
+}
+
+/* ── 호 목록 — 헤어라인 행 (표지 · 호수 · 제목 · 상태) */
+.issue-rows { margin-top: 4px; }
+
+.issue-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.issue-row .row-cover {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 44px;
+  background: #ece7e0 center / cover no-repeat;
+}
+
+.issue-row .row-main { flex: 1; min-width: 0; }
+
+.issue-row .row-line {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ink-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+.issue-row .row-no {
+  font-weight: 800;
+  color: var(--ink);
+  margin-right: 6px;
+}
+
+.issue-row .row-title {
+  margin: 2px 0 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.issue-row .row-act {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.state-badge {
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.state-badge.editing { background: #fdf2e2; color: #b45309; }
+.state-badge.live { background: #e8f4ec; color: #15803d; }
+
+.desk-empty {
+  padding: 22px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-sub);
+  font-size: 0.88rem;
+}
+
+/* ── 편집 화면 상단 — 돌아가기 + 호 표기 */
+.edit-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.edit-mast {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.edit-mast span {
+  margin-left: 8px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ink-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 발행 준비 상태 — n/m + 항목별 충족·미충족 */
+.ready-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 14px 0 8px;
+}
+
+.ready-count {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ready-of { font-size: 0.9rem; color: var(--ink-sub); }
+
+.ready-bar {
+  height: 3px;
+  background: var(--line);
+  margin-bottom: 12px;
+}
+
+.ready-bar > i {
+  display: block;
+  height: 3px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.ready-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0 24px;
+}
+
+.ready-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.86rem;
+}
+
+.ready-list .rk {
+  flex: 0 0 auto;
+  font-weight: 800;
+  color: var(--platform-paid, #15803d);
+}
+
+.ready-list li.miss .rk { color: var(--ink-faint); }
+.ready-list li.miss { color: var(--ink-sub); }
+
+.ready-list .rv {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--ink-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 이미지 슬롯 — 눌러서 고르거나 끌어다 놓는다 */
+.img-slot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.img-slot .slot-view {
+  flex: 0 0 auto;
+  width: 120px;
+  height: 80px;
+  border: 1px dashed var(--line-strong);
+  background: center / cover no-repeat;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 0.78rem;
+  color: var(--ink-sub);
+  transition: border-color 0.14s ease, background-color 0.14s ease;
+}
+
+.img-slot .slot-view.over,
+.img-slot .slot-view:hover { border-color: var(--accent); }
+.img-slot .slot-view.has { border-style: solid; }
+
+.img-slot .slot-meta {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8rem;
+  color: var(--ink-sub);
   word-break: break-all;
 }
 
-.media-item .btn { width: 100%; }
+/* ── 편집장의 말 · 칼럼 입력 */
+.fld { padding: 12px 0 0; }
 
-.news-item {
+.fld > label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink-sub);
+  margin-bottom: 5px;
+}
+
+.fld .cnt {
+  margin-left: 8px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.fld .cnt.warn { color: #b45309; }
+
+.fld input[type="text"],
+.fld textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  padding: 9px 12px;
+  outline: none;
+  resize: vertical;
+}
+
+.fld input[type="text"]:focus,
+.fld textarea:focus { border-color: var(--accent); }
+
+.fld input[readonly] { background: var(--bg); color: var(--ink-sub); }
+
+.fld textarea { min-height: 110px; }
+.fld textarea.tall { min-height: 320px; }
+
+.fld .hint {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+}
+
+.fld-actions {
   display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  padding: 10px 12px;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+/* AI 후보 — 누르면 입력칸에 들어간다 */
+.topic-suggest {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--ink-sub);
+  font-size: 0.85rem;
+}
+
+.topic-suggest[hidden] { display: none; }
+
+.topic-cand {
+  text-align: left;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--ink);
   border: 1px solid var(--line);
   border-radius: 4px;
   background: var(--surface);
-  margin: 8px 12px 0;
+  padding: 8px 12px;
   cursor: pointer;
   transition: border-color 0.14s ease, background-color 0.14s ease;
 }
 
-.news-item:hover {
-  border-color: var(--line-strong);
-}
+.topic-cand:hover { border-color: var(--accent); background: var(--accent-bg); }
 
-/* 선택 표시 — 좌측 3px 인셋 포인트 막대 (플랫폼 선택 문법) */
-.news-item:has(input:checked) {
-  border-color: var(--accent);
-  background: var(--accent-bg);
-  box-shadow: inset 3px 0 0 var(--accent);
-}
-
-.news-item input {
-  margin-top: 4px;
-  width: 16px;
-  height: 16px;
-  flex: 0 0 auto;
-}
-
-.news-item strong {
+.topic-cand .cand-why {
   display: block;
-  font-size: 0.95rem;
-  line-height: 1.45;
-}
-
-.news-desc {
-  display: block;
-  font-size: 0.85rem;
-  color: var(--ink-sub);
-  line-height: 1.55;
   margin-top: 2px;
-}
-
-.news-meta {
-  display: block;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   color: var(--ink-sub);
-  margin-top: 4px;
-  font-variant-numeric: tabular-nums;
 }
 
-.news-meta a {
-  color: var(--accent);
-  font-weight: 600;
-}
+/* ── 칼럼 목록 — 행 하나가 칼럼 하나, 펼치면 편집 칸 */
+.col-item { border-bottom: 1px solid var(--line); }
 
-.news-actions {
+.col-sum {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 14px;
+  gap: 14px;
+  padding: 13px 0;
 }
 
-.news-actions #news-count {
-  font-size: 0.85rem;
+.col-no {
+  flex: 0 0 auto;
+  width: 22px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.col-main { flex: 1; min-width: 0; }
+
+.col-cat {
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.col-title {
+  margin: 1px 0 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.col-title.none { color: var(--ink-faint); font-weight: 500; }
+
+.col-meta {
+  margin: 3px 0 0;
+  font-size: 0.79rem;
   color: var(--ink-sub);
   font-variant-numeric: tabular-nums;
 }
 
-/* 모바일 — 구획 제목의 보조 설명은 줄을 내린다 */
+.col-item.open { box-shadow: inset 3px 0 0 var(--accent); }
+.col-item.open .col-sum { padding-left: 12px; }
+.col-item.open .col-edit { padding: 0 0 20px 12px; }
+
+/* ── 발행 액션 */
+.desk-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 16px 0 0;
+}
+
+.desk-actions .why {
+  font-size: 0.82rem;
+  color: var(--ink-sub);
+}
+
+.btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* ── 미리보기 — 고객 지면(issue.html)과 같은 조판을 겹쳐 띄운다 */
+.preview-back {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(23, 32, 51, 0.55);
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+/* 어두운 바 위의 버튼 — .platform button { color: inherit }가 .btn을 이겨 흰 글자가 되던 결함 교정 */
+.preview-bar .btn { color: var(--ink); }
+
+.preview-paper {
+  --paper: #faf8f4;
+  --gold: #c9a14a;
+  --gold-ink: #8a6620;
+  --hairline: rgba(23, 32, 51, 0.14);
+  --body-ink: #232c40;
+  flex: 1;
+  overflow-y: auto;
+  background: var(--paper);
+}
+
+.preview-paper .issue { padding: 24px 20px 56px; }
+
 @media (max-width: 767px) {
-  .section-title .news-sub {
-    display: block;
+  .platform-main.desk .section-title .sec-sub {
+    flex: 1 0 100%;
     margin: 2px 0 0;
   }
+  .issue-row { flex-wrap: wrap; }
+  .issue-row .row-main { flex: 1 0 60%; }
+  .fld textarea.tall { min-height: 240px; }
 }
 
 /* 실사 헤더 배너 — 서재·리포트 입구의 첫인상 */
@@ -2210,20 +2286,10 @@ a.latest-card {
 /* ══ 에디토리얼 통일 — 케어 계열 (2026-08-02 코덱스 검수 반영) ═══════════════
    발행 데스크·서재의 카드 면을 걷어내고 괘선 조판으로. 지면(issue.html)의 매거진
    조판은 건드리지 않는다 — 고객 화면은 잡지 문법이 맞다(헌법). */
-.pub-desk, .compose-panel, .news-group, .news-item, .desk-overview > * {
-  border-radius: 0; box-shadow: none;
+.compose-panel {
+  border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none;
+  background: none; padding: 16px 0 0;
 }
-.pub-desk, .compose-panel {
-  border: 0; border-top: 1px solid var(--line); background: none; padding: 16px 0 0;
-}
-.news-group {
-  border: 0; border-bottom: 1px solid var(--line); background: none;
-}
-.news-item {
-  border: 0; border-bottom: 1px solid var(--line); background: none;
-  border-radius: 0;
-}
-.news-item:last-child { border-bottom: 0; }
 /* 서재 — 사진은 유지하되 라운드·그림자 제거 (괘선으로 구획) */
 .shelf-hero, .latest-card, .shelf-row {
   border-radius: 0; box-shadow: none;

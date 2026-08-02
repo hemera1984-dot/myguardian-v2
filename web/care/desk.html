@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
@@ -37,114 +37,883 @@
     </header>
 
     <main class="platform-main desk">
-      <!-- 3단 헤딩 — eyebrow → 제목 → 설명 (플랫폼 공통 문법) -->
       <div class="page-heading">
         <p class="eyebrow">케어센터</p>
         <div class="desk-title-row">
           <h1>발행 데스크</h1>
           <span class="pub-chip" id="pub-dday"></span>
         </div>
-        <p>주간·월간 발행 공정 — 후보 수집부터 발송까지 순서대로 진행합니다.</p>
+        <p>호를 만들고, 칼럼을 쓰고, 지면을 확인한 뒤 발행합니다.</p>
       </div>
 
-      <!-- 공정 개요 — 3단계 요약 (단계 번호는 아래 STEP 구획이 가진다) -->
-      <div class="pub-desk">
-        <ol class="pub-steps">
-          <li><strong>기획</strong><span>꼭지별 가제를 쓰고 집필 지시문을 복사합니다. 뉴스 후보는 참조용으로 골라 끼웁니다.</span></li>
-          <li><strong>집필·검토</strong><span>지시문을 발행 세션에 붙여넣으면 제목 다듬기부터 근거 수집·집필까지 진행됩니다. 초안은 리더에서 검토합니다.</span></li>
-          <li><strong>발행·발송</strong><span>검증 통과 후 발행 전환, 카톡 문구를 복사해 전송합니다.</span></li>
-        </ol>
-      </div>
-
-      <div class="section">
-        <h2 class="section-title"><span class="step-no">STEP 1</span>뉴스 후보 <span class="news-sub">참조용 — 선택하면 지시문에 포함됩니다</span></h2>
-        <div id="news-box">
-          <div class="placeholder-panel">후보를 불러오는 중입니다.</div>
-        </div>
-      </div>
-
-      <div class="section">
-        <h2 class="section-title"><span class="step-no">STEP 2</span>이번 호 기획 <span class="news-sub">채널을 고르고 꼭지별 가제를 씁니다</span></h2>
-        <div class="pill-tabs" id="plan-channel" role="tablist" aria-label="발행 채널">
-          <button type="button" class="active" data-ch="주간">주간</button>
-          <button type="button" data-ch="월간">월간</button>
-        </div>
-        <div id="topic-inputs"></div>
-        <div class="news-actions">
-          <button class="btn" type="button" id="topic-suggest">주제 추천 지시문 복사</button>
-        </div>
-      </div>
-
-      <div class="section">
-        <h2 class="section-title"><span class="step-no">STEP 3</span>집필 지시문 <span class="news-sub">가제와 참조 기사를 한 덩어리로 복사합니다</span></h2>
-        <p class="news-collected">제목은 가제면 됩니다. 집필 세션이 제목을 다듬어 확정하고, 가제 키워드로 네이버 뉴스·백과사전과 웹검색 근거를 수집해 기사를 작성합니다.</p>
-        <div class="news-actions">
-          <button class="btn btn-primary" type="button" id="news-brief">집필 지시문 복사</button>
-          <span id="news-count">참조 기사 0건 선택</span>
-        </div>
-      </div>
-
-      <div class="section">
-        <h2 class="section-title"><span class="step-no">STEP 4</span>지면 사진 <span class="news-sub">끌어다 놓거나 붙여넣으면 올라갑니다</span></h2>
-        <div class="drop-zone" id="drop-zone" tabindex="0" role="button" aria-label="사진 올리기">
-          <p class="drop-main">여기에 사진을 끌어다 놓으세요</p>
-          <p class="drop-sub">복사한 이미지를 붙여넣거나(Ctrl+V), 눌러서 파일을 고를 수도 있습니다</p>
-          <input type="file" id="media-input" accept="image/*" multiple hidden>
-        </div>
-        <p class="media-msg" id="media-msg" hidden></p>
-        <div class="media-list" id="media-list"></div>
-      </div>
-
-      <div class="section">
-        <h2 class="section-title"><span class="step-no">STEP 5</span>발행·발송 <span class="news-sub">검토를 마친 호를 발행하고 카톡으로 알립니다</span></h2>
-        <div id="draft-block" hidden>
-          <h3 class="desk-sub-title">작성 중인 호</h3>
-          <div id="draft-list"></div>
+      <!-- ── 호 목록 ─────────────────────────────────────────────── -->
+      <section id="view-list">
+        <div class="pill-tabs" id="ch-tabs" role="tablist" aria-label="발행 채널">
+          <button type="button" class="active" role="tab" aria-selected="true" data-ch="주간">주간</button>
+          <button type="button" role="tab" aria-selected="false" data-ch="월간">월간</button>
         </div>
 
-        <div class="compose-panel publish-panel">
-          <h3>발행하기</h3>
-          <p class="news-collected">집필 세션이 만든 발행 JSON을 붙여넣고 누르면 서버에 올라가 서재와 지면에 즉시 반영됩니다. 같은 id를 다시 올리면 그 호가 교체됩니다.</p>
-          <textarea id="publish-json" aria-label="발행 JSON" placeholder='{ "목록항목": { "id": "weekly-14", … }, "본문": { "id": "weekly-14", "기사": [ … ] } }'></textarea>
-          <div class="compose-actions">
-            <button class="btn" type="button" id="publish-btn">발행하기</button>
+        <div class="section">
+          <h2 class="section-title">새 호 만들기 <span class="sec-sub" id="new-sub"></span></h2>
+          <div class="new-issue" id="new-issue"></div>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">호 목록 <span class="sec-sub" id="list-sub"></span></h2>
+          <div class="issue-rows" id="issue-rows"></div>
+        </div>
+      </section>
+
+      <!-- ── 호 편집 ─────────────────────────────────────────────── -->
+      <section id="view-edit" hidden>
+        <div class="edit-top">
+          <button class="btn" type="button" id="back-list">호 목록으로</button>
+          <span class="edit-mast" id="edit-mast"></span>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">발행 준비 상태 <span class="sec-sub">비어 있는 항목을 채우면 발행 가능합니다</span></h2>
+          <div id="ready-box"></div>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">표지 이미지 <span class="sec-sub">서재 카드와 지면 첫 장에 실립니다</span></h2>
+          <div id="cover-box"></div>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">편집장의 말 <span class="sec-sub">한 줄 띄어 문단을 나눕니다</span></h2>
+          <div class="fld">
+            <label for="preface">본문 <span class="cnt" id="preface-cnt"></span></label>
+            <textarea id="preface" data-f="편집장의말" aria-describedby="preface-hint"></textarea>
+            <p class="hint" id="preface-hint">3~4문단, 350~500자를 권합니다.</p>
+            <div class="fld-actions">
+              <button class="btn" type="button" id="preface-ai">AI 초안</button>
+            </div>
+            <div class="topic-suggest" id="preface-out" hidden></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">칼럼 <span class="sec-sub" id="col-sub"></span></h2>
+          <div id="col-list"></div>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">미리보기 · 발행</h2>
+          <div class="desk-actions">
+            <button class="btn" type="button" id="btn-preview">미리보기</button>
+            <button class="btn btn-primary" type="button" id="btn-publish">발행하기</button>
+            <button class="btn" type="button" id="btn-kakao" disabled>카톡 문구</button>
+            <span class="why" id="kakao-why">발행을 마치면 카톡 문구를 만들 수 있습니다.</span>
           </div>
           <p class="media-msg" id="publish-msg" hidden></p>
-        </div>
 
-        <div class="pub-desk-actions" id="pub-desk-actions"></div>
-        <div class="sender-row" id="sender-row">
-          <span>카톡 서명</span>
-          <input class="name" id="sender-name" type="text" aria-label="발신자 이름" placeholder="이름">
-          <input class="org" id="sender-org" type="text" aria-label="소속 지점" placeholder="소속">
-          <span id="sender-saved" hidden>저장됨</span>
-        </div>
+          <div class="sender-row" id="sender-row">
+            <span>카톡 서명</span>
+            <input class="name" id="sender-name" type="text" aria-label="발신자 이름" placeholder="이름">
+            <input class="org" id="sender-org" type="text" aria-label="소속 지점" placeholder="소속">
+            <span id="sender-saved" hidden>저장됨</span>
+          </div>
 
-        <div class="compose-panel" id="compose" hidden>
-          <h3 id="compose-title">카톡 문구</h3>
-          <textarea id="compose-text" aria-label="카톡 발송 문구"></textarea>
-          <div class="compose-actions">
-            <button class="btn" type="button" id="compose-copy">복사하기</button>
-            <button class="btn" type="button" id="compose-close">닫기</button>
+          <div class="compose-panel" id="compose" hidden>
+            <h3 id="compose-title">카톡 문구</h3>
+            <textarea id="compose-text" aria-label="카톡 발송 문구"></textarea>
+            <div class="compose-actions">
+              <button class="btn" type="button" id="compose-copy">복사하기</button>
+              <button class="btn" type="button" id="compose-close">닫기</button>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
     </main>
 
     <footer class="platform-footer">마이가디언 v2</footer>
   </div>
+
+  <!-- 미리보기 — 고객이 볼 지면과 같은 조판. 서버에 저장하지 않는다 -->
+  <div class="preview-back" id="preview-back" hidden role="dialog" aria-modal="true" aria-label="지면 미리보기">
+    <div class="preview-bar">
+      <span>미리보기 — 발행 전 검토용입니다. 저장되지 않습니다.</span>
+      <button class="btn" type="button" id="preview-close">닫기</button>
+    </div>
+    <div class="preview-paper"><main class="issue" id="preview-body"></main></div>
+  </div>
+
+  <input type="file" id="img-input" accept="image/*" hidden>
 
   <script>
     (function () {
       "use strict";
       var care = window.care;
       var esc = care.esc;
-      var ALL = [];
 
+      // 주간은 꼭지가 고정이다(사양 2026-08-02). 월간은 세 칸 모두 자유 주제.
+      var WEEKLY_CATS = ["정치·사회·시사", "경제·AI·IT", "보험"];
+      var PREFIX = "mg_care_draft_";
+
+      // 상태는 하나로 모은다 — 화면은 이 객체를 그리기만 한다
+      var S = { ch: "주간", list: [], draft: null, open: -1 };
+
+      function el(id) { return document.getElementById(id); }
+      function pad2(n) { return String(n).padStart(2, "0"); }
+
+      // ── 초안 저장소 (localStorage) — 발행 전까지는 이 브라우저에만 있다
+      function draftKeys() {
+        var out = [];
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          if (k && k.indexOf(PREFIX) === 0) out.push(k);
+        }
+        return out;
+      }
+      function readDraft(id) {
+        try { return JSON.parse(localStorage.getItem(PREFIX + id)); } catch (e) { return null; }
+      }
+      function allDrafts() {
+        return draftKeys().map(function (k) {
+          try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; }
+        }).filter(Boolean);
+      }
+      function saveDraft(d) {
+        try { localStorage.setItem(PREFIX + d.id, JSON.stringify(d)); }
+        catch (e) { publishNote("브라우저 저장 공간이 부족해 초안을 저장하지 못했습니다.", true); }
+      }
+      function dropDraft(id) { localStorage.removeItem(PREFIX + id); }
+
+      // ── 문단 배열 ↔ 입력칸 (스키마는 문단 배열, 화면은 여러 줄 텍스트)
+      function toLines(t) {
+        return String(t == null ? "" : t).split(/\n+/).map(function (s) { return s.trim(); }).filter(Boolean);
+      }
+      function fromLines(a) { return (a || []).join("\n\n"); }
+      function linesLen(a) { return (a || []).join("").length; }
+
+      // 본문 블록 ↔ 텍스트. 소제목은 줄 앞의 ## 로 구분한다 (t:"h"|"p" 유지)
+      function blocksToText(b) {
+        return (b || []).map(function (x) { return (x.t === "h" ? "## " : "") + x.x; }).join("\n\n");
+      }
+      function textToBlocks(t) {
+        return toLines(t).map(function (line) {
+          return /^#{1,3}\s+/.test(line)
+            ? { t: "h", x: line.replace(/^#{1,3}\s+/, "") }
+            : { t: "p", x: line };
+        });
+      }
+      function blocksLen(b) {
+        return (b || []).reduce(function (n, x) { return n + String(x.x || "").length; }, 0);
+      }
+
+      // ── 호 만들기
+      function nextNo(ch) {
+        var max = 0;
+        S.list.concat(allDrafts()).forEach(function (i) {
+          if (i["채널"] === ch && Number(i["호수"]) > max) max = Number(i["호수"]);
+        });
+        return max + 1;
+      }
+      function makeId(ch, no) {
+        var base = ch === "주간" ? "weekly-" : "monthly-";
+        var n = no;
+        var used = {};
+        S.list.forEach(function (i) { used[i.id] = 1; });
+        allDrafts().forEach(function (i) { used[i.id] = 1; });
+        while (used[base + pad2(n)]) n += 1;
+        return { id: base + pad2(n), no: n };
+      }
+      function weekLabel(ch, d) {
+        var y = d.getFullYear(), m = d.getMonth() + 1;
+        return ch === "주간"
+          ? y + "년 " + m + "월 " + Math.ceil(d.getDate() / 7) + "주차"
+          : y + "년 " + m + "월호";
+      }
+      function blankArticle(ch, i) {
+        return {
+          "번호": i + 1,
+          "카테고리": ch === "주간" ? WEEKLY_CATS[i] : "",
+          "제목": "", "부제": "", "요약": [], "한마디": [], "본문": [], "이미지": "", "방향": ""
+        };
+      }
+      function createIssue(ch, iso) {
+        var d = new Date(iso + "T00:00:00");
+        if (isNaN(d.getTime())) return null;
+        var made = makeId(ch, nextNo(ch));
+        var draft = {
+          id: made.id, "채널": ch, "호수": made.no, "발행일": iso,
+          "주차라벨": weekLabel(ch, d), "발행인": "안창민",
+          "커버이미지": "", "편집장의말": [],
+          "기사": [0, 1, 2].map(function (i) { return blankArticle(ch, i); })
+        };
+        saveDraft(draft);
+        return draft;
+      }
+
+      // ── 발행 준비 상태
+      function checklist(d) {
+        var arts = d["기사"] || [];
+        var items = [
+          { k: "편집장의 말", ok: linesLen(d["편집장의말"]) > 0, v: linesLen(d["편집장의말"]) + "자" },
+          { k: "표지 이미지", ok: !!d["커버이미지"], v: "등록됨" }
+        ];
+        arts.forEach(function (a, i) {
+          items.push({ k: "칼럼 " + (i + 1) + " 본문", ok: blocksLen(a["본문"]) > 0, v: blocksLen(a["본문"]) + "자" });
+        });
+        arts.forEach(function (a, i) {
+          items.push({ k: "칼럼 " + (i + 1) + " 이미지", ok: !!a["이미지"], v: "등록됨" });
+        });
+        return items;
+      }
+
+      // ── 발행 payload — 기존 스키마 그대로. 편집용 필드(방향)는 여기서 떨군다
+      function payload(d) {
+        var arts = (d["기사"] || []).map(function (a, i) {
+          return {
+            "번호": i + 1, "카테고리": a["카테고리"], "제목": a["제목"], "부제": a["부제"],
+            "요약": a["요약"] || [], "한마디": a["한마디"] || [], "본문": a["본문"] || [],
+            "이미지": a["이미지"] || ""
+          };
+        });
+        var 목록항목 = {
+          id: d.id, "발행인": d["발행인"] || "안창민", "채널": d["채널"], "호수": d["호수"],
+          "제목": (arts[0] && arts[0]["제목"]) || "",
+          "주차라벨": d["주차라벨"], "발행일": d["발행일"],
+          "요약": arts.map(function (a) { return a["제목"]; }).filter(Boolean).join(" · "),
+          "꼭지": arts.map(function (a) {
+            return { "번호": a["번호"], "카테고리": a["카테고리"], "제목": a["제목"], "부제": a["부제"] };
+          }),
+          "본문파일": "data/care/issues/" + d.id + ".json"
+        };
+        if (d["커버이미지"]) 목록항목["커버이미지"] = d["커버이미지"];
+        return { "목록항목": 목록항목, "본문": { id: d.id, "편집장의말": d["편집장의말"] || [], "기사": arts } };
+      }
+
+      // ══ 호 목록 화면 ═══════════════════════════════════════════════
+      function renderNewForm() {
+        var box = el("new-issue");
+        var no = nextNo(S.ch);
+        el("new-sub").textContent = S.ch + " 다음 호는 " + no + "호입니다";
+        if (S.ch === "주간") {
+          var sun = new Date();
+          sun.setDate(sun.getDate() + ((7 - sun.getDay()) % 7));
+          var iso = sun.getFullYear() + "-" + pad2(sun.getMonth() + 1) + "-" + pad2(sun.getDate());
+          box.innerHTML = '<div><label for="new-date">발행일 (일요일)</label>'
+            + '<input type="date" id="new-date" value="' + iso + '"></div>'
+            + '<button class="btn" type="button" id="new-go">' + no + '호 만들기</button>'
+            + '<p class="new-note">칼럼 세 꼭지는 ' + WEEKLY_CATS.join(" · ") + ' 로 고정입니다.</p>';
+        } else {
+          var now = new Date();
+          box.innerHTML = '<div><label for="new-month">발행 연·월</label>'
+            + '<input type="month" id="new-month" value="' + now.getFullYear() + "-" + pad2(now.getMonth() + 1) + '"></div>'
+            + '<button class="btn" type="button" id="new-go">' + no + '호 만들기</button>'
+            + '<p class="new-note">칼럼 세 꼭지 모두 자유 주제입니다. 카테고리는 직접 씁니다.</p>';
+        }
+      }
+
+      function rowsFor(ch) {
+        var drafts = allDrafts().filter(function (d) { return d["채널"] === ch; })
+          .map(function (d) { return { it: d, draft: true }; });
+        var live = S.list.filter(function (i) {
+          return i["채널"] === ch && !readDraft(i.id);
+        }).map(function (i) { return { it: i, draft: false }; });
+        return drafts.concat(live).sort(function (a, b) {
+          return (b.it["발행일"] || "") < (a.it["발행일"] || "") ? -1 : 1;
+        });
+      }
+
+      function renderList() {
+        renderNewForm();
+        var rows = rowsFor(S.ch);
+        el("list-sub").textContent = rows.length ? rows.length + "개" : "";
+        if (!rows.length) {
+          el("issue-rows").innerHTML = '<p class="desk-empty">' + esc(S.ch) + " 호가 아직 없습니다. 위에서 새 호를 만들 수 있습니다.</p>";
+          return;
+        }
+        el("issue-rows").innerHTML = rows.map(function (r) {
+          var i = r.it;
+          var title = r.draft
+            ? ((i["기사"] && i["기사"][0] && i["기사"][0]["제목"]) || "제목 미정")
+            : (i["제목"] || "제목 미정");
+          var cover = r.draft ? i["커버이미지"] : i["커버이미지"];
+          return '<div class="issue-row">'
+            + '<span class="row-cover"' + (cover ? ' style="background-image:url(' + esc(care.mediaSrc(cover)) + ')"' : "") + "></span>"
+            + '<div class="row-main">'
+            + '<p class="row-line"><span class="row-no">' + esc(i["호수"]) + "호</span>"
+            + esc(i["주차라벨"] || "") + " · " + esc(i["발행일"] || "") + "</p>"
+            + '<p class="row-title">' + esc(title) + "</p></div>"
+            + '<span class="state-badge ' + (r.draft ? "editing" : "live") + '">' + (r.draft ? "편집중" : "발행됨") + "</span>"
+            + '<div class="row-act">'
+            + '<button class="btn" type="button" data-edit="' + esc(i.id) + '">편집</button>'
+            + (r.draft ? '<button class="btn" type="button" data-del="' + esc(i.id) + '">삭제</button>'
+              : '<a class="btn" href="issue.html?id=' + encodeURIComponent(i.id) + '">지면</a>')
+            + "</div></div>";
+        }).join("");
+      }
+
+      // ══ 호 편집 화면 ═══════════════════════════════════════════════
+      function slotHtml(target, path, label) {
+        return '<div class="img-slot">'
+          + '<div class="slot-view' + (path ? " has" : "") + '" data-slot="' + esc(target) + '"'
+          + (path ? ' style="background-image:url(' + esc(care.mediaSrc(path)) + ')"' : "")
+          + ' tabindex="0" role="button" aria-label="' + esc(label) + '">' + (path ? "" : "이미지 없음") + "</div>"
+          + '<div class="slot-meta">' + (path ? esc(path) : "눌러서 파일을 고르거나 이 자리에 끌어다 놓습니다.") + "</div>"
+          + (path ? '<button class="btn" type="button" data-imgdel="' + esc(target) + '">지우기</button>' : "")
+          + "</div>";
+      }
+
+      function renderReady() {
+        var items = checklist(S.draft);
+        var done = items.filter(function (i) { return i.ok; }).length;
+        el("ready-box").innerHTML = '<div class="ready-head"><span class="ready-count">' + done
+          + '</span><span class="ready-of">/ ' + items.length + " 항목 충족</span></div>"
+          + '<div class="ready-bar"><i style="width:' + Math.round(done / items.length * 100) + '%"></i></div>'
+          + '<ul class="ready-list">' + items.map(function (i) {
+            return '<li class="' + (i.ok ? "" : "miss") + '"><span class="rk">' + (i.ok ? "충족" : "미충족")
+              + "</span>" + esc(i.k) + (i.ok ? '<span class="rv">' + esc(i.v) + "</span>" : "") + "</li>";
+          }).join("") + "</ul>";
+      }
+
+      function colEditHtml(a, i) {
+        var weekly = S.draft["채널"] === "주간";
+        var sumLen = linesLen(a["요약"]);
+        var bodyLen = blocksLen(a["본문"]);
+        var target = "칼럼 " + (i + 1);
+        return '<div class="col-edit">'
+          + '<div class="fld"><label for="f-cat-' + i + '">카테고리</label>'
+          + '<input type="text" id="f-cat-' + i + '" data-f="카테고리" data-col="' + i + '" value="' + esc(a["카테고리"]) + '"'
+          + (weekly ? " readonly" : ' placeholder="예: 상속·증여"') + "></div>"
+
+          + '<div class="fld"><label for="f-title-' + i + '">제목</label>'
+          + '<input type="text" id="f-title-' + i + '" data-f="제목" data-col="' + i + '" value="' + esc(a["제목"]) + '" placeholder="' + esc(target) + ' 제목">'
+          + '<div class="fld-actions">'
+          + '<button class="btn" type="button" data-ai="topic" data-col="' + i + '">주제 추천</button>'
+          + '<button class="btn" type="button" data-ai="title" data-col="' + i + '">제목 다듬기</button>'
+          + '<button class="btn" type="button" data-ai="column" data-col="' + i + '">본문 생성</button>'
+          + "</div>"
+          + '<div class="topic-suggest" id="ai-out-' + i + '" hidden></div></div>'
+
+          + '<div class="fld"><label for="f-dir-' + i + '">방향</label>'
+          + '<input type="text" id="f-dir-' + i + '" data-f="방향" data-col="' + i + '" value="' + esc(a["방향"] || "") + '" placeholder="본문 생성에 넘길 한 줄 방향">'
+          + '<p class="hint">발행 데이터에는 실리지 않습니다. 본문 생성 지시에만 씁니다.</p></div>'
+
+          + '<div class="fld"><label for="f-sub-' + i + '">부제</label>'
+          + '<input type="text" id="f-sub-' + i + '" data-f="부제" data-col="' + i + '" value="' + esc(a["부제"]) + '"></div>'
+
+          + '<div class="fld"><label for="f-sum-' + i + '">요약 <span class="cnt' + (sumLen && (sumLen < 150 || sumLen > 200) ? " warn" : "") + '" data-cnt="요약-' + i + '">' + sumLen + '자</span></label>'
+          + '<textarea id="f-sum-' + i + '" data-f="요약" data-col="' + i + '">' + esc(fromLines(a["요약"])) + "</textarea>"
+          + '<p class="hint">150~200자. 서재 카드와 지면 요지 박스에 실립니다.</p></div>'
+
+          + '<div class="fld"><label for="f-note-' + i + '">한마디</label>'
+          + '<textarea id="f-note-' + i + '" data-f="한마디" data-col="' + i + '">' + esc(fromLines(a["한마디"])) + "</textarea>"
+          + '<p class="hint">설계사가 덧붙이는 말. 지면에서 별도 박스로 실립니다.</p></div>'
+
+          + '<div class="fld"><label for="f-body-' + i + '">본문 <span class="cnt" data-cnt="본문-' + i + '">' + bodyLen + '자</span></label>'
+          + '<textarea class="tall" id="f-body-' + i + '" data-f="본문" data-col="' + i + '">' + esc(blocksToText(a["본문"])) + "</textarea>"
+          + '<p class="hint">줄 앞에 ## 를 붙이면 소제목이 됩니다. 한 줄 띄어 문단을 나눕니다. '
+          + (S.draft["채널"] === "월간" ? "월간 기준 8,000~10,000자." : "주간 기준 1,700~2,800자.") + "</p></div>"
+
+          + '<div class="fld"><label>이미지</label>' + slotHtml("col-" + i, a["이미지"], target + " 이미지 올리기") + "</div>"
+          + "</div>";
+      }
+
+      function renderCols() {
+        var arts = S.draft["기사"] || [];
+        el("col-sub").textContent = S.draft["채널"] === "주간"
+          ? "주간은 세 꼭지가 고정입니다" : "월간은 세 꼭지 모두 자유 주제입니다";
+        el("col-list").innerHTML = arts.map(function (a, i) {
+          var open = S.open === i;
+          return '<div class="col-item' + (open ? " open" : "") + '">'
+            + '<div class="col-sum"><span class="col-no">' + (i + 1) + "</span>"
+            + '<div class="col-main">'
+            + '<p class="col-cat">' + esc(a["카테고리"] || "카테고리 미정") + "</p>"
+            + '<p class="col-title' + (a["제목"] ? "" : " none") + '">' + esc(a["제목"] || "제목 미정") + "</p>"
+            + '<p class="col-meta" data-meta="' + i + '">' + colMeta(a) + "</p>"
+            + "</div>"
+            + '<button class="btn" type="button" data-col-toggle="' + i + '">' + (open ? "접기" : "편집") + "</button>"
+            + "</div>"
+            + (open ? colEditHtml(a, i) : "")
+            + "</div>";
+        }).join("");
+      }
+
+      function colMeta(a) {
+        return "부제 " + (a["부제"] ? "있음" : "없음")
+          + " · 요약 " + linesLen(a["요약"]) + "자"
+          + " · 본문 " + blocksLen(a["본문"]) + "자"
+          + " · 이미지 " + (a["이미지"] ? "1장" : "없음");
+      }
+
+      function renderEdit() {
+        var d = S.draft;
+        el("edit-mast").innerHTML = esc(d["채널"] + " 안창민 " + d["호수"] + "호")
+          + "<span>" + esc(d["주차라벨"] + " · " + d["발행일"] + " 발행 · " + d.id) + "</span>";
+        el("preface").value = fromLines(d["편집장의말"]);
+        el("preface-cnt").textContent = linesLen(d["편집장의말"]) + "자";
+        el("cover-box").innerHTML = slotHtml("cover", d["커버이미지"], "표지 이미지 올리기");
+        renderReady();
+        renderCols();
+        syncKakao();
+      }
+
+      function syncKakao() {
+        var live = S.list.find(function (i) { return i.id === S.draft.id; });
+        el("btn-kakao").disabled = !live;
+        el("kakao-why").textContent = live
+          ? "발행된 호입니다. 문구를 만들어 카톡으로 보내세요."
+          : "아직 발행 전입니다. 발행을 마치면 카톡 문구를 만들 수 있습니다.";
+      }
+
+      function showList() {
+        S.draft = null;
+        S.open = -1;
+        el("view-edit").hidden = true;
+        el("view-list").hidden = false;
+        el("compose").hidden = true;
+        renderList();
+      }
+
+      function openDraft(d) {
+        S.draft = d;
+        S.open = -1;
+        el("view-list").hidden = true;
+        el("view-edit").hidden = false;
+        el("publish-msg").hidden = true;
+        renderEdit();
+        window.scrollTo(0, 0);
+      }
+
+      // ══ AI ═════════════════════════════════════════════════════════
+      function chFull() { return S.draft["채널"] + " 안창민"; }
+
+      function aiBox(i) { return el("ai-out-" + i); }
+
+      function needAuth(box) {
+        if (window.mgAuth && window.mgAuth.token()) return false;
+        box.hidden = false;
+        box.textContent = "로그인이 필요합니다. 진입 화면에서 구글 계정으로 로그인하세요.";
+        return true;
+      }
+
+      // 지난 호 제목 — 주제 중복을 피하려고 넘긴다
+      function pastTopics() {
+        var out = [];
+        S.list.filter(function (i) { return i["채널"] === S.draft["채널"]; })
+          .slice(0, 6).forEach(function (i) {
+            (i["꼭지"] || []).forEach(function (t) { if (t["제목"]) out.push(t["제목"]); });
+          });
+        return out.slice(0, 20);
+      }
+
+      // 후보 버튼 — 누르면 입력칸에 들어간다
+      function showCands(box, list, pick) {
+        box.textContent = "";
+        box.hidden = false;
+        if (!list.length) { box.textContent = "후보를 받지 못했습니다."; return; }
+        list.forEach(function (c) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "topic-cand";
+          if (typeof c === "string") {
+            b.textContent = c;
+          } else {
+            b.textContent = c["제목"];
+            if (c["방향"]) {
+              var why = document.createElement("span");
+              why.className = "cand-why";
+              why.textContent = c["방향"];
+              b.appendChild(why);
+            }
+          }
+          b.addEventListener("click", function () { pick(c); });
+          box.appendChild(b);
+        });
+      }
+
+      function runAi(btn, label, box, req, done) {
+        btn.disabled = true;
+        var was = btn.textContent;
+        btn.textContent = label;
+        box.hidden = false;
+        box.textContent = "요청 중입니다…";
+        req.then(done).catch(function (err) {
+          box.textContent = err.message || "요청이 실패했습니다.";
+        }).finally(function () {
+          btn.disabled = false;
+          btn.textContent = was;
+        });
+      }
+
+      function aiTopic(i, btn) {
+        var a = S.draft["기사"][i], box = aiBox(i);
+        if (needAuth(box)) return;
+        runAi(btn, "추천 받는 중…", box, window.mgAuth.api("/ai/topic", {
+          method: "POST",
+          body: { "채널": chFull(), "카테고리": a["카테고리"], "지난주제": pastTopics() }
+        }), function (d) {
+          showCands(box, d["후보"] || [], function (c) {
+            a["제목"] = c["제목"];
+            a["방향"] = c["방향"] || "";
+            saveDraft(S.draft);
+            renderEdit();
+          });
+        });
+      }
+
+      function aiTitle(i, btn) {
+        var a = S.draft["기사"][i], box = aiBox(i);
+        if (!String(a["제목"] || "").trim()) {
+          box.hidden = false;
+          box.textContent = "다듬을 가제를 먼저 쓰세요.";
+          return;
+        }
+        if (needAuth(box)) return;
+        runAi(btn, "다듬는 중…", box, window.mgAuth.api("/ai/title", {
+          method: "POST",
+          body: { "가제": a["제목"], "카테고리": a["카테고리"], "채널": chFull() }
+        }), function (d) {
+          showCands(box, d["후보"] || [], function (t) {
+            a["제목"] = t;
+            saveDraft(S.draft);
+            renderEdit();
+          });
+        });
+      }
+
+      // 본문 생성 — 월간은 수 분 걸린다. 경과 시간을 계속 보여주고 취소 불가를 알린다.
+      function aiColumn(i, btn) {
+        var a = S.draft["기사"][i], box = aiBox(i);
+        if (!String(a["제목"] || "").trim()) {
+          box.hidden = false;
+          box.textContent = "제목을 먼저 정하세요. 주제 추천으로 받을 수도 있습니다.";
+          return;
+        }
+        if (needAuth(box)) return;
+        var monthly = S.draft["채널"] === "월간";
+        var t0 = Date.now();
+        box.hidden = false;
+        function tick() {
+          var s = Math.round((Date.now() - t0) / 1000);
+          box.textContent = "본문을 쓰고 있습니다 — " + Math.floor(s / 60) + "분 " + pad2(s % 60) + "초 경과. "
+            + (monthly ? "월간은 최대 5분까지 걸립니다. " : "")
+            + "중간에 취소할 수 없습니다. 이 화면을 닫지 마세요.";
+        }
+        tick();
+        var timer = setInterval(tick, 1000);
+        btn.disabled = true;
+        var was = btn.textContent;
+        btn.textContent = "생성 중…";
+        window.mgAuth.api("/ai/column", {
+          method: "POST",
+          body: { "제목": a["제목"], "채널": chFull(), "카테고리": a["카테고리"], "방향": a["방향"] || "" }
+        }).then(function (d) {
+          clearInterval(timer);
+          a["부제"] = d["부제"] || a["부제"];
+          a["요약"] = toLines(d["요약"]);
+          a["한마디"] = toLines(d["한마디"]);
+          a["본문"] = Array.isArray(d["본문"]) ? d["본문"] : [];
+          saveDraft(S.draft);
+          renderEdit();
+        }).catch(function (err) {
+          clearInterval(timer);
+          box.textContent = (err.message || "본문을 받지 못했습니다.") + " 제목·방향을 손보고 다시 시도하세요.";
+        }).finally(function () {
+          clearInterval(timer);
+          btn.disabled = false;
+          btn.textContent = was;
+        });
+      }
+
+      function aiPreface(btn) {
+        var box = el("preface-out");
+        var titles = (S.draft["기사"] || []).map(function (a) { return a["제목"]; }).filter(Boolean);
+        if (!titles.length) {
+          box.hidden = false;
+          box.textContent = "칼럼 제목을 먼저 정하세요.";
+          return;
+        }
+        if (needAuth(box)) return;
+        runAi(btn, "쓰는 중…", box, window.mgAuth.api("/ai/preface", {
+          method: "POST",
+          body: { "채널": chFull(), "호수": String(S.draft["호수"]), "제목들": titles }
+        }), function (d) {
+          var paras = d["문단"] || [];
+          if (!paras.length) { box.textContent = "서문을 받지 못했습니다."; return; }
+          S.draft["편집장의말"] = paras;
+          saveDraft(S.draft);
+          box.hidden = true;
+          renderEdit();
+        });
+      }
+
+      // ══ 이미지 업로드 ══════════════════════════════════════════════
+      var imgTarget = null;
+
+      function setImage(target, path) {
+        if (target === "cover") S.draft["커버이미지"] = path;
+        else S.draft["기사"][Number(target.slice(4))]["이미지"] = path;
+        saveDraft(S.draft);
+        renderEdit();
+      }
+
+      function uploadImage(file, target) {
+        if (!file || !/^image\//.test(file.type)) {
+          publishNote("이미지 파일만 올릴 수 있습니다.", true);
+          return;
+        }
+        if (!window.mgAuth || !window.mgAuth.token()) {
+          publishNote("로그인이 필요합니다. 진입 화면에서 구글 계정으로 로그인하세요.", true);
+          return;
+        }
+        publishNote("사진을 올리는 중입니다…");
+        fetch(window.mgAuth.apiBase() + "/media/upload", {
+          method: "POST",
+          headers: { "Content-Type": file.type, "Authorization": "Bearer " + window.mgAuth.token() },
+          body: file
+        }).then(function (r) {
+          return r.json().then(function (d) {
+            if (!r.ok) throw new Error(d.error || "업로드 실패");
+            return d;
+          });
+        }).then(function (info) {
+          setImage(target, info["주소"]);
+          publishNote("사진을 올렸습니다.");
+        }).catch(function (err) {
+          publishNote(err.message || "업로드에 실패했습니다.", true);
+        });
+      }
+
+      el("img-input").addEventListener("change", function () {
+        if (imgTarget && this.files[0]) uploadImage(this.files[0], imgTarget);
+        this.value = "";
+      });
+
+      // ══ 발행 ═══════════════════════════════════════════════════════
+      function publishNote(text, bad) {
+        var p = el("publish-msg");
+        p.textContent = text;
+        p.hidden = !text;
+        p.classList.toggle("bad", !!bad);
+      }
+
+      function doPublish(btn) {
+        var d = S.draft;
+        var missing = checklist(d).filter(function (i) { return !i.ok; });
+        if (!(d["기사"][0] && d["기사"][0]["제목"])) {
+          publishNote("첫 칼럼 제목이 비어 있습니다. 호 제목으로 쓰이므로 반드시 필요합니다.", true);
+          return;
+        }
+        if (missing.length && !window.confirm(
+          missing.length + "개 항목이 비어 있습니다.\n\n"
+          + missing.map(function (i) { return "· " + i.k; }).join("\n")
+          + "\n\n이대로 발행할까요?")) return;
+        if (!window.mgAuth || !window.mgAuth.token()) {
+          publishNote("로그인이 필요합니다. 진입 화면에서 구글 계정으로 로그인하세요.", true);
+          return;
+        }
+        btn.disabled = true;
+        btn.textContent = "발행 중…";
+        window.mgAuth.api("/care/publish", { method: "POST", body: payload(d) })
+          .then(function (r) {
+            dropDraft(d.id);
+            return care.loadIssueList().then(function (list) {
+              S.list = list;
+              publishNote("");
+              el("publish-msg").hidden = false;
+              el("publish-msg").classList.remove("bad");
+              el("publish-msg").innerHTML = "발행되었습니다. "
+                + '<a href="issue.html?id=' + encodeURIComponent(r.id) + '" target="_blank" rel="noopener">지면 열기</a>';
+              syncKakao();
+            });
+          })
+          .catch(function (err) { publishNote(err.message || "발행에 실패했습니다.", true); })
+          .finally(function () {
+            btn.disabled = false;
+            btn.textContent = "발행하기";
+          });
+      }
+
+      // ══ 이벤트 ═════════════════════════════════════════════════════
+      // 채널 토글
+      el("ch-tabs").addEventListener("click", function (e) {
+        var b = e.target.closest("button[data-ch]");
+        if (!b) return;
+        S.ch = b.dataset.ch;
+        this.querySelectorAll("button").forEach(function (x) {
+          var on = x === b;
+          x.classList.toggle("active", on);
+          x.setAttribute("aria-selected", String(on));
+        });
+        renderList();
+      });
+
+      // 목록 — 새 호 만들기 · 편집 · 삭제
+      el("view-list").addEventListener("click", function (e) {
+        var go = e.target.closest("#new-go");
+        if (go) {
+          var iso;
+          if (S.ch === "주간") iso = el("new-date").value;
+          else iso = el("new-month").value ? el("new-month").value + "-01" : "";
+          if (!iso) return;
+          var d = createIssue(S.ch, iso);
+          if (d) openDraft(d);
+          return;
+        }
+        var ed = e.target.closest("button[data-edit]");
+        if (ed) {
+          var id = ed.dataset.edit;
+          var draft = readDraft(id);
+          if (draft) { openDraft(draft); return; }
+          // 발행된 호를 다시 편집 — 본문을 내려받아 초안으로 되돌린다
+          var meta = S.list.find(function (i) { return i.id === id; });
+          if (!meta) return;
+          ed.disabled = true;
+          care.loadIssueBody(meta).then(function (body) {
+            var d2 = {
+              id: meta.id, "채널": meta["채널"], "호수": meta["호수"], "발행일": meta["발행일"],
+              "주차라벨": meta["주차라벨"], "발행인": meta["발행인"] || "안창민",
+              "커버이미지": meta["커버이미지"] || "", "편집장의말": body["편집장의말"] || [],
+              "기사": (body["기사"] || []).map(function (a, n) {
+                return {
+                  "번호": n + 1, "카테고리": a["카테고리"] || "", "제목": a["제목"] || "",
+                  "부제": a["부제"] || "", "요약": a["요약"] || [], "한마디": a["한마디"] || [],
+                  "본문": a["본문"] || [], "이미지": a["이미지"] || "", "방향": ""
+                };
+              })
+            };
+            saveDraft(d2);
+            openDraft(d2);
+          }).catch(function () {
+            ed.disabled = false;
+          });
+          return;
+        }
+        var del = e.target.closest("button[data-del]");
+        if (del && window.confirm("이 초안을 지웁니다. 되돌릴 수 없습니다.")) {
+          dropDraft(del.dataset.del);
+          renderList();
+        }
+      });
+
+      el("back-list").addEventListener("click", showList);
+
+      // 편집 화면 — 클릭 위임
+      el("view-edit").addEventListener("click", function (e) {
+        var t = e.target;
+
+        var toggle = t.closest("button[data-col-toggle]");
+        if (toggle) {
+          var n = Number(toggle.dataset.colToggle);
+          S.open = S.open === n ? -1 : n;
+          renderCols();
+          return;
+        }
+
+        var ai = t.closest("button[data-ai]");
+        if (ai) {
+          var ci = Number(ai.dataset.col);
+          if (ai.dataset.ai === "topic") aiTopic(ci, ai);
+          else if (ai.dataset.ai === "title") aiTitle(ci, ai);
+          else aiColumn(ci, ai);
+          return;
+        }
+
+        if (t.closest("#preface-ai")) { aiPreface(t.closest("#preface-ai")); return; }
+
+        var slot = t.closest(".slot-view");
+        if (slot) {
+          imgTarget = slot.dataset.slot;
+          el("img-input").click();
+          return;
+        }
+
+        var rm = t.closest("button[data-imgdel]");
+        if (rm) { setImage(rm.dataset.imgdel, ""); return; }
+
+        if (t.closest("#btn-preview")) { openPreview(); return; }
+        if (t.closest("#btn-publish")) { doPublish(t.closest("#btn-publish")); return; }
+        if (t.closest("#btn-kakao")) {
+          var live = S.list.find(function (i) { return i.id === S.draft.id; });
+          if (live) care.openCompose(live);
+        }
+      });
+
+      // 이미지 슬롯 — 끌어다 놓기
+      el("view-edit").addEventListener("dragover", function (e) {
+        var slot = e.target.closest(".slot-view");
+        if (!slot) return;
+        e.preventDefault();
+        slot.classList.add("over");
+      });
+      el("view-edit").addEventListener("dragleave", function (e) {
+        var slot = e.target.closest(".slot-view");
+        if (slot) slot.classList.remove("over");
+      });
+      el("view-edit").addEventListener("drop", function (e) {
+        var slot = e.target.closest(".slot-view");
+        if (!slot) return;
+        e.preventDefault();
+        slot.classList.remove("over");
+        uploadImage(e.dataTransfer && e.dataTransfer.files[0], slot.dataset.slot);
+      });
+
+      // 키보드로도 슬롯을 연다
+      el("view-edit").addEventListener("keydown", function (e) {
+        var slot = e.target.closest(".slot-view");
+        if (!slot || (e.key !== "Enter" && e.key !== " ")) return;
+        e.preventDefault();
+        imgTarget = slot.dataset.slot;
+        el("img-input").click();
+      });
+
+      // 입력 — 값은 즉시 초안에 반영하고 글자 수만 갱신한다(다시 그리면 포커스를 잃는다)
+      el("view-edit").addEventListener("input", function (e) {
+        var f = e.target.closest("[data-f]");
+        if (!f || !S.draft) return;
+        var key = f.dataset.f;
+        var v = f.value;
+        if (key === "편집장의말") {
+          S.draft["편집장의말"] = toLines(v);
+          el("preface-cnt").textContent = linesLen(S.draft["편집장의말"]) + "자";
+        } else {
+          var a = S.draft["기사"][Number(f.dataset.col)];
+          if (key === "요약" || key === "한마디") a[key] = toLines(v);
+          else if (key === "본문") a[key] = textToBlocks(v);
+          else a[key] = v;
+
+          var cnt = f.parentNode.querySelector('[data-cnt]');
+          if (cnt && key === "요약") {
+            var n2 = linesLen(a["요약"]);
+            cnt.textContent = n2 + "자";
+            cnt.classList.toggle("warn", n2 > 0 && (n2 < 150 || n2 > 200));
+          } else if (cnt && key === "본문") {
+            cnt.textContent = blocksLen(a["본문"]) + "자";
+          }
+          var meta = el("col-list").querySelector('[data-meta="' + f.dataset.col + '"]');
+          if (meta) meta.textContent = colMeta(a);
+        }
+        saveDraft(S.draft);
+        renderReady();
+      });
+
+      // ══ 미리보기 ═══════════════════════════════════════════════════
+      function openPreview() {
+        var p = payload(S.draft);
+        el("preview-body").innerHTML = care.issueHtml(p["목록항목"], p["본문"], S.list, null);
+        el("preview-back").hidden = false;
+        document.body.style.overflow = "hidden";
+      }
+      function closePreview() {
+        el("preview-back").hidden = true;
+        document.body.style.overflow = "";
+      }
+      el("preview-close").addEventListener("click", closePreview);
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && !el("preview-back").hidden) closePreview();
+      });
+
+      // ══ 기동 ═══════════════════════════════════════════════════════
       care.bindSenderRow();
       care.bindCompose();
 
-      // 발행 D-day — 주간은 다음 월요일, 월간은 오늘 이후 가장 가까운 첫째 월요일
+      // 발행 예정일 — 주간은 다음 월요일, 월간은 다음 첫째 월요일
       (function () {
         var now = new Date();
         var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -163,390 +932,15 @@
           var diff = Math.round((d - today) / 86400000);
           return name + " " + (d.getMonth() + 1) + "월 " + d.getDate() + "일 " + (diff === 0 ? "오늘 발행" : "D-" + diff);
         }
-        document.getElementById("pub-dday").textContent = label("주간", weekly) + " · " + label("월간", monthly);
+        el("pub-dday").textContent = label("주간", weekly) + " · " + label("월간", monthly);
       })();
 
-      // 서버 발행분 + 정적 저장소 병합 목록 (서버가 죽어도 정적분은 그대로)
-      care.loadIssueList()
-        .then(function (list) {
-          ALL = list;
-          buildActions();
-          buildDrafts();
-        })
-        .catch(function () {});
-
-      // 채널별 최신 발행호 카톡 문구 — 주간·월간 하나씩.
-      // 팀원 에디션 버튼은 폐기(2026-07-26): 로그인한 계정 이름으로 나가므로
-      // 총관리자가 팀원 것까지 대신 만들 이유가 없다.
-      function buildActions() {
-        var actions = document.getElementById("pub-desk-actions");
-        actions.innerHTML = "";
-        ["주간", "월간"].forEach(function (ch) {
-          var latest = care.latestByChannel(ALL, ch);
-          if (!latest) return;
-          var btn = document.createElement("button");
-          btn.type = "button";
-          btn.textContent = ch + " 최신호 카톡 문구 (" + latest["호수"] + "호)";
-          btn.addEventListener("click", function () { care.openCompose(latest); });
-          actions.appendChild(btn);
-        });
-      }
-
-      // 작성 중인 호 (상태: 초안) — 검토 링크와 발행 전환 안내
-      function buildDrafts() {
-        var drafts = care.drafts(ALL);
-        document.getElementById("draft-block").hidden = !drafts.length;
-        document.getElementById("draft-list").innerHTML = drafts.map(function (i) {
-          return '<div class="draft-item">'
-            + '<div><strong>' + esc(i["채널"]) + " " + esc(i["발행인"] || "안창민") + " " + esc(i["호수"]) + "호</strong>"
-            + '<span class="draft-meta">' + esc(i["주차라벨"] || i["발행일"] || "") + " · " + esc(i["제목"] || "제목 미정") + "</span></div>"
-            + '<div class="draft-actions">'
-            + '<a class="btn" href="issue.html?id=' + encodeURIComponent(i.id) + '">리더에서 검토</a>'
-            + '<button class="btn" type="button" data-pub-cmd="' + esc(i.id) + '">발행 명령 복사</button>'
-            + "</div></div>";
-        }).join("");
-      }
-      document.getElementById("draft-list").addEventListener("click", function (e) {
-        var btn = e.target.closest("button[data-pub-cmd]");
-        if (!btn) return;
-        window.mg.copy("python pipeline/publish_care_issue.py --id " + btn.dataset.pubCmd, btn);
-      });
-
-      // 발행하기 — 붙여넣은 발행 JSON({ 목록항목, 본문 })을 서버에 올린다.
-      // 성공하면 지면 링크를 보여주고 최신호·초안 구획을 다시 그린다.
-      var pubBtn = document.getElementById("publish-btn");
-      var pubMsg = document.getElementById("publish-msg");
-      function publishNote(text, bad) {
-        pubMsg.textContent = text;
-        pubMsg.hidden = false;
-        pubMsg.classList.toggle("bad", !!bad);
-      }
-      pubBtn.addEventListener("click", function () {
-        var box = document.getElementById("publish-json");
-        var raw = box.value.trim();
-        if (!raw) { publishNote("발행 JSON을 먼저 붙여넣으세요.", true); box.focus(); return; }
-        var payload;
-        try { payload = JSON.parse(raw); }
-        catch (e) { publishNote("JSON 형식 오류 — 붙여넣은 내용을 확인하세요.", true); return; }
-        if (!window.mgAuth || !window.mgAuth.token()) {
-          publishNote("로그인이 필요합니다. 진입 화면에서 구글 계정으로 로그인하세요.", true);
-          return;
-        }
-        pubBtn.disabled = true;
-        pubBtn.textContent = "발행 중…";
-        window.mgAuth.api("/care/publish", { method: "POST", body: payload })
-          .then(function (d) {
-            box.value = "";
-            pubMsg.hidden = false;
-            pubMsg.classList.remove("bad");
-            pubMsg.innerHTML = "발행되었습니다. "
-              + '<a href="issue.html?id=' + encodeURIComponent(d.id) + '" target="_blank" rel="noopener">지면 열기</a>'
-              + " — 카톡 문구는 아래 최신호 버튼으로 만드세요.";
-            return care.loadIssueList().then(function (list) {
-              ALL = list;
-              buildActions();
-              buildDrafts();
-            });
-          })
-          .catch(function (err) {
-            publishNote(err.message || "발행에 실패했습니다.", true);
-          })
-          .finally(function () {
-            pubBtn.disabled = false;
-            pubBtn.textContent = "발행하기";
-          });
-      });
-
-      // 이번 호 기획 — 가제 입력이 공정의 시작이다. 입력값은 브라우저에 저장된다
-      var TOPIC_SLOTS = {
-        "주간": ["시사", "경제", "교양", "보험"],
-        "월간": ["칼럼 1", "칼럼 2", "칼럼 3"]
-      };
-      var TOPICS_KEY = "mg_care_topics";
-      var planChannel = "주간";
-
-      function loadTopics() {
-        try {
-          var t = JSON.parse(localStorage.getItem(TOPICS_KEY));
-          if (t && typeof t === "object") return t;
-        } catch (e) {}
-        return { "주간": {}, "월간": {} };
-      }
-      var topics = loadTopics();
-
-      function renderTopics() {
-        var box = document.getElementById("topic-inputs");
-        box.innerHTML = TOPIC_SLOTS[planChannel].map(function (slot) {
-          var val = (topics[planChannel] || {})[slot] || "";
-          return '<div class="topic-row"><span class="topic-cat">' + esc(slot) + "</span>"
-            + '<input type="text" data-slot="' + esc(slot) + '" value="' + esc(val) + '" placeholder="가제를 쓰세요 — 예: 국민연금 개편, 내 보험료는 어떻게 되나" aria-label="' + esc(slot) + ' 가제">'
-            + '<button type="button" class="btn topic-polish" data-polish="' + esc(slot) + '">제목 다듬기</button>'
-            + '<div class="topic-suggest" data-suggest="' + esc(slot) + '" hidden></div></div>';
-        }).join("");
-      }
-
-      // 제목 다듬기 — 서버가 Claude에 중계한다. 후보를 누르면 가제 칸에 들어간다.
-      function polishTitle(slot, btn) {
-        var input = document.querySelector('input[data-slot="' + slot + '"]');
-        var box = document.querySelector('[data-suggest="' + slot + '"]');
-        var draft = (input.value || "").trim();
-        if (!draft) { input.focus(); return; }
-        if (!window.mgAuth || !window.mgAuth.token()) {
-          box.hidden = false;
-          box.textContent = "로그인이 필요합니다.";
-          return;
-        }
-        btn.disabled = true;
-        var label = btn.textContent;
-        btn.textContent = "다듬는 중…";
-        box.hidden = false;
-        box.textContent = "";
-        window.mgAuth.api("/ai/title", {
-          method: "POST",
-          body: { "가제": draft, "카테고리": slot, "채널": planChannel }
-        }).then(function (data) {
-          box.textContent = "";
-          (data["후보"] || []).forEach(function (t) {
-            var b = document.createElement("button");
-            b.type = "button";
-            b.className = "topic-cand";
-            b.textContent = t;
-            b.addEventListener("click", function () {
-              input.value = t;
-              input.dispatchEvent(new Event("input", { bubbles: true }));
-              box.hidden = true;
-            });
-            box.appendChild(b);
-          });
-        }).catch(function (err) {
-          box.textContent = err.message || "다듬지 못했습니다.";
-        }).finally(function () {
-          btn.disabled = false;
-          btn.textContent = label;
-        });
-      }
-      renderTopics();
-
-      document.getElementById("topic-inputs").addEventListener("click", function (e) {
-        var btn = e.target.closest("button[data-polish]");
-        if (btn) polishTitle(btn.dataset.polish, btn);
-      });
-
-      document.getElementById("topic-inputs").addEventListener("input", function (e) {
-        var input = e.target.closest("input[data-slot]");
-        if (!input) return;
-        topics[planChannel] = topics[planChannel] || {};
-        topics[planChannel][input.dataset.slot] = input.value;
-        localStorage.setItem(TOPICS_KEY, JSON.stringify(topics));
-      });
-
-      var planTabs = document.getElementById("plan-channel");
-      planTabs.querySelectorAll("button").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          planTabs.querySelectorAll("button").forEach(function (b) { b.classList.toggle("active", b === btn); });
-          planChannel = btn.dataset.ch;
-          renderTopics();
-        });
-      });
-
-      // ── 지면 사진 업로드 — 끌어다 놓기 · 붙여넣기 · 파일 고르기 셋 다 같은 경로로 처리한다.
-      // 서버가 파일명을 새로 만들고 형식·크기를 검사한다(브라우저 검사는 안내용일 뿐).
-      var dropZone = document.getElementById("drop-zone");
-      var mediaInput = document.getElementById("media-input");
-      var mediaMsg = document.getElementById("media-msg");
-      var mediaList = document.getElementById("media-list");
-
-      function mediaNote(text, bad) {
-        mediaMsg.textContent = text;
-        mediaMsg.hidden = !text;
-        mediaMsg.classList.toggle("bad", !!bad);
-      }
-
-      function addUploaded(info) {
-        var item = document.createElement("div");
-        item.className = "media-item";
-        var img = document.createElement("img");
-        img.src = info["주소"];
-        img.alt = "";
-        img.loading = "lazy";
-        var path = document.createElement("code");
-        path.textContent = info["주소"];
-        var copy = document.createElement("button");
-        copy.type = "button";
-        copy.className = "btn";
-        copy.textContent = "주소 복사";
-        copy.addEventListener("click", function () { window.mg.copy(info["주소"], copy); });
-        item.appendChild(img);
-        item.appendChild(path);
-        item.appendChild(copy);
-        mediaList.appendChild(item);
-      }
-
-      function uploadFiles(files) {
-        var list = Array.prototype.slice.call(files || []).filter(function (f) {
-          return /^image\//.test(f.type);
-        });
-        if (!list.length) { mediaNote("이미지 파일만 올릴 수 있습니다.", true); return; }
-        if (!window.mgAuth || !window.mgAuth.token()) {
-          mediaNote("로그인이 필요합니다. 진입 화면에서 구글 계정으로 로그인하세요.", true);
-          return;
-        }
-        mediaNote("올리는 중입니다…");
-        var done = 0;
-        list.forEach(function (f) {
-          fetch(window.mgAuth.apiBase() + "/media/upload", {
-            method: "POST",
-            headers: {
-              "Content-Type": f.type,
-              "Authorization": "Bearer " + window.mgAuth.token()
-            },
-            body: f
-          }).then(function (r) {
-            return r.json().then(function (d) {
-              if (!r.ok) throw new Error(d.error || "업로드 실패");
-              return d;
-            });
-          }).then(function (info) {
-            addUploaded(info);
-            done += 1;
-            mediaNote(done + "장 올렸습니다. 주소를 복사해 기사 이미지 경로에 넣으세요.");
-          }).catch(function (err) {
-            mediaNote(err.message || "업로드에 실패했습니다.", true);
-          });
-        });
-      }
-
-      dropZone.addEventListener("click", function () { mediaInput.click(); });
-      dropZone.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); mediaInput.click(); }
-      });
-      mediaInput.addEventListener("change", function () { uploadFiles(mediaInput.files); mediaInput.value = ""; });
-
-      ["dragenter", "dragover"].forEach(function (t) {
-        dropZone.addEventListener(t, function (e) { e.preventDefault(); dropZone.classList.add("over"); });
-      });
-      ["dragleave", "drop"].forEach(function (t) {
-        dropZone.addEventListener(t, function (e) { e.preventDefault(); dropZone.classList.remove("over"); });
-      });
-      dropZone.addEventListener("drop", function (e) {
-        uploadFiles(e.dataTransfer && e.dataTransfer.files);
-      });
-
-      // 붙여넣기 — 화면 어디서 눌러도 받는다 (입력칸에 타이핑 중일 때는 방해하지 않는다)
-      document.addEventListener("paste", function (e) {
-        if (e.target.closest("input, textarea")) return;
-        var items = (e.clipboardData && e.clipboardData.files) || [];
-        if (items.length) { e.preventDefault(); uploadFiles(items); }
-      });
-
-      // 집필 지시문 — 가제 + 선택한 참조 기사 + 공정 명령을 한 덩어리로
-      document.getElementById("news-brief").addEventListener("click", function () {
-        var slots = TOPIC_SLOTS[planChannel];
-        var filled = slots.filter(function (s) { return ((topics[planChannel] || {})[s] || "").trim(); });
-        if (!filled.length) {
-          document.getElementById("news-count").textContent = "가제를 먼저 입력하세요";
-          return;
-        }
-        var draft = care.drafts(ALL).find(function (i) { return i["채널"] === planChannel; });
-        var lines = [planChannel + " 발행 준비. 아래 가제로 이번 호 기사를 작성해줘.", ""];
-        if (draft) {
-          lines.push("초안: " + draft.id + " (" + draft["본문파일"] + ") — 이 뼈대를 채운다.");
-        } else {
-          lines.push("초안이 아직 없다. 먼저 python pipeline/new_care_issue.py --channel " + planChannel + " 로 생성한다.");
-        }
-        lines.push("각 가제는 제목을 다듬어 확정하고, 근거는 아래 두 경로로 수집해 교차 확인한다:");
-        lines.push('  1) python pipeline/collect_news.py --query "가제 키워드" (네이버 뉴스+백과사전)');
-        lines.push("  2) 웹검색 (최신 수치·발표 확인)");
-        lines.push("기사마다 지면 사진을 붙인다. 후보는 아래로 찾고, 고른 파일은");
-        lines.push("data/care/issues/<id>/ 에 두고 기사의 이미지 경로에 기록한다:");
-        lines.push('  python pipeline/collect_news.py --query "키워드" --source image');
-        lines.push("  출처가 분명하지 않거나 워터마크가 박힌 사진은 쓰지 않는다.");
-        lines.push("작성 원칙은 docs/care-workflow.md 2~3단계. 완성 후 publish_care_issue.py 검증까지.", "");
-        lines.push("[가제]");
-        filled.forEach(function (s) {
-          lines.push("- " + s + ": " + topics[planChannel][s].trim());
-        });
-        var keys = Object.keys(selected);
-        if (keys.length) {
-          lines.push("", "[참조 기사 — 반드시 근거에 포함]");
-          keys.forEach(function (k) {
-            var a = selected[k];
-            lines.push("- [" + k.split("|")[0] + "] " + a["제목"]);
-            lines.push("  " + a["링크"]);
-          });
-        }
-        window.mg.copy(lines.join("\n"), this);
-      });
-
-      // 주제 추천 — 가제가 안 떠오를 때. 추천 세션이 최신 뉴스와 지난 호 이력을 보고 제안한다
-      document.getElementById("topic-suggest").addEventListener("click", function () {
-        var slots = TOPIC_SLOTS[planChannel].join(" / ");
-        var lines = [
-          planChannel + " 발행 기획. 이번 호에 실을 기사 주제와 가제를 추천해줘.",
-          "",
-          "- 꼭지 구성: " + slots + " — 꼭지마다 후보 3개씩, 각 후보는 가제(제목형) + 한 줄 이유",
-          "- 근거: python pipeline/collect_news.py 로 최신 뉴스를 수집해 훑고, 웹검색으로 보강한다",
-          "- 중복 방지: data/care/issues.json 의 지난 호 꼭지 이력과 겹치지 않게 한다",
-          "- 관점: 고객(보험 가입자·가장·자영업자)의 돈과 보장에 닿는 주제를 우선한다",
-          planChannel === "월간"
-            ? "- 월간 기준: 반년 뒤에 읽어도 유효한 주제만 (시의성 소재는 주간으로 넘긴다)"
-            : "- 주간 기준: 이번 주에 읽어야 가치 있는 시의성 주제 우선",
-          "",
-          "추천이 확정되면 발행 데스크의 가제 칸에 옮겨 적고 집필 지시문으로 이어간다."
-        ];
-        window.mg.copy(lines.join("\n"), this);
-      });
-
-      // 뉴스 후보 — collect_news.py 산출물. 없으면 수집 방법 안내
-      var selected = {};
-      fetch("../../data/care/desk/candidates.json")
-        .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
-        .then(renderNews)
-        .catch(function () {
-          document.getElementById("news-box").innerHTML =
-            '<div class="placeholder-panel">수집된 후보가 없습니다. 터미널에서 다음을 실행하면 이 자리에 후보가 표시됩니다.'
-            + '<br><code>python pipeline/collect_news.py</code>'
-            + "<br>네이버 API 키가 필요합니다 (pipeline/collect_news.py 상단 안내 참조).</div>";
-        });
-
-      function renderNews(data) {
-        var cats = data["카테고리별"] || {};
-        var names = Object.keys(cats);
-        if (!names.length) {
-          document.getElementById("news-box").innerHTML =
-            '<div class="placeholder-panel">후보 파일은 있으나 기사가 없습니다. collect_news.py를 다시 실행하세요.</div>';
-          return;
-        }
-        // 카테고리마다 15건씩이라 다 펼치면 화면이 길어진다 — 접어두고 필요한 것만 연다.
-        // 첫 카테고리만 열어 무엇이 들었는지 바로 보이게 한다.
-        var html = ['<p class="news-collected">수집 시각: ' + esc(data["수집일시"] || "미기재") + "</p>"];
-        names.forEach(function (cat, ci) {
-          var rows = cats[cat] || [];
-          html.push('<details class="news-group"' + (ci === 0 ? " open" : "") + ">");
-          html.push('<summary class="news-cat">' + esc(cat)
-            + '<span class="news-cat-count">' + rows.length + "건</span></summary>");
-          rows.forEach(function (a, idx) {
-            var key = cat + "|" + idx;
-            html.push('<label class="news-item">'
-              + '<input type="checkbox" data-key="' + esc(key) + '">'
-              + "<span><strong>" + esc(a["제목"]) + "</strong>"
-              + '<span class="news-desc">' + esc(a["요약"] || "") + "</span>"
-              + '<span class="news-meta">' + esc((a["발행일시"] || "").slice(0, 16)) + ' · <a href="' + esc(window.mg.safeUrl(a["링크"])) + '" target="_blank" rel="noopener">원문</a></span>'
-              + "</span></label>");
-          });
-          html.push("</details>");
-        });
-        var box = document.getElementById("news-box");
-        box.innerHTML = html.join("");
-        box.addEventListener("change", function (e) {
-          var cb = e.target.closest("input[data-key]");
-          if (!cb) return;
-          var parts = cb.dataset.key.split("|");
-          if (cb.checked) selected[cb.dataset.key] = cats[parts[0]][Number(parts[1])];
-          else delete selected[cb.dataset.key];
-          document.getElementById("news-count").textContent = "참조 기사 " + Object.keys(selected).length + "건 선택";
-        });
-      }
+      renderList();
+      care.loadIssueList().then(function (list) {
+        S.list = list;
+        if (S.draft) syncKakao();
+        else renderList();
+      }).catch(function () {});
     })();
   </script>
 </body>
