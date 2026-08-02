@@ -6,23 +6,23 @@
 
 :root {
   /* 디자인 개정 10차(2026-07-20) 팔레트 정합 — platform.css와 동일 토큰 */
-  --bg: #f5f7fa;
+  --bg: #faf9f7; /* 종이색 — 에디토리얼 전환 (2026-08-02) */
   --surface: #ffffff;
   --ink: #172033;
   --ink-sub: #596579;
   --ink-faint: #647082; /* 구값 #717d8f는 흰 바탕 실측 4.17:1로 AA 미달 — platform.css --platform-faint 교정(2026-07-29)과 동일 값으로 정합 (2026-07-31) */
-  --accent: #0758d6;      /* 버튼·활성상태·링크 전용 */
-  --accent-dark: #0648ad;
-  --accent-bg: #edf4ff;
-  --navy: #102a4e;        /* 다크 사이드바 */
-  --cyan: #00a6c7;        /* 사이드바 상단 라인 */
+  --accent: #bc003a;      /* 버튼·활성상태·링크 전용 */
+  --accent-dark: #980130;
+  --accent-bg: #ffeff0;
+  --navy: #481820;        /* 다크 사이드바 */
+  --cyan: #e05c72;        /* 사이드바 상단 라인 */
   --paid: #16a34a;        /* 상태색: 지급 */
   --denied: #dc2626;      /* 상태색: 부지급 */
   --partial: #d97706;     /* 상태색: 일부지급 */
-  --line: #dfe4eb;
-  --line-strong: #cbd3de;
+  --line: #e2ddd6;
+  --line-strong: #c9c2b8;
   --radius: 6px;
-  --shadow: 0 1px 3px rgba(16, 42, 78, 0.06);
+  --shadow: 0 1px 3px rgba(23, 24, 31, 0.06);
   --sidebar-w: 240px;
   --gold-print: #c9a14a;  /* 카톡카드·인쇄물 템플릿 전용 */
 }
@@ -34,7 +34,7 @@
   --ink: #e7eaf0;
   --ink-sub: #9aa3b2;
   --ink-faint: #6b7280;
-  --accent-bg: rgba(37, 99, 235, 0.16);
+  --accent-bg: rgba(188, 0, 58, 0.16);
   --line: #2a3242;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
@@ -1861,7 +1861,7 @@ body.magazine :focus-visible {
 .topic-row input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(7, 88, 214, 0.09);
+  box-shadow: 0 0 0 2px rgba(188, 0, 58, 0.10);
 }
 
 .news-sub {
@@ -2162,7 +2162,7 @@ a.latest-card {
 }
 
 .latest-card:hover {
-  box-shadow: 0 2px 8px rgba(16, 42, 78, 0.14);
+  box-shadow: 0 2px 8px rgba(23, 24, 31, 0.14);
 }
 
 .latest-card .latest-bg {
