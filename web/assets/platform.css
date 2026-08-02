@@ -1,6 +1,6 @@
 :root {
   /* 디자인 개정 10차 (2026-07-20): 스레드 인텔리전스 언어 — 선 중심, 2-톤, 촘촘한 밀도 */
-  --platform-bg: #f5f7fa;
+  --platform-bg: #faf9f7; /* 종이색 — 에디토리얼 전환 (2026-08-02). 차가운 회색 #f5f7fa 폐기 */
   --platform-surface: #ffffff;
   --platform-ink: #172033;
   --platform-muted: #596579;
@@ -11,8 +11,8 @@
   --platform-navy: #481820;
   --platform-navy-deep: #331016;
   --platform-cyan: #e05c72;
-  --platform-line: #dfe4eb;
-  --platform-line-strong: #cbd3de;
+  --platform-line: #e2ddd6; /* 종이 위 괘선 — 따뜻한 회색 */
+  --platform-line-strong: #c9c2b8;
   --platform-paid: #15803d;
   --platform-denied: #dc2626;
   --platform-partial: #b45309; /* 작은 배지 텍스트 대비 4.5:1 확보 */
