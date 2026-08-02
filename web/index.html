@@ -34,206 +34,198 @@
       text-wrap: pretty; /* 타입 증명 §9 시공 지침 ②: 마지막 행 단일 어절 회피 */
     }
 
-    /* 표지 밴드 — 첫 뷰포트 1/3 미만 (≤280px). masthead 문법: 아이브로우 제호 + 한 행 내 600/800 대비 */
-    /* 네이비 커버 밴드 (라운드 4, 사용자 선택) — 사이드바와 같은 앵커색 + 상단 시안 라인의 2톤 문법 확장.
-       순색 네이비(그라데이션·이미지 금지), 콘텐츠 영역 안의 radius 6px 커버 카드.
-       데스크톱: 좌 텍스트 + 우 CTA 가로 플렉스 (라운드 3). 모바일은 세로 적층 */
+    /* ══ 에디토리얼 문법 (2026-08-02 전면 개편) ══════════════════════════════
+       카드-온-캔버스 폐기. 종이 한 장 위에 괘선으로만 구획한다.
+       근거: 회색 캔버스 + 흰 카드 + 테두리·그림자는 어떤 생성기든 내놓는 기본값이라
+       색·서체를 바꿔도 그 인상이 남는다. 선으로만 나누면 케어센터(잡지)와 플랫폼(도구)이
+       같은 편집 문법이 되어 한 브랜드로 묶이고, 같은 높이에 더 많은 실데이터가 들어간다.
+       괘선 2단: 굵은 괘선(2px 잉크) = 구획 시작, 헤어라인(1px) = 항목 사이. */
+
+    /* ── 제호 행 — eyebrow→제목→설명 3단 헤딩 폐기. 신문 1면 조판 ── */
     .home-cover {
-      position: relative;
-      overflow: hidden; /* 워터마크 카드 밖 클리핑 */
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 24px;
-      margin-top: 12px;
-      border: 0;
-      border-top: 3px solid var(--platform-cyan);
-      border-radius: var(--platform-radius);
-      /* 도시 야경 정지 이미지 (힉스필드, 2400x800 원본 → webp 67KB) — 2026-08-02 사용자 지정.
-         위쪽 절반이 어두운 하늘이라 좌측 타이포 영역 대비 유지, 스카이라인 불빛은 하단에.
-         대비는 ::before의 네이비 틴트가 보증. 업무 화면이라 모션 없음 */
-      background: var(--platform-navy) url("assets/home-cover-city.webp") center 52% / cover no-repeat;
-      color: rgba(255, 255, 255, 0.85); /* 기조 — 강조부(순백)와 대비 층 */
-      box-shadow: var(--platform-shadow);
-      padding: 20px 24px;
+      display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+      margin: 18px 0 0; padding: 0 0 11px;
+      border: 0; border-bottom: 2px solid var(--platform-ink);
+      border-radius: 0; background: none; box-shadow: none;
+      color: var(--platform-ink); overflow: visible;
     }
-    /* 질감 — 커버 카드 한정 (시그니처는 한 곳). 그라데이션·애니메이션 없음.
-       층 1 = 방패 워터마크(로고 외곽선, 우측 상단 걸침, white 0.05), 층 2 = feTurbulence 화이트 그레인(알파 0.05 소부).
-       ::before는 정적 자식보다 먼저 페인트 — 텍스트·CTA 픽셀에 영향 없음 */
-    .home-cover::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      /* 마지막 층에 틴트 색 — background 축약형은 앞선 background-color를 덮으므로 색은 여기에 둔다 */
-      background:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E") repeat rgba(16, 42, 78, 0.45);
-    }
-    .cover-ctas { flex-shrink: 0; }
+    .home-cover::before { content: none; }
+    .cover-lead { display: contents; }
     .cover-eyebrow {
-      display: block;
-      color: #a8b4c4; /* 네이비 위 6.8:1 — AA */
-      font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+      order: 3; margin-left: auto;
+      font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--platform-faint);
     }
     .cover-greet {
-      margin: 8px 0 14px;
-      font-size: 28px; font-weight: 600; letter-spacing: -0.04em; line-height: 1.3;
-      font-variant-numeric: tabular-nums;
+      order: 1; margin: 0;
+      font-size: 19px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.3;
+      font-variant-numeric: tabular-nums; color: var(--platform-ink);
     }
-    .cover-greet b { font-weight: 800; color: #ffffff; } /* 시그니처: 이름·날짜만 800 + 순백 강조 층 */
-    .cover-ctas { display: flex; flex-wrap: wrap; gap: 10px; }
+    .cover-greet b { font-weight: 800; color: var(--platform-ink); }
+
+    .cover-ctas { order: 2; display: flex; gap: 8px; flex-shrink: 0; margin-left: auto; }
     .cta {
       display: inline-flex; align-items: center; justify-content: center;
-      height: 40px; padding: 0 18px;
-      border-radius: 4px; font-size: 13px; font-weight: 600;
-      transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+      height: 34px; padding: 0 15px;
+      border-radius: 0; font-size: 13px; font-weight: 700;
+      border: 1px solid var(--platform-ink);
+      transition: background-color 0.14s ease, color 0.14s ease, border-color 0.14s ease;
     }
-    /* a.cta-* — .platform a { color: inherit }(0,1,1)보다 특이도를 낮추면 색이 뒤집힌다 */
-    a.cta-primary { background: var(--platform-blue); border: 1px solid var(--platform-blue); color: #ffffff; }
+    a.cta-primary { background: var(--platform-blue); border-color: var(--platform-blue); color: #fff; }
     a.cta-primary:hover { background: var(--platform-blue-dark); border-color: var(--platform-blue-dark); }
-    a.cta-secondary { background: var(--platform-surface); border: 1px solid var(--platform-line-strong); color: var(--platform-ink); }
-    a.cta-secondary:hover { border-color: var(--platform-faint); }
-    /* 네이비 커버 위 secondary — 화이트 아웃라인 (라운드 4) */
-    .home-cover .cta-secondary { background: transparent; border-color: rgba(255, 255, 255, 0.35); color: #ffffff; }
-    .home-cover .cta-secondary:hover { border-color: rgba(255, 255, 255, 0.6); }
+    a.cta-secondary { background: transparent; border-color: var(--platform-ink); color: var(--platform-ink); }
+    a.cta-secondary:hover { background: var(--platform-ink); color: #fff; }
+    .home-cover .cta-secondary { background: transparent; border-color: var(--platform-ink); color: var(--platform-ink); }
+    .home-cover .cta-secondary:hover { background: var(--platform-ink); border-color: var(--platform-ink); color: #fff; }
 
-    /* 기능 카드 그리드 — 지배 앵커. 여백 구분(축 2=a): 화이트 카드 + gap 16, 셀 높이는 콘텐츠에 맞춘다 */
+    /* ── 목차 — 카드 폐기. 2열 표 조판, 행 사이 헤어라인, 자동 번호 ── */
     .menu-grid {
-      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px; margin-top: 14px;
+      display: grid; grid-template-columns: 1fr 1fr; column-gap: 44px;
+      margin: 4px 0 0; gap: 0 44px; counter-reset: toc;
     }
     .menu-card {
-      display: block;
-      background: var(--platform-surface);
-      border: 1px solid var(--platform-line);
-      border-radius: var(--platform-radius);
-      box-shadow: var(--platform-shadow);
-      padding: 18px 20px;
-      transition: background-color 0.14s ease, border-color 0.14s ease;
+      counter-increment: toc;
+      display: flex; align-items: baseline; gap: 12px;
+      background: none; border: 0; border-bottom: 1px solid var(--platform-line);
+      border-radius: 0; box-shadow: none; padding: 15px 0;
+      transition: color 0.14s ease;
     }
-    .menu-card:hover { background: #fafbfd; border-color: var(--platform-line-strong); }
-    /* 케어센터 리드 셀 — 커버 스토리 문법: 2칸 확장 + 상단 3px 포인트 스트립(화면당 1곳, 강조 패널 문법).
-       마지막 행 빈 셀(3+3+2) 해소 + primary 카드 구분 (샤프 비평 상-1·중-3) */
-    [data-card="care"] { grid-column: span 2; }
-    /* 우리팀 분리로 비권한자 7카드 — 마지막 카드가 2열에 걸리면 남은 폭을 채운다 (관리자 8카드는 미적용) */
-    .menu-grid > a:nth-child(7):last-child { grid-column: span 2; }
-    .menu-card h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
-    .menu-card p { margin: 5px 0 0; color: var(--platform-muted); font-size: 13px; line-height: 1.6; }
-    /* 칩은 설명줄 인라인 — 독립 행이 같은 그리드 행 전체를 늘려 형제 카드 하단 공백을 만들던 결함 교정 */
-    .menu-card .dday-chip { margin: 0 0 0 6px; vertical-align: 1px; font-size: 11px; font-weight: 600; } /* 타입 계약: 칩 11/600 */
+    .menu-card::before {
+      content: counter(toc);
+      flex-shrink: 0; width: 17px;
+      font-size: 11px; font-weight: 800; color: var(--platform-faint);
+      font-variant-numeric: tabular-nums;
+    }
+    .menu-card:hover { background: none; color: var(--platform-blue); }
+    .menu-card h2 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+    .menu-card p {
+      margin: 0 0 0 auto; padding-left: 12px; text-align: right;
+      color: var(--platform-muted); font-size: 12.5px; line-height: 1.5;
+    }
+    [data-card="care"] { grid-column: auto; }
+    .menu-grid > a:nth-child(7):last-child { grid-column: auto; }
+    .menu-card .dday-chip {
+      margin-left: 7px; padding: 1px 6px; border-radius: 0; vertical-align: baseline;
+      font-size: 11px; font-weight: 700;
+      color: var(--platform-blue); background: var(--platform-blue-soft);
+    }
 
-    /* 새소식 — 하단 에디토리얼 밴드. 유일한 그리드 브레이크: 좌 제목 4칸 + 우 리스트 8칸 */
-    /* 좌 제목 칼럼은 3칸으로 축소 — 비대칭 브레이크 유지, 사공간 축소 (샤프 비평 중-4) */
+    /* ── 연재 — 대표 1 + 목록 ── */
     .home-news {
-      display: grid; grid-template-columns: 3fr 9fr; gap: 24px;
-      margin-top: 14px;
-      background: var(--platform-surface);
-      border: 1px solid var(--platform-line);
-      border-radius: var(--platform-radius);
-      box-shadow: var(--platform-shadow);
-      padding: 22px 24px;
+      display: block; margin-top: 34px; padding: 0;
+      background: none; border: 0; border-radius: 0; box-shadow: none;
     }
-    .news-title h2 { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.035em; }
+    .news-title {
+      display: flex; align-items: baseline; gap: 12px;
+      padding-bottom: 9px; border-bottom: 2px solid var(--platform-ink);
+    }
+    .news-title h2 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: -0.02em; }
     .news-title a {
-      display: inline-block; margin-top: 8px;
-      color: var(--platform-blue); font-size: 11px; font-weight: 600;
+      margin: 0 0 0 auto; display: inline-block;
+      color: var(--platform-blue); font-size: 12px; font-weight: 700;
       transition: color 0.14s ease;
     }
     .news-title a:hover { color: var(--platform-blue-dark); }
-    /* 대표 1건 — 상단 헤어라인 (3px 포인트 스트립은 케어센터 리드 셀로 이동, 화면당 1곳 유지) */
     .news-featured {
-      display: block;
-      border-top: 1px solid var(--platform-line);
-      padding: 12px 2px 14px;
+      display: block; border-top: 0; border-bottom: 1px solid var(--platform-line);
+      padding: 17px 0 19px;
     }
     .news-featured .news-kicker {
-      display: block;
-      color: var(--platform-muted);
-      font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
-      font-variant-numeric: tabular-nums;
+      display: block; font-size: 11.5px; font-weight: 700; color: var(--platform-muted);
+      font-variant-numeric: tabular-nums; letter-spacing: 0;
     }
     .news-featured h3 {
-      margin: 6px 0;
-      /* 18/800 — 그리드 지배 질량 보존을 위한 강등 (샤프 비평 상-1). 킥커가 섹션 라벨과의 역할 구분을 담당 */
-      font-size: 18px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.4;
+      margin: 7px 0 6px; max-width: 26em;
+      font-size: 23px; font-weight: 800; letter-spacing: -0.035em; line-height: 1.35;
       transition: color 0.14s ease;
     }
     .news-featured:hover h3 { color: var(--platform-blue); }
-    /* 메타는 보조 토큰(#596579) — faint(#717d8f)는 흰 바탕 4.17:1로 AA 미달 (omd check CONTRAST-001) */
-    .news-meta { color: var(--platform-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .news-featured .news-meta { font-size: 12px; color: var(--platform-muted); }
     .news-rows { list-style: none; margin: 0; padding: 0; }
     .news-rows a {
-      display: block;
-      border-top: 1px solid var(--platform-line);
-      padding: 10px 2px;
-      font-size: 13px; line-height: 1.6;
-      transition: background-color 0.14s ease;
+      display: flex; gap: 14px; align-items: baseline;
+      padding: 12px 0; border-bottom: 1px solid var(--platform-line);
+      font-size: 14px; transition: color 0.14s ease;
     }
-    .news-rows a:hover { background: var(--platform-blue-soft); }
-    .news-no { font-weight: 600; color: var(--platform-muted); font-variant-numeric: tabular-nums; }
-    .news-dt { color: var(--platform-muted); font-size: 11px; white-space: nowrap; } /* 행두 중점 금칙: "· 날짜" 한 단위. 보조 토큰 = AA 확보 */
+    .news-rows a:hover { background: none; color: var(--platform-blue); }
+    .news-rows .news-no {
+      flex-shrink: 0; width: 68px;
+      font-size: 12px; font-weight: 700; color: var(--platform-faint);
+      font-variant-numeric: tabular-nums;
+    }
+    .news-rows .news-ti { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .news-rows .news-dt { margin-left: auto; padding-left: 12px; font-size: 12px; color: var(--platform-faint); flex-shrink: 0; }
 
-    /* 내 프로필 — 구 홈 카드의 컴팩트 스트립 변형 (기능 동일, 형태만 가로 한 줄).
-       platform.css .profile-card/.profile-photo/.profile-actions/.profile-edit 재사용 */
-    .home-profile { margin-top: 14px; }
-    .home-profile .profile-card { align-items: center; gap: 14px; padding: 16px 20px; }
-    .home-profile .profile-photo { width: 56px; height: 56px; font-size: 20px; }
+    /* 검색 — 라운드 카드 폐기. 제호 위 한 줄 입력(밑줄 조판) */
+    .global-search input {
+      border: 0; border-bottom: 1px solid var(--platform-line-strong);
+      border-radius: 0; background: none; padding-left: 26px;
+    }
+    .global-search input:focus { border-bottom-color: var(--platform-ink); outline: none; }
+    .global-search::before { left: 2px; }
+    .global-search::after { left: 16px; }
+
+    /* ── 판권 — 명함. 카드 폐기, 굵은 괘선 아래 한 줄 ── */
+    .home-profile { margin-top: 34px; }
+    .home-profile .profile-card {
+      align-items: center; gap: 14px; padding: 16px 0 0;
+      background: none; border: 0; border-top: 2px solid var(--platform-ink);
+      border-radius: 0; box-shadow: none;
+    }
+    .home-profile .profile-photo { width: 46px; height: 46px; font-size: 17px; }
     .home-profile .profile-main { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
     .home-profile .p-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
-    .home-profile .p-line .p-name { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
-    /* 직급 배지 — D-day 칩과 같은 문법: 3px radius + 포인트 블루 연배경쌍 */
+    .home-profile .p-line .p-name { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
     .home-profile .p-role {
-      border-radius: 3px; background: var(--platform-blue-soft); color: var(--platform-blue-dark);
-      padding: 3px 8px; font-size: 11px; font-weight: 600;
+      border-radius: 0; background: var(--platform-blue-soft); color: var(--platform-blue-dark);
+      padding: 2px 7px; font-size: 11px; font-weight: 700;
     }
     .home-profile .p-org { color: var(--platform-muted); font-size: 13px; }
     .home-profile .profile-actions { margin: 0; }
     .home-profile .profile-edit { width: 100%; }
-    @media (max-width: 640px) {
-      /* platform.css의 세로 중앙 정렬 오버라이드 — 홈 스트립은 좌정렬 유지 */
-      .home-profile .profile-card { flex-direction: row; flex-wrap: wrap; align-items: center; text-align: left; }
-      .home-profile .profile-actions { justify-content: flex-start; }
-    }
 
-    /* 자료 현황 — 칸막이형 격자(gap 0 + 1px 셀 선, platform.css .stat-row 계승).
-       카드 그리드(여백 구분)와 의도적 밀도 대비: 목차(공기) ↔ 현황(조밀) */
-    .home-stats { margin-top: 14px; }
-    .home-stats .stat-label, .home-stats .stat-sub { font-size: 11px; } /* 셀 해부: 라벨 11 → 수치 27+/700 tabular → 보조 11 */
-    @media (max-width: 720px) {
-      /* 수치 타일은 좁아도 성립 — 모바일도 3셀 가로 유지 */
-      .home-stats .stat-row { grid-template-columns: repeat(3, 1fr); }
-      .home-stats .stat-tile { border-right: 1px solid var(--platform-line); border-bottom: 0; padding: 14px 12px; }
-      .home-stats .stat-row .stat-tile:last-child { border-right: 0; }
+    /* ── 현황 — 칸막이 격자 폐기. 조판만으로 ── */
+    .home-stats { margin-top: 34px; }
+    .home-stats .stat-row {
+      display: flex; flex-wrap: wrap; gap: 20px 56px;
+      margin: 0; padding: 18px 0 0;
+      border: 0; border-radius: 0; background: none; box-shadow: none;
     }
+    .home-stats .stat-tile { border: 0; padding: 0; background: none; }
+    .home-stats .stat-label {
+      display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+      color: var(--platform-faint);
+    }
+    .home-stats .stat-value {
+      margin-top: 4px; font-size: 34px; font-weight: 800; letter-spacing: -0.05em;
+      line-height: 1; font-variant-numeric: tabular-nums;
+    }
+    .home-stats .stat-sub { display: block; margin-top: 5px; font-size: 11.5px; color: var(--platform-muted); }
 
-    /* 태블릿 1024: 사이드바 유지, 카드 2열 */
     @media (max-width: 1024px) {
-      .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .menu-grid { column-gap: 28px; gap: 0 28px; }
     }
 
-    /* 모바일 767 이하: 1열 적층 (형태 전환, 축소 아님).
-       62px 네이비 슬림 상단바는 platform.css 공용 승격 완료 (2026-07-30) */
     @media (max-width: 767px) {
       .platform-main { width: auto; padding: 12px 16px 48px; }
       .global-search { max-width: none; }
-      .home-cover { display: block; padding: 18px; } /* 모바일: 세로 적층 유지 */
-      /* 디스플레이 24px, 개인화 인사 2행 예약 — /me 도착 시 레이아웃 시프트 0 */
-      .cover-greet { font-size: 24px; min-height: 2.6em; }
-      .cta { height: 44px; }
-      .menu-grid { grid-template-columns: 1fr; gap: 12px; margin-top: 12px; }
-      .menu-card { padding: 16px 18px; }
-      [data-card="care"] { grid-column: auto; } /* 1열에서 span 2가 암시적 칼럼을 만들지 않게 */
-      .menu-grid > a:nth-child(7):last-child { grid-column: auto; }
-      .home-news { display: block; margin-top: 12px; padding: 18px; }
-      .news-title { margin-bottom: 10px; }
-      /* 모바일 터치 타깃 44px 플로어 */
-      .news-title a { margin-top: 0; padding: 14px 12px 14px 0; }
-      .news-rows a { padding: 12px 2px; }
+      .home-cover { gap: 8px 12px; padding-bottom: 12px; }
+      .cover-greet { order: 1; width: 100%; font-size: 20px; min-height: 2.6em; }
+      .cover-eyebrow { order: 2; margin-left: 0; }
+      .cover-ctas { order: 3; width: 100%; margin-left: 0; }
+      .cta { flex: 1; height: 42px; }
+      .menu-grid { grid-template-columns: 1fr; }
+      .menu-card { padding: 14px 0; }
+      .menu-card p { font-size: 12px; }
+      .home-news, .home-profile, .home-stats { margin-top: 26px; }
+      .news-featured h3 { font-size: 20px; }
+      .news-title a { padding: 8px 0 8px 12px; }
+      .home-stats .stat-row { gap: 18px 36px; }
+      .home-stats .stat-value { font-size: 30px; }
     }
 
-    /* 320: CTA 세로 적층 허용 (primary 먼저) */
-    @media (max-width: 340px) {
-      .cover-ctas { flex-direction: column; align-items: stretch; }
+    @media (max-width: 400px) {
+      .news-rows .news-no { width: 58px; }
+      .menu-card p { display: none; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -477,8 +469,8 @@
           var rows = list.slice(1, 7).map(function (i) {
             return '<li><a data-issue="' + esc(i.id) + '" href="' + issueHref(i) + '">'
               + '<span class="news-no">' + esc(i["채널"] + " " + i["호수"] + "호") + "</span>"
-              + " — " + esc(i["제목"])
-              + ' <span class="news-dt">· ' + esc(md(i["발행일"])) + "</span>"
+              + '<span class="news-ti">' + esc(i["제목"]) + "</span>"
+              + '<span class="news-dt">' + esc(md(i["발행일"])) + "</span>"
               + "</a></li>";
           }).join("");
 

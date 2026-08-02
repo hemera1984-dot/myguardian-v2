@@ -10,4 +10,4 @@ server/.env
 *.db-shm
 media-local/
 .omd/
-시안/
+drafts/
