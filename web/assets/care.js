@@ -193,7 +193,6 @@
     return CAT_DISPLAY[String(cat || "").toUpperCase()] || cat;
   }
 
-  function pad2(n) { return String(n).padStart(2, "0"); }
 
   // 이미지 경로 — 저장소 상대경로는 지면 기준(../../)으로, 업로드 주소(/media/… · https://…)는 그대로
   function mediaSrc(path) {
@@ -213,7 +212,7 @@
   // 기사 표제 블록 — 킥커(번호·카테고리) → 세리프 표제 → 부제
   function headBlock(a, i, tag) {
     var h = [];
-    h.push('<p class="a-kicker"><span class="a-no">' + pad2(i + 1) + "</span>" + esc(displayCat(a["카테고리"])) + "</p>");
+    h.push('<p class="a-kicker"><span class="a-no">' + String(i + 1) + "</span>" + esc(displayCat(a["카테고리"])) + "</p>");
     h.push("<" + tag + ' class="a-head">' + esc(a["제목"]) + "</" + tag + ">");
     if (a["부제"]) h.push('<p class="a-standfirst">' + esc(a["부제"]) + "</p>");
     return h.join("");
@@ -277,7 +276,7 @@
     if (arts.length > 1) {
       h.push('<nav class="issue-toc" aria-label="이번 호 기사">');
       arts.forEach(function (a, i) {
-        h.push('<a href="#a' + (i + 1) + '"><span class="a-no">' + pad2(i + 1) + "</span>" + esc(displayCat(a["카테고리"])) + "</a>");
+        h.push('<a href="#a' + (i + 1) + '"><span class="a-no">' + String(i + 1) + "</span>" + esc(displayCat(a["카테고리"])) + "</a>");
       });
       h.push("</nav>");
     }
