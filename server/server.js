@@ -432,6 +432,7 @@ async function route(req, res, url) {
       "- 마지막 문단은 보험 설계사의 시각으로 독자에게 주는 시사점으로 맺는다.",
       "",
       "출력 형식:",
+      "- 카테고리: 이 글이 어느 꼭지인지 2~6자 라벨. 예: 시사, 경제, 보험, 자산, 세무, 건강.",
       "- 부제: 제목을 보완하는 한 줄.",
       "- 요약: 150자에서 200자. 서재 카드에 실린다.",
       "- 본문: 블록 배열. t가 h면 소제목, p면 문단이다. 소제목으로 흐름을 나눈다.",
@@ -441,6 +442,7 @@ async function route(req, res, url) {
     const r = await claude(prompt, {
       type: "object",
       properties: {
+        카테고리: { type: "string" },
         부제: { type: "string" },
         요약: { type: "string" },
         한마디: { type: "string" },
@@ -454,7 +456,7 @@ async function route(req, res, url) {
           }
         }
       },
-      required: ["부제", "요약", "한마디", "본문"],
+      required: ["카테고리", "부제", "요약", "한마디", "본문"],
       additionalProperties: false
     }, { effort: 월간 ? "high" : "medium", maxTokens: 월간 ? 32000 : 12000, timeout: 300000 });
 

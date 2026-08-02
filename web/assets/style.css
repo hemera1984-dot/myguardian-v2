@@ -2295,3 +2295,30 @@ a.latest-card {
   border-radius: 0; box-shadow: none;
 }
 .shelf-row { border-bottom: 1px solid var(--line); }
+
+/* 칼럼 편집 두 상태 (2026-08-02) — 입력을 최소로, 결과는 읽기 좋게 */
+.col-fixed { margin: 0 0 14px; font-size: 12px; font-weight: 700; color: var(--accent); }
+.col-fixed span { margin-left: 6px; font-weight: 600; color: var(--ink-faint); }
+.fld label .opt { margin-left: 5px; font-weight: 600; color: var(--ink-faint); }
+.write-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 6px 0 4px; }
+.btn-write {
+  min-height: 46px; padding: 0 26px; font-size: 14px; font-weight: 700;
+  color: #fff; background: var(--accent); border-color: var(--accent);
+}
+.btn-write:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+.manual { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 10px; }
+.manual > summary {
+  cursor: pointer; font-size: 12px; font-weight: 700; color: var(--ink-sub);
+  min-height: 32px; display: flex; align-items: center;
+}
+.manual[open] > summary { margin-bottom: 10px; }
+.result { margin: 4px 0 0; padding: 14px 0 0; border-top: 1px solid var(--line); }
+.result-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.result-head .r-cat { font-size: 12px; font-weight: 700; color: var(--accent); }
+.result-head .r-len { font-size: 12px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.result-head .btn { margin-left: auto; }
+.r-sub { margin: 8px 0 0; font-size: 14px; font-weight: 600; }
+.r-sum { margin: 8px 0 0; font-size: 13px; line-height: 1.7; color: var(--ink-sub); }
+.r-body { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.r-body p { margin: 0 0 8px; font-size: 13px; line-height: 1.75; color: var(--ink-sub); }
+.r-body .r-more { color: var(--ink-faint); }

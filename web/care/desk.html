@@ -158,6 +158,24 @@
       function el(id) { return document.getElementById(id); }
       function pad2(n) { return String(n).padStart(2, "0"); }
 
+      // 발행인 — 로그인한 FC. 이 이름으로 제호(『주간 OOO』)와 FC 의견이 나간다.
+      // 편집장은 언제나 안창민이며 지면 판권에 함께 실린다(헌법).
+      var ME = { 이름: "" };
+      try {
+        var mgSender = JSON.parse(localStorage.getItem("mg_care_sender") || "{}");
+        if (mgSender["이름"]) ME.이름 = String(mgSender["이름"]).replace(/\s*FC$/, "").trim();
+      } catch (e) {}
+      if (window.mgAuth && window.mgAuth.me) {
+        window.mgAuth.me().then(function (info) {
+          var n = info && info["계정"] && info["계정"]["이름"];
+          if (n) {
+            ME.이름 = String(n).trim();
+            if (S.draft && !S.draft["발행인수정"]) { S.draft["발행인"] = ME.이름; saveDraft(); renderAll(); }
+          }
+        }).catch(function () {});
+      }
+      function 발행인() { return ME.이름 || "안창민"; }
+
       // ── 초안 저장소 (localStorage) — 발행 전까지는 이 브라우저에만 있다
       function draftKeys() {
         var out = [];
@@ -239,7 +257,7 @@
         var made = makeId(ch, nextNo(ch));
         var draft = {
           id: made.id, "채널": ch, "호수": made.no, "발행일": iso,
-          "주차라벨": weekLabel(ch, d), "발행인": "안창민",
+          "주차라벨": weekLabel(ch, d), "발행인": 발행인(),
           "커버이미지": "", "편집장의말": [],
           "기사": [0, 1, 2].map(function (i) { return blankArticle(ch, i); })
         };
@@ -273,7 +291,7 @@
           };
         });
         var 목록항목 = {
-          id: d.id, "발행인": d["발행인"] || "안창민", "채널": d["채널"], "호수": d["호수"],
+          id: d.id, "발행인": d["발행인"] || 발행인(), "채널": d["채널"], "호수": d["호수"],
           "제목": (arts[0] && arts[0]["제목"]) || "",
           "주차라벨": d["주차라벨"], "발행일": d["발행일"],
           "요약": arts.map(function (a) { return a["제목"]; }).filter(Boolean).join(" · "),
@@ -304,7 +322,7 @@
           box.innerHTML = '<div><label for="new-month">발행 연·월</label>'
             + '<input type="month" id="new-month" value="' + now.getFullYear() + "-" + pad2(now.getMonth() + 1) + '"></div>'
             + '<button class="btn" type="button" id="new-go">' + no + '호 만들기</button>'
-            + '<p class="new-note">칼럼 세 꼭지 모두 자유 주제입니다. 카테고리는 직접 씁니다.</p>';
+            + '<p class="new-note">칼럼 세 꼭지 모두 자유 주제입니다. 카테고리는 작성하면 자동으로 붙습니다.</p>';
         }
       }
 
@@ -371,28 +389,67 @@
           }).join("") + "</ul>";
       }
 
+      // 칼럼 편집 — 두 상태. 본문이 없으면 "쓰기 전"(입력 최소), 있으면 "결과"(읽기 + 손보기).
+      // 부제·요약·한마디는 AI가 채우는 것이라 쓰기 전에는 보여주지 않는다.
       function colEditHtml(a, i) {
         var weekly = S.draft["채널"] === "주간";
-        var sumLen = linesLen(a["요약"]);
-        var bodyLen = blocksLen(a["본문"]);
+        var written = blocksLen(a["본문"]) > 0;
         var target = "칼럼 " + (i + 1);
-        return '<div class="col-edit">'
-          + '<div class="fld"><label for="f-cat-' + i + '">카테고리</label>'
-          + '<input type="text" id="f-cat-' + i + '" data-f="카테고리" data-col="' + i + '" value="' + esc(a["카테고리"]) + '"'
-          + (weekly ? " readonly" : ' placeholder="예: 상속·증여"') + "></div>"
+
+        var head = '<div class="col-edit">'
+          + (weekly
+              ? '<p class="col-fixed">' + esc(a["카테고리"] || "") + ' <span>주간 고정 꼭지</span></p>'
+              : '<p class="col-fixed">' + esc(a["카테고리"] || "카테고리는 작성하면 자동으로 붙습니다") + "</p>")
 
           + '<div class="fld"><label for="f-title-' + i + '">제목</label>'
-          + '<input type="text" id="f-title-' + i + '" data-f="제목" data-col="' + i + '" value="' + esc(a["제목"]) + '" placeholder="' + esc(target) + ' 제목">'
+          + '<input type="text" id="f-title-' + i + '" data-f="제목" data-col="' + i + '" value="' + esc(a["제목"]) + '" placeholder="' + esc(target) + ' 제목을 쓰거나 주제를 추천받으세요">'
           + '<div class="fld-actions">'
           + '<button class="btn" type="button" data-ai="topic" data-col="' + i + '">주제 추천</button>'
           + '<button class="btn" type="button" data-ai="title" data-col="' + i + '">제목 다듬기</button>'
-          + '<button class="btn" type="button" data-ai="column" data-col="' + i + '">본문 생성</button>'
           + "</div>"
           + '<div class="topic-suggest" id="ai-out-' + i + '" hidden></div></div>'
 
-          + '<div class="fld"><label for="f-dir-' + i + '">방향</label>'
-          + '<input type="text" id="f-dir-' + i + '" data-f="방향" data-col="' + i + '" value="' + esc(a["방향"] || "") + '" placeholder="본문 생성에 넘길 한 줄 방향">'
-          + '<p class="hint">발행 데이터에는 실리지 않습니다. 본문 생성 지시에만 씁니다.</p></div>'
+          + '<div class="fld"><label for="f-dir-' + i + '">방향 <span class="opt">선택</span></label>'
+          + '<input type="text" id="f-dir-' + i + '" data-f="방향" data-col="' + i + '" value="' + esc(a["방향"] || "") + '" placeholder="예: 세율보다 시행 시기에 초점">'
+          + '<p class="hint">어떤 각도로 쓸지 한 줄. 발행물에는 실리지 않습니다.</p></div>';
+
+        // 쓰기 전 — 큰 버튼 하나로 끝낸다
+        if (!written) {
+          return head
+            + '<div class="write-row">'
+            + '<button class="btn btn-write" type="button" data-ai="column" data-col="' + i + '">AI 작성</button>'
+            + '<span class="hint">' + (weekly ? "주간 1,700~2,800자" : "월간 8,000~10,000자, 최대 5분") + " · 부제·요약·본문을 한 번에 씁니다</span>"
+            + "</div>"
+            + '<details class="manual"><summary>직접 쓰기</summary>' + colFieldsHtml(a, i) + "</details>"
+            + "</div>";
+        }
+
+        // 쓰기 후 — 결과를 읽기 좋게. 손보려면 펼친다
+        var sumLen = linesLen(a["요약"]);
+        return head
+          + '<div class="result">'
+          + '<div class="result-head"><span class="r-cat">' + esc(a["카테고리"] || "") + "</span>"
+          + '<span class="r-len">본문 ' + blocksLen(a["본문"]) + "자 · 요약 " + sumLen + "자</span>"
+          + '<button class="btn" type="button" data-ai="column" data-col="' + i + '">다시 쓰기</button></div>'
+          + (a["부제"] ? '<p class="r-sub">' + esc(a["부제"]) + "</p>" : "")
+          + (linesLen(a["요약"]) ? '<p class="r-sum">' + esc(fromLines(a["요약"])) + "</p>" : "")
+          + '<div class="r-body">' + blocksToText(a["본문"]).split("\n\n").slice(0, 3).map(function (p) {
+              return "<p>" + esc(p.replace(/^##\s*/, "")) + "</p>";
+            }).join("") + '<p class="r-more">…</p></div>'
+          + "</div>"
+          + '<details class="manual"><summary>손보기</summary>' + colFieldsHtml(a, i) + "</details>"
+          + '<div class="fld"><label>이미지</label>' + slotHtml("col-" + i, a["이미지"], target + " 이미지 올리기") + "</div>"
+          + "</div>";
+      }
+
+      // 수정 칸 묶음 — 쓰기 전에는 "직접 쓰기", 쓴 뒤에는 "손보기" 안에 들어간다
+      function colFieldsHtml(a, i) {
+        var weekly = S.draft["채널"] === "주간";
+        var sumLen = linesLen(a["요약"]);
+        var bodyLen = blocksLen(a["본문"]);
+        return (weekly ? "" :
+            '<div class="fld"><label for="f-cat-' + i + '">카테고리</label>'
+            + '<input type="text" id="f-cat-' + i + '" data-f="카테고리" data-col="' + i + '" value="' + esc(a["카테고리"]) + '" placeholder="비워두면 작성 시 자동으로 붙습니다"></div>')
 
           + '<div class="fld"><label for="f-sub-' + i + '">부제</label>'
           + '<input type="text" id="f-sub-' + i + '" data-f="부제" data-col="' + i + '" value="' + esc(a["부제"]) + '"></div>'
@@ -401,17 +458,13 @@
           + '<textarea id="f-sum-' + i + '" data-f="요약" data-col="' + i + '">' + esc(fromLines(a["요약"])) + "</textarea>"
           + '<p class="hint">150~200자. 서재 카드와 지면 요지 박스에 실립니다.</p></div>'
 
-          + '<div class="fld"><label for="f-note-' + i + '">한마디</label>'
+          + '<div class="fld"><label for="f-note-' + i + '">' + esc(발행인()) + ' FC 의견</label>'
           + '<textarea id="f-note-' + i + '" data-f="한마디" data-col="' + i + '">' + esc(fromLines(a["한마디"])) + "</textarea>"
-          + '<p class="hint">설계사가 덧붙이는 말. 지면에서 별도 박스로 실립니다.</p></div>'
+          + '<p class="hint">AI 작성 시 함께 채워집니다. 지면에서 골드 박스로 실립니다.</p></div>'
 
           + '<div class="fld"><label for="f-body-' + i + '">본문 <span class="cnt" data-cnt="본문-' + i + '">' + bodyLen + '자</span></label>'
           + '<textarea class="tall" id="f-body-' + i + '" data-f="본문" data-col="' + i + '">' + esc(blocksToText(a["본문"])) + "</textarea>"
-          + '<p class="hint">줄 앞에 ## 를 붙이면 소제목이 됩니다. 한 줄 띄어 문단을 나눕니다. '
-          + (S.draft["채널"] === "월간" ? "월간 기준 8,000~10,000자." : "주간 기준 1,700~2,800자.") + "</p></div>"
-
-          + '<div class="fld"><label>이미지</label>' + slotHtml("col-" + i, a["이미지"], target + " 이미지 올리기") + "</div>"
-          + "</div>";
+          + '<p class="hint">줄 앞에 ## 를 붙이면 소제목이 됩니다. 한 줄 띄어 문단을 나눕니다.</p></div>';
       }
 
       function renderCols() {
@@ -605,6 +658,7 @@
           body: { "제목": a["제목"], "채널": chFull(), "카테고리": a["카테고리"], "방향": a["방향"] || "" }
         }).then(function (d) {
           clearInterval(timer);
+          if (S.draft["채널"] !== "주간" && d["카테고리"]) a["카테고리"] = d["카테고리"];
           a["부제"] = d["부제"] || a["부제"];
           a["요약"] = toLines(d["요약"]);
           a["한마디"] = toLines(d["한마디"]);
@@ -768,7 +822,7 @@
           care.loadIssueBody(meta).then(function (body) {
             var d2 = {
               id: meta.id, "채널": meta["채널"], "호수": meta["호수"], "발행일": meta["발행일"],
-              "주차라벨": meta["주차라벨"], "발행인": meta["발행인"] || "안창민",
+              "주차라벨": meta["주차라벨"], "발행인": meta["발행인"] || 발행인(),
               "커버이미지": meta["커버이미지"] || "", "편집장의말": body["편집장의말"] || [],
               "기사": (body["기사"] || []).map(function (a, n) {
                 return {

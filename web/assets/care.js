@@ -30,6 +30,16 @@
     var s = loadSender();
     nameInput.value = s["이름"];
     orgInput.value = s["소속"];
+    // 이 기기에서 서명을 정한 적이 없으면 로그인 계정으로 채운다 (FC마다 자기 이름으로 나가게)
+    if (!s["이름"] && window.mgAuth && window.mgAuth.me) {
+      window.mgAuth.me().then(function (info) {
+        var acc = info && info["계정"];
+        if (!acc || nameInput.value.trim()) return;
+        nameInput.value = (acc["이름"] || "") + (acc["이름"] ? " FC" : "");
+        if (!orgInput.value.trim()) orgInput.value = acc["소속"] || "신한라이프 하랑지점";
+        saveSender({ "이름": nameInput.value.trim(), "소속": orgInput.value.trim() });
+      }).catch(function () {});
+    }
     var mark = document.getElementById("sender-saved");
     var t;
     function onChange() {
