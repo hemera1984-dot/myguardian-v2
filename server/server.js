@@ -681,6 +681,174 @@ async function route(req, res, url) {
     return send(res, 200, { 문단: r.value["문단"] || [] });
   }
 
+  // ── 발행 전 사실검증 (2026-08-03) ────────────────────────────────────
+  // 본문을 쓰는 AI에게는 웹이 없어 수치를 확인할 방법이 없다. 그래서 발행 직전에
+  // 웹 검색을 켠 채로 한 번 더 읽히고, 틀린 곳을 고쳐 돌려준다.
+  // claude()는 구조화 출력만 다루므로 도구를 붙이는 이 호출은 따로 둔다(원시 HTTP는 동일).
+  async function claudeWeb(prompt, schema, opts) {
+    const o = opts || {};
+    let messages = [{ role: "user", content: prompt }];
+    // 서버 도구는 API가 알아서 돌린다. 다만 도구 반복 한도에 걸리면 pause_turn으로
+    // 끊기므로 그때는 응답을 그대로 붙여 다시 보낸다(공식 재개 방식).
+    for (let turn = 0; turn < 4; turn++) {
+      const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": ANTHROPIC_KEY,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          model: TITLE_MODEL,
+          max_tokens: o.maxTokens || 16000,
+          tools: [{ type: "web_search_20260209", name: "web_search", max_uses: o.maxUses || 8 }],
+          output_config: {
+            effort: o.effort || "medium",
+            format: { type: "json_schema", schema: schema }
+          },
+          messages: messages
+        }),
+        signal: AbortSignal.timeout(o.timeout || 600000)
+      });
+      if (!upstream.ok) {
+        const detail = await upstream.text().catch(() => "");
+        console.error("검증 호출 실패:", upstream.status, detail.slice(0, 300));
+        return { error: 502 };
+      }
+      const data = await upstream.json();
+      if (data.stop_reason === "refusal") return { error: 422 };
+      if (data.stop_reason === "pause_turn") {
+        messages = [messages[0], { role: "assistant", content: data.content }];
+        continue;
+      }
+      const texts = (data.content || []).filter((b) => b.type === "text");
+      const last = texts[texts.length - 1];
+      try { return { value: JSON.parse(last.text) }; } catch (e) { return { error: 502 }; }
+    }
+    return { error: 504 };
+  }
+
+  const 검증종류 = ["수치", "사실", "단정", "정치", "컴플라이언스", "표기"];
+
+  if (req.method === "POST" && path === "/ai/verify") {
+    if (!ANTHROPIC_KEY) return send(res, 503, { error: "AI 기능이 설정되지 않았습니다." });
+    const body = await readJson(req, 2 * 1024 * 1024);
+    const 채널 = String(body["채널"] || "주간 안창민").slice(0, 40);
+    const 호수 = String(body["호수"] || "").slice(0, 20);
+    const 기사 = (Array.isArray(body["기사"]) ? body["기사"] : []).slice(0, 5);
+    if (!기사.length) return send(res, 400, { error: "검증할 기사가 없습니다." });
+
+    const schema = {
+      type: "object",
+      properties: {
+        결과: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              위치: { type: "integer" },
+              종류: { type: "string", enum: 검증종류 },
+              원문: { type: "string" },
+              문제: { type: "string" },
+              조치: { type: "string", enum: ["수정", "삭제", "유지"] },
+              수정문: { type: "string" },
+              확신도: { type: "string", enum: ["높음", "보통", "낮음"] },
+              근거: { type: "string" }
+            },
+            required: ["위치", "종류", "원문", "문제", "조치", "수정문", "확신도", "근거"],
+            additionalProperties: false
+          }
+        },
+        요약: { type: "string" }
+      },
+      required: ["결과", "요약"],
+      additionalProperties: false
+    };
+
+    const jobs = 기사.map(async (a, idx) => {
+      const 번호 = Number(a["번호"]) || idx + 1;
+      const blocks = (Array.isArray(a["본문"]) ? a["본문"] : []).slice(0, 200)
+        .map((b) => ({ t: b && b.t === "h" ? "h" : "p", x: String((b && b.x) || "") }));
+      if (!blocks.length) return { 번호, 결과: [], 요약: "본문이 비어 있어 검증하지 않았습니다." };
+
+      const prompt = [
+        `보험 설계사가 고객에게 보내는 뉴스레터 "${채널}${호수 ? " " + 호수 + "호" : ""}"에 실릴 기사를 발행 직전에 검증한다.`,
+        "웹 검색으로 사실관계를 직접 확인해라. 기억에 의존하지 마라.",
+        "",
+        `제목: ${String(a["제목"] || "").slice(0, 200)}`,
+        a["부제"] ? `부제: ${String(a["부제"]).slice(0, 300)}` : "",
+        a["카테고리"] ? `분야: ${String(a["카테고리"]).slice(0, 40)}` : "",
+        "",
+        "본문 블록(대괄호 안 숫자가 위치다. h는 소제목, p는 문단):",
+        ...blocks.map((b, i) => `[${i}] (${b.t}) ${b.x}`),
+        "",
+        "검사 항목:",
+        "1. 수치·통계·인용 — 그런 발표·자료가 실제로 있는지, 숫자가 맞는지 웹에서 확인한다.",
+        "2. 날짜·이름·기관 — 사실 오류가 있는지 확인한다.",
+        "3. 근거 없는 단정 — 확인할 수 없는 주장을 사실처럼 서술한 곳.",
+        "4. 정치 편향 — 특정 정당·정치인을 옹호하거나 비난하는 서술.",
+        "5. 컴플라이언스 — 투자·세무 권유로 읽힐 표현, 특정 상품 권유.",
+        "6. 표기 — 이모지, AI 말투(\"~해 드릴게요\", \"물론입니다\"), 은유 표현.",
+        "",
+        "규칙:",
+        "- 원문에는 해당 블록 안에 있는 문장을 **한 글자도 바꾸지 말고** 그대로 옮겨 적어라.",
+        "  본문에 없는 문장을 적으면 그 지적은 버려진다.",
+        "- **확신이 서지 않으면 조치를 \"유지\"로 하고 문제만 알려라.** 검증이 틀렸는데 멀쩡한 문장을",
+        "  망가뜨리는 것이 최악이다.",
+        "- 수치가 애매하면 수치를 빼고 서술로 바꾸는 쪽을 택한다(확실하지 않으면 수치를 쓰지 않는다).",
+        "- 수정문은 원문을 그대로 대신할 문장이다. 평서형 존댓말과 앞뒤 흐름을 유지하고 문제가 된 곳만 고친다.",
+        "- 조치가 \"삭제\"면 수정문은 빈 문자열로 둔다.",
+        "- 문제가 없으면 결과를 빈 배열로 낸다. 억지로 찾아내지 마라.",
+        "- 근거에는 확인에 쓴 자료(기관·날짜·매체)를 적는다. 웹에서 확인하지 못했으면 그렇게 적는다.",
+        "- 요약은 이 기사의 검증 결과를 한두 문장으로 적는다."
+      ].filter(Boolean).join("\n");
+
+      const r = await claudeWeb(prompt, schema, { effort: "medium", maxTokens: 16000, maxUses: 10 });
+      if (r.error) return { 번호, 오류: true, 결과: [], 요약: "검증하지 못했습니다." };
+
+      // 서버가 한 번 더 거른다 — 원문이 실제로 본문에 있어야 자동 수정을 허용한다.
+      const 결과 = (Array.isArray(r.value["결과"]) ? r.value["결과"] : []).slice(0, 20).map((f) => {
+        const 원문 = String(f["원문"] || "");
+        let 위치 = Number.isInteger(f["위치"]) ? f["위치"] : -1;
+        if (!(위치 >= 0 && 위치 < blocks.length) || blocks[위치].x.indexOf(원문) < 0) {
+          위치 = 원문 ? blocks.findIndex((b) => b.x.indexOf(원문) >= 0) : -1;
+        }
+        let 조치 = f["조치"];
+        const 확신도 = f["확신도"];
+        const 수정문 = String(f["수정문"] || "");
+        // 찾을 수 없는 원문·확신도 낮음·빈 수정문은 손대지 않는다(경고만).
+        if (!원문 || 위치 < 0) 조치 = "유지";
+        if (확신도 === "낮음") 조치 = "유지";
+        if (조치 === "수정" && !수정문.trim()) 조치 = "유지";
+        return {
+          기사번호: 번호,
+          위치: 위치,
+          종류: 검증종류.indexOf(f["종류"]) >= 0 ? f["종류"] : "사실",
+          원문: 원문,
+          문제: String(f["문제"] || ""),
+          조치: 조치,
+          수정문: 조치 === "삭제" ? "" : 수정문,
+          확신도: ["높음", "보통", "낮음"].indexOf(확신도) >= 0 ? 확신도 : "낮음",
+          근거: String(f["근거"] || ""),
+          적용가능: 위치 >= 0 && !!원문
+        };
+      });
+      return { 번호, 결과, 요약: String(r.value["요약"] || "") };
+    });
+
+    const 결과들 = await Promise.all(jobs);
+    const 검증 = 결과들.flatMap((x) => x.결과);
+    const 실패 = 결과들.filter((x) => x.오류).map((x) => x.번호);
+    const 고침 = 검증.filter((f) => f.조치 !== "유지").length;
+    const 요약 = [
+      실패.length ? `${실패.join("·")}번 칼럼은 검증하지 못했습니다.` : "",
+      고침 ? `${고침}곳을 고쳤습니다.` : "고칠 곳은 없었습니다.",
+      검증.length - 고침 ? `${검증.length - 고침}곳은 확인만 필요합니다.` : ""
+    ].filter(Boolean).join(" ");
+    console.log(`검증: ${채널} ${호수}호 — 지적 ${검증.length}건 / 자동수정 ${고침}건 — ${me.email}`);
+    return send(res, 200, { 검증, 요약, 실패 });
+  }
+
   // 발행하기 — 승인된 계정이면 누구나(자기 호를 발행한다. 발행인은 목록항목에 실려 있다).
   // body = { 목록항목, 본문 } — 기존 issues.json 스키마 그대로.
   // 같은 id가 이미 있으면 교체한다(재발행). 발행 즉시 서재·지면에 반영된다.
