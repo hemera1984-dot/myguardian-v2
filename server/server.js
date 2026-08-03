@@ -688,6 +688,23 @@ async function route(req, res, url) {
   async function claudeWeb(prompt, schema, opts) {
     const o = opts || {};
     let messages = [{ role: "user", content: prompt }];
+    // 검색이 실제로 돌았는지 남긴다 — 질의와 출처를 응답에 실어 보고에 쓴다.
+    const 질의 = [];
+    const 출처 = [];
+    function 수확(content) {
+      (content || []).forEach((b) => {
+        if (b.type === "server_tool_use" && b.name === "web_search" && b.input && b.input.query) {
+          if (질의.indexOf(b.input.query) < 0) 질의.push(String(b.input.query).slice(0, 200));
+        }
+        if (b.type === "web_search_tool_result" && Array.isArray(b.content)) {
+          b.content.forEach((r) => {
+            if (r && r.url && !출처.some((x) => x.url === r.url)) {
+              출처.push({ url: String(r.url).slice(0, 400), 제목: String(r.title || "").slice(0, 200) });
+            }
+          });
+        }
+      });
+    }
     // 서버 도구는 API가 알아서 돌린다. 다만 도구 반복 한도에 걸리면 pause_turn으로
     // 끊기므로 그때는 응답을 그대로 붙여 다시 보낸다(공식 재개 방식).
     for (let turn = 0; turn < 4; turn++) {
@@ -716,6 +733,7 @@ async function route(req, res, url) {
         return { error: 502 };
       }
       const data = await upstream.json();
+      수확(data.content);
       if (data.stop_reason === "refusal") return { error: 422 };
       if (data.stop_reason === "pause_turn") {
         messages = [messages[0], { role: "assistant", content: data.content }];
@@ -723,7 +741,7 @@ async function route(req, res, url) {
       }
       const texts = (data.content || []).filter((b) => b.type === "text");
       const last = texts[texts.length - 1];
-      try { return { value: JSON.parse(last.text) }; } catch (e) { return { error: 502 }; }
+      try { return { value: JSON.parse(last.text), 질의, 출처 }; } catch (e) { return { error: 502 }; }
     }
     return { error: 504 };
   }
@@ -799,7 +817,9 @@ async function route(req, res, url) {
         "- 수정문은 원문을 그대로 대신할 문장이다. 평서형 존댓말과 앞뒤 흐름을 유지하고 문제가 된 곳만 고친다.",
         "- 조치가 \"삭제\"면 수정문은 빈 문자열로 둔다.",
         "- 문제가 없으면 결과를 빈 배열로 낸다. 억지로 찾아내지 마라.",
-        "- 근거에는 확인에 쓴 자료(기관·날짜·매체)를 적는다. 웹에서 확인하지 못했으면 그렇게 적는다.",
+        "- **근거에는 웹에서 실제로 확인한 출처를 적는다** — 발표 기관·날짜·매체명, 있으면 주소까지.",
+        "  검색해도 확인하지 못했으면 \"웹에서 확인하지 못함\"이라고 적고 조치는 \"유지\"로 둔다.",
+        "- 지적할 곳이 없더라도 수치·인용이 있으면 반드시 검색해서 맞는지 확인한 뒤 판단해라.",
         "- 요약은 이 기사의 검증 결과를 한두 문장으로 적는다."
       ].filter(Boolean).join("\n");
 
@@ -833,20 +853,27 @@ async function route(req, res, url) {
           적용가능: 위치 >= 0 && !!원문
         };
       });
-      return { 번호, 결과, 요약: String(r.value["요약"] || "") };
+      return { 번호, 결과, 요약: String(r.value["요약"] || ""), 질의: r.질의 || [], 출처: r.출처 || [] };
     });
 
     const 결과들 = await Promise.all(jobs);
     const 검증 = 결과들.flatMap((x) => x.결과);
+    const 질의 = [...new Set(결과들.flatMap((x) => x.질의 || []))];
+    const 출처 = [];
+    결과들.forEach((x) => (x.출처 || []).forEach((s) => {
+      if (!출처.some((y) => y.url === s.url)) 출처.push(s);
+    }));
     const 실패 = 결과들.filter((x) => x.오류).map((x) => x.번호);
     const 고침 = 검증.filter((f) => f.조치 !== "유지").length;
     const 요약 = [
       실패.length ? `${실패.join("·")}번 칼럼은 검증하지 못했습니다.` : "",
+      질의.length ? `웹에서 ${질의.length}건을 검색해 ${출처.length}개 자료를 확인했습니다.`
+        : "웹 검색이 이루어지지 않았습니다.",
       고침 ? `${고침}곳을 고쳤습니다.` : "고칠 곳은 없었습니다.",
       검증.length - 고침 ? `${검증.length - 고침}곳은 확인만 필요합니다.` : ""
     ].filter(Boolean).join(" ");
-    console.log(`검증: ${채널} ${호수}호 — 지적 ${검증.length}건 / 자동수정 ${고침}건 — ${me.email}`);
-    return send(res, 200, { 검증, 요약, 실패 });
+    console.log(`검증: ${채널} ${호수}호 — 검색 ${질의.length}건 / 지적 ${검증.length}건 / 자동수정 ${고침}건 — ${me.email}`);
+    return send(res, 200, { 검증, 요약, 실패, 질의, 출처: 출처.slice(0, 40) });
   }
 
   // 발행하기 — 승인된 계정이면 누구나(자기 호를 발행한다. 발행인은 목록항목에 실려 있다).
