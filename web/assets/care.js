@@ -145,8 +145,12 @@
   // ── 발행물 읽기 — 서버 우선, 정적 폴백 (2026-07-31 발행 버튼)
   // 서버 발행분은 API에만 있고, 과거 호는 정적 저장소에만 있다.
   // 목록은 둘을 id 기준으로 병합(서버 우선)하고, 서버가 죽어도 정적 열람은 그대로다.
+  // 고객 서재에는 auth.js를 싣지 않는다(로그인 기능을 고객 화면에 들이지 않는다).
+  // 그래서 서버 주소를 여기서도 판단한다 — 안 그러면 서버에 발행한 호가 고객 서재에 뜨지 않는다.
   function apiBase() {
-    return window.mgAuth ? window.mgAuth.apiBase() : "";
+    if (window.mgAuth) return window.mgAuth.apiBase();
+    var h = location.hostname;
+    return (h === "localhost" || h === "127.0.0.1") ? "http://localhost:8787" : "https://api.insurguard.life";
   }
 
   function loadIssueList() {
