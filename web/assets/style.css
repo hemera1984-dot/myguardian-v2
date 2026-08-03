@@ -2743,7 +2743,9 @@ body.magazine :focus-visible { outline: 3px solid #005bbb; outline-offset: 2px; 
 .bh .next-issue .next-meta { display: block; margin-top: 8px; font-size: 12px; font-weight: 700; }
 .bh .bh-back--home { align-self: flex-start; margin-top: 28px; }
 
-@media (max-width: 430px) {
+/* 기준 540px — 요즘 큰 폰은 가로 480px까지 잡힌다. 430px으로 두면 그 기기들이
+   폰 조판을 못 받고 데스크톱 크기의 글자를 그대로 맞는다. */
+@media (max-width: 540px) {
   /* 폰 조판 (2026-08-03 교정) — 큰 글자가 keep-all과 만나면 줄 끝이 들쭉날쭉해진다.
      위계는 그대로 두고 크기만 낮춘다. 더 크게 읽고 싶으면 상단 '가' 버튼이 있다. */
   .bh .article-1 .poster__title { font-size: 43px; }
@@ -2821,11 +2823,30 @@ body.magazine :focus-visible { outline: 3px solid #005bbb; outline-offset: 2px; 
   .bh .footer__title { font-size: 54px; }
 }
 
-/* ── 폰 기사 넘기기 (2026-08-03)
-   기사 셋을 한 판에 이어 붙이면 스크롤이 끝없이 길어진다. 폰에서는 기사 하나만 펼치고
-   좌우로 넘긴다. 넘김 막대는 스와이프를 모르는 독자를 위한 것이다.
-   데스크톱은 이어 읽는 편이 나으므로 이 문법을 쓰지 않는다. */
+/* ── 기사 넘기기 (2026-08-03)
+   기사 셋을 한 판에 이어 붙이면 스크롤이 끝없이 길어진다. 기사 하나만 펼치고
+   다 읽으면 옆으로 넘긴다 — 폰은 스와이프, 노트북은 좌우 화살표.
+   넘김 막대는 그 두 방법을 모르는 독자를 위한 것이다. 화면 크기와 무관하게 같다. */
+.bh.deck-on { overflow-x: clip; }
+.bh.deck-on .article { display: none; }
+.bh.deck-on .article.is-current { display: block; }
+/* 본문 말미의 "다음 칼럼" 블록은 넘김 막대와 하는 일이 같다 — 하나만 둔다 */
+.bh.deck-on .article-nav { display: none; }
 .bh .deck-nav { display: none; }
+.bh.deck-on .deck-nav {
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center;
+  margin-top: 76px; padding-top: 18px; border-top: 4px solid var(--bh-ink);
+}
+.bh.deck-on .article.from-right { animation: deck-in-right 0.18s ease-out; }
+.bh.deck-on .article.from-left { animation: deck-in-left 0.18s ease-out; }
+/* 키보드 안내는 키보드가 있는 기기에서만 — 폰에서는 스와이프가 답이라 군더더기가 된다 */
+.bh .deck-nav__hint { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .bh.deck-on .deck-nav__hint {
+    display: block; grid-column: 1 / -1; margin: 4px 0 0;
+    font-size: 12px; font-weight: 700; letter-spacing: -0.02em; opacity: 0.55;
+  }
+}
 .bh .deck-nav__btn {
   padding: 15px 10px; border: 3px solid var(--bh-ink); background: var(--bh-paper);
   color: var(--bh-ink); font: inherit; font-size: 14px; font-weight: 900;
@@ -2841,18 +2862,10 @@ body.magazine :focus-visible { outline: 3px solid #005bbb; outline-offset: 2px; 
   text-align: left; text-decoration: none; word-break: keep-all; cursor: pointer;
 }
 
-@media (max-width: 430px) {
-  .bh.deck-on { overflow-x: clip; }
-  .bh.deck-on .article { display: none; }
-  .bh.deck-on .article.is-current { display: block; }
-  /* 본문 말미의 "다음 칼럼" 블록은 넘김 막대와 하는 일이 같다 — 폰에서는 하나만 둔다 */
-  .bh.deck-on .article-nav { display: none; }
-  .bh.deck-on .deck-nav {
-    display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center;
-    margin-top: 76px; padding-top: 18px; border-top: 4px solid var(--bh-ink);
-  }
-  .bh.deck-on .article.from-right { animation: deck-in-right 0.18s ease-out; }
-  .bh.deck-on .article.from-left { animation: deck-in-left 0.18s ease-out; }
+/* 넘김 막대는 본문 폭을 따라간다 — 넓은 화면에서 화면 전폭으로 늘어지면 조판이 깨진다 */
+@media (min-width: 760px) {
+  .bh.deck-on .deck-nav { max-width: 820px; margin-left: 6vw; }
+  .bh .deck-nav__title { font-size: 20px; padding: 20px 22px; }
 }
 @keyframes deck-in-right { from { transform: translateX(28px); } to { transform: none; } }
 @keyframes deck-in-left { from { transform: translateX(-28px); } to { transform: none; } }
