@@ -59,6 +59,7 @@
         root.innerHTML = window.care.issueHtml(meta, data, list, edition);
         document.getElementById("top-title").textContent =
           meta["채널"] + " " + (meta["발행인"] || "안창민") + " · 통권 " + meta["호수"] + "호";
+        window.care.initDeck(root);
         initProgress();
       }
 

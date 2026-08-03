@@ -2680,9 +2680,11 @@ body.magazine :focus-visible { outline: 3px solid #005bbb; outline-offset: 2px; 
 .bh .body-section.turning-point .body-heading { font-size: clamp(38px, 10vw, 76px); line-height: 0.97; }
 
 /* 색면 문단 — 칼럼의 핵심 문단 */
+/* 본문 칼럼보다 살짝 넓게 나가되 화면 밖으로는 절대 나가지 않는다.
+   종전 `margin: 80px 50%` + translateX(-50%) 조합은 기준 폭이 어긋나 좌표가 왼쪽으로 밀렸다. */
 .bh .spotlight {
-  position: relative; width: min(calc(100% + 32px), calc(100vw - 40px)); max-width: 820px;
-  margin: 80px 50%; padding: 34px 26px 38px; transform: translateX(-50%);
+  position: relative; width: auto; max-width: none;
+  margin: 80px calc(-1 * min(30px, 4vw)); padding: 34px 26px 38px;
   border: 4px solid var(--bh-ink); background: var(--red); color: #fff; font-weight: 500;
 }
 .bh .spotlight::after { content: ""; position: absolute; right: -12px; bottom: -12px; width: 44px; aspect-ratio: 1; background: var(--yellow); border: 4px solid var(--bh-ink); }
@@ -2742,9 +2744,25 @@ body.magazine :focus-visible { outline: 3px solid #005bbb; outline-offset: 2px; 
 .bh .bh-back--home { align-self: flex-start; margin-top: 28px; }
 
 @media (max-width: 430px) {
-  .bh .article-1 .poster__title { font-size: 56px; }
-  .bh .article-2 .poster__title { font-size: 52px; }
-  .bh .article-3 .poster__title { font-size: 47px; }
+  /* 폰 조판 (2026-08-03 교정) — 큰 글자가 keep-all과 만나면 줄 끝이 들쭉날쭉해진다.
+     위계는 그대로 두고 크기만 낮춘다. 더 크게 읽고 싶으면 상단 '가' 버튼이 있다. */
+  .bh .article-1 .poster__title { font-size: 43px; }
+  .bh .article-2 .poster__title { font-size: 40px; }
+  .bh .article-3 .poster__title { font-size: 37px; }
+  .bh .front__heading { margin-bottom: 34px; font-size: 37px; letter-spacing: -0.06em; }
+  .bh .editor-copy p:first-child { font-size: 19px; font-weight: 700; line-height: 1.66; }
+  .bh .lead,
+  .bh .article-1 .lead,
+  .bh .article-2 .lead,
+  .bh .article-3 .lead { font-size: 21px; line-height: 1.56; letter-spacing: -0.045em; }
+  .bh .lead--long,
+  .bh .article-1 .lead--long,
+  .bh .article-2 .lead--long,
+  .bh .article-3 .lead--long { font-size: 18.5px; line-height: 1.66; }
+  /* 가로 사진을 세로로 긴 표지 틀에 넣으면 좌우가 크게 잘린다.
+     폰에서는 판형을 잡지 표지 비율(가로:세로 = 1:1.32)로 낮춰 잘리는 폭을 줄인다. */
+  .bh .masthead { min-height: min(calc(100svh - 48px), 132vw); }
+  .bh .masthead__photo { object-position: 50% 36%; }
   .bh .quote-block { padding-inline: 22px; }
   .bh .body-section { margin-top: 96px; }
   .bh .stat.peak { padding: 46px 20px; }
@@ -2803,7 +2821,49 @@ body.magazine :focus-visible { outline: 3px solid #005bbb; outline-offset: 2px; 
   .bh .footer__title { font-size: 54px; }
 }
 
+/* ── 폰 기사 넘기기 (2026-08-03)
+   기사 셋을 한 판에 이어 붙이면 스크롤이 끝없이 길어진다. 폰에서는 기사 하나만 펼치고
+   좌우로 넘긴다. 넘김 막대는 스와이프를 모르는 독자를 위한 것이다.
+   데스크톱은 이어 읽는 편이 나으므로 이 문법을 쓰지 않는다. */
+.bh .deck-nav { display: none; }
+.bh .deck-nav__btn {
+  padding: 15px 10px; border: 3px solid var(--bh-ink); background: var(--bh-paper);
+  color: var(--bh-ink); font: inherit; font-size: 14px; font-weight: 900;
+  letter-spacing: -0.03em; cursor: pointer;
+}
+.bh .deck-nav__btn--next { background: var(--bh-ink); color: var(--bh-paper); }
+.bh .deck-nav__btn:disabled { opacity: 0.26; cursor: default; }
+.bh .deck-nav__pos { font-size: 13px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.bh .deck-nav__title {
+  display: block; grid-column: 1 / -1; width: 100%; padding: 17px 16px;
+  border: 3px solid var(--bh-ink); background: var(--yellow); color: var(--bh-ink);
+  font: inherit; font-size: 17px; font-weight: 900; line-height: 1.32; letter-spacing: -0.04em;
+  text-align: left; text-decoration: none; word-break: keep-all; cursor: pointer;
+}
+
+@media (max-width: 430px) {
+  .bh.deck-on { overflow-x: clip; }
+  .bh.deck-on .article { display: none; }
+  .bh.deck-on .article.is-current { display: block; }
+  /* 본문 말미의 "다음 칼럼" 블록은 넘김 막대와 하는 일이 같다 — 폰에서는 하나만 둔다 */
+  .bh.deck-on .article-nav { display: none; }
+  .bh.deck-on .deck-nav {
+    display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center;
+    margin-top: 76px; padding-top: 18px; border-top: 4px solid var(--bh-ink);
+  }
+  .bh.deck-on .article.from-right { animation: deck-in-right 0.18s ease-out; }
+  .bh.deck-on .article.from-left { animation: deck-in-left 0.18s ease-out; }
+}
+@keyframes deck-in-right { from { transform: translateX(28px); } to { transform: none; } }
+@keyframes deck-in-left { from { transform: translateX(-28px); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .bh.deck-on .article.from-right,
+  .bh.deck-on .article.from-left { animation: none; }
+}
+
 @media print {
+  .bh .deck-nav { display: none !important; }
+  .bh.deck-on .article { display: block !important; }
   .bh .masthead, .bh .poster { min-height: 90vh; }
   .bh .article { break-before: page; }
   .bh .body-section, .bh .quote-block, .bh .statement, .bh .stat,
