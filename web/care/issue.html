@@ -41,6 +41,17 @@
       "use strict";
       var root = document.getElementById("issue");
 
+      // 돌아가는 자리는 보는 사람에 따라 다르다 — 고객은 서가만, FC는 발행 도구가 있는 서재로.
+      // 화면을 가르는 것일 뿐 차단이 아니다. 실제 데이터 보호는 서버가 한다.
+      (function () {
+        if (!window.mgAuth || !window.mgAuth.token()) return;
+        window.mgAuth.me().then(function (info) {
+          if (info && info["계정"] && info["계정"]["상태"] === "승인") {
+            document.querySelector(".mag-home").setAttribute("href", "shelf.html");
+          }
+        }).catch(function () {});
+      })();
+
       // 조판(제호·기사·판권)은 care.js가 맡는다 — 발행 데스크 미리보기와 같은 함수를 쓴다.
 
       function notFound() {
