@@ -374,7 +374,9 @@
           + ' tabindex="0" role="button" aria-label="' + esc(label) + '">' + (path ? "" : "이미지 없음") + "</div>"
           + '<div class="slot-meta">' + (path ? esc(path) : "눌러서 파일을 고르거나 이 자리에 끌어다 놓습니다.") + "</div>"
           + '<div class="slot-acts">'
-          + '<button class="btn" type="button" data-imgai="' + esc(target) + '">이미지 프롬프트</button>'
+          + '<button class="btn btn-primary" type="button" data-artwork="' + esc(target) + '">'
+          + (path ? "다시 만들기" : (target === "cover" ? "표지 만들기" : "삽화 만들기")) + "</button>"
+          + '<button class="btn" type="button" data-imgai="' + esc(target) + '">프롬프트만</button>'
           + (path ? '<button class="btn" type="button" data-imgdel="' + esc(target) + '">지우기</button>' : "")
           + "</div>"
           + '<div class="img-prompt" data-prompt="' + esc(target) + '" hidden></div>'
@@ -704,6 +706,48 @@
         });
       }
 
+      // ══ 삽화 만들기 ═══════════════════════════════════════════════════
+      // 이미지를 찾아 헤매는 시간을 없앤다. 서버가 바우하우스 도형 배치를 받아
+      // SVG로 조립·저장하고 주소를 돌려주므로, 여기서는 슬롯에 꽂기만 하면 된다.
+      function artworkBody(target) {
+        if (target === "cover") {
+          return { "종류": "표지", "채널": chFull(),
+            "제목들": (S.draft["기사"] || []).map(function (a) { return a["제목"]; }).filter(Boolean) };
+        }
+        var a = S.draft["기사"][Number(target.slice(4))];
+        return { "종류": "칼럼", "채널": chFull(), "제목": a["제목"],
+          "카테고리": a["카테고리"] || "", "요약": fromLines(a["요약"]) || a["부제"] || "" };
+      }
+
+      function slotNote(target, text, bad) {
+        var box = document.querySelector('[data-prompt="' + target + '"]');
+        if (!box) return;
+        box.hidden = false;
+        box.textContent = text;
+        box.classList.toggle("bad", !!bad);
+      }
+
+      function makeArtwork(target, btn) {
+        if (!window.mgAuth || !window.mgAuth.token()) {
+          slotNote(target, "로그인이 필요합니다. 진입 화면에서 구글 계정으로 로그인하세요.", true);
+          return;
+        }
+        var old = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = "그리는 중";
+        slotNote(target, "삽화를 그리고 있습니다.");
+        window.mgAuth.api("/ai/artwork", { method: "POST", body: artworkBody(target) })
+          .then(function (d) {
+            setImage(target, d["주소"]);  // 슬롯이 다시 그려지므로 안내는 그 뒤에 얹는다
+            slotNote(target, d["의도"] ? "삽화를 만들었습니다 — " + d["의도"] : "삽화를 만들었습니다.");
+          })
+          .catch(function (err) {
+            btn.disabled = false;
+            btn.textContent = old;
+            slotNote(target, (err && err.data && err.data["error"]) || err.message || "삽화를 만들지 못했습니다.", true);
+          });
+      }
+
       // ══ 이미지 프롬프트 ═══════════════════════════════════════════════
       // 사진을 찾아 헤매지 않도록 생성 지시문을 만들어 준다. 결과를 이미지 생성기에 넣고
       // 나온 파일을 이 슬롯에 올린다 (헌법: 지면 이미지는 생성이 주력).
@@ -920,6 +964,8 @@
           return;
         }
 
+        var art = t.closest("button[data-artwork]");
+        if (art) { makeArtwork(art.dataset.artwork, art); return; }
         var gen = t.closest("button[data-imgai]");
         if (gen) { imgPromptFor(gen.dataset.imgai, gen); return; }
         var cp = t.closest("button[data-ipcopy]");

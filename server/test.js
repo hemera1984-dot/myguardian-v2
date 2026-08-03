@@ -10,6 +10,7 @@ import {
   listPending, approve, suspend, isDescendantOf, getAccount, deleteSessionsFor,
   setApprover, listMembers
 } from "./db.js";
+import { artworkSvg } from "./artwork.js";
 
 const FILE = "./test-auth.db";
 rmSync(FILE, { force: true });
@@ -124,6 +125,22 @@ check("세션 일괄 삭제 — 퇴사·회수 시 접근 차단", () => {
   createSession(db, boss.id);
   deleteSessionsFor(db, boss.id);
   assert.equal(db.prepare("SELECT COUNT(*) c FROM sessions WHERE account_id = ?").get(boss.id).c, 0);
+});
+
+check("삽화 조립 — 팔레트 밖 색·이상 좌표는 튕겨낸다", () => {
+  const svg = artworkSvg({
+    배경: "javascript:x", 의도: "",
+    도형: [
+      { 형: "원", x: 10, y: 10, w: 40, h: 40, 색: '"><script>', 회전: 0 },
+      { 형: "사각", x: "말도 안 되는 값", y: 9999, w: -50, h: 30, 색: "파랑", 회전: 999 },
+      { 형: "삼각", x: 60, y: 50, w: 30, h: 40, 색: "노랑", 회전: -20 }
+    ]
+  }, "칼럼");
+  assert.ok(!/script|javascript/i.test(svg), "AI 출력이 마크업으로 새면 안 된다");
+  assert.ok(svg.includes('width="1600" height="900"'), "칼럼은 16:9 판형");
+  assert.ok(svg.includes('fill="#111111"'), "모르는 색은 잉크로 떨어진다");
+  assert.equal((svg.match(/<circle|<rect|<polygon/g) || []).length, 4, "배경 1 + 도형 3");
+  assert.ok(artworkSvg({ 배경: "빨강" }, "표지").includes('width="1200" height="1600"'), "표지는 3:4 판형");
 });
 
 db.close();
