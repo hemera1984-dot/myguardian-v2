@@ -372,7 +372,7 @@
           + '<div class="slot-view' + (path ? " has" : "") + '" data-slot="' + esc(target) + '"'
           + (path ? ' style="background-image:url(' + esc(care.mediaSrc(path)) + ')"' : "")
           + ' tabindex="0" role="button" aria-label="' + esc(label) + '">' + (path ? "" : "이미지 없음") + "</div>"
-          + '<div class="slot-meta">' + (path ? esc(path) : "눌러서 파일을 고르거나 이 자리에 끌어다 놓습니다.") + "</div>"
+          + '<div class="slot-meta">' + (path ? esc(path) : "눌러서 고르거나, 끌어다 놓거나, 복사한 이미지를 붙여넣습니다.") + "</div>"
           + '<div class="slot-acts">'
           + '<button class="btn btn-primary" type="button" data-artwork="' + esc(target) + '">'
           + (path ? "다시 만들기" : (target === "cover" ? "표지 만들기" : "삽화 만들기")) + "</button>"
@@ -1037,6 +1037,45 @@
         e.preventDefault();
         slot.classList.remove("over");
         uploadImage(e.dataTransfer && e.dataTransfer.files[0], slot.dataset.slot);
+      });
+
+      // ── 붙여넣기 ─────────────────────────────────────────────────────
+      // 캡처한 이미지를 바로 넣을 수 있게 한다. 슬롯을 한 번 누르면 그 슬롯이 붙여넣기 대상이 되고,
+      // 화면 어디에서 Ctrl+V 해도 그 자리에 들어간다.
+      var pasteTarget = null;
+
+      function markPasteTarget(target) {
+        pasteTarget = target;
+        [].forEach.call(document.querySelectorAll(".slot-view"), function (n) {
+          n.classList.toggle("paste-on", n.dataset.slot === target);
+        });
+        var hint = el("paste-hint");
+        if (hint) {
+          hint.hidden = false;
+          hint.textContent = "이 자리에 붙여넣기(Ctrl+V)할 수 있습니다.";
+        }
+      }
+
+      // 슬롯을 누르면 파일 선택과 함께 붙여넣기 대상으로도 지정한다
+      el("view-edit").addEventListener("click", function (e) {
+        var slot = e.target.closest(".slot-view");
+        if (slot && slot.dataset.slot) markPasteTarget(slot.dataset.slot);
+      }, true);
+
+      document.addEventListener("paste", function (e) {
+        var items = (e.clipboardData && e.clipboardData.items) || [];
+        var file = null;
+        for (var i = 0; i < items.length; i++) {
+          if (items[i].type && items[i].type.indexOf("image/") === 0) {
+            file = items[i].getAsFile();
+            break;
+          }
+        }
+        if (!file) return;
+        // 붙여넣기 대상이 없으면 표지로 보낸다 — 표지가 가장 자주 쓰는 자리다
+        var target = pasteTarget || "cover";
+        e.preventDefault();
+        uploadImage(file, target);
       });
 
       // 키보드로도 슬롯을 연다
