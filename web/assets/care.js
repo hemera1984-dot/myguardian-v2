@@ -500,67 +500,78 @@
     return cut;
   }
 
-  // 표지 도형 — 커버이미지가 없는 호가 쓰는 그림 자리(y 64~400)
+  // 표지 도형 — 커버이미지가 없는 호가 까는 그림. 제호(위)·커버라인(아래) 자리를 피해
+  // 가운데 띠에만 놓는다. 자리는 고정이고 도형만 호마다 바뀐다.
   function coverArt(v, c) {
-    var shapes = v === 0
-      ? '<circle cx="222" cy="152" r="62" fill="' + c.a + '"/>'
-        + '<rect x="26" y="228" width="92" height="92" fill="' + c.b + '" transform="rotate(-12 72 274)"/>'
+    return v === 0
+      ? '<circle cx="222" cy="150" r="64" fill="' + c.a + '"/>'
+        + '<rect x="26" y="176" width="84" height="84" fill="' + c.b + '" transform="rotate(-12 68 218)"/>'
       : v === 1
-        ? '<polygon points="152,88 236,222 68,222" fill="' + c.a + '"/>'
-          + '<circle cx="60" cy="296" r="46" fill="' + c.b + '"/>'
-        : '<rect x="172" y="100" width="108" height="108" fill="' + c.a + '"/>'
-          + '<polygon points="24,318 144,318 84,200" fill="' + c.b + '"/>';
-    return '<rect x="0" y="64" width="300" height="336" fill="' + c.bg + '"/>' + shapes;
+        ? '<polygon points="150,74 232,206 68,206" fill="' + c.a + '"/>'
+          + '<circle cx="62" cy="232" r="42" fill="' + c.b + '"/>'
+        : '<rect x="168" y="86" width="104" height="104" fill="' + c.a + '"/>'
+          + '<polygon points="26,254 138,254 82,148" fill="' + c.b + '"/>';
   }
 
-  // 표지 — 포브스형. 제호 띠(위) · 그림(가운데) · 커버라인(그림 위) · 호수·발행일(아래).
-  // 커버이미지가 있으면 그림 자리에 그것을 깔고, 없으면 바우하우스 도형을 깐다.
+  // 표지 — 고정 틀 + 갈아끼우는 이미지 (2026-08-03 사용자 확정).
+  // 틀(제호·커버라인 자리·호수 줄)은 코드에 박혀 매 호 같고, 배경 이미지와 문구만 바뀐다.
+  // 그래야 사진이 달라져도 서가에서 한눈에 같은 잡지로 읽힌다. 지면 첫 장(style.css의
+  // .masthead)도 같은 구성이며, 여기는 그 축소판이다.
+  //
+  // 어두운 층은 장식이 아니라 가독 장치다 — 어떤 사진이 깔려도 제호·커버라인이 읽혀야 한다.
+  // (헌법의 그라데이션 금지는 플랫폼 업무 화면 규칙이고 발행물은 독립 브랜드다.)
+  // 뒷날 자리: 올린 사진을 바우하우스 화풍으로 변환하는 층은 이미지 생성 API가 붙으면
+  // 이 ground 자리에서 갈아끼운다.
   function coverSvg(issue, pub) {
     var n = Number(issue["호수"]) || 0;
     var v = n % 3;
     var c = COVER_SETS[v];
-    var ac = COVER_ACCENT[v];
-    var mast = (issue["채널"] || "") + " " + (pub || issue["발행인"] || "안창민");
-    var img = issue["커버이미지"];
+    var publisher = pub || issue["발행인"] || "안창민";
+    var mast = (issue["채널"] || "") + " " + publisher;
+    var uid = "cv" + String(issue.id || n).replace(/[^a-zA-Z0-9]/g, "");
 
-    var ground = img
-      ? '<image href="' + esc(mediaSrc(img)) + '" x="0" y="64" width="300" height="336" preserveAspectRatio="xMidYMid slice"/>'
-      : coverArt(v, c);
+    // ── 갈아끼우는 층 — 올린 사진 · 자동 생성 도형 표지 · 없으면 색면
+    var ground = issue["커버이미지"]
+      ? '<image href="' + esc(mediaSrc(issue["커버이미지"])) + '" x="0" y="0" width="300" height="400" preserveAspectRatio="xMidYMid slice"/>'
+      // 색면은 늘 잉크다 — 밝은 색면 위에 흰 글자를 얹으면 어떤 어두운 층을 깔아도 탁해진다.
+      // 도형만 호마다 바뀐다.
+      : '<rect width="300" height="400" fill="#111111"/>' + coverArt(v, c);
 
-    // 커버라인 — 대표 칼럼 제목을 색면에 얹는다. 보조 제목은 잉크 칩으로 한 줄.
-    var lines = wrapLines(issue["제목"], 13, 2);
+    // ── 고정 층 — 자리는 늘 같고 글자만 바뀐다
+    var lines = wrapLines(issue["제목"], 13, 3);
     var also = (issue["꼭지"] || []).map(function (t) { return t["제목"]; })
       .filter(function (t) { return t && t !== issue["제목"]; }).slice(0, 1);
-    var chipH = also.length ? 20 : 0;
-    var panelH = 14 + lines.length * 25;
-    var panelY = 366 - panelH;
-    var chipY = panelY - chipH;
-    var panel = '<rect x="0" y="' + panelY + '" width="252" height="' + panelH + '" fill="' + ac.line + '"/>'
-      + lines.map(function (l, i) {
-        return '<text x="13" y="' + (panelY + 26 + i * 25) + '" fill="' + ac.ink
-          + '" font-family="Paperlogy, sans-serif" font-size="21" font-weight="900" letter-spacing="-1">' + esc(l) + "</text>";
-      }).join("");
-    if (also.length) {
-      panel = '<rect x="0" y="' + chipY + '" width="196" height="' + chipH + '" fill="#111111"/>'
-        + '<text x="13" y="' + (chipY + 14) + '" fill="#F4F1EA" font-family="Paperlogy, sans-serif" font-size="11" font-weight="800">'
-        + esc(wrapLines(also[0], 20, 1)[0] || "") + "</text>" + panel;
-    }
+    var coverline = lines.map(function (l, i) {
+      // 마지막 줄이 늘 같은 높이에 오도록 아래에서 위로 쌓는다
+      var y = 336 - (lines.length - 1 - i) * 25;
+      return '<text x="14" y="' + y + '" fill="#FFFFFF" font-family="Paperlogy, sans-serif" font-size="22" font-weight="900" letter-spacing="-1.2">' + esc(l) + "</text>";
+    }).join("");
 
     return '<svg class="shelf-svg" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + esc(mast + " " + n + "호 표지") + '">'
-      + '<rect width="300" height="400" fill="#F4F1EA"/>'
+      + "<defs>"
+      + '<linearGradient id="' + uid + 't" x1="0" y1="0" x2="0" y2="1">'
+      + '<stop offset="0" stop-color="#111111" stop-opacity="0.78"/><stop offset="1" stop-color="#111111" stop-opacity="0"/></linearGradient>'
+      + '<linearGradient id="' + uid + 'b" x1="0" y1="0" x2="0" y2="1">'
+      + '<stop offset="0" stop-color="#111111" stop-opacity="0"/><stop offset="0.55" stop-color="#111111" stop-opacity="0.72"/><stop offset="1" stop-color="#111111" stop-opacity="0.92"/></linearGradient>'
+      + "</defs>"
+      + '<rect width="300" height="400" fill="#111111"/>'
       + ground
-      + '<rect x="0" y="0" width="300" height="64" fill="#F4F1EA"/>'
-      + '<text x="13" y="45" fill="#111111" font-family="Paperlogy, sans-serif" font-size="34" font-weight="900" letter-spacing="-2.2">'
-      + esc(issue["채널"] || "") + '<tspan fill="' + ac.line + '"> ' + esc(pub || issue["발행인"] || "안창민") + "</tspan></text>"
-      + '<rect x="0" y="60" width="300" height="4" fill="#111111"/>'
-      + panel
-      + '<rect x="0" y="366" width="300" height="34" fill="#111111"/>'
-      + '<text x="13" y="388" fill="#F4F1EA" font-family="Paperlogy, sans-serif" font-size="12" font-weight="800" letter-spacing="0.4">통권 ' + esc(n) + "호</text>"
-      + '<text x="287" y="388" text-anchor="end" fill="#F4F1EA" font-family="Paperlogy, sans-serif" font-size="11" font-weight="700">' + esc(displayDate(issue["발행일"], issue["주차라벨"])) + "</text>"
+      + '<rect x="0" y="0" width="300" height="132" fill="url(#' + uid + 't)"/>'
+      + '<rect x="0" y="188" width="300" height="212" fill="url(#' + uid + 'b)"/>'
+      + '<text x="14" y="46" fill="#FFFFFF" font-family="Paperlogy, sans-serif" font-size="32" font-weight="900" letter-spacing="-2">'
+      + esc(issue["채널"] || "") + '<tspan fill="#F5C518"> ' + esc(publisher) + "</tspan></text>"
+      + '<rect x="14" y="58" width="54" height="5" fill="#E63329"/>'
+      + coverline
+      + (also.length
+          ? '<text x="14" y="356" fill="#FFFFFF" fill-opacity="0.82" font-family="Paperlogy, sans-serif" font-size="11" font-weight="700">' + esc(wrapLines(also[0], 24, 1)[0] || "") + "</text>"
+          : "")
+      + '<rect x="14" y="366" width="272" height="1" fill="#FFFFFF" fill-opacity="0.45"/>'
+      + '<text x="14" y="386" fill="#FFFFFF" font-family="Paperlogy, sans-serif" font-size="11.5" font-weight="800" letter-spacing="0.4">통권 ' + esc(n) + "호</text>"
+      + '<text x="286" y="386" text-anchor="end" fill="#FFFFFF" fill-opacity="0.85" font-family="Paperlogy, sans-serif" font-size="10.5" font-weight="700">' + esc(displayDate(issue["발행일"], issue["주차라벨"])) + "</text>"
       + "</svg>";
   }
 
-  // 표지 — 이미지 유무와 무관하게 같은 포브스 틀을 쓴다(이미지는 그림 자리에 깔린다)
+  // 표지 — 이미지 유무와 무관하게 같은 틀. 이미지는 3:4로 자동 크롭돼(slice) 깔린다.
   function coverHtml(issue, pub) {
     return coverSvg(issue, pub);
   }
@@ -605,29 +616,32 @@
 
     h.push('<div class="bh">');
 
-    // 표지 — 포브스형. 제호 띠 · 그림 · 그림 위 커버라인 · 호수·발행일 띠.
-    // 커버이미지가 있으면 그것이 지면을 채우고, 없으면 바우하우스 도형이 그 자리에 들어간다.
+    // 표지 — 고정 틀 + 갈아끼우는 이미지 (2026-08-03 사용자 확정).
+    // 서재 표지 카드(coverSvg)와 같은 구성이다. 여기가 원본이고 서재가 축소판이므로
+    // 틀을 고칠 때는 두 곳을 함께 고친다.
     var cover = meta["커버이미지"];
     var also = arts.map(function (a) { return a["제목"]; })
       .filter(function (t) { return t && t !== meta["제목"]; }).slice(0, 2);
-    h.push('<section class="masthead' + (cover ? " masthead--photo" : "") + '" id="a0">');
-    h.push('<div class="masthead__brand"><h1 class="masthead__title">' + esc(meta["채널"]) + "<span>" + esc(pub) + "</span></h1></div>");
-    h.push('<div class="masthead__art">');
+    h.push('<section class="masthead' + (cover ? " masthead--photo" : " masthead--art") + '" id="a0">');
+    // 갈아끼우는 층 — 올린 사진 · 자동 생성 도형 표지 · 없으면 색면 + 도형
     if (cover) {
       h.push('<img class="masthead__photo" src="' + esc(mediaSrc(cover)) + '" alt="">');
     } else {
       h.push('<div class="masthead__circle" aria-hidden="true"></div>');
       h.push('<div class="masthead__triangle" aria-hidden="true"></div>');
     }
+    // 고정 층 — 자리는 늘 같고 글자만 바뀐다
+    h.push('<div class="masthead__scrim" aria-hidden="true"></div>');
+    h.push('<div class="masthead__brand"><h1 class="masthead__title">' + esc(meta["채널"]) + "<span>" + esc(pub) + "</span></h1>");
+    h.push('<span class="masthead__rule" aria-hidden="true"></span></div>');
     h.push('<div class="masthead__lines">');
-    if (meta["주차라벨"]) h.push('<p class="masthead__kicker">' + esc(meta["주차라벨"]) + "</p>");
     h.push('<p class="masthead__deck">' + esc(meta["제목"] || "") + "</p>");
     if (also.length) {
       h.push('<ul class="masthead__also">');
       also.forEach(function (t) { h.push("<li>" + esc(t) + "</li>"); });
       h.push("</ul>");
     }
-    h.push("</div></div>");
+    h.push("</div>");
     h.push('<div class="masthead__foot"><span class="masthead__no">통권 ' + esc(meta["호수"]) + "호</span>");
     h.push('<span class="masthead__issued">' + esc(displayDate(meta["발행일"], meta["주차라벨"])) + " 발행 · " + esc(editorLine) + "</span></div>");
     h.push("</section>");
