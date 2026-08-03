@@ -2411,16 +2411,44 @@ body.magazine .mag-progress {
 }
 body.magazine :focus-visible { outline: 3px solid #005bbb; outline-offset: 2px; }
 
-/* ── 표지 (포브스형: 제호 띠 · 그림 · 그림 위 커버라인 · 판권 띠) ── */
+/* ── 표지 — 고정 틀 + 갈아끼우는 이미지 (2026-08-03 사용자 확정) ──────
+   틀(제호·커버라인 자리·호수 줄)은 매 호 같고 배경 이미지와 문구만 바뀐다.
+   그래야 사진이 달라져도 한눈에 같은 잡지로 읽힌다. 서재 표지 카드(care.js coverSvg)가
+   같은 구성의 축소판이므로 틀을 고칠 때는 두 곳을 함께 고친다. */
 .bh .masthead {
   position: relative;
   min-height: calc(100svh - 48px);
   overflow: hidden;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  background: var(--bh-paper);
+  background: var(--bh-ink);
+  color: #fff;
 }
-.bh .masthead__brand { padding: 18px 14px 14px; border-bottom: 5px solid var(--bh-ink); }
+/* 갈아끼우는 층 — 올린 사진은 3:4 판형에 맞춰 중앙 기준으로 자동 크롭된다.
+   뒷날 자리: 사진을 바우하우스 화풍으로 변환하는 층은 이미지 생성 API가 붙으면 여기에 낀다. */
+/* 색면은 늘 잉크다 — 밝은 색면 위에 흰 글자를 얹으면 어두운 층이 색을 탁하게 만든다 */
+.bh .masthead--art { background: var(--bh-ink); }
+.bh .masthead__photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.bh .masthead__circle {
+  position: absolute; z-index: 1; right: -72px; top: 14%;
+  width: 205px; aspect-ratio: 1; border-radius: 50%; background: var(--yellow);
+}
+.bh .masthead__triangle {
+  position: absolute; z-index: 1; left: 6%; top: 34%;
+  width: 0; height: 0;
+  border-left: 74px solid transparent;
+  border-right: 74px solid transparent;
+  border-bottom: 128px solid var(--red);
+  transform: rotate(14deg);
+}
+/* 어두운 층은 장식이 아니라 가독 장치다 — 어떤 사진이 깔려도 글자가 읽혀야 한다.
+   (헌법의 그라데이션 금지는 플랫폼 업무 화면 규칙이고 발행물은 독립 브랜드다.) */
+.bh .masthead__scrim {
+  position: absolute; z-index: 2; inset: 0;
+  background:
+    linear-gradient(180deg, rgba(17, 17, 17, 0.78) 0%, rgba(17, 17, 17, 0) 30%),
+    linear-gradient(0deg, rgba(17, 17, 17, 0.92) 0%, rgba(17, 17, 17, 0.72) 24%, rgba(17, 17, 17, 0) 52%);
+}
+/* 고정 층 — 자리·크기·자간이 매 호 같다 */
+.bh .masthead__brand { position: absolute; z-index: 3; left: 0; right: 0; top: 0; padding: 20px 14px 0; }
 .bh .masthead__title {
   display: flex; align-items: baseline; gap: 0.16em; flex-wrap: wrap;
   margin: 0;
@@ -2429,65 +2457,38 @@ body.magazine :focus-visible { outline: 3px solid #005bbb; outline-offset: 2px; 
   line-height: 0.9;
   letter-spacing: -0.075em;
 }
-.bh .masthead__title span { color: var(--red); }
-/* 그림 자리 — 커버이미지가 채우거나, 없으면 도형이 놓인다 */
-.bh .masthead__art { position: relative; overflow: hidden; min-height: 44vh; background: var(--yellow); }
-.bh .masthead--photo .masthead__art { background: var(--bh-ink); }
-.bh .masthead__photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.bh .masthead__circle {
-  position: absolute; z-index: 1; right: -72px; top: 8%;
-  width: 205px; aspect-ratio: 1; border-radius: 50%; background: var(--blue);
-}
-.bh .masthead__triangle {
-  position: absolute; z-index: 1; left: 6%; top: 34%;
-  width: 0; height: 0;
-  border-left: 74px solid transparent;
-  border-right: 74px solid transparent;
-  border-bottom: 128px solid var(--bh-ink);
-  transform: rotate(14deg);
-}
-/* 커버라인 — 글자는 늘 색면 위에 올린다. 어떤 그림이 깔려도 읽힌다. */
+.bh .masthead__title span { color: var(--yellow); }
+.bh .masthead__rule { display: block; width: 68px; height: 6px; margin-top: 12px; background: var(--red); }
 .bh .masthead__lines {
-  position: absolute; z-index: 3; left: 0; right: 0; bottom: 0;
-  display: grid; justify-items: start; align-content: end;
-}
-.bh .masthead__kicker {
-  width: max-content;
-  margin: 0;
-  padding: 6px 11px;
-  background: var(--blue);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
+  position: absolute; z-index: 3; left: 0; right: 0; bottom: 62px;
+  display: grid; justify-items: start; align-content: end; gap: 12px;
+  padding: 0 14px;
 }
 .bh .masthead__deck {
   max-width: 9em;   /* 한글은 한 글자가 1em이라 ch가 아니라 em으로 잡는다 */
   word-break: keep-all;
   margin: 0;
-  padding: 14px 18px 16px;
-  background: var(--red);
-  color: #fff;
-  font-size: clamp(26px, 8vw, 56px);
+  font-size: clamp(28px, 8.4vw, 58px);
   font-weight: 900;
   line-height: 1.06;
   letter-spacing: -0.055em;
 }
-.bh .masthead__also { display: flex; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; }
-.bh .masthead__also li {
-  padding: 9px 14px;
-  background: var(--bh-ink); color: var(--bh-paper);
-  font-size: 12.5px; font-weight: 800; letter-spacing: -0.025em;
+.bh .masthead__also {
+  display: grid; gap: 7px;
+  margin: 0; padding: 0; list-style: none;
+  font-size: 13px; font-weight: 700; letter-spacing: -0.025em; opacity: 0.88;
 }
-.bh .masthead__also li + li { border-left: 2px solid var(--bh-paper); }
+.bh .masthead__also li { padding-left: 13px; border-left: 3px solid var(--yellow); }
 .bh .masthead__foot {
+  position: absolute; z-index: 3; left: 0; right: 0; bottom: 0;
   display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
-  padding: 13px 14px;
-  border-top: 5px solid var(--bh-ink);
+  margin: 0 14px;
+  padding: 13px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.45);
   font-size: 11.5px; font-weight: 800; letter-spacing: 0.02em;
 }
 .bh .masthead__no { font-size: 13px; }
-.bh .masthead__issued { text-align: right; font-weight: 700; }
+.bh .masthead__issued { text-align: right; font-weight: 700; opacity: 0.85; }
 
 /* ── 편집장의 말 ───────────────────────────────── */
 .bh .front { padding: 104px 20px; }
@@ -2751,14 +2752,14 @@ body.magazine :focus-visible { outline: 3px solid #005bbb; outline-offset: 2px; 
 }
 
 @media (min-width: 760px) {
-  .bh .masthead__brand { padding: 26px 6vw 20px; }
-  .bh .masthead__circle { right: 9%; top: 6%; width: min(30vw, 410px); }
+  .bh .masthead__brand { padding: 34px 6vw 0; }
+  .bh .masthead__rule { width: 108px; height: 8px; }
+  .bh .masthead__circle { right: 9%; top: 12%; width: min(30vw, 410px); }
   .bh .masthead__triangle { left: 8%; top: 30%; border-left-width: 125px; border-right-width: 125px; border-bottom-width: 216px; }
-  .bh .masthead__kicker { margin-left: 6vw; }
-  .bh .masthead__deck { max-width: 10.5em; padding: 26px 40px 30px 6vw; }
-  .bh .masthead__also li { padding: 13px 22px; font-size: 14.5px; }
-  .bh .masthead__also li:first-child { padding-left: 6vw; }
-  .bh .masthead__foot { padding: 18px 6vw; font-size: 13px; }
+  .bh .masthead__lines { bottom: 78px; gap: 18px; padding: 0 6vw; }
+  .bh .masthead__deck { max-width: 10.5em; }
+  .bh .masthead__also { font-size: 15px; gap: 9px; }
+  .bh .masthead__foot { margin: 0 6vw; padding: 20px 0; font-size: 13px; }
   .bh .masthead__no { font-size: 16px; }
   .bh .front { padding: 150px 6vw; }
   .bh .front__grid { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: 22px; }
@@ -2947,7 +2948,18 @@ body.shelf-body { background: #f4f1ea; }
 .r-body { margin-top: 10px; max-height: 460px; overflow-y: auto; padding-right: 6px; }
 .r-body h4 { margin: 16px 0 6px; font-size: 14px; font-weight: 800; }
 .r-body p { margin: 0 0 10px; font-size: 13.5px; line-height: 1.8; color: var(--ink-sub); }
-.slot-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.slot-acts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+/* 주 경로는 "삽화 만들기"다. 외부 생성기용 프롬프트는 가끔 쓰는 보조라 작게 둔다. */
+.slot-acts .btn[data-imgai] {
+  padding: 6px 2px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-faint);
+  font-size: 11.5px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.slot-acts .btn[data-imgai]:hover { background: transparent; color: var(--ink); }
 .img-prompt { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--ink-sub); }
 .ip-desc { margin: 0 0 8px; font-weight: 600; color: var(--ink); }
 .img-prompt.bad { color: var(--danger, #c0392b); font-weight: 600; }
