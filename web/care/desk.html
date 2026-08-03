@@ -373,7 +373,11 @@
           + (path ? ' style="background-image:url(' + esc(care.mediaSrc(path)) + ')"' : "")
           + ' tabindex="0" role="button" aria-label="' + esc(label) + '">' + (path ? "" : "이미지 없음") + "</div>"
           + '<div class="slot-meta">' + (path ? esc(path) : "눌러서 파일을 고르거나 이 자리에 끌어다 놓습니다.") + "</div>"
+          + '<div class="slot-acts">'
+          + '<button class="btn" type="button" data-imgai="' + esc(target) + '">이미지 프롬프트</button>'
           + (path ? '<button class="btn" type="button" data-imgdel="' + esc(target) + '">지우기</button>' : "")
+          + "</div>"
+          + '<div class="img-prompt" data-prompt="' + esc(target) + '" hidden></div>'
           + "</div>";
       }
 
@@ -433,9 +437,12 @@
           + '<button class="btn" type="button" data-ai="column" data-col="' + i + '">다시 쓰기</button></div>'
           + (a["부제"] ? '<p class="r-sub">' + esc(a["부제"]) + "</p>" : "")
           + (linesLen(a["요약"]) ? '<p class="r-sum">' + esc(fromLines(a["요약"])) + "</p>" : "")
-          + '<div class="r-body">' + blocksToText(a["본문"]).split("\n\n").slice(0, 3).map(function (p) {
-              return "<p>" + esc(p.replace(/^##\s*/, "")) + "</p>";
-            }).join("") + '<p class="r-more">…</p></div>'
+          + '<details class="r-wrap"><summary>본문 전체 보기</summary>'
+          + '<div class="r-body">' + blocksToText(a["본문"]).split("\n\n").map(function (p) {
+              return /^##\s*/.test(p)
+                ? "<h4>" + esc(p.replace(/^##\s*/, "")) + "</h4>"
+                : "<p>" + esc(p) + "</p>";
+            }).join("") + "</div></details>"
           + "</div>"
           + '<details class="manual"><summary>손보기</summary>' + colFieldsHtml(a, i) + "</details>"
           + '<div class="fld"><label>이미지</label>' + slotHtml("col-" + i, a["이미지"], target + " 이미지 올리기") + "</div>"
@@ -697,6 +704,41 @@
         });
       }
 
+      // ══ 이미지 프롬프트 ═══════════════════════════════════════════════
+      // 사진을 찾아 헤매지 않도록 생성 지시문을 만들어 준다. 결과를 이미지 생성기에 넣고
+      // 나온 파일을 이 슬롯에 올린다 (헌법: 지면 이미지는 생성이 주력).
+      function imgPromptFor(target, btn) {
+        var box = document.querySelector('[data-prompt="' + target + '"]');
+        if (!box) return;
+        var body;
+        if (target === "cover") {
+          body = { "종류": "표지", "채널": chFull(),
+            "제목들": (S.draft["기사"] || []).map(function (a) { return a["제목"]; }).filter(Boolean) };
+        } else {
+          var a = S.draft["기사"][Number(target.slice(4))];
+          body = { "종류": "칼럼", "채널": chFull(), "제목": a["제목"],
+            "요약": fromLines(a["요약"]) || a["부제"] || "" };
+        }
+        box.hidden = false;
+        if (!window.mgAuth || !window.mgAuth.token()) {
+          box.textContent = "로그인이 필요합니다. 진입 화면에서 구글 계정으로 로그인하세요.";
+          return;
+        }
+        var old = btn.textContent;
+        btn.disabled = true; btn.textContent = "만드는 중";
+        box.textContent = "프롬프트를 만들고 있습니다.";
+        window.mgAuth.api("/ai/imgprompt", { method: "POST", body: body })
+          .then(function (d) {
+            box.innerHTML = '<p class="ip-desc">' + esc(d["설명"] || "") + "</p>"
+              + '<textarea class="ip-text" readonly>' + esc(d["프롬프트"] || "") + "</textarea>"
+              + '<button class="btn" type="button" data-ipcopy="' + esc(target) + '">프롬프트 복사</button>';
+          })
+          .catch(function (err) {
+            box.textContent = (err && err.data && err.data["error"]) || "프롬프트를 만들지 못했습니다.";
+          })
+          .then(function () { btn.disabled = false; btn.textContent = old; });
+      }
+
       // ══ 이미지 업로드 ══════════════════════════════════════════════
       var imgTarget = null;
 
@@ -878,6 +920,14 @@
           return;
         }
 
+        var gen = t.closest("button[data-imgai]");
+        if (gen) { imgPromptFor(gen.dataset.imgai, gen); return; }
+        var cp = t.closest("button[data-ipcopy]");
+        if (cp) {
+          var ta = cp.parentNode.querySelector(".ip-text");
+          if (ta && window.mg && window.mg.copy) window.mg.copy(ta.value, cp);
+          return;
+        }
         var rm = t.closest("button[data-imgdel]");
         if (rm) { setImage(rm.dataset.imgdel, ""); return; }
 
