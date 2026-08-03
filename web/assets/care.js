@@ -765,16 +765,15 @@
       + "</head>\n<body>\n<p><a href=\"" + esc(url) + '">' + esc(title) + "를 여는 중입니다.</a></p>\n</body>\n</html>\n";
   }
 
-  // ── 폰 기사 넘기기 (2026-08-03)
+  // ── 기사 넘기기 (2026-08-03)
   // 기사 셋을 한 판에 이어 붙이면 스크롤이 끝없이 길어져 읽기 전에 지친다.
-  // 폰에서는 기사 하나만 펼치고 좌우로 넘긴다. 기사 안은 그대로 세로로 읽는다.
-  // 데스크톱은 종전대로 이어 읽는다 — 마우스로 좌우 넘김은 오히려 불편하다.
+  // 기사 하나만 펼치고, 다 읽으면 옆으로 넘긴다 — 폰은 스와이프, 노트북은 좌우 화살표.
+  // 기사 안은 그대로 세로로 읽는다. 화면 크기와 무관하게 같은 방식으로 동작한다.
   function initDeck(root) {
     var bh = root.querySelector(".bh");
     if (!bh) return;
     var arts = [].slice.call(bh.querySelectorAll(".article"));
     if (arts.length < 2) return;
-    var mq = window.matchMedia("(max-width: 430px)");
     var cur = 0;
 
     // 기사 끝 넘김 막대 — 스와이프를 모르는 사람도 여기서 넘어간다.
@@ -797,13 +796,14 @@
         + (next
           ? '<button type="button" class="deck-nav__title" data-deck="next">'
             + esc(titleOf(next)) + "</button>"
-          : '<a class="deck-nav__title" href="#contents">이번 호 목차로</a>');
+          : '<a class="deck-nav__title" href="#contents">이번 호 목차로</a>')
+        + '<p class="deck-nav__hint">좌우 화살표 키로도 넘길 수 있습니다.</p>';
       art.appendChild(nav);
     });
 
     // 넘어간 뒤에는 기사 첫머리(포스터)에서 다시 읽기 시작한다
     function show(next, move) {
-      if (next < 0 || next >= arts.length || !mq.matches) return;
+      if (next < 0 || next >= arts.length) return;
       cur = next;
       arts.forEach(function (a, i) {
         a.classList.toggle("is-current", i === cur);
@@ -815,14 +815,8 @@
       arts[cur].scrollIntoView({ block: "start", behavior: "auto" });
     }
 
-    function apply() {
-      bh.classList.toggle("deck-on", mq.matches);
-      if (mq.matches) {
-        arts.forEach(function (a, i) { a.classList.toggle("is-current", i === cur); });
-      } else {
-        arts.forEach(function (a) { a.classList.remove("is-current", "from-right", "from-left"); });
-      }
-    }
+    bh.classList.add("deck-on");
+    arts.forEach(function (a, i) { a.classList.toggle("is-current", i === cur); });
 
     bh.addEventListener("click", function (e) {
       var btn = e.target.closest("[data-deck]");
@@ -833,7 +827,7 @@
       }
       // 목차에서 고른 기사로 바로 간다
       var link = e.target.closest(".toc__link");
-      if (!link || !mq.matches) return;
+      if (!link) return;
       var idx = arts.indexOf(bh.querySelector(link.getAttribute("href")));
       if (idx < 0) return;
       e.preventDefault();
@@ -843,7 +837,7 @@
     // 좌우 스와이프. 세로로 읽는 동작을 가로채지 않도록 가로 이동이 확실할 때만 넘긴다.
     var x0 = 0, y0 = 0, live = false;
     bh.addEventListener("touchstart", function (e) {
-      if (!mq.matches || e.touches.length !== 1) { live = false; return; }
+      if (e.touches.length !== 1) { live = false; return; }
       x0 = e.touches[0].clientX;
       y0 = e.touches[0].clientY;
       live = true;
@@ -858,9 +852,14 @@
       show(cur + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1);
     }, { passive: true });
 
-    if (mq.addEventListener) mq.addEventListener("change", apply);
-    else mq.addListener(apply);
-    apply();
+    // 노트북·데스크톱은 좌우 화살표로 넘긴다. 글자 입력 중일 때는 넘기지 않는다.
+    document.addEventListener("keydown", function (e) {
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      var t = e.target;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      if (e.key === "ArrowRight") { e.preventDefault(); show(cur + 1, 1); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); show(cur - 1, -1); }
+    });
   }
 
   window.care = {
