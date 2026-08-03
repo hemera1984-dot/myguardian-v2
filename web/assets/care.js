@@ -67,6 +67,16 @@
 
   // 공유 발행 에디션(결정 2026-07-20): edition을 주면 발행인·링크·서명이 그 FC로 바뀐다.
   // 내용은 원본 그대로, 편집장은 항상 안창민.
+  // 발행월에 맞는 안부인사. 호 데이터에 "인사"가 없을 때만 쓰인다.
+  // 고정 문장 하나로 두면 8월에 "환절기 건강 챙기세요"가 나간다.
+  function seasonGreeting(발행일) {
+    var m = Number(String(발행일 || "").slice(5, 7)) || (new Date().getMonth() + 1);
+    if (m === 12 || m <= 2) return "추운 날씨에 건강 잘 챙기고 계신가요?";
+    if (m <= 5) return "볕이 좋아지는 계절입니다. 잘 지내고 계신가요?";
+    if (m <= 8) return "무더위에 건강 잘 챙기고 계신가요?";
+    return "아침저녁으로 선선해졌습니다. 잘 지내고 계신가요?";
+  }
+
   function kakaoText(issue, edition) {
     var s = edition
       ? { "이름": edition["이름"] + " FC", "소속": edition["소속"] }
@@ -76,10 +86,10 @@
     var pubName = edition ? edition["이름"] : (issue["발행인"] || "안창민");
     var mag = "『" + issue["채널"] + " " + pubName + "』";
     var lines = ["안녕하세요, " + s["이름"] + "입니다.", ""];
-    // 계절·시기 안부인사는 호마다 다르다 — 호 데이터의 "인사"를 쓰고, 없으면 기본 문장.
-    var greet = issue["인사"];
+    // 계절·시기 안부인사는 호마다 다르다 — 호 데이터의 "인사"를 쓰고, 없으면 발행월에 맞춘 문장.
+    var greet = issue["인사"] || seasonGreeting(issue["발행일"]);
     if (issue["채널"] === "주간") {
-      lines.push(greet || "건강 유의하시고 좋은 한 주 보내세요.", "");
+      lines.push(greet, "");
       lines.push(mag + " " + (issue["주차라벨"] || "") + " (통권 " + issue["호수"] + "호)");
       lines.push("이번 주 뉴스 브리핑이 발행되었습니다.", "");
       lines.push("[이번 주 주요 뉴스]", BAR);
@@ -89,7 +99,7 @@
       lines.push(BAR, "");
       if (toc.length) lines.push("이번 주 핵심: " + toc[0]["제목"], "");
     } else {
-      lines.push(greet || "환절기 건강 잘 챙기고 계신가요?", "");
+      lines.push(greet, "");
       lines.push(mag + " " + (issue["주차라벨"] || "") + "(통권 " + issue["호수"] + "호)가");
       lines.push("발행되었습니다.", "");
       lines.push("이번 호 주요 칼럼", BAR);
@@ -653,7 +663,8 @@
     // 편집장의 말
     if (note.length) {
       h.push('<section class="front front--editor"><div class="front__grid">');
-      h.push('<p class="eyebrow">편집장의 말</p>');
+      // eyebrow와 제목이 같은 말을 두 번 하지 않게, 위쪽 라벨은 호 표기를 맡는다
+      h.push('<p class="eyebrow">' + esc(mast + " " + meta["호수"] + "호") + "</p>");
       h.push('<h2 class="front__heading">편집장의 말</h2>');
       h.push('<div class="editor-copy">');
       note.forEach(function (p) { h.push("<p>" + esc(p) + "</p>"); });
@@ -754,8 +765,107 @@
       + "</head>\n<body>\n<p><a href=\"" + esc(url) + '">' + esc(title) + "를 여는 중입니다.</a></p>\n</body>\n</html>\n";
   }
 
+  // ── 폰 기사 넘기기 (2026-08-03)
+  // 기사 셋을 한 판에 이어 붙이면 스크롤이 끝없이 길어져 읽기 전에 지친다.
+  // 폰에서는 기사 하나만 펼치고 좌우로 넘긴다. 기사 안은 그대로 세로로 읽는다.
+  // 데스크톱은 종전대로 이어 읽는다 — 마우스로 좌우 넘김은 오히려 불편하다.
+  function initDeck(root) {
+    var bh = root.querySelector(".bh");
+    if (!bh) return;
+    var arts = [].slice.call(bh.querySelectorAll(".article"));
+    if (arts.length < 2) return;
+    var mq = window.matchMedia("(max-width: 430px)");
+    var cur = 0;
+
+    // 기사 끝 넘김 막대 — 스와이프를 모르는 사람도 여기서 넘어간다.
+    // 다음 기사 제목을 함께 걸어 무엇으로 넘어가는지 보이게 한다.
+    function titleOf(art) {
+      var t = art.querySelector(".poster__title");
+      return t ? t.textContent.trim() : "";
+    }
+    arts.forEach(function (art, i) {
+      var nav = document.createElement("nav");
+      nav.className = "deck-nav";
+      nav.setAttribute("aria-label", "기사 넘기기");
+      var next = arts[i + 1];
+      nav.innerHTML =
+        '<button type="button" class="deck-nav__btn" data-deck="prev"'
+          + (i === 0 ? " disabled" : "") + ">이전 기사</button>"
+        + '<span class="deck-nav__pos">' + (i + 1) + " / " + arts.length + "</span>"
+        + '<button type="button" class="deck-nav__btn deck-nav__btn--next" data-deck="next"'
+          + (!next ? " disabled" : "") + ">다음 기사</button>"
+        + (next
+          ? '<button type="button" class="deck-nav__title" data-deck="next">'
+            + esc(titleOf(next)) + "</button>"
+          : '<a class="deck-nav__title" href="#contents">이번 호 목차로</a>');
+      art.appendChild(nav);
+    });
+
+    // 넘어간 뒤에는 기사 첫머리(포스터)에서 다시 읽기 시작한다
+    function show(next, move) {
+      if (next < 0 || next >= arts.length || !mq.matches) return;
+      cur = next;
+      arts.forEach(function (a, i) {
+        a.classList.toggle("is-current", i === cur);
+        a.classList.remove("from-right", "from-left");
+      });
+      if (move) arts[cur].classList.add(move > 0 ? "from-right" : "from-left");
+      // 좌표를 직접 계산하면 문서 높이가 바뀌는 순간과 엇갈린다. 상단바를 비키는 여백은
+      // 기사에 걸린 scroll-margin-top이 이미 맡고 있으므로 브라우저에 맡긴다.
+      arts[cur].scrollIntoView({ block: "start", behavior: "auto" });
+    }
+
+    function apply() {
+      bh.classList.toggle("deck-on", mq.matches);
+      if (mq.matches) {
+        arts.forEach(function (a, i) { a.classList.toggle("is-current", i === cur); });
+      } else {
+        arts.forEach(function (a) { a.classList.remove("is-current", "from-right", "from-left"); });
+      }
+    }
+
+    bh.addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-deck]");
+      if (btn && !btn.disabled) {
+        e.preventDefault();
+        show(cur + (btn.dataset.deck === "next" ? 1 : -1), btn.dataset.deck === "next" ? 1 : -1);
+        return;
+      }
+      // 목차에서 고른 기사로 바로 간다
+      var link = e.target.closest(".toc__link");
+      if (!link || !mq.matches) return;
+      var idx = arts.indexOf(bh.querySelector(link.getAttribute("href")));
+      if (idx < 0) return;
+      e.preventDefault();
+      show(idx, idx > cur ? 1 : -1);
+    });
+
+    // 좌우 스와이프. 세로로 읽는 동작을 가로채지 않도록 가로 이동이 확실할 때만 넘긴다.
+    var x0 = 0, y0 = 0, live = false;
+    bh.addEventListener("touchstart", function (e) {
+      if (!mq.matches || e.touches.length !== 1) { live = false; return; }
+      x0 = e.touches[0].clientX;
+      y0 = e.touches[0].clientY;
+      live = true;
+    }, { passive: true });
+    bh.addEventListener("touchend", function (e) {
+      if (!live) return;
+      live = false;
+      var t = e.changedTouches[0];
+      var dx = t.clientX - x0;
+      var dy = t.clientY - y0;
+      if (Math.abs(dx) < 64 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+      show(cur + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1);
+    }, { passive: true });
+
+    if (mq.addEventListener) mq.addEventListener("change", apply);
+    else mq.addListener(apply);
+    apply();
+  }
+
   window.care = {
     CAT_LABEL: CAT_LABEL,
+    initDeck: initDeck,
     displayCat: displayCat,
     mediaSrc: mediaSrc,
     issueHtml: issueHtml,
