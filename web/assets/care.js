@@ -3,7 +3,12 @@
 (function () {
   "use strict";
 
-  var esc = window.mg.esc;
+  // 고객 서재는 platform.js를 부르지 않는다 — window.mg가 없으면 자체 이스케이프를 쓴다
+  var esc = (window.mg && window.mg.esc) || function (s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (ch) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch];
+    });
+  };
   var SENDER_KEY = "mg_care_sender";
 
   // 주간 카테고리 → 카톡 표기 (v1 실사용 양식)
