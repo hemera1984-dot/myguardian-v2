@@ -939,6 +939,15 @@
               + '<span class="why">고치기 전 본문으로 되돌립니다.</span></div>';
           }
         }
+        var srcs = rep["출처"] || [];
+        if (srcs.length) {
+          h += '<p class="v-head">확인한 자료 ' + srcs.length + "</p><ul class=\"v-src\">";
+          srcs.forEach(function (s) {
+            h += '<li><a href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer">'
+              + esc(s["제목"] || s.url) + "</a></li>";
+          });
+          h += "</ul>";
+        }
         if (warn.length) {
           h += '<p class="v-head">확인만 필요 ' + warn.length + "</p><ul class=\"v-list warn\">";
           warn.forEach(function (f) {
@@ -994,7 +1003,7 @@
           if (applied.length) saveDraft(d);
           saveReport({
             id: d.id, "시각": new Date().toLocaleString("ko-KR"),
-            "검증": r["검증"] || [], "요약": r["요약"] || "",
+            "검증": r["검증"] || [], "요약": r["요약"] || "", "출처": r["출처"] || [],
             "오류": (r["실패"] || []).length ? (r["실패"].join("·") + "번 칼럼은 검증하지 못했습니다.") : "",
             "이전본문": applied.length ? before : null
           });
