@@ -108,6 +108,7 @@
             <span class="why" id="kakao-why">발행을 마치면 카톡 문구를 만들 수 있습니다.</span>
           </div>
           <p class="media-msg" id="publish-msg" hidden></p>
+          <div class="verify-report" id="verify-report" hidden></div>
 
           <div class="sender-row" id="sender-row">
             <span>카톡 서명</span>
@@ -539,6 +540,7 @@
         el("view-edit").hidden = false;
         el("publish-msg").hidden = true;
         renderEdit();
+        renderReport(d.id);   // 지난 검증 보고는 발행 뒤에도 다시 볼 수 있게 남긴다
         window.scrollTo(0, 0);
       }
 
@@ -868,6 +870,144 @@
         p.classList.toggle("bad", !!bad);
       }
 
+      // ══ 발행 전 사실검증 ═══════════════════════════════════════════
+      // 본문을 쓴 AI에게는 웹이 없다. 발행 직전에 웹 검색을 켠 채 한 번 더 읽히고,
+      // 확신이 있는 지적만 자동으로 반영한 뒤 무엇을 고쳤는지 남긴다.
+      var VKEY = "mg_care_verify_";
+
+      function readReport(id) {
+        try { return JSON.parse(localStorage.getItem(VKEY + id)); } catch (e) { return null; }
+      }
+      function saveReport(rep) {
+        try { localStorage.setItem(VKEY + rep.id, JSON.stringify(rep)); } catch (e) {}
+      }
+
+      function esc(s) {
+        return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+        });
+      }
+
+      // 검증 결과를 초안 본문에 반영한다. 원문을 수정문으로 바꾸고, 삭제는 빈 문자열로.
+      // 블록 인덱스가 밀리지 않도록 모두 바꾼 뒤에 빈 블록을 걷어낸다.
+      function applyFindings(d, findings) {
+        var applied = [];
+        findings.forEach(function (f) {
+          if (f["조치"] !== "수정" && f["조치"] !== "삭제") return;
+          if (!f["적용가능"]) return;
+          var art = (d["기사"] || []).find(function (a, i) {
+            return (Number(a["번호"]) || i + 1) === Number(f["기사번호"]);
+          });
+          if (!art || !Array.isArray(art["본문"])) return;
+          var blk = art["본문"][f["위치"]];
+          if (!blk || String(blk.x).indexOf(f["원문"]) < 0) return;
+          blk.x = String(blk.x).split(f["원문"]).join(f["조치"] === "삭제" ? "" : f["수정문"])
+            .replace(/\s{2,}/g, " ").trim();
+          applied.push(f);
+        });
+        (d["기사"] || []).forEach(function (a) {
+          if (Array.isArray(a["본문"])) {
+            a["본문"] = a["본문"].filter(function (b) { return String(b.x || "").trim(); });
+          }
+        });
+        return applied;
+      }
+
+      function renderReport(id) {
+        var box = el("verify-report");
+        var rep = readReport(id);
+        if (!rep) { box.hidden = true; box.innerHTML = ""; return; }
+        var fixed = (rep["검증"] || []).filter(function (f) { return f["조치"] !== "유지"; });
+        var warn = (rep["검증"] || []).filter(function (f) { return f["조치"] === "유지"; });
+        var h = '<h3>사실검증 보고<span class="v-when">' + esc(rep["시각"]) + '</span></h3>';
+        if (rep["요약"]) h += '<p class="v-sum">' + esc(rep["요약"]) + "</p>";
+        if (rep["오류"]) h += '<p class="v-sum bad">' + esc(rep["오류"]) + "</p>";
+
+        if (fixed.length) {
+          h += '<p class="v-head">고친 곳 ' + fixed.length + "</p><ul class=\"v-list\">";
+          fixed.forEach(function (f) {
+            h += '<li><p class="v-where">' + f["기사번호"] + "번 칼럼 · 본문 " + (f["위치"] + 1)
+              + '번째 블록 <span class="v-kind">' + esc(f["종류"]) + "</span>"
+              + '<span class="v-conf">확신 ' + esc(f["확신도"]) + "</span></p>"
+              + '<p class="v-old">' + esc(f["원문"]) + "</p>"
+              + '<p class="v-new">' + (f["조치"] === "삭제" ? "(삭제)" : esc(f["수정문"])) + "</p>"
+              + '<p class="v-why">' + esc(f["문제"]) + (f["근거"] ? " — " + esc(f["근거"]) : "") + "</p></li>";
+          });
+          h += "</ul>";
+          if (rep["이전본문"]) {
+            h += '<div class="v-actions"><button class="btn" type="button" id="v-undo">수정 되돌리기</button>'
+              + '<span class="why">고치기 전 본문으로 되돌립니다.</span></div>';
+          }
+        }
+        if (warn.length) {
+          h += '<p class="v-head">확인만 필요 ' + warn.length + "</p><ul class=\"v-list warn\">";
+          warn.forEach(function (f) {
+            h += '<li><p class="v-where">' + f["기사번호"] + "번 칼럼"
+              + (f["위치"] >= 0 ? " · 본문 " + (f["위치"] + 1) + "번째 블록" : "")
+              + '<span class="v-kind">' + esc(f["종류"]) + "</span>"
+              + '<span class="v-conf">확신 ' + esc(f["확신도"]) + "</span></p>"
+              + (f["원문"] ? '<p class="v-old plain">' + esc(f["원문"]) + "</p>" : "")
+              + '<p class="v-why">' + esc(f["문제"]) + (f["근거"] ? " — " + esc(f["근거"]) : "") + "</p></li>";
+          });
+          h += "</ul>";
+        }
+        box.innerHTML = h;
+        box.hidden = false;
+        var undo = el("v-undo");
+        if (undo) undo.addEventListener("click", function () {
+          var r2 = readReport(id);
+          if (!r2 || !r2["이전본문"] || !S.draft || S.draft.id !== id) return;
+          S.draft["기사"].forEach(function (a, i) {
+            if (r2["이전본문"][i]) a["본문"] = JSON.parse(JSON.stringify(r2["이전본문"][i]));
+          });
+          saveDraft(S.draft);
+          delete r2["이전본문"];
+          r2["되돌림"] = true;
+          r2["요약"] = "자동 수정을 되돌렸습니다. 아래 지적은 반영되지 않은 상태입니다.";
+          saveReport(r2);
+          renderEdit();
+          renderReport(id);
+          publishNote("수정 전 본문으로 되돌렸습니다.");
+        });
+      }
+
+      // 검증 → 자동 수정 → 보고 저장. 실패해도 발행을 막지 않는다.
+      function runVerify(d) {
+        var before = (d["기사"] || []).map(function (a) {
+          return JSON.parse(JSON.stringify(a["본문"] || []));
+        });
+        return window.mgAuth.api("/ai/verify", {
+          method: "POST",
+          body: {
+            "채널": d["채널"] === "월간" ? "월간 안창민" : "주간 안창민",
+            "호수": d["호수"],
+            "기사": (d["기사"] || []).map(function (a, i) {
+              return {
+                "번호": Number(a["번호"]) || i + 1, "카테고리": a["카테고리"] || "",
+                "제목": a["제목"] || "", "부제": a["부제"] || "",
+                "요약": a["요약"] || [], "본문": a["본문"] || []
+              };
+            })
+          }
+        }).then(function (r) {
+          var applied = applyFindings(d, r["검증"] || []);
+          if (applied.length) saveDraft(d);
+          saveReport({
+            id: d.id, "시각": new Date().toLocaleString("ko-KR"),
+            "검증": r["검증"] || [], "요약": r["요약"] || "",
+            "오류": (r["실패"] || []).length ? (r["실패"].join("·") + "번 칼럼은 검증하지 못했습니다.") : "",
+            "이전본문": applied.length ? before : null
+          });
+          return applied.length;
+        }).catch(function (err) {
+          saveReport({
+            id: d.id, "시각": new Date().toLocaleString("ko-KR"), "검증": [], "요약": "",
+            "오류": "검증을 마치지 못했습니다 (" + (err.message || "네트워크 오류") + "). 발행은 그대로 진행했습니다."
+          });
+          return 0;
+        });
+      }
+
       function doPublish(btn) {
         var d = S.draft;
         var missing = checklist(d).filter(function (i) { return !i.ok; });
@@ -884,8 +1024,22 @@
           return;
         }
         btn.disabled = true;
-        btn.textContent = "발행 중…";
-        window.mgAuth.api("/care/publish", { method: "POST", body: payload(d) })
+        btn.textContent = "사실 확인 중…";
+        el("verify-report").hidden = true;
+        publishNote("사실을 확인하고 있습니다. 웹에서 수치와 인용을 찾아보는 중이라 몇 분 걸릴 수 있습니다.");
+        var tick = 0;
+        var timer = setInterval(function () {
+          tick += 1;
+          publishNote("사실을 확인하고 있습니다… " + (tick * 10) + "초 경과. 웹 검색 결과를 기다리는 중입니다.");
+        }, 10000);
+        runVerify(d).then(function (fixedCount) {
+          clearInterval(timer);
+          renderReport(d.id);
+          if (fixedCount) renderEdit();
+          btn.textContent = "발행 중…";
+          publishNote(fixedCount ? fixedCount + "곳을 고친 뒤 발행합니다." : "확인을 마쳤습니다. 발행합니다.");
+          return window.mgAuth.api("/care/publish", { method: "POST", body: payload(d) });
+        })
           .then(function (r) {
             dropDraft(d.id);
             return care.loadIssueList().then(function (list) {

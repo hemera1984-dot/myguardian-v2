@@ -2971,3 +2971,120 @@ body.shelf-body { background: #f4f1ea; }
 
 /* 붙여넣기 대상 슬롯 표시 (2026-08-03) */
 .slot-view.paste-on { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ── 발행 전 사실검증 보고 (2026-08-03)
+   무엇을 왜 고쳤는지 원문→수정문으로 보여준다. 카드 대신 괘선으로 구획한다. */
+.verify-report {
+  margin-top: 18px;
+  border-top: 2px solid var(--ink);
+  padding-top: 14px;
+}
+
+.verify-report[hidden] { display: none; }
+
+.verify-report h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.verify-report .v-when {
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.verify-report .v-sum {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-sub);
+  word-break: keep-all;
+}
+
+.verify-report .v-sum.bad { color: #b42318; }
+
+.verify-report .v-head {
+  margin: 16px 0 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  color: var(--accent);
+}
+
+.verify-report .v-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+
+.verify-report .v-list > li {
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+}
+
+.verify-report .v-where {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ink-sub);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.verify-report .v-kind,
+.verify-report .v-conf {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+
+.verify-report .v-old,
+.verify-report .v-new {
+  margin: 5px 0 0;
+  font-size: 0.87rem;
+  line-height: 1.6;
+  word-break: keep-all;
+  padding-left: 11px;
+  border-left: 3px solid var(--line);
+}
+
+.verify-report .v-old {
+  color: var(--ink-sub);
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-faint);
+}
+
+.verify-report .v-old.plain { text-decoration: none; }
+
+.verify-report .v-new {
+  color: var(--ink);
+  border-left-color: var(--accent);
+}
+
+.verify-report .v-why {
+  margin: 5px 0 0;
+  font-size: 0.8rem;
+  color: var(--ink-sub);
+  word-break: keep-all;
+}
+
+.verify-report .v-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.verify-report .v-actions .why {
+  font-size: 0.8rem;
+  color: var(--ink-sub);
+}
