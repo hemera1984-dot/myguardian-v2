@@ -7,7 +7,6 @@
   <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="../assets/platform.css">
   <link rel="stylesheet" href="../assets/style.css">
   <script src="../assets/platform.js"></script>
@@ -36,16 +35,19 @@
       <span class="topbar-note">발행된 모든 호를 언제든 열람</span>
     </header>
 
-    <main class="platform-main">
-      <div class="photo-hero">
-        <img src="../assets/img/hero-care.jpg" alt="" fetchpriority="high">
-        <div class="photo-hero-text">
-          <h1 class="serif">케어센터 서재</h1>
-          <p>매주 월요일, 한 주를 여는 보험·경제 이야기. 발행된 모든 호를 언제든 꺼내 읽을 수 있습니다.</p>
-        </div>
-      </div>
+    <main class="platform-main shelf-main">
+      <div class="shelf-page">
+        <header class="shelf-hero">
+          <div class="shelf-hero__band" aria-hidden="true"></div>
+          <div class="shelf-hero__main">
+            <p class="shelf-hero__kicker">케어센터</p>
+            <h1 class="shelf-hero__title">서재</h1>
+            <p class="shelf-hero__deck">발행된 모든 호를 언제든 꺼내 읽을 수 있습니다.</p>
+            <div class="shelf-hero__circle" aria-hidden="true"></div>
+            <div class="shelf-hero__triangle" aria-hidden="true"></div>
+          </div>
+        </header>
 
-      <div class="section">
         <div class="compose-panel" id="compose" hidden>
           <h3 id="compose-title">카톡 문구</h3>
           <textarea id="compose-text" aria-label="카톡 발송 문구"></textarea>
@@ -55,15 +57,13 @@
           </div>
         </div>
 
-        <div class="latest-duo" id="latest-duo"></div>
-
-        <div class="pill-tabs" role="tablist" aria-label="채널">
+        <div class="pill-tabs shelf-tabs" role="tablist" aria-label="채널">
           <button type="button" class="active" data-ch="">전체</button>
           <button type="button" data-ch="주간">주간 안창민</button>
           <button type="button" data-ch="월간">월간 안창민</button>
         </div>
 
-        <div class="arch-list" id="issue-list">
+        <div id="issue-list">
           <div class="placeholder-panel">발행물을 불러오는 중입니다.</div>
         </div>
       </div>
@@ -97,6 +97,26 @@
           + (edition ? "&fc=" + encodeURIComponent(edition["코드"]) : "");
       }
 
+      // 발행일 "2026-07-27" → "2026년 7월 27일"
+      function dateText(iso) {
+        var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ""));
+        return m ? m[1] + "년 " + Number(m[2]) + "월 " + Number(m[3]) + "일" : String(iso || "");
+      }
+
+      // 표지 카드 한 장 — 표지가 없는 호는 care.coverHtml이 바우하우스 표지를 만든다
+      function coverCard(i, latest) {
+        return '<article class="shelf__item' + (latest ? " is-latest" : "") + '">'
+          + '<a class="shelf__link" href="' + issueHref(i.id) + '">'
+          + '<span class="shelf__cover">' + care.coverHtml(i, pubName(i))
+          + (latest ? '<span class="shelf__badge">최신호</span>' : "") + "</span>"
+          + '<span class="shelf__no">' + esc(i["호수"]) + "호</span>"
+          + '<span class="shelf__name">' + esc(i["제목"]) + "</span>"
+          + '<span class="shelf__date">' + esc(i["주차라벨"] || dateText(i["발행일"])) + "</span></a>"
+          + '<button class="shelf__kakao" type="button" data-id="' + esc(i.id) + '">카톡 문구</button>'
+          + "</article>";
+      }
+
+      // 서가 — 채널별로 한 칸씩. 최신호는 앞줄에 크게 세운다.
       function render() {
         var box = document.getElementById("issue-list");
         var list = care.sortByDate(care.published(ALL).filter(function (i) {
@@ -108,23 +128,24 @@
           box.innerHTML = '<div class="placeholder-panel">아직 발행물이 없습니다. 첫 호가 준비되는 대로 서재에 꽂힙니다.</div>';
           return;
         }
-        box.innerHTML = list.map(function (i, idx) {
-          var href = issueHref(i.id);
-          var pub = pubName(i);
-          var cover = i["커버이미지"]
-            ? '<span class="arch-cover"><img src="' + esc(care.mediaSrc(i["커버이미지"])) + '" alt="" loading="lazy"></span>'
-            : '<span class="arch-cover no-img ch-' + esc(i["채널"]) + '">' + esc(i["채널"]) + "<br>" + esc(i["호수"]) + "호</span>";
-          return '<article class="arch-row">'
-            + '<a class="arch-main" href="' + href + '">' + cover
-            + '<span class="arch-text">'
-            + '<span class="arch-kicker">' + esc(i["채널"]) + " " + esc(pub) + " " + esc(i["호수"]) + "호 · " + esc(i["주차라벨"] || i["발행일"]) + "</span>"
-            + '<span class="arch-title">' + esc(i["제목"]) + "</span></span></a>"
-            + '<button class="shelf-kakao" type="button" data-idx="' + idx + '">카톡 문구</button>'
-            + "</article>";
+        var order = ["월간", "주간"];
+        list.forEach(function (i) { if (order.indexOf(i["채널"]) < 0) order.push(i["채널"]); });
+        box.className = "shelf-wrap";
+        box.innerHTML = order.map(function (ch, n) {
+          var rows = list.filter(function (i) { return i["채널"] === ch; });
+          if (!rows.length) return "";
+          return '<section class="shelf shelf--' + (n % 3 + 1) + '">'
+            + '<div class="shelf__head"><h2 class="shelf__title">' + esc(ch) + " " + esc(pubName(rows[0])) + "</h2>"
+            + '<span class="shelf__count">' + rows.length + "권</span></div>"
+            + '<div class="shelf__grid">'
+            + rows.map(function (i, idx) { return coverCard(i, idx === 0); }).join("")
+            + "</div></section>";
         }).join("");
-        box.querySelectorAll("button[data-idx]").forEach(function (btn) {
+        box.querySelectorAll("button[data-id]").forEach(function (btn) {
           btn.addEventListener("click", function () {
-            care.openCompose(list[Number(btn.dataset.idx)], edition);
+            var found = null;
+            list.forEach(function (i) { if (i.id === btn.dataset.id) found = i; });
+            if (found) care.openCompose(found, edition);
           });
         });
       }
@@ -158,7 +179,6 @@
           ALL = res[0];
           applyEditionLabels();
           if (!edition) buildPublisherTabs(); // 개인 에디션 서재에는 발행인 필터를 두지 않는다
-          buildLatestDuo();
           render();
         })
         .catch(function () {
@@ -176,22 +196,6 @@
           render();
         });
       });
-
-      // 채널별 최신호 직행 배너 — 서재를 뒤지지 않고 바로 읽는다
-      function buildLatestDuo() {
-        var duo = document.getElementById("latest-duo");
-        var html = ["주간", "월간"].map(function (ch) {
-          var i = care.latestByChannel(ALL, ch);
-          if (!i) return "";
-          var bg = i["커버이미지"] ? ' style="background-image:url(' + esc(care.mediaSrc(i["커버이미지"])) + ')"' : "";
-          return '<a class="latest-card" href="' + issueHref(i.id) + '">'
-            + '<span class="latest-bg"' + bg + "></span>"
-            + '<span class="latest-body"><span class="latest-ch">' + esc(ch) + " " + esc(pubName(i)) + " · " + esc(i["호수"]) + "호</span>"
-            + '<span class="latest-title serif">' + esc(i["제목"]) + "</span>"
-            + '<span class="latest-go">최신호 바로 읽기</span></span></a>';
-        }).join("");
-        duo.innerHTML = html;
-      }
 
       // 발행인이 2명 이상일 때만 발행인 필터를 노출한다
       function buildPublisherTabs() {
