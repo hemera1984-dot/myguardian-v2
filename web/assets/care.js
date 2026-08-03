@@ -219,49 +219,306 @@
     return year + Number(m[2]) + "월 " + Number(m[3]) + "일";
   }
 
-  // 기사 표제 블록 — 킥커(번호·카테고리) → 세리프 표제 → 부제
-  function headBlock(a, i, tag) {
-    var h = [];
-    h.push('<p class="a-kicker"><span class="a-no">' + String(i + 1) + "</span>" + esc(displayCat(a["카테고리"])) + "</p>");
-    h.push("<" + tag + ' class="a-head">' + esc(a["제목"]) + "</" + tag + ">");
-    if (a["부제"]) h.push('<p class="a-standfirst">' + esc(a["부제"]) + "</p>");
+  // ── 바우하우스 조판 (2026-08-03 채택) ─────────────────────────────
+  // 시안: docs/design/care-bauhaus-시안.html. 삼원색 색면·기하 도형·비대칭 격자.
+  // 훑는 독자를 위해 형광·대형 수치·색면 문단을 뽑되, 원문 문장만 다시 배치한다.
+  // 없는 사실·수치는 만들지 않는다.
+
+  var NAV_HEADS = { "다음 칼럼": 1, "이전 칼럼": 1, "목록으로": 1 };
+  var SIGNALS = /\d|핵심|중요|필수|반드시|결국|문제|위험|제한|보장|세금|상속|부도|보험|자산|연쇄|현실|전략|변화/;
+  var SPOT_SIGNALS = /결국|결론적으로|핵심|중요한 것은|정리하면|따라서|진정한|단순히/;
+  var hlTurn = 0; // 형광 간격 카운터 — 칼럼마다 0으로 되돌린다
+
+  function isStat(t) { var p = t.indexOf(" — "); return p > 0 && /\d/.test(t.slice(0, p)); }
+  function isAdvice(t) { return /^(첫째|둘째|셋째|넷째|다섯째|마지막으로),/.test(t); }
+  function isExample(t) { return /^(예를 들어|다른 예시로)/.test(t); }
+  function isCaution(t) { return !isAdvice(t) && !isExample(t) && /(반드시|꼼꼼히 확인|정확히 이해|주의해야|유의해야)/.test(t); }
+  function isStatement(t) { return t.length <= 58 && !/[.!?。]$/.test(t) && !isAdvice(t); }
+
+  // 긴 문단은 문장 경계로 잘라 덩어리로 나눈다 (형광 간격의 단위)
+  function splitProse(text) {
+    if (text.length < 190) return [text];
+    var sentences = text.match(/.*?(?:[.!?。]+["'’”)]*(?=\s|$)|$)/g) || [text];
+    var chunks = [];
+    var current = "";
+    sentences.forEach(function (s) {
+      var part = String(s).trim();
+      if (!part) return;
+      if (current && current.length + part.length > 175) { chunks.push(current); current = part; }
+      else current += (current ? " " : "") + part;
+    });
+    if (current) chunks.push(current);
+    return chunks;
+  }
+
+  // 형광 대상 절 고르기 — 수치·핵심어가 있는 절을 우선한다
+  function keyPhrase(text) {
+    var clauses = (text.match(/[^,.;:!?。]+(?:[,.;:!?。]|$)/g) || [text])
+      .map(function (v) { return v.trim(); })
+      .filter(function (v) { return v.length >= 8; });
+    var best = clauses[0] || text.trim();
+    var score = -Infinity;
+    clauses.forEach(function (clause, index) {
+      var value = (SIGNALS.test(clause) ? 8 : 0)
+        + (clause.length >= 12 && clause.length <= 44 ? 4 : 0) - index * 0.15;
+      if (/^(예를 들어|또한|하지만|따라서|이러한|이는|특히),?/.test(clause)) value -= 2;
+      if (value > score) { score = value; best = clause; }
+    });
+    if (best.length > 42) {
+      var cut = best.slice(0, 42);
+      var space = cut.lastIndexOf(" ");
+      if (space >= 18) cut = cut.slice(0, space);
+      best = cut;
+    }
+    return best;
+  }
+
+  function markPhrase(text, phrase) {
+    var i = phrase ? text.indexOf(phrase) : -1;
+    if (i < 0) return esc(text);
+    return esc(text.slice(0, i))
+      + '<mark class="key-hit">' + esc(phrase) + "</mark>"
+      + esc(text.slice(i + phrase.length));
+  }
+
+  // 문단 — 문단 걸러 하나씩만 형광. 매 문단이면 강조가 무의미해지고, 없으면 훑을 게 없다.
+  function prose(tag, cls, text) {
+    var parts = splitProse(text).map(function (part) {
+      hlTurn += 1;
+      var html = (hlTurn % 2 === 1 && part.trim().length >= 60)
+        ? markPhrase(part, keyPhrase(part))
+        : esc(part);
+      return '<span class="paragraph-chunk">' + html + "</span>";
+    });
+    return "<" + tag + ' class="' + cls + '">' + parts.join(" ") + "</" + tag + ">";
+  }
+
+  // 대형 수치 블록 — "12회 제한 — 설명" 꼴의 원문 문장을 그대로 쓴다
+  function statHtml(text, extra, peakLabel) {
+    var p = text.indexOf(" — ");
+    return '<aside class="stat' + (extra ? " " + extra : "") + '"'
+      + (peakLabel ? ' data-peak="' + esc(peakLabel) + '"' : "") + ">"
+      + '<strong class="stat__value">' + esc(text.slice(0, p)) + "</strong>"
+      + '<span class="stat__copy">' + esc(text.slice(p + 3)) + "</span></aside>";
+  }
+
+  function tableHtml(headers, rows) {
+    var h = ['<figure class="comparison"><p class="swipe">표는 옆으로 넘겨 보실 수 있습니다</p><div class="table-scroll"><table><thead><tr>'];
+    headers.forEach(function (v) { h.push("<th>" + esc(v) + "</th>"); });
+    h.push("</tr></thead><tbody>");
+    rows.forEach(function (row) {
+      h.push("<tr>");
+      row.forEach(function (v) { h.push("<td>" + esc(v) + "</td>"); });
+      h.push("</tr>");
+    });
+    h.push("</tbody></table></div></figure>");
     return h.join("");
   }
 
-  // 기사 몸통 — 이미지(figure)·요약·본문·한마디(골드 칼럼 박스)
-  function bodyBlock(a, pub) {
+  // 본문 블록 → 토큰. 표(탭 구조)·소제목·수치·조언·주의·단문·문단으로 가른다.
+  function tokenize(blocks) {
+    var toks = [];
+    var i = 0;
+    while (i < blocks.length) {
+      var b = blocks[i];
+      if (b.t === "h" && b.x.indexOf("\t") >= 0) {
+        var headers = b.x.split("\t");
+        var rows = [];
+        i++;
+        while (i < blocks.length && blocks[i].t === "p" && blocks[i].x.indexOf("\t") >= 0) { rows.push(blocks[i].x.split("\t")); i++; }
+        toks.push({ k: "table", headers: headers, rows: rows });
+        continue;
+      }
+      if (b.t === "p" && b.x.indexOf("\t") >= 0) {
+        var rows2 = [];
+        while (i < blocks.length && blocks[i].t === "p" && blocks[i].x.indexOf("\t") >= 0) { rows2.push(blocks[i].x.split("\t")); i++; }
+        toks.push({ k: "table", headers: rows2[0], rows: rows2.slice(1) });
+        continue;
+      }
+      if (b.t === "h") toks.push({ k: "h", x: b.x });
+      else if (isStat(b.x)) toks.push({ k: "stat", x: b.x });
+      else if (isAdvice(b.x)) toks.push({ k: "advice", x: b.x });
+      else if (isExample(b.x) || isCaution(b.x)) toks.push({ k: "note", x: b.x });
+      else if (isStatement(b.x)) toks.push({ k: "statement", x: b.x });
+      else toks.push({ k: "p", x: b.x });
+      i++;
+    }
+    return toks;
+  }
+
+  // 기사 이동 — 본문 말미의 "다음 칼럼/이전 칼럼" 헤딩을 링크로 바꾼다
+  function articleNavHtml(navBlocks, arts) {
     var h = [];
+    var type = "";
+    navBlocks.forEach(function (b) {
+      if (b.t !== "h") return;
+      if (b.x === "다음 칼럼" || b.x === "이전 칼럼") { type = b.x; return; }
+      if (b.x === "목록으로") return;
+      if (!type) return;
+      var at = -1;
+      arts.forEach(function (a, i) { if (a["제목"] === b.x) at = i; });
+      h.push('<a href="' + (at >= 0 ? "#a" + (at + 1) : "#contents") + '">'
+        + '<span class="nav-type">' + esc(type) + "</span>"
+        + '<span class="nav-title">' + esc(b.x) + "</span></a>");
+      type = "";
+    });
+    return h.length ? '<nav class="article-nav" aria-label="기사 이동">' + h.join("") + "</nav>" : "";
+  }
+
+  // 본문 지면 — 대형 수치(peak/impact)·전환 지면(turning-point)·색면 문단(spotlight)을
+  // 원문 안에서 골라 배치한다. 고를 대상이 없으면 그냥 안 넣는다.
+  function bodyHtml(blocks, arts, catLabel) {
+    var navAt = -1;
+    blocks.forEach(function (b, i) { if (navAt < 0 && b.t === "h" && NAV_HEADS[b.x]) navAt = i; });
+    var content = navAt < 0 ? blocks : blocks.slice(0, navAt);
+    var navBlocks = navAt < 0 ? [] : blocks.slice(navAt);
+    var toks = tokenize(content);
+    if (!toks.length) return "";
+
+    // 대형 수치 — 첫 수치는 전면(peak), 이후는 한 칸 걸러 확대(impact)
+    var statSeen = 0;
+    toks.forEach(function (t) {
+      if (t.k !== "stat") return;
+      if (statSeen === 0) t.cls = "peak";
+      else if (statSeen % 2 === 1) t.cls = "impact";
+      statSeen += 1;
+    });
+
+    // 전환 지면 — 소제목이 셋 이상이면 가운데 소제목에 힘을 준다
+    var heads = [];
+    toks.forEach(function (t, i) { if (t.k === "h") heads.push(i); });
+    if (heads.length >= 3) toks[heads[Math.floor(heads.length / 2)]].cls = "turning-point";
+
+    // 색면 문단 — 결론·핵심 신호가 있는 긴 문단 (본문이 길면 둘)
+    var cands = [];
+    toks.forEach(function (t, i) {
+      if (t.k !== "p" && t.k !== "advice" && t.k !== "note") return;
+      var len = t.x.length;
+      if (len < 90) return;
+      cands.push({ i: i, s: (SPOT_SIGNALS.test(t.x) ? 100 : 0) + Math.min(len, 320) - Math.abs(len - 210) * 0.4 });
+    });
+    cands.sort(function (a, b) { return b.s - a.s; });
+    cands.slice(0, toks.length > 24 ? 2 : 1).forEach(function (c) { toks[c.i].cls = "spotlight"; });
+
+    var h = ['<div class="article-body"><div class="body-grid"><div class="reading-column">'];
+    toks.forEach(function (t) {
+      if (t.k === "table") { h.push(tableHtml(t.headers, t.rows)); return; }
+      if (t.k === "h") {
+        h.push('<section class="body-section' + (t.cls ? " " + t.cls : "") + '">'
+          + '<h2 class="body-heading">' + esc(t.x) + "</h2></section>");
+        return;
+      }
+      if (t.k === "stat") { h.push(statHtml(t.x, t.cls, t.cls === "peak" ? catLabel : "")); return; }
+      var cls = { advice: "advice", note: "note", statement: "statement", p: "body-paragraph" }[t.k];
+      var tag = (t.k === "advice" || t.k === "note") ? "aside" : "p";
+      h.push(prose(tag, cls + (t.cls ? " " + t.cls : ""), t.x));
+    });
+    h.push(articleNavHtml(navBlocks, arts));
+    h.push('<a class="bh-back" href="#contents">목록으로</a>');
+    h.push("</div></div></div>");
+    return h.join("");
+  }
+
+  // 칼럼 진입 포스터 — 번호(원)·제목·부제 + 기하 도형
+  function posterHtml(a, no) {
+    return '<header class="poster">'
+      + '<p class="poster__band">' + esc(displayCat(a["카테고리"])) + "</p>"
+      + '<div class="poster__core">'
+      + '<div class="poster__number">' + esc(no) + "</div>"
+      + '<h2 class="poster__title">' + esc(a["제목"]) + "</h2>"
+      + (a["부제"] ? '<p class="poster__subtitle">' + esc(a["부제"]) + "</p>" : "")
+      + '<div class="poster__square" aria-hidden="true"></div>'
+      + '<div class="poster__triangle" aria-hidden="true"></div>'
+      + "</div>"
+      + '<div class="poster__foot"><div class="poster__rule"></div><div class="poster__block"></div></div>'
+      + "</header>";
+  }
+
+  // 기사 도입 — 이미지 → 리드(요약 첫 줄) → 나머지 요약 → 발행인 한마디
+  function introHtml(a, pub) {
+    var h = ['<section class="article-intro"><div class="article-intro__inner">'];
     if (a["이미지"]) {
-      h.push('<figure class="a-figure"><img src="' + esc(mediaSrc(a["이미지"])) + '" alt="" loading="lazy">');
+      h.push('<figure class="bh-figure"><img src="' + esc(mediaSrc(a["이미지"])) + '" alt="" loading="lazy">');
       if (a["이미지캡션"]) h.push("<figcaption>" + esc(a["이미지캡션"]) + "</figcaption>");
       h.push("</figure>");
     }
-    var segs = a["본문"] || [];
-    var sum = a["요약"] || [];
-    if (segs.length) {
-      // 본문이 있는 호 — 요약은 표제 아래 요지 박스로
-      if (sum.length) {
-        h.push('<aside class="a-summary"><p class="label">요약</p>');
-        sum.forEach(function (p) { h.push("<p>" + esc(p) + "</p>"); });
-        h.push("</aside>");
-      }
-      h.push('<div class="a-body">');
-      segs.forEach(function (seg) {
-        h.push(seg.t === "h" ? "<h3>" + esc(seg.x) + "</h3>" : "<p>" + esc(seg.x) + "</p>");
-      });
-      h.push("</div>");
-    } else if (sum.length) {
-      // 요약만 있는 호 — 요약이 곧 기사 본문이다
-      h.push('<div class="a-body">');
-      sum.forEach(function (p) { h.push("<p>" + esc(p) + "</p>"); });
-      h.push("</div>");
+    (a["요약"] || []).forEach(function (text, i) {
+      if (i === 0) h.push(prose("p", "lead" + (text.length > 220 ? " lead--long" : ""), text));
+      else if (isStat(text)) h.push(statHtml(text, "impact", ""));
+      else h.push(prose("p", "summary-note", text));
+    });
+    var say = a["한마디"] || [];
+    if (say.length) {
+      h.push('<aside class="fc-take"><p class="fc-take__label">' + esc(pub) + " FC의 한마디</p>");
+      say.forEach(function (t) { h.push('<blockquote class="quote-block">' + esc(t) + "</blockquote>"); });
+      h.push('<p class="fc-take__sign">' + esc(pub) + " FC</p></aside>");
     }
-    var comment = a["한마디"] || [];
-    if (comment.length) {
-      h.push('<aside class="a-note"><p class="a-note-label">' + esc(pub) + " FC의 한마디</p>");
-      comment.forEach(function (p) { h.push("<p>" + esc(p) + "</p>"); });
-      h.push('<p class="a-note-sign">' + esc(pub) + " FC</p></aside>");
-    }
+    h.push("</div></section>");
+    return h.join("");
+  }
+
+  // ── 표지 자동 생성 ────────────────────────────────────────────────
+  // 표지 이미지가 없는 호도 서가에서 표지로 보이게 한다. 호수에 따라 색·도형이 바뀌어
+  // 호마다 다른 표지가 된다. 외부 이미지 파일을 만들지 않는다(인라인 SVG).
+  var COVER_SETS = [
+    { bg: "#F5C518", ink: "#111111", a: "#E63329", b: "#005BBB" },
+    { bg: "#E63329", ink: "#FFFFFF", a: "#F5C518", b: "#005BBB" },
+    { bg: "#005BBB", ink: "#FFFFFF", a: "#F5C518", b: "#E63329" }
+  ];
+
+  function coverSvg(issue, pub) {
+    var n = Number(issue["호수"]) || 0;
+    var v = n % 3;
+    var c = COVER_SETS[v];
+    var shapes = v === 0
+      ? '<circle cx="236" cy="98" r="60" fill="' + c.a + '"/>'
+        + '<rect x="196" y="236" width="86" height="86" fill="' + c.b + '" transform="rotate(-12 239 279)"/>'
+      : v === 1
+        ? '<polygon points="228,44 296,164 160,164" fill="' + c.a + '"/>'
+          + '<circle cx="244" cy="288" r="52" fill="' + c.b + '"/>'
+        : '<rect x="186" y="46" width="104" height="104" fill="' + c.a + '"/>'
+          + '<polygon points="176,336 296,336 236,222" fill="' + c.b + '"/>';
+    var mast = (issue["채널"] || "") + " " + (pub || issue["발행인"] || "안창민");
+    return '<svg class="shelf-svg" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + esc(mast + " " + n + "호 표지") + '">'
+      + '<rect width="300" height="400" fill="' + c.bg + '"/>'
+      + '<rect x="0" y="0" width="168" height="13" fill="' + c.a + '"/>'
+      + shapes
+      + '<text x="18" y="52" fill="' + c.ink + '" font-family="Paperlogy, sans-serif" font-size="17" font-weight="800" letter-spacing="0.5">' + esc(mast) + "</text>"
+      + '<text x="12" y="346" fill="' + c.ink + '" font-family="Paperlogy, sans-serif" font-size="132" font-weight="900" letter-spacing="-8">' + esc(n) + "</text>"
+      + '<text x="18" y="378" fill="' + c.ink + '" font-family="Paperlogy, sans-serif" font-size="13" font-weight="800" letter-spacing="1.4">통권 ' + esc(n) + "호</text>"
+      + "</svg>";
+  }
+
+  // 표지 — 이미지가 있으면 이미지, 없으면 자동 표지
+  function coverHtml(issue, pub) {
+    return issue["커버이미지"]
+      ? '<img class="shelf-img" src="' + esc(mediaSrc(issue["커버이미지"])) + '" alt="" loading="lazy">'
+      : coverSvg(issue, pub);
+  }
+
+  // 지난 호 구획 — 같은 채널의 발행된 이전 호 4건. 없으면 통째로 생략한다.
+  function pastHtml(meta, list, edition) {
+    if (!list || !list.length) return "";
+    var fc = edition ? edition["코드"] : "";
+    var past = sortByDate(published(list).filter(function (i) {
+      return i["채널"] === meta["채널"] && i.id !== meta.id
+        && (i["발행일"] || "") < (meta["발행일"] || "");
+    })).slice(0, 4);
+    if (!past.length) return "";
+    var pub = edition ? edition["이름"] : (meta["발행인"] || "안창민");
+    var h = ['<section class="past"><div class="past__inner">'];
+    h.push('<div class="past__head"><h2 class="past__title">지난 호</h2><div class="past__shape" aria-hidden="true"></div></div>');
+    h.push('<div class="past__grid">');
+    past.forEach(function (i) {
+      h.push('<a class="past__item" href="issue.html?id=' + encodeURIComponent(i.id) + (fc ? "&fc=" + encodeURIComponent(fc) : "") + '">');
+      h.push('<span class="past__cover">' + coverHtml(i, pub) + "</span>");
+      h.push('<span class="past__no">' + esc(i["호수"]) + "호</span>");
+      h.push('<span class="past__name">' + esc(i["제목"]) + "</span>");
+      h.push('<span class="past__date">' + esc(displayDate(i["발행일"], i["주차라벨"])) + "</span></a>");
+    });
+    h.push("</div>");
+    h.push('<a class="bh-back bh-back--home" href="./' + (fc ? "?fc=" + encodeURIComponent(fc) : "") + '">서재에서 전체 보기</a>');
+    h.push("</div></section>");
     return h.join("");
   }
 
@@ -270,53 +527,73 @@
   function issueHtml(meta, data, list, edition) {
     var pub = meta["발행인"] || "안창민";
     var mast = meta["채널"] + " " + pub;
-    var editorLine = "편집장 안창민 FC" + (pub !== "안창민" ? " · 발행 " + esc(pub) + " FC" : "");
+    var editorLine = "편집장 안창민 FC" + (pub !== "안창민" ? " · 발행 " + pub + " FC" : "");
     var arts = (data && data["기사"]) || [];
-    var note = (data && data["편집장의말"]) || [];
+    var note = ((data && data["편집장의말"]) || []).slice();
+    // 마지막 줄이 짧으면 서명용 태그라인으로 쓴다 (예: "상속 · 증여 · 절세 전문")
+    var tagline = (note.length > 1 && note[note.length - 1].length <= 30) ? note.pop() : "";
     var h = [];
 
-    // 지면 헤더 — 제호 → 호수·발행일 → (대표 기사) 킥커 → 표제 → 부제 → 필자
-    h.push('<header class="issue-head" id="a1">');
-    h.push('<p class="issue-masthead">' + esc(mast) + "</p>");
-    h.push('<p class="issue-line">통권 ' + esc(meta["호수"]) + "호 · " + esc(meta["주차라벨"]) + " · " + esc(displayDate(meta["발행일"], meta["주차라벨"])) + " 발행</p>");
-    if (arts.length) {
-      h.push(headBlock(arts[0], 0, "h1"));
-      h.push('<p class="a-byline">' + editorLine + "</p>");
-    }
-    if (arts.length > 1) {
-      h.push('<nav class="issue-toc" aria-label="이번 호 기사">');
-      arts.forEach(function (a, i) {
-        h.push('<a href="#a' + (i + 1) + '"><span class="a-no">' + String(i + 1) + "</span>" + esc(displayCat(a["카테고리"])) + "</a>");
-      });
-      h.push("</nav>");
-    }
-    // 표지 이미지는 폴드 직하 1장 — 대표 기사가 자체 이미지를 실으면 중복 질량이라 생략
-    if (meta["커버이미지"] && !(arts[0] && arts[0]["이미지"])) {
-      h.push('<figure class="a-figure issue-cover"><img src="' + esc(mediaSrc(meta["커버이미지"])) + '" alt="표지" fetchpriority="high"></figure>');
-    }
-    h.push("</header>");
+    h.push('<div class="bh">');
 
+    // 표지 — 삼원색 도형 + 제호(채널/발행인) + 호수
+    h.push('<section class="masthead" id="a0">');
+    h.push('<div class="masthead__red" aria-hidden="true"></div>');
+    h.push('<div class="masthead__main">');
+    h.push('<p class="masthead__kicker">' + esc(meta["주차라벨"] || "") + "</p>");
+    h.push('<h1 class="masthead__title">' + esc(meta["채널"]) + "<span>" + esc(pub) + "</span></h1>");
+    h.push('<div class="masthead__circle" aria-hidden="true"></div>');
+    h.push('<div class="masthead__triangle" aria-hidden="true"></div>');
+    h.push("</div>");
+    h.push('<div class="masthead__foot"><p class="masthead__deck">' + esc(meta["제목"] || "") + "</p>");
+    h.push('<div class="masthead__mark">' + esc(meta["호수"]) + "</div></div>");
+    h.push("</section>");
+    h.push('<p class="masthead__line">통권 ' + esc(meta["호수"]) + "호 · " + esc(meta["주차라벨"]) + " · " + esc(displayDate(meta["발행일"], meta["주차라벨"])) + " 발행 · " + esc(editorLine) + "</p>");
+
+    // 편집장의 말
     if (note.length) {
-      h.push('<section class="issue-note"><p class="issue-note-label">편집장의 말</p>');
+      h.push('<section class="front front--editor"><div class="front__grid">');
+      h.push('<p class="eyebrow">편집장의 말</p>');
+      h.push('<h2 class="front__heading">편집장의 말</h2>');
+      h.push('<div class="editor-copy">');
       note.forEach(function (p) { h.push("<p>" + esc(p) + "</p>"); });
-      h.push('<p class="issue-note-sign">편집장 안창민</p></section>');
+      h.push('<p class="editor-sign">편집장 안창민' + (tagline ? " · " + esc(tagline) : "") + "</p>");
+      h.push("</div></div></section>");
     }
 
-    // 기사 — 대표 기사의 표제는 지면 헤더가 이미 실었다
+    // 차례 — 번호(원)·카테고리 띠·제목·부제
+    if (arts.length) {
+      h.push('<nav class="contents" id="contents" aria-label="이번 호 기사"><div class="contents__inner">');
+      h.push('<div class="contents__head"><h2 class="contents__title">기사</h2><div class="contents__shape" aria-hidden="true"></div></div>');
+      h.push('<ol class="toc">');
+      arts.forEach(function (a, i) {
+        h.push('<li class="toc__item"><a class="toc__link" href="#a' + (i + 1) + '">');
+        h.push('<div class="toc__number">' + esc(a["번호"] || (i + 1)) + "</div>");
+        h.push('<div class="toc__copy"><div class="toc__category">' + esc(displayCat(a["카테고리"])) + "</div>");
+        h.push('<div class="toc__name">' + esc(a["제목"]) + "</div>");
+        if (a["부제"]) h.push('<p class="toc__sub">' + esc(a["부제"]) + "</p>");
+        h.push("</div></a></li>");
+      });
+      h.push("</ol></div></nav>");
+    }
+
+    // 칼럼 — 1번 빨강 · 2번 파랑 · 3번 노랑 (넷째부터 다시 순환)
     arts.forEach(function (a, i) {
-      h.push('<article class="a' + (i === 0 ? " a-lead" : "") + '"' + (i > 0 ? ' id="a' + (i + 1) + '"' : "") + ">");
-      if (i > 0) h.push(headBlock(a, i, "h2"));
-      h.push(bodyBlock(a, pub));
+      hlTurn = 0; // 칼럼마다 리드부터 형광이 걸리게 초기화
+      h.push('<article class="article article-' + (i % 3 + 1) + '" id="a' + (i + 1) + '">');
+      h.push(posterHtml(a, a["번호"] || (i + 1)));
+      h.push(introHtml(a, pub));
+      h.push(bodyHtml(a["본문"] || [], arts, displayCat(a["카테고리"])));
       h.push("</article>");
     });
 
-    // 지면 말미 — 필자 서명 → 다음 호 → 판권
-    var org = edition ? (edition["소속"] || "") : "신한라이프 하랑지점";
-    h.push('<footer class="issue-end">');
-    h.push('<div class="sig-card"><p class="sig-name">' + esc(pub) + ' FC</p>');
-    h.push('<p class="sig-role">' + (pub === "안창민" ? "편집장 · " : "발행 · ") + esc(org) + "</p></div>");
+    // 판권 — 편집장·발행 병기 (헌법) + 다음 호 + 서재 복귀
+    h.push('<footer class="bh-footer"><div class="footer__copy">');
+    h.push('<p class="footer__title">' + esc(mast) + "</p>");
+    h.push('<p class="footer__meta">통권 ' + esc(meta["호수"]) + "호 · " + esc(meta["주차라벨"]) + " · " + esc(displayDate(meta["발행일"], meta["주차라벨"])) + " 발행</p>");
+    h.push('<p class="footer__role">' + esc(editorLine) + " · " + esc(edition ? (edition["소속"] || "") : "신한라이프 하랑지점") + "</p>");
 
-    // 다음 호 — 같은 채널의 실제 다음 발행분이 서재에 있을 때만 (실데이터 없으면 생략)
+    // 다음 호 — 같은 채널의 실제 다음 발행분이 서재에 있을 때만
     var next = null;
     (list || []).forEach(function (i) {
       if (i["상태"] === "초안" || i["채널"] !== meta["채널"]) return;
@@ -327,19 +604,52 @@
       var fc = new URLSearchParams(window.location.search).get("fc");
       var href = "issue.html?id=" + encodeURIComponent(next.id)
         + (edition && fc ? "&fc=" + encodeURIComponent(fc) : "");
-      h.push('<a class="next-issue" href="' + href + '">');
+      h.push('<a class="next-issue" href="' + esc(href) + '">');
       h.push('<span class="next-label">다음 호</span>');
       h.push('<span class="next-title">' + esc(next["제목"]) + "</span>");
       h.push('<span class="next-meta">통권 ' + esc(next["호수"]) + "호 · " + esc(next["주차라벨"]) + "</span></a>");
     }
 
-    h.push('<div class="colophon">');
-    h.push('<p class="colophon-title">' + esc(mast) + "</p>");
-    h.push("<p>통권 " + esc(meta["호수"]) + "호 · " + esc(meta["주차라벨"]) + " · " + editorLine + "</p>");
-    h.push("<p>본 콘텐츠는 정보 제공 목적이며 개별 상품 권유가 아닙니다. 문의는 담당 설계사에게 연락해 주십시오.</p>");
-    h.push('<a class="issue-return" href="./">케어센터 서재로</a>');
-    h.push("</div></footer>");
+    h.push('<p class="footer__note">본 콘텐츠는 정보 제공 목적이며 개별 상품 권유가 아닙니다. 문의는 담당 설계사에게 연락해 주십시오.</p>');
+    // 지난 호 — 다 읽은 독자가 갈 곳. 같은 채널의 발행분만, 목록이 없으면(미리보기) 생략한다.
+    var pastSec = pastHtml(meta, list, edition);
+    if (!pastSec) h.push('<a class="bh-back bh-back--home" href="./">케어센터 서재로</a>');
+    h.push('</div><div class="footer__shape" aria-hidden="true"></div></footer>');
+    h.push(pastSec);
+
+    h.push("</div>");
     return h.join("");
+  }
+
+  // 호별 카톡 미리보기용 OG 페이지 — 카톡은 자바스크립트를 실행하지 않으므로
+  // issue.html?id=X 로는 호마다 다른 미리보기가 안 나온다. 발행 시 이 함수로
+  // 호별 정적 페이지를 떠서 그 주소를 공유한다. (생성·저장은 다음 단계)
+  var SITE = "https://app.insurguard.life";
+
+  function ogPageHtml(meta, data) {
+    var pub = meta["발행인"] || "안창민";
+    var title = "『" + meta["채널"] + " " + pub + "』 " + (meta["주차라벨"] || "") + " 통권 " + meta["호수"] + "호";
+    var arts = (data && data["기사"]) || [];
+    var desc = meta["요약"] || arts.map(function (a) { return a["제목"]; }).join(" · ");
+    desc = String(desc).slice(0, 150);
+    var img = meta["커버이미지"]
+      ? (/^https?:/.test(meta["커버이미지"]) ? meta["커버이미지"] : SITE + "/" + meta["커버이미지"])
+      : SITE + "/web/assets/img/hero-care.jpg";
+    var url = SITE + "/web/care/issue.html?id=" + encodeURIComponent(meta.id);
+    return '<!DOCTYPE html>\n<html lang="ko">\n<head>\n<meta charset="UTF-8">\n'
+      + '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
+      + "<title>" + esc(title) + "</title>\n"
+      + '<meta name="description" content="' + esc(desc) + '">\n'
+      + '<meta property="og:type" content="article">\n'
+      + '<meta property="og:site_name" content="안창민 케어센터">\n'
+      + '<meta property="og:title" content="' + esc(title) + '">\n'
+      + '<meta property="og:description" content="' + esc(desc) + '">\n'
+      + '<meta property="og:image" content="' + esc(img) + '">\n'
+      + '<meta property="og:url" content="' + esc(url) + '">\n'
+      + '<meta name="twitter:card" content="summary_large_image">\n'
+      + '<meta http-equiv="refresh" content="0; url=' + esc(url) + '">\n'
+      + '<script>location.replace("' + esc(url) + '");<\/script>\n'
+      + "</head>\n<body>\n<p><a href=\"" + esc(url) + '">' + esc(title) + "를 여는 중입니다.</a></p>\n</body>\n</html>\n";
   }
 
   window.care = {
@@ -347,6 +657,8 @@
     displayCat: displayCat,
     mediaSrc: mediaSrc,
     issueHtml: issueHtml,
+    ogPageHtml: ogPageHtml,
+    coverHtml: coverHtml,
     loadSender: loadSender,
     saveSender: saveSender,
     bindSenderRow: bindSenderRow,
