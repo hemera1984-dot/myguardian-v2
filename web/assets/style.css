@@ -2910,3 +2910,15 @@ body.platform .shelf-page .pill-tabs > button.active { background: var(--yellow)
   .bh .past { padding: 120px 6vw 140px; }
   .bh .past__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 34px 22px; }
 }
+
+/* 결과 본문 펼치기 + 이미지 프롬프트 (2026-08-03) */
+.r-wrap { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+.r-wrap > summary { cursor: pointer; font-size: 12px; font-weight: 700; color: var(--ink-sub); min-height: 32px; display: flex; align-items: center; gap: 8px; }
+.r-body { margin-top: 10px; max-height: 460px; overflow-y: auto; padding-right: 6px; }
+.r-body h4 { margin: 16px 0 6px; font-size: 14px; font-weight: 800; }
+.r-body p { margin: 0 0 10px; font-size: 13.5px; line-height: 1.8; color: var(--ink-sub); }
+.slot-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.img-prompt { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--ink-sub); }
+.ip-desc { margin: 0 0 8px; font-weight: 600; color: var(--ink); }
+.ip-text { width: 100%; min-height: 96px; font: inherit; font-size: 12.5px; line-height: 1.6; border: 1px solid var(--line-strong); border-radius: 0; padding: 10px; background: var(--surface); resize: vertical; }
+.img-prompt .btn { margin-top: 8px; }
