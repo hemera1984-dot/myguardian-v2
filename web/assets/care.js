@@ -471,34 +471,98 @@
     { bg: "#005BBB", ink: "#FFFFFF", a: "#F5C518", b: "#E63329" }
   ];
 
+  // 커버라인 색 — 호마다 액센트가 바뀐다(균질하면 실패, 헌법). 제호는 늘 같다.
+  var COVER_ACCENT = [
+    { line: "#E63329", ink: "#FFFFFF" },
+    { line: "#005BBB", ink: "#FFFFFF" },
+    { line: "#F5C518", ink: "#111111" }
+  ];
+
+  // 제목 줄바꿈 — SVG는 자동 줄바꿈이 없어 글자 수로 끊는다
+  function wrapLines(s, max, maxLines) {
+    var out = [];
+    var cur = "";
+    String(s || "").split(/\s+/).filter(Boolean).forEach(function (w) {
+      if (!cur) { cur = w; }
+      else if ((cur + " " + w).length <= max) { cur += " " + w; }
+      else { out.push(cur); cur = w; }
+    });
+    if (cur) out.push(cur);
+    var cut = [];
+    out.forEach(function (l) {
+      while (l.length > max) { cut.push(l.slice(0, max)); l = l.slice(max); }
+      if (l) cut.push(l);
+    });
+    if (cut.length > maxLines) {
+      cut = cut.slice(0, maxLines);
+      cut[maxLines - 1] = cut[maxLines - 1].slice(0, max - 1) + "…";
+    }
+    return cut;
+  }
+
+  // 표지 도형 — 커버이미지가 없는 호가 쓰는 그림 자리(y 64~400)
+  function coverArt(v, c) {
+    var shapes = v === 0
+      ? '<circle cx="222" cy="152" r="62" fill="' + c.a + '"/>'
+        + '<rect x="26" y="228" width="92" height="92" fill="' + c.b + '" transform="rotate(-12 72 274)"/>'
+      : v === 1
+        ? '<polygon points="152,88 236,222 68,222" fill="' + c.a + '"/>'
+          + '<circle cx="60" cy="296" r="46" fill="' + c.b + '"/>'
+        : '<rect x="172" y="100" width="108" height="108" fill="' + c.a + '"/>'
+          + '<polygon points="24,318 144,318 84,200" fill="' + c.b + '"/>';
+    return '<rect x="0" y="64" width="300" height="336" fill="' + c.bg + '"/>' + shapes;
+  }
+
+  // 표지 — 포브스형. 제호 띠(위) · 그림(가운데) · 커버라인(그림 위) · 호수·발행일(아래).
+  // 커버이미지가 있으면 그림 자리에 그것을 깔고, 없으면 바우하우스 도형을 깐다.
   function coverSvg(issue, pub) {
     var n = Number(issue["호수"]) || 0;
     var v = n % 3;
     var c = COVER_SETS[v];
-    var shapes = v === 0
-      ? '<circle cx="236" cy="98" r="60" fill="' + c.a + '"/>'
-        + '<rect x="196" y="236" width="86" height="86" fill="' + c.b + '" transform="rotate(-12 239 279)"/>'
-      : v === 1
-        ? '<polygon points="228,44 296,164 160,164" fill="' + c.a + '"/>'
-          + '<circle cx="244" cy="288" r="52" fill="' + c.b + '"/>'
-        : '<rect x="186" y="46" width="104" height="104" fill="' + c.a + '"/>'
-          + '<polygon points="176,336 296,336 236,222" fill="' + c.b + '"/>';
+    var ac = COVER_ACCENT[v];
     var mast = (issue["채널"] || "") + " " + (pub || issue["발행인"] || "안창민");
+    var img = issue["커버이미지"];
+
+    var ground = img
+      ? '<image href="' + esc(mediaSrc(img)) + '" x="0" y="64" width="300" height="336" preserveAspectRatio="xMidYMid slice"/>'
+      : coverArt(v, c);
+
+    // 커버라인 — 대표 칼럼 제목을 색면에 얹는다. 보조 제목은 잉크 칩으로 한 줄.
+    var lines = wrapLines(issue["제목"], 13, 2);
+    var also = (issue["꼭지"] || []).map(function (t) { return t["제목"]; })
+      .filter(function (t) { return t && t !== issue["제목"]; }).slice(0, 1);
+    var chipH = also.length ? 20 : 0;
+    var panelH = 14 + lines.length * 25;
+    var panelY = 366 - panelH;
+    var chipY = panelY - chipH;
+    var panel = '<rect x="0" y="' + panelY + '" width="252" height="' + panelH + '" fill="' + ac.line + '"/>'
+      + lines.map(function (l, i) {
+        return '<text x="13" y="' + (panelY + 26 + i * 25) + '" fill="' + ac.ink
+          + '" font-family="Paperlogy, sans-serif" font-size="21" font-weight="900" letter-spacing="-1">' + esc(l) + "</text>";
+      }).join("");
+    if (also.length) {
+      panel = '<rect x="0" y="' + chipY + '" width="196" height="' + chipH + '" fill="#111111"/>'
+        + '<text x="13" y="' + (chipY + 14) + '" fill="#F4F1EA" font-family="Paperlogy, sans-serif" font-size="11" font-weight="800">'
+        + esc(wrapLines(also[0], 20, 1)[0] || "") + "</text>" + panel;
+    }
+
     return '<svg class="shelf-svg" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + esc(mast + " " + n + "호 표지") + '">'
-      + '<rect width="300" height="400" fill="' + c.bg + '"/>'
-      + '<rect x="0" y="0" width="168" height="13" fill="' + c.a + '"/>'
-      + shapes
-      + '<text x="18" y="52" fill="' + c.ink + '" font-family="Paperlogy, sans-serif" font-size="17" font-weight="800" letter-spacing="0.5">' + esc(mast) + "</text>"
-      + '<text x="12" y="346" fill="' + c.ink + '" font-family="Paperlogy, sans-serif" font-size="132" font-weight="900" letter-spacing="-8">' + esc(n) + "</text>"
-      + '<text x="18" y="378" fill="' + c.ink + '" font-family="Paperlogy, sans-serif" font-size="13" font-weight="800" letter-spacing="1.4">통권 ' + esc(n) + "호</text>"
+      + '<rect width="300" height="400" fill="#F4F1EA"/>'
+      + ground
+      + '<rect x="0" y="0" width="300" height="64" fill="#F4F1EA"/>'
+      + '<text x="13" y="45" fill="#111111" font-family="Paperlogy, sans-serif" font-size="34" font-weight="900" letter-spacing="-2.2">'
+      + esc(issue["채널"] || "") + '<tspan fill="' + ac.line + '"> ' + esc(pub || issue["발행인"] || "안창민") + "</tspan></text>"
+      + '<rect x="0" y="60" width="300" height="4" fill="#111111"/>'
+      + panel
+      + '<rect x="0" y="366" width="300" height="34" fill="#111111"/>'
+      + '<text x="13" y="388" fill="#F4F1EA" font-family="Paperlogy, sans-serif" font-size="12" font-weight="800" letter-spacing="0.4">통권 ' + esc(n) + "호</text>"
+      + '<text x="287" y="388" text-anchor="end" fill="#F4F1EA" font-family="Paperlogy, sans-serif" font-size="11" font-weight="700">' + esc(displayDate(issue["발행일"], issue["주차라벨"])) + "</text>"
       + "</svg>";
   }
 
-  // 표지 — 이미지가 있으면 이미지, 없으면 자동 표지
+  // 표지 — 이미지 유무와 무관하게 같은 포브스 틀을 쓴다(이미지는 그림 자리에 깔린다)
   function coverHtml(issue, pub) {
-    return issue["커버이미지"]
-      ? '<img class="shelf-img" src="' + esc(mediaSrc(issue["커버이미지"])) + '" alt="" loading="lazy">'
-      : coverSvg(issue, pub);
+    return coverSvg(issue, pub);
   }
 
   // 지난 호 구획 — 같은 채널의 발행된 이전 호 4건. 없으면 통째로 생략한다.
@@ -541,19 +605,32 @@
 
     h.push('<div class="bh">');
 
-    // 표지 — 삼원색 도형 + 제호(채널/발행인) + 호수
-    h.push('<section class="masthead" id="a0">');
-    h.push('<div class="masthead__red" aria-hidden="true"></div>');
-    h.push('<div class="masthead__main">');
-    h.push('<p class="masthead__kicker">' + esc(meta["주차라벨"] || "") + "</p>");
-    h.push('<h1 class="masthead__title">' + esc(meta["채널"]) + "<span>" + esc(pub) + "</span></h1>");
-    h.push('<div class="masthead__circle" aria-hidden="true"></div>');
-    h.push('<div class="masthead__triangle" aria-hidden="true"></div>');
-    h.push("</div>");
-    h.push('<div class="masthead__foot"><p class="masthead__deck">' + esc(meta["제목"] || "") + "</p>");
-    h.push('<div class="masthead__mark">' + esc(meta["호수"]) + "</div></div>");
+    // 표지 — 포브스형. 제호 띠 · 그림 · 그림 위 커버라인 · 호수·발행일 띠.
+    // 커버이미지가 있으면 그것이 지면을 채우고, 없으면 바우하우스 도형이 그 자리에 들어간다.
+    var cover = meta["커버이미지"];
+    var also = arts.map(function (a) { return a["제목"]; })
+      .filter(function (t) { return t && t !== meta["제목"]; }).slice(0, 2);
+    h.push('<section class="masthead' + (cover ? " masthead--photo" : "") + '" id="a0">');
+    h.push('<div class="masthead__brand"><h1 class="masthead__title">' + esc(meta["채널"]) + "<span>" + esc(pub) + "</span></h1></div>");
+    h.push('<div class="masthead__art">');
+    if (cover) {
+      h.push('<img class="masthead__photo" src="' + esc(mediaSrc(cover)) + '" alt="">');
+    } else {
+      h.push('<div class="masthead__circle" aria-hidden="true"></div>');
+      h.push('<div class="masthead__triangle" aria-hidden="true"></div>');
+    }
+    h.push('<div class="masthead__lines">');
+    if (meta["주차라벨"]) h.push('<p class="masthead__kicker">' + esc(meta["주차라벨"]) + "</p>");
+    h.push('<p class="masthead__deck">' + esc(meta["제목"] || "") + "</p>");
+    if (also.length) {
+      h.push('<ul class="masthead__also">');
+      also.forEach(function (t) { h.push("<li>" + esc(t) + "</li>"); });
+      h.push("</ul>");
+    }
+    h.push("</div></div>");
+    h.push('<div class="masthead__foot"><span class="masthead__no">통권 ' + esc(meta["호수"]) + "호</span>");
+    h.push('<span class="masthead__issued">' + esc(displayDate(meta["발행일"], meta["주차라벨"])) + " 발행 · " + esc(editorLine) + "</span></div>");
     h.push("</section>");
-    h.push('<p class="masthead__line">통권 ' + esc(meta["호수"]) + "호 · " + esc(meta["주차라벨"]) + " · " + esc(displayDate(meta["발행일"], meta["주차라벨"])) + " 발행 · " + esc(editorLine) + "</p>");
 
     // 편집장의 말
     if (note.length) {
@@ -637,8 +714,10 @@
     var arts = (data && data["기사"]) || [];
     var desc = meta["요약"] || arts.map(function (a) { return a["제목"]; }).join(" · ");
     desc = String(desc).slice(0, 150);
-    var img = meta["커버이미지"]
-      ? (/^https?:/.test(meta["커버이미지"]) ? meta["커버이미지"] : SITE + "/" + meta["커버이미지"])
+    // 카톡은 SVG를 미리보기로 그리지 않는다 — 삽화 표지인 호는 기본 이미지로 돌린다
+    var cover = /\.svg$/i.test(meta["커버이미지"] || "") ? "" : meta["커버이미지"];
+    var img = cover
+      ? (/^https?:/.test(cover) ? cover : SITE + "/" + cover)
       : SITE + "/web/assets/img/hero-care.jpg";
     var url = SITE + "/web/care/issue.html?id=" + encodeURIComponent(meta.id);
     return '<!DOCTYPE html>\n<html lang="ko">\n<head>\n<meta charset="UTF-8">\n'

@@ -16,6 +16,7 @@ import {
   listGrades, listPending, listMembers, getAccount, approve, suspend, setAdmin,
   setApprover, isDescendantOf
 } from "./db.js";
+import { artworkSvg } from "./artwork.js";
 
 const PORT = Number(process.env.PORT || 8787);
 const DB_FILE = process.env.DB_FILE || "./myguardian.db";
@@ -45,6 +46,18 @@ const IMAGE_TYPES = {
   "image/gif": ".gif"
 };
 const MAX_IMAGE = 12 * 1024 * 1024;
+
+// 미디어 파일 저장 — 파일명은 서버가 만든다(올린 이름을 믿지 않는다)
+function saveMedia(bytes, ext) {
+  const name = new Date().toISOString().slice(0, 10).replace(/-/g, "")
+    + "-" + randomBytes(6).toString("hex") + ext;
+  writeFileSync(join(MEDIA_DIR, name), bytes);
+  return {
+    파일명: name,
+    주소: (MEDIA_BASE ? MEDIA_BASE.replace(/\/$/, "") + "/" : "/media/") + name,
+    크기: bytes.length
+  };
+}
 
 mkdirSync(MEDIA_DIR, { recursive: true });
 mkdirSync(CARE_ISSUES_DIR, { recursive: true });
@@ -560,6 +573,79 @@ async function route(req, res, url) {
     return send(res, 200, r.value);
   }
 
+  // 삽화 생성 — 이미지 생성 API 없이 지면 삽화를 만든다.
+  // AI에게 도형 배치(0~100 상대좌표)만 받고 SVG 조립·저장은 서버가 한다.
+  // 만들어진 파일은 업로드한 사진과 똑같이 /media/에 놓이므로 지면·서재·카톡이 그대로 쓴다.
+  if (req.method === "POST" && path === "/ai/artwork") {
+    if (!ANTHROPIC_KEY) return send(res, 503, { error: "AI 기능이 설정되지 않았습니다." });
+    const body = await readJson(req);
+    const 종류 = body["종류"] === "표지" ? "표지" : "칼럼";
+    const 채널 = String(body["채널"] || "월간 안창민").slice(0, 40);
+    const 제목 = String(body["제목"] || "").slice(0, 200);
+    const 요약 = String(body["요약"] || "").slice(0, 800);
+    const 카테고리 = String(body["카테고리"] || "").slice(0, 40);
+    const 제목들 = (Array.isArray(body["제목들"]) ? body["제목들"] : []).slice(0, 5)
+      .map((t) => String(t).slice(0, 200)).filter(Boolean);
+    if (종류 === "표지" ? !제목들.length : !제목) {
+      return send(res, 400, { error: 종류 === "표지" ? "칼럼 제목이 먼저 필요합니다." : "제목이 먼저 필요합니다." });
+    }
+
+    const prompt = [
+      종류 === "표지"
+        ? `잡지 "${채널}" 표지의 추상 그래픽을 구성한다. 세로 판형(3:4)이다.`
+        : `잡지 "${채널}"에 실릴 칼럼 삽화를 구성한다. 가로 판형(16:9)이다.`,
+      종류 === "표지" ? "이번 호 칼럼:" : `칼럼 제목: ${제목}`,
+      ...(종류 === "표지" ? 제목들.map((t) => "- " + t) : []),
+      종류 !== "표지" && 카테고리 ? `분야: ${카테고리}` : "",
+      종류 !== "표지" && 요약 ? `요약: ${요약}` : "",
+      "",
+      "양식은 바우하우스다. 원·사각·삼각을 삼원색으로 배치한 평면 구성이고,",
+      "글의 주제를 상징적으로 담되 도표나 설명 그림이 아니다.",
+      "",
+      "규칙:",
+      "- 배경 1색, 도형 3~6개.",
+      "- 좌표 x·y는 도형 왼쪽 위 모서리, 크기 w·h는 화면 대비 백분율(0~100)이다.",
+      "- 화면 밖으로 일부 걸쳐 나가는 큰 도형을 하나 두어 시원하게 만든다(음수·100 초과 좌표 허용).",
+      "- 큰 도형 1개, 중간 1~2개, 작은 것 나머지로 크기를 확실히 다르게 한다. 격자처럼 늘어놓지 않는다.",
+      "- 배경과 명도 차이가 큰 색을 골라 도형이 묻히지 않게 한다.",
+      "- 회전은 사각·삼각에만 의미가 있다(원은 무시된다). 쓰지 않으면 0.",
+      "- 의도는 무엇을 어떻게 상징했는지 한국어 한 줄."
+    ].filter(Boolean).join("\n");
+
+    const r = await claude(prompt, {
+      type: "object",
+      properties: {
+        배경: { type: "string", enum: ["종이", "노랑", "파랑", "빨강", "잉크"] },
+        도형: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              형: { type: "string", enum: ["원", "사각", "삼각"] },
+              x: { type: "number" }, y: { type: "number" },
+              w: { type: "number" }, h: { type: "number" },
+              색: { type: "string", enum: ["빨강", "파랑", "노랑", "잉크", "종이"] },
+              회전: { type: "number" }
+            },
+            required: ["형", "x", "y", "w", "h", "색", "회전"],
+            additionalProperties: false
+          }
+        },
+        의도: { type: "string" }
+      },
+      required: ["배경", "도형", "의도"],
+      additionalProperties: false
+    }, { effort: "low", maxTokens: 2000 });
+
+    if (r.error === 422) return send(res, 422, { error: "이 내용으로는 삽화를 만들 수 없습니다." });
+    if (r.error) return send(res, 502, { error: "삽화를 만들지 못했습니다. 잠시 후 다시 시도하세요." });
+    if (!Array.isArray(r.value["도형"]) || !r.value["도형"].length) {
+      return send(res, 502, { error: "삽화 구성이 비어 있습니다. 다시 시도하세요." });
+    }
+    const info = saveMedia(Buffer.from(artworkSvg(r.value, 종류), "utf8"), ".svg");
+    return send(res, 200, { ...info, 의도: String(r.value["의도"] || "") });
+  }
+
   // 편집장의 말 — 확정된 칼럼 제목들을 보고 서문을 쓴다
   if (req.method === "POST" && path === "/ai/preface") {
     if (!ANTHROPIC_KEY) return send(res, 503, { error: "AI 기능이 설정되지 않았습니다." });
@@ -634,15 +720,7 @@ async function route(req, res, url) {
     if (!ext) return send(res, 400, { error: "지원하지 않는 형식입니다. (JPG·PNG·WebP·GIF)" });
     const bytes = await readBytes(req, MAX_IMAGE);
     if (!bytes.length) return send(res, 400, { error: "빈 파일입니다." });
-    // 파일명은 서버가 만든다 — 올린 이름을 그대로 쓰면 경로 이탈·덮어쓰기 위험이 있다
-    const name = new Date().toISOString().slice(0, 10).replace(/-/g, "")
-      + "-" + randomBytes(6).toString("hex") + ext;
-    writeFileSync(join(MEDIA_DIR, name), bytes);
-    return send(res, 200, {
-      파일명: name,
-      주소: (MEDIA_BASE ? MEDIA_BASE.replace(/\/$/, "") + "/" : "/media/") + name,
-      크기: bytes.length
-    });
+    return send(res, 200, saveMedia(bytes, ext));
   }
 
   if (req.method === "GET" && path === "/admin/pending") {

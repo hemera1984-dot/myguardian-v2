@@ -2411,19 +2411,49 @@ body.magazine .mag-progress {
 }
 body.magazine :focus-visible { outline: 3px solid #005bbb; outline-offset: 2px; }
 
-/* ── 표지 ───────────────────────────────────────── */
+/* ── 표지 (포브스형: 제호 띠 · 그림 · 그림 위 커버라인 · 판권 띠) ── */
 .bh .masthead {
   position: relative;
   min-height: calc(100svh - 48px);
   overflow: hidden;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--bh-paper);
 }
-.bh .masthead__red { width: 74%; height: 26px; background: var(--red); }
-.bh .masthead__main { position: relative; z-index: 2; display: grid; align-content: center; padding: 54px 20px 36px; }
+.bh .masthead__brand { padding: 18px 14px 14px; border-bottom: 5px solid var(--bh-ink); }
+.bh .masthead__title {
+  display: flex; align-items: baseline; gap: 0.16em; flex-wrap: wrap;
+  margin: 0;
+  font-size: clamp(38px, 13.5vw, 118px);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.075em;
+}
+.bh .masthead__title span { color: var(--red); }
+/* 그림 자리 — 커버이미지가 채우거나, 없으면 도형이 놓인다 */
+.bh .masthead__art { position: relative; overflow: hidden; min-height: 44vh; background: var(--yellow); }
+.bh .masthead--photo .masthead__art { background: var(--bh-ink); }
+.bh .masthead__photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.bh .masthead__circle {
+  position: absolute; z-index: 1; right: -72px; top: 8%;
+  width: 205px; aspect-ratio: 1; border-radius: 50%; background: var(--blue);
+}
+.bh .masthead__triangle {
+  position: absolute; z-index: 1; left: 6%; top: 34%;
+  width: 0; height: 0;
+  border-left: 74px solid transparent;
+  border-right: 74px solid transparent;
+  border-bottom: 128px solid var(--bh-ink);
+  transform: rotate(14deg);
+}
+/* 커버라인 — 글자는 늘 색면 위에 올린다. 어떤 그림이 깔려도 읽힌다. */
+.bh .masthead__lines {
+  position: absolute; z-index: 3; left: 0; right: 0; bottom: 0;
+  display: grid; justify-items: start; align-content: end;
+}
 .bh .masthead__kicker {
   width: max-content;
-  margin: 0 0 18px;
+  margin: 0;
   padding: 6px 11px;
   background: var(--blue);
   color: #fff;
@@ -2431,46 +2461,33 @@ body.magazine :focus-visible { outline: 3px solid #005bbb; outline-offset: 2px; 
   font-weight: 800;
   letter-spacing: 0.14em;
 }
-.bh .masthead__title {
-  position: relative;
-  z-index: 2;
-  max-width: 5.2em;
+.bh .masthead__deck {
+  max-width: 9em;   /* 한글은 한 글자가 1em이라 ch가 아니라 em으로 잡는다 */
+  word-break: keep-all;
   margin: 0;
-  font-size: clamp(64px, 19vw, 162px);
+  padding: 14px 18px 16px;
+  background: var(--red);
+  color: #fff;
+  font-size: clamp(26px, 8vw, 56px);
   font-weight: 900;
-  line-height: 0.84;
-  letter-spacing: -0.09em;
+  line-height: 1.06;
+  letter-spacing: -0.055em;
 }
-.bh .masthead__title span { display: block; margin-left: 0.54em; color: var(--red); }
-.bh .masthead__circle {
-  position: absolute; z-index: 1; right: -72px; top: 8%;
-  width: 205px; aspect-ratio: 1; border-radius: 50%; background: var(--blue);
+.bh .masthead__also { display: flex; flex-wrap: wrap; margin: 0; padding: 0; list-style: none; }
+.bh .masthead__also li {
+  padding: 9px 14px;
+  background: var(--bh-ink); color: var(--bh-paper);
+  font-size: 12.5px; font-weight: 800; letter-spacing: -0.025em;
 }
-.bh .masthead__triangle {
-  position: absolute; z-index: 1; left: 48%; bottom: -8px;
-  width: 0; height: 0;
-  border-left: 74px solid transparent;
-  border-right: 74px solid transparent;
-  border-bottom: 128px solid var(--yellow);
-  transform: rotate(14deg);
-}
+.bh .masthead__also li + li { border-left: 2px solid var(--bh-paper); }
 .bh .masthead__foot {
-  position: relative; z-index: 3;
-  display: grid; grid-template-columns: minmax(0, 1fr) 92px; align-items: end;
-  border-top: 3px solid var(--bh-ink);
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding: 13px 14px;
+  border-top: 5px solid var(--bh-ink);
+  font-size: 11.5px; font-weight: 800; letter-spacing: 0.02em;
 }
-.bh .masthead__deck { padding: 22px 20px 25px; font-size: 20px; font-weight: 800; line-height: 1.35; letter-spacing: -0.045em; }
-.bh .masthead__mark {
-  align-self: stretch; display: grid; place-items: center; min-height: 110px;
-  background: var(--red); color: #fff; font-size: 68px; font-weight: 900; line-height: 1;
-}
-.bh .masthead__line {
-  padding: 14px 20px;
-  border-bottom: 3px solid var(--bh-ink);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
+.bh .masthead__no { font-size: 13px; }
+.bh .masthead__issued { text-align: right; font-weight: 700; }
 
 /* ── 편집장의 말 ───────────────────────────────── */
 .bh .front { padding: 104px 20px; }
@@ -2734,14 +2751,15 @@ body.magazine :focus-visible { outline: 3px solid #005bbb; outline-offset: 2px; 
 }
 
 @media (min-width: 760px) {
-  .bh .masthead__red { width: 42%; height: 38px; }
-  .bh .masthead__main { padding: 70px 6vw; }
+  .bh .masthead__brand { padding: 26px 6vw 20px; }
   .bh .masthead__circle { right: 9%; top: 6%; width: min(30vw, 410px); }
-  .bh .masthead__triangle { left: 55%; border-left-width: 125px; border-right-width: 125px; border-bottom-width: 216px; }
-  .bh .masthead__foot { grid-template-columns: 1fr 190px; }
-  .bh .masthead__deck { max-width: 660px; padding: 32px 6vw; font-size: 28px; }
-  .bh .masthead__mark { font-size: 110px; }
-  .bh .masthead__line { padding: 16px 6vw; }
+  .bh .masthead__triangle { left: 8%; top: 30%; border-left-width: 125px; border-right-width: 125px; border-bottom-width: 216px; }
+  .bh .masthead__kicker { margin-left: 6vw; }
+  .bh .masthead__deck { max-width: 10.5em; padding: 26px 40px 30px 6vw; }
+  .bh .masthead__also li { padding: 13px 22px; font-size: 14.5px; }
+  .bh .masthead__also li:first-child { padding-left: 6vw; }
+  .bh .masthead__foot { padding: 18px 6vw; font-size: 13px; }
+  .bh .masthead__no { font-size: 16px; }
   .bh .front { padding: 150px 6vw; }
   .bh .front__grid { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: 22px; }
   .bh .front .eyebrow { grid-column: 1 / 5; }
@@ -2932,5 +2950,6 @@ body.shelf-body { background: #f4f1ea; }
 .slot-acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .img-prompt { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--ink-sub); }
 .ip-desc { margin: 0 0 8px; font-weight: 600; color: var(--ink); }
+.img-prompt.bad { color: var(--danger, #c0392b); font-weight: 600; }
 .ip-text { width: 100%; min-height: 96px; font: inherit; font-size: 12.5px; line-height: 1.6; border: 1px solid var(--line-strong); border-radius: 0; padding: 10px; background: var(--surface); resize: vertical; }
 .img-prompt .btn { margin-top: 8px; }
