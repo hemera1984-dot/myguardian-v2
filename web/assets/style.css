@@ -1958,7 +1958,10 @@ body.magazine :focus-visible {
   min-width: 0;
   font-size: 0.8rem;
   color: var(--ink-sub);
-  word-break: break-all;
+  /* 긴 주소가 좁은 칸에서 한 글자씩 떨어지던 결함 — 한 줄로 두고 말줄임 (2026-08-03) */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── 편집장의 말 · 칼럼 입력 */
