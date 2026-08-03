@@ -2795,7 +2795,11 @@ body.magazine :focus-visible { outline: 3px solid #005bbb; outline-offset: 2px; 
    표지로 호를 구분한다. 표지 이미지가 없는 호는 care.coverHtml()이 SVG 표지를 만든다.
    ============================== */
 
+/* 고객 서재(index.html)는 플랫폼 셸 없이 이 한 판으로 화면을 채운다 */
+body.shelf-body { background: #f4f1ea; }
+
 .shelf-main {
+  min-height: 100vh;
   --red: #e63329;
   --blue: #005bbb;
   --yellow: #f5c518;
@@ -2827,20 +2831,21 @@ body.magazine :focus-visible { outline: 3px solid #005bbb; outline-offset: 2px; 
   border-bottom: 82px solid var(--blue); transform: rotate(18deg);
 }
 
-/* 채널 탭 — 서가 두 칸을 고르는 손잡이 */
-body.platform .shelf-page .pill-tabs {
+/* 채널 탭 — 서가 두 칸을 고르는 손잡이.
+   고객 서재(index.html)는 body.platform이 아니므로 .shelf-page 기준으로만 건다. */
+.shelf-page .pill-tabs.shelf-tabs {
   display: flex; flex-wrap: wrap; gap: 0; margin: 0; padding: 0;
   border-bottom: 3px solid var(--bh-ink); background: var(--bh-paper);
 }
-body.platform .shelf-page .pill-tabs > button {
+.shelf-page .pill-tabs.shelf-tabs > button {
   flex: 1 1 auto; min-height: 48px; padding: 12px 16px;
   border: 0; border-right: 3px solid var(--bh-ink); border-radius: 0;
   background: transparent; color: var(--bh-ink);
   font-family: inherit; font-size: 13px; font-weight: 800; letter-spacing: -0.02em;
   cursor: pointer;
 }
-body.platform .shelf-page .pill-tabs > button:last-child { border-right: 0; }
-body.platform .shelf-page .pill-tabs > button.active { background: var(--yellow); color: var(--bh-ink); border-bottom: 0; }
+.shelf-page .pill-tabs.shelf-tabs > button:last-child { border-right: 0; }
+.shelf-page .pill-tabs.shelf-tabs > button.active { background: var(--yellow); color: var(--bh-ink); border-bottom: 0; }
 
 /* 서가 한 칸 */
 .shelf-wrap { padding: 0; }
@@ -2876,13 +2881,20 @@ body.platform .shelf-page .pill-tabs > button.active { background: var(--yellow)
   font-family: inherit; font-size: 11px; font-weight: 800; cursor: pointer;
 }
 .shelf__kakao:hover { background: var(--yellow); }
+/* FC 서재(shelf.html) 전용 도구 줄 — 고객 서재에는 이 마크업 자체가 없다 */
+.shelf__tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.shelf__tool {
+  margin-top: 10px; padding: 8px 10px; border: 2px solid var(--bh-ink);
+  color: var(--bh-ink); font-size: 11px; font-weight: 800; text-decoration: none;
+}
+.shelf__tool:hover { background: var(--bh-ink); color: var(--bh-paper); }
 .shelf-page .placeholder-panel { margin: 40px 20px; }
 
 @media (min-width: 760px) {
   .shelf-hero__main { padding: 56px 6vw 60px; }
   .shelf-hero__circle { right: 6%; top: 10px; width: 200px; }
   .shelf-hero__triangle { right: 22%; }
-  body.platform .shelf-page .pill-tabs > button { flex: 0 0 auto; min-width: 180px; }
+  .shelf-page .pill-tabs.shelf-tabs > button { flex: 0 0 auto; min-width: 180px; }
   .shelf { padding: 60px 6vw 68px; }
   .shelf__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 34px 22px; }
 }

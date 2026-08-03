@@ -20,7 +20,7 @@
     <nav class="platform-nav" aria-label="케어센터 메뉴">
       <p class="nav-group-label">케어센터</p>
       <a class="active" href="desk.html">발행 데스크</a>
-      <a href="./">서재</a>
+      <a href="shelf.html">서재</a>
       <p class="nav-group-label">플랫폼</p>
       <a href="../">마이가디언 홈</a>
     </nav>
@@ -1042,6 +1042,10 @@
       renderList();
       care.loadIssueList().then(function (list) {
         S.list = list;
+        // 서재에서 "데스크에서 편집"으로 넘어온 경우 그 호를 바로 연다
+        var wantId = new URLSearchParams(window.location.search).get("id");
+        var want = wantId && list.find(function (i) { return i.id === wantId; });
+        if (want) { openDraft(want); return; }
         if (S.draft) syncKakao();
         else renderList();
       }).catch(function () {});
