@@ -240,7 +240,13 @@
     @media (prefers-reduced-motion: reduce) {
       .cta, .menu-card, .news-featured h3, .news-rows a, .news-title a { transition: none; }
     }
-  </style>
+  
+    /* 보장분석 — 바깥에서 열리는 도구라 돋보기 표식으로 구분한다 (2026-08-03) */
+    .ext-glyph { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2.2;
+      stroke-linecap: round; vertical-align: -0.12em; margin-right: 0.42em; opacity: .85; }
+    .menu-card.card-ext h2 { display: inline-flex; align-items: center; }
+    .platform-nav a.nav-ext { display: flex; align-items: center; }
+</style>
 </head>
 <body class="platform">
   <div class="app-splash" id="app-splash" hidden>
@@ -263,7 +269,7 @@
       <a href="cases/">사례·판례</a>
       <a href="learn/">학습</a>
       <a href="brief/">브리핑</a>
-      <a href="https://desk.insurguard.life/" target="_blank" rel="noopener">보장분석</a>
+      <a class="nav-ext" href="https://desk.insurguard.life/" target="_blank" rel="noopener"><svg class="ext-glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4 20 20"/></svg>보장분석</a>
       <p class="nav-group-label">발행</p>
       <a href="care/shelf.html">케어센터</a>
       <a href="card/">카톡카드</a>
@@ -318,8 +324,8 @@
           <h2>브리핑</h2>
           <p>발표 준비와 진행</p>
         </a>
-        <a class="menu-card" href="https://desk.insurguard.life/" target="_blank" rel="noopener" data-card="bojang" aria-label="보장분석">
-          <h2>보장분석</h2>
+        <a class="menu-card card-ext" href="https://desk.insurguard.life/" target="_blank" rel="noopener" data-card="bojang" aria-label="보장분석">
+          <h2><svg class="ext-glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4 20 20"/></svg>보장분석</h2>
           <p>문서를 올리면 리포트가 자동으로 만들어집니다</p>
         </a>
         <a class="menu-card" href="customers/" aria-label="고객관리">
