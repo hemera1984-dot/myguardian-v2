@@ -2606,7 +2606,10 @@ body.magazine :focus-visible { outline: 3px solid #005bbb; outline-offset: 2px; 
 /* ── 본문 ───────────────────────────────────────── */
 .bh .article-body { padding: 1px 20px 118px; }
 .bh .body-grid { width: min(100%, 1120px); margin: auto; }
-.bh .reading-column { width: min(100%, 700px); margin-left: auto; font-size: var(--body-size); font-weight: 400; line-height: 1.78; }
+/* 본문 폭은 글자 수로 잡는다 (2026-08-03). 한글 본문이 편한 길이는 한 줄 30~38자다.
+   700px 고정은 17.5px에서 41자가 되어 줄 끝에서 다음 줄로 눈이 돌아올 때 놓치는 구간이 생겼다.
+   em으로 두면 '가' 버튼으로 글자를 키워도 줄당 글자 수가 유지된다(한글은 한 글자가 약 1em). */
+.bh .reading-column { width: min(100%, 35em); margin-left: auto; font-size: var(--body-size); font-weight: 400; line-height: 1.78; }
 .bh .article-1 .reading-column { margin-right: auto; margin-left: 0; }
 .bh .article-3 .reading-column { margin-right: auto; margin-left: auto; }
 .bh .body-section { position: relative; margin: 110px 0 0; padding-top: 25px; border-top: 5px solid var(--bh-ink); }
