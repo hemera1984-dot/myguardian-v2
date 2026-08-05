@@ -287,6 +287,32 @@ body.brief-present {
   min-width: 0;
 }
 
+/* 발표자 화면에서 브리핑으로 돌아가는 길. 청중 화면(view.html)에는 두지 않는다 — 관객에게 비친다. */
+.pr-back {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 9px 3px 4px;
+  border: 1px solid var(--brief-line-strong);
+  border-radius: 7px;
+  color: var(--brief-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.14s, border-color 0.14s;
+}
+.pr-back svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pr-back:hover { color: var(--brief-ink); border-color: currentColor; }
+
 .pr-mode {
   flex: 0 0 auto;
   border: 1px solid var(--brief-line-strong);
