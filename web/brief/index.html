@@ -197,7 +197,14 @@
           : Promise.resolve(record);
         if (record.__팀) showLocalError("자료를 내려받는 중입니다.");
         준비
-          .then(function (rec) { return window.mgBrief.saveMaterial(rec); })
+          .then(function (rec) {
+            // 저장 단계 실패는 내려받기 실패와 원인이 전혀 다르다 — 구분해서 알린다
+            return window.mgBrief.saveMaterial(rec).catch(function (e) {
+              throw new Error("[기기 저장 실패] 브라우저가 자료를 보관하지 못했습니다 — "
+                + (e && e.message ? e.message : e)
+                + " (사파리 사생활 보호 창이거나 저장 공간이 부족할 수 있습니다)");
+            });
+          })
           .then(function () { window.location.href = "present.html?local=1"; })
           .catch(function (err) {
             showLocalError("발표 자료를 여는 데 실패했습니다: " + err.message);
