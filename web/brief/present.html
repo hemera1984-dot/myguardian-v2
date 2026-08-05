@@ -270,10 +270,14 @@
         document.getElementById("next").addEventListener("click", function () { goTo(current + 1); });
       }
 
+      // 청중 창은 새 창이라 발표자 창을 새로고침해도 캐시가 걷히지 않는다. 옛 view.html이
+      // 남아 있으면 두 창의 코드 버전이 어긋나 발표 도중에 알 수 없는 실패가 난다.
+      // 발표는 하루 몇 번뿐이므로 항상 새로 받는 편이 낫다.
       function viewUrl() {
-        if (isLocal) return "view.html?local=1&ch=" + encodeURIComponent(channelId);
-        if (params.get("src")) return "view.html?src=" + encodeURIComponent(params.get("src"));
-        return "view.html?doc=" + encodeURIComponent(params.get("doc"));
+        var fresh = "&_=" + Date.now();
+        if (isLocal) return "view.html?local=1&ch=" + encodeURIComponent(channelId) + fresh;
+        if (params.get("src")) return "view.html?src=" + encodeURIComponent(params.get("src")) + fresh;
+        return "view.html?doc=" + encodeURIComponent(params.get("doc")) + fresh;
       }
 
       // 포인터 — 30ms 스로틀, 캔버스 기준 0~1 비율 좌표
