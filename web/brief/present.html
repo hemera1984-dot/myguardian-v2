@@ -121,6 +121,8 @@
 
       // HTML 자료: iframe 스크롤을 비율로 송신
       var frameWin = null;
+      // 키 처리기가 준비된 뒤 채워진다 (아래 onKey 정의부). 자료를 다시 실을 때마다 다시 건다.
+      var bindFrameKeys = null;
       function scrollRatio() {
         if (!frameWin) return undefined;
         try {
@@ -135,6 +137,7 @@
       var lastScrollSent = 0;
       function bindFrameScroll(frame) {
         frameWin = frame.contentWindow;
+        if (bindFrameKeys) bindFrameKeys(frameWin);
         try {
           frameWin.addEventListener("scroll", function () {
             var now = Date.now();
@@ -316,7 +319,7 @@
           document.getElementById("nav").hidden = true;
           document.getElementById("next-panel").hidden = true;
           document.getElementById("hint").textContent =
-            "HTML 자료는 스크롤이 청중 창에 동기화됩니다. 포인터·페이지 넘김은 이 형식에서 지원되지 않습니다.";
+            "장 넘김은 ← → , 스크립트는 ↑ ↓ 로 움직입니다. 스크롤은 청중 창에 동기화되며 포인터는 이 형식에서 지원되지 않습니다.";
         } else {
           document.getElementById("nav").hidden = false;
           buildNav();
@@ -364,16 +367,20 @@
           } catch (err) { /* 접근 불가 시 넘김은 슬라이드를 직접 클릭해서 한다 */ }
         }
 
-        document.addEventListener("keydown", function (e) {
-          if (e.target.closest("input, select, textarea")) return;
+        // fromFrame = iframe 안에서 올라온 키. 장 넘김은 슬라이드 문서가 이미 처리했으므로
+        // 여기서 또 넘기면 두 장씩 간다 — 스크립트 조작만 맡는다.
+        function onKey(e, fromFrame) {
+          if (!fromFrame && e.target.closest("input, select, textarea")) return;
           var isHtml = driver.kind === "html";
           // Space는 포커스된 버튼을 활성화해야 하므로(접근성) 버튼 위에서는 제외.
           // 화살표는 버튼에 포커스가 남아 있어도 페이지 넘김으로 처리한다
-          var onButton = e.target.closest("button");
+          var onButton = !fromFrame && e.target.closest("button");
           if (e.key === "ArrowRight" || e.key === "PageDown" || (e.key === " " && !onButton)) {
+            if (fromFrame) return;
             e.preventDefault();
             if (isHtml) sendKeyToFrame("ArrowRight"); else goTo(current + 1);
           } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+            if (fromFrame) return;
             e.preventDefault();
             if (isHtml) sendKeyToFrame("ArrowLeft"); else goTo(current - 1);
           } else if (e.key === "ArrowDown") {
@@ -390,7 +397,18 @@
             e.preventDefault();
             zoomScript(-0.15); // 스크립트 글자 작게
           }
-        });
+        }
+
+        document.addEventListener("keydown", function (e) { onKey(e, false); });
+
+        // 슬라이드를 한 번 클릭하면 그다음 키는 iframe 문서로 간다. 장 넘김은 거기서
+        // 처리되지만 스크립트 스크롤(↑↓)·글자 크기(+-)는 발표자 화면 몫이라 되돌려 받는다.
+        bindFrameKeys = function (win) {
+          try {
+            win.document.addEventListener("keydown", function (e) { onKey(e, true); });
+          } catch (err) { /* 접근 불가 시 스크립트 조작은 오른쪽 창을 클릭한 뒤에 */ }
+        };
+        if (frameWin) bindFrameKeys(frameWin);
 
         var timer = document.getElementById("timer");
         setInterval(function () {
