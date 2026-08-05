@@ -308,6 +308,82 @@
   // ponytail: 목록 조회는 getAll — 파일 blob까지 다 읽는다. 항목이 수백 개로 커지면
   // 메타 전용 스토어를 분리한다. 개인 자료 목차 규모(수~수십 개)에선 이대로 충분.
 
+  // ---------- 팀 공유 라이브러리 (서버) ----------
+  // 강의 자료는 팀이 함께 쓴다 — 올린 사람만 보이면 플랫폼이 아니다(2026-08-05).
+  // 파일을 서버에 올리고 주소만 목차에 싣는다. 서버가 죽어 있으면 아래 로컬 목록으로 버틴다.
+  function serverUpload(file) {
+    return window.mgAuth.api("/brief/file", {
+      method: "POST",
+      headers: { "content-type": file.type || "application/octet-stream" },
+      body: file
+    });
+  }
+
+  function serverLibraryList() {
+    if (!window.mgAuth || !window.mgAuth.token()) return Promise.resolve([]);
+    return window.mgAuth.api("/brief/library")
+      .then(function (d) { return Array.isArray(d) ? d : []; })
+      .catch(function () { return []; });
+  }
+
+  // 슬라이드·스크립트를 올린 뒤 주소만 담은 항목을 목차에 싣는다
+  function serverLibraryPut(record) {
+    var jobs = [serverUpload(record.file)];
+    var script = record["스크립트문서"] || null;
+    jobs.push(script ? serverUpload(script) : Promise.resolve(null));
+    return Promise.all(jobs).then(function (up) {
+      var 항목 = {
+        id: record.id,
+        "제목": record["제목"] || record["이름"],
+        "이름": record["이름"],
+        "모드": record["모드"] || "강의",
+        kind: record.kind,
+        "슬라이드주소": up[0]["주소"],
+        "슬라이드이름": record["이름"],
+        "크기": up[0]["크기"]
+      };
+      if (up[1]) {
+        항목["스크립트주소"] = up[1]["주소"];
+        항목["스크립트이름"] = script.name;
+      } else if (record["스크립트"]) {
+        항목["스크립트"] = record["스크립트"]; // 텍스트 구간은 그대로 싣는다(파일이 아니다)
+      }
+      return window.mgAuth.api("/brief/library", { method: "POST", body: 항목 })
+        .then(function () { return 항목; });
+    });
+  }
+
+  function serverLibraryDelete(id) {
+    return window.mgAuth.api("/brief/library/" + encodeURIComponent(id), { method: "DELETE" });
+  }
+
+  // 서버 목차 항목을 발표 가능한 레코드로 되돌린다 — 파일을 내려받아 File로 만든다
+  function serverRecordToMaterial(item) {
+    function grab(url, name, type) {
+      return fetch(mediaAbs(url)).then(function (r) {
+        if (!r.ok) throw new Error("자료를 내려받지 못했습니다.");
+        return r.blob();
+      }).then(function (b) { return new File([b], name, { type: type || b.type }); });
+    }
+    return grab(item["슬라이드주소"], item["슬라이드이름"] || item["이름"] || "slide.html")
+      .then(function (slide) {
+        var rec = { kind: item.kind || "html", id: item.id, "이름": item["이름"] || slide.name,
+                    file: slide, "제목": item["제목"], "모드": item["모드"] || "강의" };
+        if (item["스크립트"]) rec["스크립트"] = item["스크립트"];
+        if (!item["스크립트주소"]) return rec;
+        return grab(item["스크립트주소"], item["스크립트이름"] || "script.pdf")
+          .then(function (s) { rec["스크립트문서"] = s; return rec; });
+      });
+  }
+
+  // 서버가 주는 주소는 /media/... 상대형일 수 있다 — API 주소를 앞에 붙인다
+  function mediaAbs(url) {
+    var s = String(url || "");
+    if (/^https?:\/\//.test(s)) return s;
+    var base = window.mgAuth ? window.mgAuth.apiBase() : "";
+    return base + s;
+  }
+
   function libraryPut(record) {
     return openDb().then(function (db) {
       return new Promise(function (resolve, reject) {
@@ -519,6 +595,10 @@
     createProtocol: createProtocol,
     channelName: channelName,
     saveMaterial: saveMaterial,
+    serverLibraryList: serverLibraryList,
+    serverLibraryPut: serverLibraryPut,
+    serverLibraryDelete: serverLibraryDelete,
+    serverRecordToMaterial: serverRecordToMaterial,
     loadMaterial: loadMaterial,
     libraryPut: libraryPut,
     libraryList: libraryList,

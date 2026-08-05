@@ -47,6 +47,40 @@ const IMAGE_TYPES = {
 };
 const MAX_IMAGE = 12 * 1024 * 1024;
 
+// 강의 자료 라이브러리 — 팀이 함께 쓰는 발표 자료 목차(2026-08-05).
+// 파일은 사진과 같은 /media/에 둔다(웹서버가 이미 그 경로를 서빙한다). 파일명은 서버가
+// 무작위로 지으므로 주소를 모르면 닿지 않는다. 고객 개인정보가 담기는 상담 자료는
+// 여기 올리지 않는다 — 화면이 강의 모드에서만 탑재를 연다.
+const BRIEF_DIR = process.env.BRIEF_DIR || "./brief";
+const BRIEF_LIST = join(BRIEF_DIR, "library.json");
+const BRIEF_TYPES = {
+  "text/html": ".html",
+  "application/pdf": ".pdf",
+  "application/json": ".json",
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+  "image/gif": ".gif"
+};
+const MAX_BRIEF = 40 * 1024 * 1024;
+
+function readBriefLibrary() {
+  try {
+    const list = JSON.parse(readFileSync(BRIEF_LIST, "utf8"));
+    return Array.isArray(list) ? list : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+// 목록에 실을 주소는 이 서버가 내준 것만 받는다. 남의 주소를 목차에 싣지 않는다.
+function isOwnMedia(url) {
+  const s = String(url || "");
+  if (s.startsWith("/media/")) return !s.includes("..");
+  if (MEDIA_BASE && s.startsWith(MEDIA_BASE.replace(/\/$/, "") + "/")) return !s.includes("..");
+  return false;
+}
+
 // 미디어 파일 저장 — 파일명은 서버가 만든다(올린 이름을 믿지 않는다)
 function saveMedia(bytes, ext) {
   const name = new Date().toISOString().slice(0, 10).replace(/-/g, "")
@@ -61,6 +95,7 @@ function saveMedia(bytes, ext) {
 
 mkdirSync(MEDIA_DIR, { recursive: true });
 mkdirSync(CARE_ISSUES_DIR, { recursive: true });
+mkdirSync(BRIEF_DIR, { recursive: true });
 
 if (!CLIENT_ID) {
   console.error("GOOGLE_CLIENT_ID가 없습니다. .env를 확인하세요.");
@@ -906,6 +941,60 @@ async function route(req, res, url) {
     atomicWrite(CARE_LIST, JSON.stringify(list, null, 1));
     console.log(`발행: ${entry["채널"]} ${entry["호수"]}호 (${id}) — ${me.email}`);
     return send(res, 200, { ok: true, id });
+  }
+
+  // ── 강의 자료 라이브러리 (팀 공유) ───────────────────────────────────────
+  // 종전에는 브라우저 IndexedDB에만 쌓여 올린 사람만 볼 수 있었다. 팀 플랫폼이므로
+  // 승인 계정이면 누구나 목록을 보고 발표할 수 있어야 한다(2026-08-05 사용자 지시).
+  // 상담 자료는 여기 올리지 않는다 — 화면이 이미 강의 모드에서만 탑재를 연다.
+  if (req.method === "GET" && path === "/brief/library") {
+    return send(res, 200, readBriefLibrary());
+  }
+
+  // 자료 파일 업로드. 슬라이드·스크립트를 각각 올리고 받은 주소를 레코드에 싣는다.
+  if (req.method === "POST" && path === "/brief/file") {
+    const type = String(req.headers["content-type"] || "").split(";")[0].trim();
+    const ext = BRIEF_TYPES[type];
+    if (!ext) return send(res, 400, { error: "지원하지 않는 형식입니다. (HTML·PDF·JSON·이미지)" });
+    const bytes = await readBytes(req, MAX_BRIEF);
+    if (!bytes.length) return send(res, 400, { error: "빈 파일입니다." });
+    return send(res, 200, saveMedia(bytes, ext));
+  }
+
+  if (req.method === "POST" && path === "/brief/library") {
+    const 항목 = await readJson(req, 256 * 1024);
+    if (!항목 || typeof 항목 !== "object" || Array.isArray(항목)) {
+      return send(res, 400, { error: "형식 오류: 자료 항목 객체가 필요합니다." });
+    }
+    const id = String(항목.id || "");
+    if (!/^[A-Za-z0-9가-힣ㄱ-ㅎㅏ-ㅣ_-]{1,80}$/.test(id)) {
+      return send(res, 400, { error: "id 형식 오류입니다." });
+    }
+    if (!String(항목["제목"] || "").trim()) return send(res, 400, { error: "제목이 비어 있습니다." });
+    // 주소는 이 서버가 내준 /media/ 경로만 받는다 — 남의 주소를 목록에 싣지 않는다
+    for (const k of ["슬라이드주소", "스크립트주소"]) {
+      const v = 항목[k];
+      if (v !== undefined && !isOwnMedia(v)) {
+        return send(res, 400, { error: k + "가 이 서버의 자료 주소가 아닙니다." });
+      }
+    }
+    const entry = { ...항목, "올린이": me.email, "등록일": new Date().toISOString() };
+    const list = readBriefLibrary().filter((x) => x && x.id !== id);
+    list.unshift(entry);
+    atomicWrite(BRIEF_LIST, JSON.stringify(list, null, 1));
+    console.log(`강의자료 탑재: ${entry["제목"]} (${id}) — ${me.email}`);
+    return send(res, 200, { ok: true, id });
+  }
+
+  const briefDel = req.method === "DELETE" && /^\/brief\/library\/(.+)$/.exec(path);
+  if (briefDel) {
+    const id = decodeURIComponent(briefDel[1]);
+    const list = readBriefLibrary();
+    const gone = list.find((x) => x && x.id === id);
+    if (!gone) return send(res, 404, { error: "없는 자료입니다." });
+    atomicWrite(BRIEF_LIST, JSON.stringify(list.filter((x) => x && x.id !== id), null, 1));
+    console.log(`강의자료 삭제: ${gone["제목"]} (${id}) — ${me.email}`);
+    return send(res, 200, { ok: true });
   }
 
   // 지면 사진 업로드 — 승인된 계정이면 누구나(자기 호에 쓸 사진이다)
