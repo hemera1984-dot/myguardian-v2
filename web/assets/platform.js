@@ -336,6 +336,16 @@
     nav.appendChild(link);
   }
 
+  // 초대 주소는 언제나 진입 화면(web/intro.html)을 가리켜야 한다. 사이드바 초대 버튼은
+  // 모든 화면에 있으므로, 현재 페이지 기준으로 상대 해석하면 케어센터에서 누를 때
+  // web/care/intro.html이 되어 받는 사람에게 404가 뜬다 (2026-08-05 교정).
+  function introUrl() {
+    var path = window.location.href.split(/[?#]/)[0];
+    var at = path.lastIndexOf("/web/");
+    if (at >= 0) return path.slice(0, at + 5) + "intro.html";
+    return new URL("/intro.html", window.location.origin).href;
+  }
+
   // 초대 문구 — 받는 사람이 주소를 열고 구글로 로그인하면 승인 대기로 잡힌다
   function inviteText() {
     var sender = "";
@@ -343,7 +353,7 @@
       var s = JSON.parse(localStorage.getItem("mg_care_sender") || "{}");
       if (s["이름"]) sender = s["이름"];
     } catch (e) {}
-    var url = new URL("intro.html", window.location.href).href;
+    var url = introUrl();
     return [
       "[마이가디언 초대]",
       "",
