@@ -311,11 +311,20 @@
   // ---------- 팀 공유 라이브러리 (서버) ----------
   // 강의 자료는 팀이 함께 쓴다 — 올린 사람만 보이면 플랫폼이 아니다(2026-08-05).
   // 파일을 서버에 올리고 주소만 목차에 싣는다. 서버가 죽어 있으면 아래 로컬 목록으로 버틴다.
+  // 올린 크기가 원본과 다르면 파일이 아니라 다른 것이 올라간 것이다(옛 auth.js 캐시가
+  // File을 JSON으로 감싸 2바이트짜리 "{}"를 올린 적이 있다). 조용히 넘기면 팀원이
+  // 빈 자료를 받으므로 여기서 멈춘다.
   function serverUpload(file) {
     return window.mgAuth.api("/brief/file", {
       method: "POST",
       headers: { "content-type": file.type || "application/octet-stream" },
       body: file
+    }).then(function (up) {
+      if (!up || up["크기"] !== file.size) {
+        throw new Error("파일이 온전히 올라가지 않았습니다(" + (up && up["크기"]) + "/" + file.size
+          + "바이트). 새로고침(Ctrl+Shift+R) 후 다시 시도하세요.");
+      }
+      return up;
     });
   }
 
