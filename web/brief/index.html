@@ -290,7 +290,15 @@
       }
 
       function updateSummary() {
-        if (!pending) return;
+        if (!pending) {
+          // 스크립트만 골랐을 때 아무 반응이 없으면 고장으로 보인다 — 무엇이 남았는지 알린다.
+          // 스크립트는 슬라이드에 딸려 저장되므로 단독으로는 탑재할 대상이 없다.
+          if (scriptPdfFile || scriptSections) {
+            showLocalError("스크립트를 받았습니다. '슬라이드 파일 선택'으로 발표 자료까지 고르면 라이브러리에 함께 탑재됩니다.");
+          }
+          return;
+        }
+        errorEl.hidden = true;
         document.getElementById("local-title").textContent = pending["제목"];
         document.getElementById("local-meta").textContent = pending["메타"];
         document.getElementById("local-script-meta").textContent = scriptPdfFile
