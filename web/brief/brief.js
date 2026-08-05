@@ -369,8 +369,8 @@
   // 서버 목차 항목을 발표 가능한 레코드로 되돌린다 — 파일을 내려받아 File로 만든다
   function serverRecordToMaterial(item) {
     function grab(url, name, type) {
-      return fetch(mediaAbs(url)).then(function (r) {
-        if (!r.ok) throw new Error("자료를 내려받지 못했습니다.");
+      return fetch(fileUrl(url), { headers: authHeader() }).then(function (r) {
+        if (!r.ok) throw new Error("자료를 내려받지 못했습니다(" + r.status + ").");
         return r.blob();
       }).then(function (b) { return new File([b], name, { type: type || b.type }); });
     }
@@ -385,12 +385,18 @@
       });
   }
 
-  // 서버가 주는 주소는 /media/... 상대형일 수 있다 — API 주소를 앞에 붙인다
-  function mediaAbs(url) {
-    var s = String(url || "");
-    if (/^https?:\/\//.test(s)) return s;
+  // 자료 파일은 /brief/file/<파일명>으로 받는다. /media/를 그대로 fetch하면 웹서버가
+  // 서빙하는 다른 출처라 CORS에 막힌다(이미지는 <img>라서 걸리지 않았다).
+  // 이 경로는 서버가 CORS를 붙이고 승인 계정만 받아 간다.
+  function fileUrl(url) {
+    var name = String(url || "").split("/").pop().split(/[?#]/)[0];
     var base = window.mgAuth ? window.mgAuth.apiBase() : "";
-    return base + s;
+    return base + "/brief/file/" + encodeURIComponent(name);
+  }
+
+  function authHeader() {
+    var t = window.mgAuth && window.mgAuth.token();
+    return t ? { Authorization: "Bearer " + t } : {};
   }
 
   function libraryPut(record) {
