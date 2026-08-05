@@ -68,6 +68,16 @@
         if (action === "pause") v.pause();
       }
 
+      // HTML 자료는 장이 슬라이드 문서 안에 있다 — 그 문서를 발표자와 같은 장으로 옮긴다.
+      // 그 밖의 자료(문서·PDF·이미지)는 종전대로 페이지를 그린다.
+      function applyPage(n) {
+        if (driver && driver.kind === "html") {
+          if (frameWin) B.htmlSlideGoTo(frameWin, n);
+          return;
+        }
+        show(n);
+      }
+
       function applyScroll(y) {
         if (!frameWin) return;
         try {
@@ -83,12 +93,24 @@
         document.title = driver.title + " - 마이가디언";
         document.getElementById("wait").hidden = true;
         stageWrap.hidden = false;
-        show(pendingState ? pendingState.page : 1);
+        var want = pendingState ? pendingState.page : null;
+        // HTML 자료는 driver.count가 1이라 show()가 장을 1로 깎는다. 자료를 올리는 데만 쓰고,
+        // 장은 슬라이드 문서가 다 뜬 뒤에 맞춘다 — 늦게 연 청중 창이 첫 장에 멈추던 이유다.
+        show(driver.kind === "html" ? 1 : (want === null ? 1 : want));
         if (pendingState) {
           if (pendingState.video) applyVideo(pendingState.video.playing ? "play" : "pause", pendingState.video.time);
           if (typeof pendingState.scroll === "number") applyScroll(pendingState.scroll);
         }
         pendingState = null;
+        if (driver.kind === "html" && want !== null) {
+          var tries = 0;
+          var t = setInterval(function () {
+            if (++tries > 60) { clearInterval(t); return; }
+            if (!frameWin || B.htmlSlideIndex(frameWin) < 0) return;
+            clearInterval(t);
+            applyPage(want);
+          }, 150);
+        }
       }
 
       function showError(err) {
@@ -102,11 +124,11 @@
         protocol = B.createProtocol(transport, {
           page: function (msg) {
             if (!driver) { pendingState = { page: msg.page }; return; }
-            show(msg.page);
+            applyPage(msg.page);
           },
           state: function (msg) {
             if (!driver) { pendingState = msg; return; }
-            show(msg.page);
+            applyPage(msg.page);
             if (msg.video) applyVideo(msg.video.playing ? "play" : "pause", msg.video.time);
             if (typeof msg.scroll === "number") applyScroll(msg.scroll);
           },

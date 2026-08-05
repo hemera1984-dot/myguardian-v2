@@ -261,6 +261,35 @@
     return "mg-brief-" + docId;
   }
 
+  // ---------- HTML 슬라이드의 장 맞추기 ----------
+  // HTML 자료는 장 넘김이 iframe 안에서 자기 코드로 일어난다. 발표자 화면은 그 변화를
+  // 알 길이 없어 청중 창이 첫 장에 멈춰 있었다(2026-08-05). 발표자 쪽이 현재 장을
+  // 지켜보다 알리고, 청중 쪽이 같은 장으로 옮긴다.
+  // 슬라이드 문서마다 넘김 방식이 다르므로 내부 함수를 부르지 않고 화살표 키를 넣는다 —
+  // 그 문서가 스스로 자기 방식(애니메이션 포함)으로 움직인다.
+  function htmlSlideIndex(win) {
+    try {
+      var slides = win.document.querySelectorAll(".slide");
+      for (var i = 0; i < slides.length; i++) {
+        if (slides[i].classList.contains("active")) return i;
+      }
+    } catch (e) { /* 접근 불가 */ }
+    return -1;
+  }
+
+  function htmlSlideGoTo(win, target) {
+    var cur = htmlSlideIndex(win);
+    if (cur < 0 || !isNum(target) || cur === target) return;
+    var key = target > cur ? "ArrowRight" : "ArrowLeft";
+    var steps = Math.min(Math.abs(target - cur), 300); // 폭주 방지
+    try {
+      for (var i = 0; i < steps; i++) {
+        win.document.body.dispatchEvent(
+          new win.KeyboardEvent("keydown", { key: key, bubbles: true, cancelable: true }));
+      }
+    } catch (e) { /* 접근 불가 */ }
+  }
+
   // ---------- 로컬 자료 저장 (IndexedDB) ----------
   // 업로드한 발표 자료(JSON·PDF·HTML·이미지)와 스크립트는 이 브라우저의 IndexedDB에만
   // 저장된다. 외부 전송 없음. 슬롯은 하나 — 새 자료를 열면 이전 자료를 대체한다.
@@ -622,6 +651,8 @@
     createBroadcastTransport: createBroadcastTransport,
     createProtocol: createProtocol,
     channelName: channelName,
+    htmlSlideIndex: htmlSlideIndex,
+    htmlSlideGoTo: htmlSlideGoTo,
     saveMaterial: saveMaterial,
     serverLibraryList: serverLibraryList,
     serverLibraryPut: serverLibraryPut,
