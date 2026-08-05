@@ -13,6 +13,9 @@
 </head>
 <body class="brief-present">
   <header class="pr-topbar" id="topbar" hidden>
+    <a class="pr-back" href="./" title="브리핑 라이브러리로 돌아갑니다">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 6l-6 6 6 6"/></svg>브리핑
+    </a>
     <span class="pr-mode" id="mode-badge"></span>
     <span class="pr-doc-title" id="doc-title"></span>
     <div class="pr-top-right">
@@ -349,18 +352,30 @@
           goTo(current + 1);
         });
 
+        // HTML 자료는 장 넘김을 자기 문서가 처리한다. 그런데 iframe에 포커스가 없으면
+        // 그 처리기에 키가 닿지 않아 아무 일도 일어나지 않는다 — 발표자 화면이 대신 넣어 준다.
+        // 포커스를 iframe으로 옮기지 않는 이유: 그러면 스크립트 스크롤(↑↓)과 글자 크기(+-)를
+        // 발표자 화면이 못 받는다.
+        function sendKeyToFrame(key) {
+          if (!frameWin) return;
+          try {
+            frameWin.document.dispatchEvent(
+              new frameWin.KeyboardEvent("keydown", { key: key, bubbles: true, cancelable: true }));
+          } catch (err) { /* 접근 불가 시 넘김은 슬라이드를 직접 클릭해서 한다 */ }
+        }
+
         document.addEventListener("keydown", function (e) {
           if (e.target.closest("input, select, textarea")) return;
-          if (driver.kind === "html") return;
+          var isHtml = driver.kind === "html";
           // Space는 포커스된 버튼을 활성화해야 하므로(접근성) 버튼 위에서는 제외.
           // 화살표는 버튼에 포커스가 남아 있어도 페이지 넘김으로 처리한다
           var onButton = e.target.closest("button");
           if (e.key === "ArrowRight" || e.key === "PageDown" || (e.key === " " && !onButton)) {
             e.preventDefault();
-            goTo(current + 1);
+            if (isHtml) sendKeyToFrame("ArrowRight"); else goTo(current + 1);
           } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
             e.preventDefault();
-            goTo(current - 1);
+            if (isHtml) sendKeyToFrame("ArrowLeft"); else goTo(current - 1);
           } else if (e.key === "ArrowDown") {
             // 스크립트만 스크롤 — 슬라이드는 그대로
             e.preventDefault();

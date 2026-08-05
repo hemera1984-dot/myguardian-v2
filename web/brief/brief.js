@@ -373,9 +373,14 @@
   }
 
   // 로컬 자료 채널 ID (파일명·크기 기반 — 문서 ID 형식 규칙을 따른다)
+  // 라이브러리 키. 발표 자료 이름은 대부분 한글인데 [^a-z0-9]로 걸러 내면 한글이 통째로
+  // 지워져 숫자·확장자만 남는다. 그러면 "평일1회차_슬라이드.html"과 "상속세전쟁사_평일1회.html"이
+  // 똑같이 local-1-html-96201이 되고, put()이 앞의 자료를 조용히 덮어써 사라진다.
+  // 한글을 슬러그에 남긴다.
   function localId(name, size) {
-    var slug = String(name).toLowerCase().replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "").slice(0, 24);
+    var slug = String(name).toLowerCase()
+      .replace(/[^a-z0-9가-힣ㄱ-ㅎㅏ-ㅣ]+/g, "-")
+      .replace(/^-+|-+$/g, "").slice(0, 40);
     return "local-" + (slug || "file") + "-" + String((size || 0) % 100000);
   }
 
@@ -481,8 +486,12 @@
           stageEl.textContent = "";
           var frame = document.createElement("iframe");
           frame.className = "pg-html-frame";
-          // 스크립트 실행 차단(정적 렌더만). 동일 출처 허용은 스크롤 동기화용
-          frame.setAttribute("sandbox", "allow-same-origin");
+          // 슬라이드 HTML은 자기 자바스크립트로 장을 넘기고 화면 크기를 맞춘다.
+          // allow-scripts가 없으면 그 전부가 죽어 첫 장만 정적으로 보인다(2026-08-05 교정).
+          // allow-same-origin과 함께 두면 사실상 격리가 풀린다는 점은 알고 있다 —
+          // 발표자가 자기 컴퓨터에서 고른 자기 파일이고, 격리하면 스크롤 동기화도 함께
+          // 잃는다. 남의 HTML을 여는 용도로 쓰게 되면 이 조합을 다시 판단해야 한다.
+          frame.setAttribute("sandbox", "allow-scripts allow-same-origin");
           frame.src = htmlUrl;
           stageEl.appendChild(frame);
           return new Promise(function (resolve) {
