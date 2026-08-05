@@ -978,7 +978,12 @@ async function route(req, res, url) {
         return send(res, 400, { error: k + "가 이 서버의 자료 주소가 아닙니다." });
       }
     }
-    const entry = { ...항목, "올린이": me.email, "등록일": new Date().toISOString() };
+    // 목록에는 사람 이름을 보인다. 메일 주소를 팀원 화면에 뿌리지 않는다.
+    const entry = {
+      ...항목,
+      "올린이": (me.name || "").trim() || String(me.email).split("@")[0],
+      "등록일": new Date().toISOString()
+    };
     const list = readBriefLibrary().filter((x) => x && x.id !== id);
     list.unshift(entry);
     atomicWrite(BRIEF_LIST, JSON.stringify(list, null, 1));
