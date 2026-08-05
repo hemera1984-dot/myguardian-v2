@@ -144,34 +144,36 @@
       // 자료 경로: ?doc=<공개id> / ?src=<저장소 상대경로> / ?local=1&ch=<자료id>
       // 로컬 자료(JSON·PDF·HTML·이미지)는 같은 기기의 IndexedDB 슬롯에서 직접 읽는다 —
       // 자료 내용이 채널에 실리지 않는다. 발표자가 새 자료를 저장할 때까지 재시도한다.
-      var channelId = params.get("doc") || params.get("ch");
+      var docId = params.get("doc");
+      var localId = params.get("ch");
       if (params.get("src")) {
         B.loadDocBySrc(params.get("src")).then(function (d) {
           connect(d.id);
           return B.createDriver({ kind: "doc", id: d.id, doc: d }, { audience: true });
         }).then(ready).catch(showError);
-      } else if (channelId && /^[a-z][a-z0-9-]*$/.test(channelId)) {
-        var isLocal = !params.get("doc");
-        connect(channelId);
-        if (!isLocal) {
-          bootDoc(B.loadDocById(channelId));
-        } else {
-          var tryLoad = function () {
-            if (driver) return;
-            B.loadMaterial().then(function (record) {
-              if (driver || !record || record.id !== channelId) return;
-              return B.createDriver(record, { audience: true }).then(ready);
-            }).catch(function () {});
-          };
+      } else if (docId && /^[a-z][a-z0-9-]*$/.test(docId)) {
+        // 공개 자료는 id가 파일 경로가 된다 — 형식을 좁게 지킨다
+        connect(docId);
+        bootDoc(B.loadDocById(docId));
+      } else if (localId) {
+        // 내 컴퓨터에서 연 자료. id에 한글 파일명이 들어간다(자료를 구분하려면 그래야 한다).
+        // 여기서는 경로가 아니라 같은 기기 안의 슬롯을 맞춰 보는 이름일 뿐이라 형식을 좁히지 않는다.
+        connect(localId);
+        var tryLoad = function () {
+          if (driver) return;
+          B.loadMaterial().then(function (record) {
+            if (driver || !record || record.id !== localId) return;
+            return B.createDriver(record, { audience: true }).then(ready);
+          }).catch(function () {});
+        };
+        tryLoad();
+        var loadTimer = setInterval(function () {
+          if (driver) {
+            clearInterval(loadTimer);
+            return;
+          }
           tryLoad();
-          var loadTimer = setInterval(function () {
-            if (driver) {
-              clearInterval(loadTimer);
-              return;
-            }
-            tryLoad();
-          }, 1200);
-        }
+        }, 1200);
       } else {
         showError(new Error("문서가 지정되지 않았습니다."));
       }
