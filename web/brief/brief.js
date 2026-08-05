@@ -368,11 +368,24 @@
 
   // 서버 목차 항목을 발표 가능한 레코드로 되돌린다 — 파일을 내려받아 File로 만든다
   function serverRecordToMaterial(item) {
+    // 다른 기기에서 실패할 때 어느 단계인지 바로 알 수 있게 단계를 문구에 남긴다
     function grab(url, name, type) {
-      return fetch(fileUrl(url), { headers: authHeader() }).then(function (r) {
-        if (!r.ok) throw new Error("자료를 내려받지 못했습니다(" + r.status + ").");
-        return r.blob();
-      }).then(function (b) { return new File([b], name, { type: type || b.type }); });
+      var addr = fileUrl(url);
+      return fetch(addr, { headers: authHeader() })
+        .catch(function (e) {
+          throw new Error("[내려받기 연결 실패] " + addr + " — " + (e && e.message ? e.message : e)
+            + " (로그인이 풀렸거나 회사망이 막고 있을 수 있습니다)");
+        })
+        .then(function (r) {
+          if (!r.ok) {
+            throw new Error("[내려받기 거부 " + r.status + "] "
+              + (r.status === 401 ? "로그인이 필요합니다."
+                : r.status === 403 ? "계정이 아직 승인되지 않았습니다."
+                : r.status === 404 ? "서버에 파일이 없습니다." : addr));
+          }
+          return r.blob();
+        })
+        .then(function (b) { return new File([b], name, { type: type || b.type }); });
     }
     return grab(item["슬라이드주소"], item["슬라이드이름"] || item["이름"] || "slide.html")
       .then(function (slide) {

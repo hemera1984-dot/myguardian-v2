@@ -966,6 +966,8 @@ async function route(req, res, url) {
     }
     const ext = "." + name.split(".").pop().toLowerCase();
     const type = Object.keys(BRIEF_TYPES).find((k) => BRIEF_TYPES[k] === ext) || "application/octet-stream";
+    // 다른 기기에서 자료가 안 열릴 때 어디서 끊겼는지 보려면 이 줄이 필요하다
+    console.log(`강의자료 내려받기: ${name} (${bytes.length}바이트) — ${me.email}`);
     res.writeHead(200, { "Content-Type": type, "Content-Length": bytes.length });
     return res.end(bytes);
   }
