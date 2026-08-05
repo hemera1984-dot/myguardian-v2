@@ -37,13 +37,17 @@
     options = options || {};
     var base = apiBase();
     if (!base) return Promise.reject(new Error("인증 서버 주소가 설정되지 않았습니다."));
-    var headers = { "Content-Type": "application/json" };
+    // 파일(Blob·File·버퍼)은 그대로 올린다. JSON으로 감싸면 서버가 못 받는다.
+    var body = options.body;
+    var raw = body && (body instanceof Blob || body instanceof ArrayBuffer || ArrayBuffer.isView(body));
+    var headers = raw ? {} : { "Content-Type": "application/json" };
+    Object.keys(options.headers || {}).forEach(function (k) { headers[k] = options.headers[k]; });
     var t = token();
     if (t) headers.Authorization = "Bearer " + t;
     return fetch(base + path, {
       method: options.method || "GET",
       headers: headers,
-      body: options.body ? JSON.stringify(options.body) : undefined
+      body: body === undefined || body === null ? undefined : (raw ? body : JSON.stringify(body))
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (data) {
         if (!r.ok) {

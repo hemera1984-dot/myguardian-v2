@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css">
   <link rel="stylesheet" href="../assets/platform.css">
   <script src="../assets/platform.js"></script>
+  <script src="../assets/auth.js"></script>
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
   <script src="brief.js"></script>
   <style>
@@ -107,7 +108,7 @@
       </section>
 
       <section class="section-block" id="library-section" hidden aria-labelledby="lib-title">
-        <div class="section-head"><div><h2 id="lib-title">내 라이브러리</h2><p>탑재한 발표 자료 목차입니다. 제목을 누르면 바로 발표합니다. 이 브라우저에만 저장되며 저장소·외부로 전송되지 않습니다.</p></div></div>
+        <div class="section-head"><div><h2 id="lib-title">내 라이브러리</h2><p>탑재한 발표 자료 목차입니다. 제목을 누르면 바로 발표합니다. 강의 자료는 팀이 함께 씁니다 — 올리면 다른 팀원도 목록에서 보고 발표할 수 있습니다. 상담 자료는 탑재하지 않습니다.</p></div></div>
         <div id="library-list" class="library-list"></div>
       </section>
 
@@ -188,18 +189,34 @@
         return { doc: "브리핑 문서", pdf: "PDF", images: "이미지", html: "HTML" }[k] || "자료";
       }
 
-      // 탑재 자료를 발표 슬롯에 싣고 발표자 화면으로 이동
+      // 탑재 자료를 발표 슬롯에 싣고 발표자 화면으로 이동.
+      // 팀 목차 항목은 파일이 서버에 있으므로 먼저 내려받아 레코드로 되돌린다.
       function presentRecord(record) {
-        window.mgBrief.saveMaterial(record).then(function () {
-          window.location.href = "present.html?local=1";
-        }).catch(function (err) {
-          showLocalError("발표 자료를 여는 데 실패했습니다: " + err.message);
-        });
+        var 준비 = record.__팀
+          ? window.mgBrief.serverRecordToMaterial(record)
+          : Promise.resolve(record);
+        if (record.__팀) showLocalError("자료를 내려받는 중입니다.");
+        준비
+          .then(function (rec) { return window.mgBrief.saveMaterial(rec); })
+          .then(function () { window.location.href = "present.html?local=1"; })
+          .catch(function (err) {
+            showLocalError("발표 자료를 여는 데 실패했습니다: " + err.message);
+          });
       }
 
       function renderLibrary() {
         var box = document.getElementById("library-list");
-        window.mgBrief.libraryList().then(function (items) {
+        // 팀 목차(서버)를 앞에 두고, 이 브라우저에만 있던 옛 자료를 뒤에 붙인다.
+        // 같은 id면 서버 것이 이긴다 — 팀이 함께 보는 쪽이 기준이다.
+        Promise.all([window.mgBrief.serverLibraryList(), window.mgBrief.libraryList()])
+          .then(function (res) {
+            var seen = {};
+            var items = [];
+            res[0].forEach(function (it) { if (it && it.id && !seen[it.id]) { seen[it.id] = 1; it.__팀 = true; items.push(it); } });
+            res[1].forEach(function (it) { if (it && it.id && !seen[it.id]) { seen[it.id] = 1; items.push(it); } });
+            return items;
+          })
+          .then(function (items) {
           box.textContent = "";
           var rows = items.filter(function (it) { return it["모드"] === mode; });
           rows.sort(function (a, b) { return String(b["등록일"] || "").localeCompare(String(a["등록일"] || "")); });
@@ -225,16 +242,24 @@
               : it.kind === "images" && it.files ? it.files.length + "페이지" : null;
             var bits = [];
             if (pages) bits.push(pages);
-            bits.push(it["스크립트문서"] ? "스크립트 PDF" : it["스크립트"] ? "스크립트 " + it["스크립트"].length + "구간" : "스크립트 없음");
+            bits.push(it["스크립트문서"] || it["스크립트주소"] ? "스크립트 PDF"
+              : it["스크립트"] ? "스크립트 " + it["스크립트"].length + "구간" : "스크립트 없음");
             bits.push(String(it["등록일"] || "").slice(0, 10) + " 탑재");
+            // 팀 목차 항목은 올린 사람을 밝힌다. 이 브라우저에만 있는 옛 자료는 그 사실을 알린다.
+            bits.push(it.__팀 ? (it["올린이"] ? String(it["올린이"]).split("@")[0] + " 올림" : "팀 공유")
+              : "이 브라우저에만 있음");
             main.appendChild(el("span", "l-meta", bits.join(" · ")));
             main.addEventListener("click", function () { presentRecord(it); });
             row.appendChild(main);
             var del = el("button", "lib-del", "삭제");
             del.type = "button";
             del.addEventListener("click", function () {
-              if (!window.confirm("'" + (it["제목"] || it["이름"]) + "'을(를) 라이브러리에서 삭제할까요?")) return;
-              window.mgBrief.libraryDelete(it.id).then(renderLibrary);
+              var 팀 = it.__팀;
+              if (!window.confirm("'" + (it["제목"] || it["이름"]) + "'을(를) "
+                + (팀 ? "팀 라이브러리에서 삭제할까요? 다른 팀원도 못 쓰게 됩니다." : "라이브러리에서 삭제할까요?"))) return;
+              (팀 ? window.mgBrief.serverLibraryDelete(it.id) : window.mgBrief.libraryDelete(it.id))
+                .then(renderLibrary)
+                .catch(function (err) { showLocalError("삭제하지 못했습니다: " + err.message); });
             });
             row.appendChild(del);
             box.appendChild(row);
@@ -437,13 +462,37 @@
         }
         var record = decorate(pending.record);
         record["등록일"] = new Date().toLocaleString("sv-SE"); // 로컬 "YYYY-MM-DD HH:mm:ss" — 정렬 가능
-        window.mgBrief.libraryPut(record).then(function () {
-          resetSelection();
-          renderLibrary();
-          document.getElementById("library-section").scrollIntoView({ behavior: "smooth", block: "start" });
-        }).catch(function (err) {
-          showLocalError("라이브러리에 탑재하지 못했습니다: " + err.message);
-        });
+        // 팀이 함께 쓰는 자료다 — 서버에 올린다. 로그인 전이거나 서버가 죽었으면
+        // 이 브라우저에만 남기고 그 사실을 알린다(발표는 그대로 된다).
+        var 서버가능 = window.mgAuth && window.mgAuth.token();
+        showLocalError(서버가능 ? "팀 라이브러리에 올리는 중입니다." : "");
+        var 올리기 = 서버가능
+          ? window.mgBrief.serverLibraryPut(record).then(function () { return true; })
+          : Promise.resolve(false);
+        올리기
+          .catch(function (err) {
+            // 서버가 안 되면 로컬로라도 남긴다 — 발표를 못 하게 만들지 않는다
+            return window.mgBrief.libraryPut(record).then(function () {
+              showLocalError("팀 라이브러리에 올리지 못해 이 브라우저에만 저장했습니다: " + err.message);
+              return null;
+            });
+          })
+          .then(function (올라감) {
+            if (올라감 === false) {
+              return window.mgBrief.libraryPut(record).then(function () {
+                showLocalError("로그인하지 않아 이 브라우저에만 저장했습니다. 팀원과 함께 쓰려면 로그인 후 다시 탑재하세요.");
+              });
+            }
+            if (올라감 === true) errorEl.hidden = true;
+          })
+          .then(function () {
+            resetSelection();
+            renderLibrary();
+            document.getElementById("library-section").scrollIntoView({ behavior: "smooth", block: "start" });
+          })
+          .catch(function (err) {
+            showLocalError("라이브러리에 탑재하지 못했습니다: " + err.message);
+          });
       });
     })();
   </script>
