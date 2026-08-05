@@ -123,7 +123,7 @@ function cors(req, res) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
     res.setHeader("Access-Control-Max-Age", "86400");
   }
 }
@@ -949,6 +949,25 @@ async function route(req, res, url) {
   // 상담 자료는 여기 올리지 않는다 — 화면이 이미 강의 모드에서만 탑재를 연다.
   if (req.method === "GET" && path === "/brief/library") {
     return send(res, 200, readBriefLibrary());
+  }
+
+  // 자료 파일 내려받기. /media/는 웹서버가 서빙하지만 다른 출처라 fetch가 CORS에 막힌다.
+  // 여기로 내주면 CORS가 붙고, 덤으로 승인 계정만 받아 갈 수 있다.
+  const briefFile = req.method === "GET" && /^\/brief\/file\/([A-Za-z0-9._-]+)$/.exec(path);
+  if (briefFile) {
+    const name = briefFile[1];
+    if (name.includes("..")) return send(res, 400, { error: "잘못된 파일명입니다." });
+    const file = join(MEDIA_DIR, name);
+    let bytes;
+    try {
+      bytes = readFileSync(file);
+    } catch (e) {
+      return send(res, 404, { error: "없는 파일입니다." });
+    }
+    const ext = "." + name.split(".").pop().toLowerCase();
+    const type = Object.keys(BRIEF_TYPES).find((k) => BRIEF_TYPES[k] === ext) || "application/octet-stream";
+    res.writeHead(200, { "Content-Type": type, "Content-Length": bytes.length });
+    return res.end(bytes);
   }
 
   // 자료 파일 업로드. 슬라이드·스크립트를 각각 올리고 받은 주소를 레코드에 싣는다.
