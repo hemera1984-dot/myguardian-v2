@@ -68,6 +68,15 @@
       // 탭 분류: 판례 = 법원(source_type 대법원), 분쟁사례 = 금감원·기타
       function tabOf(c) { return c.source_type === "대법원" ? "판례" : "분쟁사례"; }
 
+      // 기관 표기. publisher가 빈 사례가 63건 있는데, 그 62건은 사건번호 앞머리에
+      // 법원 이름이 이미 들어 있다("부산지방법원-2010-구합-2365"). 가진 정보를 두고
+      // "출처 미기재"를 띄우던 것을 고친다 — 없는 값을 만드는 것이 아니라 있는 값을 읽는다.
+      function orgOf(c) {
+        if (c.publisher) return c.publisher;
+        var m = /^([가-힣]+(?:법원|재판부|지원))/.exec(String(c.case_number || ""));
+        return m ? m[1] : "출처 미기재";
+      }
+
       function resultClass(r) {
         if (!r) return "";
         if (r.indexOf("지급") >= 0 && r.indexOf("인정") >= 0) return "paid";
@@ -87,7 +96,7 @@
             var issues = c["쟁점목록"] && c["쟁점목록"].length ? c["쟁점목록"] : [c.issue_category || "미분류"];
             if (issues.indexOf(state.issue) < 0) return false;
           }
-          if (state.publisher && (c.publisher || "미기재") !== state.publisher) return false;
+          if (state.publisher && orgOf(c) !== state.publisher) return false;
           if (q) {
             var hay = (c.title + " " + (c.summary || "") + " " + (c.case_number || "") + " " + (c.issue_category || "")).toLowerCase();
             if (hay.indexOf(q) < 0) return false;
@@ -117,7 +126,7 @@
             ? '<span class="badge-result ' + resultClass(c.decision_result) + '">' + esc(c.decision_result) + "</span>" : "";
           return '<div class="case-row' + (c.id === state.sel ? " active" : "") + '" tabindex="0" role="button" data-id="' + esc(c.id) + '">'
             + "<h3>" + esc(c.title) + "</h3>"
-            + '<div class="case-meta"><span>' + esc(c.publisher || "출처 미기재") + "</span>"
+            + '<div class="case-meta"><span>' + esc(orgOf(c)) + "</span>"
             + "<span>" + esc(c.case_number) + "</span>"
             + (c.decision_date ? "<span>" + esc(c.decision_date) + "</span>" : "")
             + '<span class="badge-grade">' + esc(c.verification_grade || "미검증-참고용") + "</span>"
@@ -130,7 +139,7 @@
         try {
           var recent = JSON.parse(localStorage.getItem("mg_recent_cases") || "[]");
           recent = recent.filter(function (r) { return r.id !== c.id; });
-          recent.unshift({ id: c.id, title: c.title, meta: (c.publisher || "") + " " + (c.case_number || "") });
+          recent.unshift({ id: c.id, title: c.title, meta: orgOf(c) + " " + (c.case_number || "") });
           localStorage.setItem("mg_recent_cases", JSON.stringify(recent.slice(0, 5)));
         } catch (e) {}
       }
@@ -147,7 +156,7 @@
           + "<h2>" + esc(c.title) + "</h2>"
           + '<dl class="detail-fields">'
           + "<dt>" + (c.source_type === "금감원" ? "자료 번호" : "사건번호") + "</dt><dd>" + esc(c.case_number) + "</dd>"
-          + "<dt>기관</dt><dd>" + esc(c.publisher || "미기재") + "</dd>"
+          + "<dt>기관</dt><dd>" + esc(orgOf(c)) + "</dd>"
           + "<dt>유형</dt><dd>" + esc(tabOf(c)) + "</dd>"
           + (c.decision_date ? "<dt>결정일</dt><dd>" + esc(c.decision_date) + "</dd>" : "")
           + ((c["쟁점목록"] && c["쟁점목록"].length) ? "<dt>쟁점</dt><dd>" + esc(c["쟁점목록"].join(" · ")) + "</dd>"
@@ -163,7 +172,7 @@
       // 사례 공유 문구 — 고객·팀원에게 근거를 보낼 때 (케어센터와 같은 복사 패턴)
       function shareText(c) {
         var lines = ["[" + tabOf(c) + " 공유] " + c.title, ""];
-        lines.push("사건번호: " + c.case_number + (c.publisher ? " (" + c.publisher + ")" : ""));
+        lines.push("사건번호: " + c.case_number + " (" + orgOf(c) + ")");
         if (c.summary && c.summary !== c.title) {
           var s = c.summary.length > 200 ? c.summary.slice(0, 200) + "…" : c.summary;
           lines.push("", s);
@@ -191,6 +200,17 @@
           opt.textContent = label + ": " + v[0] + " (" + v[1] + ")";
           sel.appendChild(opt);
         });
+      }
+
+      // 기관 필터는 orgOf와 같은 규칙으로 센다 — 목록에 보이는 이름과 필터 항목이 어긋나면 안 된다
+      function countByOrg() {
+        var m = {};
+        ALL.forEach(function (c) {
+          var k = orgOf(c);
+          m[k] = (m[k] || 0) + 1;
+        });
+        return Object.keys(m).map(function (k) { return [k, m[k]]; })
+          .sort(function (a, b) { return b[1] - a[1]; });
       }
 
       function countBy(field, fallback) {
@@ -224,7 +244,7 @@
           ALL = payload.data;
           fillSelect("f-result", countBy("decision_result", "기타"), "결과");
           fillSelect("f-issue", countBy("issue_category", "미분류"), "쟁점");
-          fillSelect("f-publisher", countBy("publisher", "미기재"), "기관");
+          fillSelect("f-publisher", countByOrg(), "기관");
           if (initialId) {
             var target = ALL.find(function (c) { return c.id === initialId; });
             if (target) {
