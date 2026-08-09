@@ -96,6 +96,11 @@
 
         <div class="section">
           <h2 class="section-title">칼럼 <span class="sec-sub" id="col-sub"></span></h2>
+          <!-- 제목을 다 정해 놓고 본문은 한 번에 — 한 편씩 기다리면 월간은 15분이 넘는다 -->
+          <div class="col-batch">
+            <button class="btn" type="button" id="col-write-all">제목 정한 기사 한 번에 쓰기</button>
+            <span class="col-batch-note" id="col-write-all-note"></span>
+          </div>
           <div id="col-list"></div>
         </div>
 
@@ -641,30 +646,24 @@
         });
       }
 
-      // 본문 생성 — 월간은 수 분 걸린다. 경과 시간을 계속 보여주고 취소 불가를 알린다.
-      function aiColumn(i, btn) {
-        var a = S.draft["기사"][i], box = aiBox(i);
-        if (!String(a["제목"] || "").trim()) {
-          box.hidden = false;
-          box.textContent = "제목을 먼저 정하세요. 주제 추천으로 받을 수도 있습니다.";
-          return;
-        }
-        if (needAuth(box)) return;
+      // 한 편 쓰기 — 여러 편을 동시에 돌릴 수 있게 약속을 돌려준다.
+      // 진행 표시는 매 초 id로 다시 찾는다. 다른 편이 끝나 renderEdit가 돌아도 끊기지 않게.
+      function writeColumn(i) {
+        var a = S.draft["기사"][i];
         var monthly = S.draft["채널"] === "월간";
         var t0 = Date.now();
-        box.hidden = false;
         function tick() {
+          var box = aiBox(i);
+          if (!box) return;
           var s = Math.round((Date.now() - t0) / 1000);
+          box.hidden = false;
           box.textContent = "본문을 쓰고 있습니다 — " + Math.floor(s / 60) + "분 " + pad2(s % 60) + "초 경과. "
             + (monthly ? "월간은 최대 5분까지 걸립니다. " : "")
             + "중간에 취소할 수 없습니다. 이 화면을 닫지 마세요.";
         }
         tick();
         var timer = setInterval(tick, 1000);
-        btn.disabled = true;
-        var was = btn.textContent;
-        btn.textContent = "생성 중…";
-        window.mgAuth.api("/ai/column", {
+        return window.mgAuth.api("/ai/column", {
           method: "POST",
           body: { "제목": a["제목"], "채널": chFull(), "카테고리": a["카테고리"], "방향": a["방향"] || "" }
         }).then(function (d) {
@@ -676,14 +675,78 @@
           a["본문"] = Array.isArray(d["본문"]) ? d["본문"] : [];
           saveDraft(S.draft);
           renderEdit();
-          return autoArtwork(i);  // 본문 → 삽화 → (다 찼으면) 표지까지 이어서
+          // 삽화는 본문에 딸린 곁다리다. 이 약속에 매달면 삽화 시간만큼 "다 썼다"가 늦고,
+          // 삽화 실패가 본문 실패로 집계된다. 이어서 돌리되 기다리지 않는다.
+          autoArtwork(i);
         }).catch(function (err) {
           clearInterval(timer);
-          box.textContent = (err.message || "본문을 받지 못했습니다.") + " 제목·방향을 손보고 다시 시도하세요.";
+          var box = aiBox(i);
+          if (box) {
+            box.hidden = false;
+            box.textContent = (err.message || "본문을 받지 못했습니다.") + " 제목·방향을 손보고 다시 시도하세요.";
+          }
+          throw err;
         }).finally(function () {
+          clearInterval(timer);
+        });
+      }
+
+      // 본문 생성 — 월간은 수 분 걸린다. 경과 시간을 계속 보여주고 취소 불가를 알린다.
+      function aiColumn(i, btn) {
+        var a = S.draft["기사"][i], box = aiBox(i);
+        if (!String(a["제목"] || "").trim()) {
+          box.hidden = false;
+          box.textContent = "제목을 먼저 정하세요. 주제 추천으로 받을 수도 있습니다.";
+          return;
+        }
+        if (needAuth(box)) return;
+        btn.disabled = true;
+        var was = btn.textContent;
+        btn.textContent = "생성 중…";
+        writeColumn(i).catch(function () { /* 문구는 writeColumn이 남긴다 */ })
+          .finally(function () {
+            btn.disabled = false;
+            btn.textContent = was;
+          });
+      }
+
+      // 제목이 정해진 기사를 한꺼번에 쓴다. 한 편씩 기다리면 월간 세 꼭지가 15분을 넘는다.
+      // 동시에 돌리면 가장 오래 걸리는 한 편만큼만 기다리면 된다.
+      function aiColumnsAll(btn) {
+        var note = el("col-write-all-note");
+        var arts = S.draft["기사"] || [];
+        var todo = [];
+        arts.forEach(function (a, i) {
+          if (String(a["제목"] || "").trim() && !((a["본문"] || []).length)) todo.push(i);
+        });
+        if (!todo.length) {
+          note.textContent = "제목이 정해졌고 본문이 비어 있는 기사가 없습니다. 다시 쓰려면 각 기사에서 따로 눌러 주세요.";
+          return;
+        }
+        if (needAuth(note)) return;
+        var t0 = Date.now(), done = 0, failed = 0;
+        function paint() {
+          var s = Math.round((Date.now() - t0) / 1000);
+          note.textContent = todo.length + "편을 동시에 쓰고 있습니다 — 완료 " + done + "편"
+            + (failed ? " · 실패 " + failed + "편" : "")
+            + " · " + Math.floor(s / 60) + "분 " + pad2(s % 60) + "초 경과. 이 화면을 닫지 마세요.";
+        }
+        paint();
+        var timer = setInterval(paint, 1000);
+        btn.disabled = true;
+        var was = btn.textContent;
+        btn.textContent = "쓰는 중…";
+        Promise.all(todo.map(function (i) {
+          return writeColumn(i).then(
+            function () { done++; paint(); },
+            function () { failed++; paint(); }
+          );
+        })).then(function () {
           clearInterval(timer);
           btn.disabled = false;
           btn.textContent = was;
+          note.textContent = done + "편을 다 썼습니다."
+            + (failed ? " " + failed + "편은 받지 못했습니다 — 해당 기사를 열어 다시 시도하세요." : "");
         });
       }
 
@@ -1131,6 +1194,7 @@
       });
 
       el("back-list").addEventListener("click", showList);
+      el("col-write-all").addEventListener("click", function () { aiColumnsAll(this); });
 
       // 편집 화면 — 클릭 위임
       el("view-edit").addEventListener("click", function (e) {

@@ -1698,6 +1698,20 @@ body.magazine :focus-visible {
   color: var(--ink-sub);
 }
 
+/* 제목을 다 정해 놓고 본문은 한 번에 (2026-08-05). 한 편씩 기다리면 월간은 15분이 넘는다. */
+.col-batch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+}
+.col-batch-note {
+  font-size: 0.85rem;
+  color: var(--ink-sub);
+  font-variant-numeric: tabular-nums;
+}
+
 .desk-note {
   font-size: 0.85rem;
   color: var(--ink-sub);
