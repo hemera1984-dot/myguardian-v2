@@ -809,5 +809,20 @@
       });
     })();
   </script>
+
+  <script>
+  // 보장분석(데스크)은 다른 주소라 마이가디언 로그인 상태를 못 본다.
+  // 넘어가는 순간에만 세션을 주소 조각(#s=)으로 실어 보낸다 — 조각은 서버로 전송되지 않고,
+  // 데스크가 받자마자 주소에서 지운다. 인증은 그대로다(데스크가 서버에 다시 검증한다).
+  // 링크 HTML에는 토큰을 넣지 않는다. 눌린 그 순간에만 붙인다.
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="https://desk.insurguard.life"]');
+    if (!a) return;
+    var t = null;
+    try { t = localStorage.getItem("mg_session"); } catch (err) {}
+    if (!t) return;                       // 로그인 전이면 데스크에서 직접 로그인하게 둔다
+    a.href = "https://desk.insurguard.life/#s=" + encodeURIComponent(t);
+  }, true);
+  </script>
 </body>
 </html>
