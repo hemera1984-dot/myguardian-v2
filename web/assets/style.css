@@ -1698,6 +1698,26 @@ body.magazine :focus-visible {
   color: var(--ink-sub);
 }
 
+/* 일일 꼭지 고르기 — 경제냐 시사냐에 따라 서버가 붙이는 필자가 달라진다 (2026-08-05) */
+.cat-pick {
+  margin-left: 6px;
+  padding: 3px 11px;
+  border: 1px solid var(--line-strong, #cbd3de);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ink-sub);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.14s, border-color 0.14s, background 0.14s;
+}
+.cat-pick.on {
+  border-color: var(--point, #bc003a);
+  background: var(--point-soft, #ffeff0);
+  color: var(--point, #bc003a);
+}
+
 /* 제목을 다 정해 놓고 본문은 한 번에 (2026-08-05). 한 편씩 기다리면 월간은 15분이 넘는다. */
 .col-batch {
   display: flex;
@@ -3198,3 +3218,15 @@ body.shelf-body { background: #f4f1ea; }
 }
 
 .verify-report .v-src a:hover { text-decoration: underline; }
+
+/* 일일은 매일 쌓인다 — 서가에 다 세우면 표지 진열이 무너진다. 최근 10권만 세우고 나머지는 접는다. */
+.shelf__more { margin-top: 18px; }
+.shelf__more > summary {
+  cursor: pointer;
+  padding: 9px 0;
+  border-top: 2px solid var(--bh-ink, #111);
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+.shelf__more[open] > summary { margin-bottom: 16px; }

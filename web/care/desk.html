@@ -49,7 +49,8 @@
       <!-- ── 호 목록 ─────────────────────────────────────────────── -->
       <section id="view-list">
         <div class="pill-tabs" id="ch-tabs" role="tablist" aria-label="발행 채널">
-          <button type="button" class="active" role="tab" aria-selected="true" data-ch="주간">주간</button>
+          <button type="button" class="active" role="tab" aria-selected="true" data-ch="일일">일일</button>
+          <button type="button" role="tab" aria-selected="false" data-ch="주간">주간</button>
           <button type="button" role="tab" aria-selected="false" data-ch="월간">월간</button>
         </div>
 
@@ -155,11 +156,19 @@
       var esc = care.esc;
 
       // 주간은 꼭지가 고정이다(사양 2026-08-02). 월간은 세 칸 모두 자유 주제.
-      var WEEKLY_CATS = ["정치·사회·시사", "경제·AI·IT", "보험"];
+      // 채널별 고정 꼭지 (2026-08-05 역할 분리). 일일이 경제·시사를 맡으므로 주간은
+      // 보험·자산·세무로 옮겨 재탕을 없앤다. 이미 발행된 과월호의 꼭지 표기는 건드리지 않는다.
+      var CH_CATS = {
+        "일일": ["경제"],
+        "주간": ["보험", "자산", "세무"],
+        "월간": ["", "", ""]
+      };
+      var DAILY_CATS = ["경제", "시사"];   // 일일은 한 꼭지 — 둘 중에서 고른다
+      function catsOf(ch) { return CH_CATS[ch] || CH_CATS["월간"]; }
       var PREFIX = "mg_care_draft_";
 
       // 상태는 하나로 모은다 — 화면은 이 객체를 그리기만 한다
-      var S = { ch: "주간", list: [], draft: null, open: -1 };
+      var S = { ch: "일일", list: [], draft: null, open: -1 };
 
       function el(id) { return document.getElementById(id); }
       function pad2(n) { return String(n).padStart(2, "0"); }
@@ -236,7 +245,7 @@
         return max + 1;
       }
       function makeId(ch, no) {
-        var base = ch === "주간" ? "weekly-" : "monthly-";
+        var base = ch === "일일" ? "daily-" : ch === "주간" ? "weekly-" : "monthly-";
         var n = no;
         var used = {};
         S.list.forEach(function (i) { used[i.id] = 1; });
@@ -246,6 +255,7 @@
       }
       function weekLabel(ch, d) {
         var y = d.getFullYear(), m = d.getMonth() + 1;
+        if (ch === "일일") return y + "년 " + m + "월 " + d.getDate() + "일";
         return ch === "주간"
           ? y + "년 " + m + "월 " + Math.ceil(d.getDate() / 7) + "주차"
           : y + "년 " + m + "월호";
@@ -253,7 +263,7 @@
       function blankArticle(ch, i) {
         return {
           "번호": i + 1,
-          "카테고리": ch === "주간" ? WEEKLY_CATS[i] : "",
+          "카테고리": catsOf(ch)[i] || "",
           "제목": "", "부제": "", "요약": [], "한마디": [], "본문": [], "이미지": "", "방향": ""
         };
       }
@@ -265,7 +275,7 @@
           id: made.id, "채널": ch, "호수": made.no, "발행일": iso,
           "주차라벨": weekLabel(ch, d), "발행인": 발행인(),
           "커버이미지": "", "편집장의말": [],
-          "기사": [0, 1, 2].map(function (i) { return blankArticle(ch, i); })
+          "기사": catsOf(ch).map(function (_, i) { return blankArticle(ch, i); })
         };
         saveDraft(draft);
         return draft;
@@ -315,14 +325,24 @@
         var box = el("new-issue");
         var no = nextNo(S.ch);
         el("new-sub").textContent = S.ch + " 다음 호는 " + no + "호입니다";
-        if (S.ch === "주간") {
+        if (S.ch === "일일") {
+          // 평일 발행 — 오늘이 주말이면 다음 월요일을 기본값으로 둔다
+          var day = new Date();
+          if (day.getDay() === 6) day.setDate(day.getDate() + 2);
+          else if (day.getDay() === 0) day.setDate(day.getDate() + 1);
+          var diso = day.getFullYear() + "-" + pad2(day.getMonth() + 1) + "-" + pad2(day.getDate());
+          box.innerHTML = '<div><label for="new-date">발행일</label>'
+            + '<input type="date" id="new-date" value="' + diso + '"></div>'
+            + '<button class="btn" type="button" id="new-go">' + no + '호 만들기</button>'
+            + '<p class="new-note">일일은 한 꼭지입니다. 경제와 시사 중에서 고릅니다.</p>';
+        } else if (S.ch === "주간") {
           var sun = new Date();
           sun.setDate(sun.getDate() + ((7 - sun.getDay()) % 7));
           var iso = sun.getFullYear() + "-" + pad2(sun.getMonth() + 1) + "-" + pad2(sun.getDate());
           box.innerHTML = '<div><label for="new-date">발행일 (일요일)</label>'
             + '<input type="date" id="new-date" value="' + iso + '"></div>'
             + '<button class="btn" type="button" id="new-go">' + no + '호 만들기</button>'
-            + '<p class="new-note">칼럼 세 꼭지는 ' + WEEKLY_CATS.join(" · ") + ' 로 고정입니다.</p>';
+            + '<p class="new-note">칼럼 세 꼭지는 ' + catsOf("주간").join(" · ") + ' 로 고정입니다.</p>';
         } else {
           var now = new Date();
           box.innerHTML = '<div><label for="new-month">발행 연·월</label>'
@@ -408,10 +428,18 @@
         var written = blocksLen(a["본문"]) > 0;
         var target = "칼럼 " + (i + 1);
 
+        var daily = S.draft["채널"] === "일일";
         var head = '<div class="col-edit">'
           + (weekly
               ? '<p class="col-fixed">' + esc(a["카테고리"] || "") + ' <span>주간 고정 꼭지</span></p>'
-              : '<p class="col-fixed">' + esc(a["카테고리"] || "카테고리는 작성하면 자동으로 붙습니다") + "</p>")
+              : daily
+                ? '<p class="col-fixed">오늘의 꼭지 '
+                    + DAILY_CATS.map(function (c) {
+                        return '<button type="button" class="cat-pick' + (a["카테고리"] === c ? " on" : "")
+                          + '" data-catpick="' + esc(c) + '" data-col="' + i + '">' + esc(c) + "</button>";
+                      }).join("")
+                    + "</p>"
+                : '<p class="col-fixed">' + esc(a["카테고리"] || "카테고리는 작성하면 자동으로 붙습니다") + "</p>")
 
           + '<div class="fld"><label for="f-title-' + i + '">제목</label>'
           + '<input type="text" id="f-title-' + i + '" data-f="제목" data-col="' + i + '" value="' + esc(a["제목"]) + '" placeholder="' + esc(target) + ' 제목을 쓰거나 주제를 추천받으세요">'
@@ -484,8 +512,10 @@
 
       function renderCols() {
         var arts = S.draft["기사"] || [];
-        el("col-sub").textContent = S.draft["채널"] === "주간"
-          ? "주간은 세 꼭지가 고정입니다" : "월간은 세 꼭지 모두 자유 주제입니다";
+        el("col-sub").textContent = S.draft["채널"] === "일일"
+          ? "일일은 한 꼭지입니다"
+          : S.draft["채널"] === "주간"
+            ? "주간은 세 꼭지가 고정입니다" : "월간은 세 꼭지 모두 자유 주제입니다";
         el("col-list").innerHTML = arts.map(function (a, i) {
           var open = S.open === i;
           return '<div class="col-item' + (open ? " open" : "") + '">'
@@ -1149,8 +1179,9 @@
       el("view-list").addEventListener("click", function (e) {
         var go = e.target.closest("#new-go");
         if (go) {
+          // 일일·주간은 날짜를 그대로, 월간은 연·월에 1일을 붙인다
           var iso;
-          if (S.ch === "주간") iso = el("new-date").value;
+          if (S.ch === "일일" || S.ch === "주간") iso = el("new-date").value;
           else iso = el("new-month").value ? el("new-month").value + "-01" : "";
           if (!iso) return;
           var d = createIssue(S.ch, iso);
@@ -1205,6 +1236,15 @@
           var n = Number(toggle.dataset.colToggle);
           S.open = S.open === n ? -1 : n;
           renderCols();
+          return;
+        }
+
+        // 일일 꼭지 고르기 — 경제냐 시사냐에 따라 서버가 붙이는 필자가 달라진다
+        var pick = t.closest("button[data-catpick]");
+        if (pick) {
+          S.draft["기사"][Number(pick.dataset.col)]["카테고리"] = pick.dataset.catpick;
+          saveDraft(S.draft);
+          renderEdit();
           return;
         }
 

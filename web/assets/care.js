@@ -88,16 +88,25 @@
     var lines = ["안녕하세요, " + s["이름"] + "입니다.", ""];
     // 계절·시기 안부인사는 호마다 다르다 — 호 데이터의 "인사"를 쓰고, 없으면 발행월에 맞춘 문장.
     var greet = issue["인사"] || seasonGreeting(issue["발행일"]);
-    if (issue["채널"] === "주간") {
+    if (issue["채널"] === "일일") {
+      // 일일은 한 꼭지다. 안부인사를 매일 붙이면 금방 상투가 되므로 바로 본론으로 간다.
+      lines.push(mag + " " + (issue["주차라벨"] || "") + " (통권 " + issue["호수"] + "호)", "");
+      if (toc.length) {
+        lines.push(toc[0]["제목"]);
+        if (toc[0]["부제"]) lines.push(toc[0]["부제"]);
+        lines.push("");
+      }
+    } else if (issue["채널"] === "주간") {
       lines.push(greet, "");
       lines.push(mag + " " + (issue["주차라벨"] || "") + " (통권 " + issue["호수"] + "호)");
-      lines.push("이번 주 뉴스 브리핑이 발행되었습니다.", "");
-      lines.push("[이번 주 주요 뉴스]", BAR);
+      // 주간은 시사가 아니라 보험·자산·세무를 다룬다(2026-08-05 역할 분리) — 시사는 일일 몫이다
+      lines.push("이번 주 칼럼이 발행되었습니다.", "");
+      lines.push("[이번 주 칼럼]", BAR);
       toc.forEach(function (t) {
         lines.push((CAT_LABEL[t["카테고리"]] || t["카테고리"]) + " | " + t["제목"]);
       });
       lines.push(BAR, "");
-      if (toc.length) lines.push("이번 주 핵심: " + toc[0]["제목"], "");
+      if (toc.length) lines.push("먼저 읽어보실 것: " + toc[0]["제목"], "");
     } else {
       lines.push(greet, "");
       lines.push(mag + " " + (issue["주차라벨"] || "") + "(통권 " + issue["호수"] + "호)가");
