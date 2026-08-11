@@ -36,7 +36,9 @@
       var renderSeq = 0;
       var protocol = null;
       var pendingState = null; // 자료 준비 전에 도착한 상태 (준비 후 적용)
-      var frameWin = null;     // HTML 자료 iframe (스크롤 적용용)
+      var frameWin = null;      // HTML 자료 iframe (다리를 통해서만 대화한다)
+      var unbindFrame = null;
+      var pendingSlide = null;  // 프레임이 뜨기 전에 도착한 장
 
       var stageWrap = document.getElementById("stage-wrap");
       var stage = document.getElementById("stage");
@@ -52,7 +54,17 @@
         driver.mount(slot, n).then(function (frame) {
           if (seq !== renderSeq) return;
           stage.dataset.page = String(n);
-          if (frame) frameWin = frame.contentWindow;
+          if (frame) {
+            frameWin = frame.contentWindow;
+            if (unbindFrame) unbindFrame();
+            unbindFrame = B.bridgeListen(frameWin, function () {
+              if (pendingSlide !== null) {
+                var want = pendingSlide;
+                pendingSlide = null;
+                B.htmlSlideGoTo(frameWin, want);
+              }
+            });
+          }
           pointer.classList.remove("on");
           B.scaleStage(stageWrap, stage);
         }).catch(function () {});
@@ -73,18 +85,15 @@
       function applyPage(n) {
         if (driver && driver.kind === "html") {
           if (frameWin) B.htmlSlideGoTo(frameWin, n);
+          else pendingSlide = n;   // 아직 안 떴으면 뜬 뒤에 맞춘다
           return;
         }
         show(n);
       }
 
+      // 슬라이드 문서는 출처가 끊긴 iframe이다 — 다리로 부탁한다
       function applyScroll(y) {
-        if (!frameWin) return;
-        try {
-          var el = frameWin.document.scrollingElement || frameWin.document.documentElement;
-          var range = el.scrollHeight - el.clientHeight;
-          frameWin.scrollTo(0, y * Math.max(0, range));
-        } catch (err) { /* 접근 불가 시 무시 */ }
+        B.htmlSetScroll(frameWin, y);
       }
 
       function ready(d) {
@@ -102,15 +111,7 @@
           if (typeof pendingState.scroll === "number") applyScroll(pendingState.scroll);
         }
         pendingState = null;
-        if (driver.kind === "html" && want !== null) {
-          var tries = 0;
-          var t = setInterval(function () {
-            if (++tries > 60) { clearInterval(t); return; }
-            if (!frameWin || B.htmlSlideIndex(frameWin) < 0) return;
-            clearInterval(t);
-            applyPage(want);
-          }, 150);
-        }
+        if (driver.kind === "html" && want !== null) applyPage(want);
       }
 
       function showError(err) {

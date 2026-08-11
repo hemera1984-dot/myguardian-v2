@@ -8,7 +8,7 @@
 // 서버에서 npm install 할 일이 없어 배포가 단순하다.
 
 import { createServer } from "node:http";
-import { mkdirSync, writeFileSync, readFileSync, renameSync, existsSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, renameSync, existsSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import {
@@ -48,11 +48,12 @@ const IMAGE_TYPES = {
 const MAX_IMAGE = 12 * 1024 * 1024;
 
 // 강의 자료 라이브러리 — 팀이 함께 쓰는 발표 자료 목차(2026-08-05).
-// 파일은 사진과 같은 /media/에 둔다(웹서버가 이미 그 경로를 서빙한다). 파일명은 서버가
-// 무작위로 지으므로 주소를 모르면 닿지 않는다. 고객 개인정보가 담기는 상담 자료는
-// 여기 올리지 않는다 — 화면이 강의 모드에서만 탑재를 연다.
+// 파일은 웹서버가 서빙하지 않는 전용 폴더에 둔다(2026-08-11 교정). 종전에는 사진과 같은
+// /media/에 두어 주소만 알면 인증 없이 받아 갈 수 있었다 — 파일명 난수는 접근 권한이 아니다.
+// 고객 개인정보가 담기는 상담 자료는 여기 올리지 않는다(화면이 강의 모드에서만 탑재를 연다).
 const BRIEF_DIR = process.env.BRIEF_DIR || "./brief";
 const BRIEF_LIST = join(BRIEF_DIR, "library.json");
+const BRIEF_FILES = join(BRIEF_DIR, "files");
 const BRIEF_TYPES = {
   "text/html": ".html",
   "application/pdf": ".pdf",
@@ -63,6 +64,25 @@ const BRIEF_TYPES = {
   "image/gif": ".gif"
 };
 const MAX_BRIEF = 40 * 1024 * 1024;
+// 총량·인당 상한 — 파일당 제한만 두면 반복 업로드로 디스크를 소진할 수 있다
+const MAX_BRIEF_TOTAL = 4 * 1024 * 1024 * 1024;
+const MAX_BRIEF_PER_ACCOUNT = 800 * 1024 * 1024;
+
+// 형식별 시그니처 — 올린 쪽이 말하는 Content-Type만 믿지 않는다.
+// 임의 바이트를 PDF·PNG로 위장해 두면 나중에 그 형식으로 다루는 코드가 오작동한다.
+function 형식일치(ext, b) {
+  if (!b.length) return false;
+  if (ext === ".pdf") return b.slice(0, 5).toString("latin1") === "%PDF-";
+  if (ext === ".png") return b.slice(0, 8).toString("hex") === "89504e470d0a1a0a";
+  if (ext === ".jpg") return b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
+  if (ext === ".gif") return b.slice(0, 6).toString("latin1").startsWith("GIF8");
+  if (ext === ".webp") return b.slice(0, 4).toString("latin1") === "RIFF"
+    && b.slice(8, 12).toString("latin1") === "WEBP";
+  if (ext === ".json") {
+    try { JSON.parse(b.toString("utf8")); return true; } catch (e) { return false; }
+  }
+  return true;  // html은 시그니처가 없다 — 대신 브라우저가 격리해서 연다
+}
 
 function readBriefLibrary() {
   try {
@@ -73,12 +93,50 @@ function readBriefLibrary() {
   }
 }
 
-// 목록에 실을 주소는 이 서버가 내준 것만 받는다. 남의 주소를 목차에 싣지 않는다.
-function isOwnMedia(url) {
+// 자료 파일 저장 — 파일명은 서버가 만든다(올린 이름을 믿지 않는다)
+function saveBriefFile(bytes, ext) {
+  const name = new Date().toISOString().slice(0, 10).replace(/-/g, "")
+    + "-" + randomBytes(6).toString("hex") + ext;
+  writeFileSync(join(BRIEF_FILES, name), bytes);
+  return { 파일명: name, 주소: "/brief/file/" + name, 크기: bytes.length };
+}
+
+// 목록에 실을 주소는 이 서버가 내준 것만 받는다.
+// 접두사만 보면 /brief/file/%2e%2e/... 같은 것이 통과하므로 파일명 형식까지 확인한다.
+const BRIEF_NAME = /^\d{8}-[0-9a-f]{12}\.[a-z]{3,4}$/;
+function briefFileName(url) {
   const s = String(url || "");
-  if (s.startsWith("/media/")) return !s.includes("..");
-  if (MEDIA_BASE && s.startsWith(MEDIA_BASE.replace(/\/$/, "") + "/")) return !s.includes("..");
-  return false;
+  const at = s.lastIndexOf("/brief/file/");
+  if (at < 0) return "";
+  const name = s.slice(at + "/brief/file/".length);
+  return BRIEF_NAME.test(name) ? name : "";
+}
+
+// 쌓인 용량 — 목록에 남은 파일 기준으로 센다
+function briefUsage(email) {
+  let 전체 = 0, 내것 = 0;
+  for (const it of readBriefLibrary()) {
+    const n = Number(it && it["크기"]) || 0;
+    전체 += n;
+    if (email && it && it["올린이메일"] === email) 내것 += n;
+  }
+  return { 전체, 내것 };
+}
+
+// 목록에서 내려간 자료의 실제 파일을 지운다
+function 지우기(item) {
+  for (const k of ["슬라이드주소", "스크립트주소"]) {
+    const name = briefFileName(item && item[k]);
+    if (!name) continue;
+    try { unlinkSync(join(BRIEF_FILES, name)); } catch (e) { /* 이미 없으면 그만이다 */ }
+  }
+}
+
+// 자료를 고치거나 지울 수 있는 사람 — 올린 본인, 또는 승인 권한을 가진 관리자
+function canEditBrief(db, me, item) {
+  if (!item) return true;
+  if (item["올린이메일"] && item["올린이메일"] === me.email) return true;
+  return canApprove(db, me);
 }
 
 // 미디어 파일 저장 — 파일명은 서버가 만든다(올린 이름을 믿지 않는다)
@@ -96,6 +154,7 @@ function saveMedia(bytes, ext) {
 mkdirSync(MEDIA_DIR, { recursive: true });
 mkdirSync(CARE_ISSUES_DIR, { recursive: true });
 mkdirSync(BRIEF_DIR, { recursive: true });
+mkdirSync(BRIEF_FILES, { recursive: true });
 
 if (!CLIENT_ID) {
   console.error("GOOGLE_CLIENT_ID가 없습니다. .env를 확인하세요.");
@@ -962,16 +1021,15 @@ async function route(req, res, url) {
     return send(res, 200, readBriefLibrary());
   }
 
-  // 자료 파일 내려받기. /media/는 웹서버가 서빙하지만 다른 출처라 fetch가 CORS에 막힌다.
-  // 여기로 내주면 CORS가 붙고, 덤으로 승인 계정만 받아 갈 수 있다.
+  // 자료 파일 내려받기. 파일은 웹서버가 서빙하지 않는 폴더에 있으므로 이 경로가 유일한 출구다.
+  // 승인 계정만 받아 갈 수 있고, CORS도 여기서 붙는다.
   const briefFile = req.method === "GET" && /^\/brief\/file\/([A-Za-z0-9._-]+)$/.exec(path);
   if (briefFile) {
     const name = briefFile[1];
-    if (name.includes("..")) return send(res, 400, { error: "잘못된 파일명입니다." });
-    const file = join(MEDIA_DIR, name);
+    if (!BRIEF_NAME.test(name)) return send(res, 400, { error: "잘못된 파일명입니다." });
     let bytes;
     try {
-      bytes = readFileSync(file);
+      bytes = readFileSync(join(BRIEF_FILES, name));
     } catch (e) {
       return send(res, 404, { error: "없는 파일입니다." });
     }
@@ -979,7 +1037,13 @@ async function route(req, res, url) {
     const type = Object.keys(BRIEF_TYPES).find((k) => BRIEF_TYPES[k] === ext) || "application/octet-stream";
     // 다른 기기에서 자료가 안 열릴 때 어디서 끊겼는지 보려면 이 줄이 필요하다
     console.log(`강의자료 내려받기: ${name} (${bytes.length}바이트) — ${me.email}`);
-    res.writeHead(200, { "Content-Type": type, "Content-Length": bytes.length });
+    res.writeHead(200, {
+      "Content-Type": type,
+      "Content-Length": bytes.length,
+      // 브라우저가 이 응답을 스스로 해석해 실행하지 않게 한다. 화면은 blob으로 다시 만들어 연다.
+      "Content-Disposition": "attachment",
+      "X-Content-Type-Options": "nosniff"
+    });
     return res.end(bytes);
   }
 
@@ -988,9 +1052,13 @@ async function route(req, res, url) {
     const type = String(req.headers["content-type"] || "").split(";")[0].trim();
     const ext = BRIEF_TYPES[type];
     if (!ext) return send(res, 400, { error: "지원하지 않는 형식입니다. (HTML·PDF·JSON·이미지)" });
+    const 쓴양 = briefUsage(me.email);
+    if (쓴양.전체 >= MAX_BRIEF_TOTAL) return send(res, 507, { error: "저장 공간이 가득 찼습니다. 지난 자료를 지우고 다시 시도하세요." });
+    if (쓴양.내것 >= MAX_BRIEF_PER_ACCOUNT) return send(res, 507, { error: "올릴 수 있는 용량을 넘었습니다. 올린 자료를 지우고 다시 시도하세요." });
     const bytes = await readBytes(req, MAX_BRIEF);
     if (!bytes.length) return send(res, 400, { error: "빈 파일입니다." });
-    return send(res, 200, saveMedia(bytes, ext));
+    if (!형식일치(ext, bytes)) return send(res, 400, { error: "파일 내용이 형식과 맞지 않습니다." });
+    return send(res, 200, saveBriefFile(bytes, ext));
   }
 
   if (req.method === "POST" && path === "/brief/library") {
@@ -1003,22 +1071,35 @@ async function route(req, res, url) {
       return send(res, 400, { error: "id 형식 오류입니다." });
     }
     if (!String(항목["제목"] || "").trim()) return send(res, 400, { error: "제목이 비어 있습니다." });
-    // 주소는 이 서버가 내준 /media/ 경로만 받는다 — 남의 주소를 목록에 싣지 않는다
+    // 주소는 이 서버가 내준 것만 받는다. 접두사만 보면 %2e%2e 같은 것이 통과하므로
+    // 파일명 형식까지 확인하고, 목록에는 검증된 이름으로 다시 지어 넣는다.
+    const 주소 = {};
     for (const k of ["슬라이드주소", "스크립트주소"]) {
-      const v = 항목[k];
-      if (v !== undefined && !isOwnMedia(v)) {
-        return send(res, 400, { error: k + "가 이 서버의 자료 주소가 아닙니다." });
-      }
+      if (항목[k] === undefined) continue;
+      const name = briefFileName(항목[k]);
+      if (!name) return send(res, 400, { error: k + "가 이 서버의 자료 주소가 아닙니다." });
+      주소[k] = "/brief/file/" + name;
     }
-    // 목록에는 사람 이름을 보인다. 메일 주소를 팀원 화면에 뿌리지 않는다.
+    const list = readBriefLibrary();
+    const 기존 = list.find((x) => x && String(x.id) === id);
+    // 남의 자료를 말없이 덮어쓰지 못하게 한다. 올린 본인이거나 승인 권한이 있어야 한다.
+    if (기존 && !canEditBrief(db, me, 기존)) {
+      return send(res, 403, { error: "다른 사람이 올린 자료입니다. 올린 사람만 바꿀 수 있습니다." });
+    }
+    // 목록에는 사람 이름을 보이고, 소유 판정에 쓸 메일은 따로 둔다.
     const entry = {
       ...항목,
+      ...주소,
+      id,  // 검사한 문자열로 통일한다 — 숫자로 들어오면 이후 비교가 어긋난다
       "올린이": (me.name || "").trim() || String(me.email).split("@")[0],
+      "올린이메일": me.email,
       "등록일": new Date().toISOString()
     };
-    const list = readBriefLibrary().filter((x) => x && x.id !== id);
-    list.unshift(entry);
-    atomicWrite(BRIEF_LIST, JSON.stringify(list, null, 1));
+    const 남길것 = list.filter((x) => x && String(x.id) !== id);
+    // 덮어쓰는 경우 이전 파일은 지운다 — 안 지우면 쓰레기가 쌓이고 용량 계산이 어긋난다
+    if (기존) 지우기(기존);
+    남길것.unshift(entry);
+    atomicWrite(BRIEF_LIST, JSON.stringify(남길것, null, 1));
     console.log(`강의자료 탑재: ${entry["제목"]} (${id}) — ${me.email}`);
     return send(res, 200, { ok: true, id });
   }
@@ -1027,9 +1108,13 @@ async function route(req, res, url) {
   if (briefDel) {
     const id = decodeURIComponent(briefDel[1]);
     const list = readBriefLibrary();
-    const gone = list.find((x) => x && x.id === id);
+    const gone = list.find((x) => x && String(x.id) === id);
     if (!gone) return send(res, 404, { error: "없는 자료입니다." });
-    atomicWrite(BRIEF_LIST, JSON.stringify(list.filter((x) => x && x.id !== id), null, 1));
+    if (!canEditBrief(db, me, gone)) {
+      return send(res, 403, { error: "다른 사람이 올린 자료입니다. 올린 사람만 지울 수 있습니다." });
+    }
+    지우기(gone);  // 목록만 지우면 파일이 남아 용량을 먹는다
+    atomicWrite(BRIEF_LIST, JSON.stringify(list.filter((x) => x && String(x.id) !== id), null, 1));
     console.log(`강의자료 삭제: ${gone["제목"]} (${id}) — ${me.email}`);
     return send(res, 200, { ok: true });
   }

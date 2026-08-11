@@ -530,6 +530,13 @@
             + (open ? colEditHtml(a, i) : "")
             + "</div>";
         }).join("");
+        // 화면을 새로 그리면 진행·실패 문구가 사라진다. 아직 도는 편과 실패로 남은 편은 되살린다.
+        arts.forEach(function (_, i) {
+          var box = aiBox(i);
+          if (!box) return;
+          if (쓰는중[i]) { box.hidden = false; box.textContent = "본문을 쓰고 있습니다."; }
+          else if (지난오류[i]) { box.hidden = false; box.textContent = 지난오류[i]; }
+        });
       }
 
       function colMeta(a) {
@@ -676,9 +683,15 @@
         });
       }
 
+      // 지금 쓰고 있는 칼럼 번호. renderEdit가 버튼을 새로 그려도 이 표시는 남으므로
+      // 같은 편을 두 번 눌러 중복 실행되고 늦게 온 응답이 앞 결과를 덮어쓰는 일을 막는다.
+      var 쓰는중 = {};
+      var 지난오류 = {};
+
       // 한 편 쓰기 — 여러 편을 동시에 돌릴 수 있게 약속을 돌려준다.
       // 진행 표시는 매 초 id로 다시 찾는다. 다른 편이 끝나 renderEdit가 돌아도 끊기지 않게.
       function writeColumn(i) {
+        if (쓰는중[i]) return 쓰는중[i];
         var a = S.draft["기사"][i];
         var monthly = S.draft["채널"] === "월간";
         var t0 = Date.now();
@@ -693,7 +706,7 @@
         }
         tick();
         var timer = setInterval(tick, 1000);
-        return window.mgAuth.api("/ai/column", {
+        var p = window.mgAuth.api("/ai/column", {
           method: "POST",
           body: { "제목": a["제목"], "채널": chFull(), "카테고리": a["카테고리"], "방향": a["방향"] || "" }
         }).then(function (d) {
@@ -703,6 +716,7 @@
           a["요약"] = toLines(d["요약"]);
           a["한마디"] = toLines(d["한마디"]);
           a["본문"] = Array.isArray(d["본문"]) ? d["본문"] : [];
+          delete 지난오류[i];
           saveDraft(S.draft);
           renderEdit();
           // 삽화는 본문에 딸린 곁다리다. 이 약속에 매달면 삽화 시간만큼 "다 썼다"가 늦고,
@@ -710,15 +724,17 @@
           autoArtwork(i);
         }).catch(function (err) {
           clearInterval(timer);
+          // 다른 편이 끝나 화면을 다시 그려도 이 문구가 지워지지 않게 따로 남긴다
+          지난오류[i] = (err.message || "본문을 받지 못했습니다.") + " 제목·방향을 손보고 다시 시도하세요.";
           var box = aiBox(i);
-          if (box) {
-            box.hidden = false;
-            box.textContent = (err.message || "본문을 받지 못했습니다.") + " 제목·방향을 손보고 다시 시도하세요.";
-          }
+          if (box) { box.hidden = false; box.textContent = 지난오류[i]; }
           throw err;
         }).finally(function () {
           clearInterval(timer);
+          delete 쓰는중[i];
         });
+        쓰는중[i] = p;
+        return p;
       }
 
       // 본문 생성 — 월간은 수 분 걸린다. 경과 시간을 계속 보여주고 취소 불가를 알린다.
@@ -730,6 +746,11 @@
           return;
         }
         if (needAuth(box)) return;
+        if (쓰는중[i]) {
+          box.hidden = false;
+          box.textContent = "이미 쓰는 중입니다. 끝날 때까지 기다려 주세요.";
+          return;
+        }
         btn.disabled = true;
         var was = btn.textContent;
         btn.textContent = "생성 중…";
@@ -747,7 +768,7 @@
         var arts = S.draft["기사"] || [];
         var todo = [];
         arts.forEach(function (a, i) {
-          if (String(a["제목"] || "").trim() && !((a["본문"] || []).length)) todo.push(i);
+          if (String(a["제목"] || "").trim() && !((a["본문"] || []).length) && !쓰는중[i]) todo.push(i);
         });
         if (!todo.length) {
           note.textContent = "제목이 정해졌고 본문이 비어 있는 기사가 없습니다. 다시 쓰려면 각 기사에서 따로 눌러 주세요.";

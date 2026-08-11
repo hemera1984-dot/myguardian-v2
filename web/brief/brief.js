@@ -261,184 +261,78 @@
     return "mg-brief-" + docId;
   }
 
-  // ---------- HTML 슬라이드의 장 맞추기 ----------
-  // HTML 자료는 장 넘김이 iframe 안에서 자기 코드로 일어난다. 발표자 화면은 그 변화를
-  // 알 길이 없어 청중 창이 첫 장에 멈춰 있었다(2026-08-05). 발표자 쪽이 현재 장을
-  // 지켜보다 알리고, 청중 쪽이 같은 장으로 옮긴다.
-  // 슬라이드 문서마다 넘김 방식이 다르므로 내부 함수를 부르지 않고 화살표 키를 넣는다 —
-  // 그 문서가 스스로 자기 방식(애니메이션 포함)으로 움직인다.
-  function htmlSlideIndex(win) {
-    try {
-      var slides = win.document.querySelectorAll(".slide");
-      for (var i = 0; i < slides.length; i++) {
-        if (slides[i].classList.contains("active")) return i;
+  // ---------- 슬라이드 문서에 덧붙이는 다리 ----------
+  // iframe의 출처를 끊었으므로(allow-scripts만) 상위 창은 그 문서의 DOM에 닿을 수 없다.
+  // 대신 이 조각을 문서 끝에 붙여 postMessage로만 대화한다. 문서의 원래 코드는 건드리지 않는다.
+  // 장 맞추기는 여기서 한다 — 자기 DOM을 바로 볼 수 있어 도달 여부를 확인하고 멈출 수 있다.
+  var BRIDGE = "\n<script>(function(){\n"
+    + "if(window.__mgBridge)return; window.__mgBridge=1;\n"
+    + "function all(){return document.querySelectorAll('.slide');}\n"
+    + "function idx(){var s=all();for(var i=0;i<s.length;i++)if(s[i].classList.contains('active'))return i;return -1;}\n"
+    + "function ratio(){var e=document.scrollingElement||document.documentElement;"
+    + "var r=e.scrollHeight-e.clientHeight;return r>0?Math.min(1,Math.max(0,e.scrollTop/r)):0;}\n"
+    + "function tell(){try{parent.postMessage({mgb:'state',slide:idx(),count:all().length,scroll:ratio()},'*');}catch(e){}}\n"
+    + "function key(k){document.body.dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true,cancelable:true}));}\n"
+    // 목표 장까지 한 걸음씩 간다. 움직이지 않으면 그 문서가 화살표를 안 받는 것이므로 멈추고 알린다.
+    + "function goTo(n){var tries=0;(function step(){var cur=idx();"
+    + "if(cur<0||cur===n||tries++>400){tell();return;}"
+    + "key(n>cur?'ArrowRight':'ArrowLeft');"
+    + "if(idx()===cur){tell();return;}setTimeout(step,0);})();}\n"
+    + "window.addEventListener('message',function(e){var d=e.data;if(!d||d.mgb!=='cmd')return;"
+    + "if(d.key){key(d.key);tell();}"
+    + "if(typeof d.goto==='number')goTo(d.goto);"
+    + "if(typeof d.scroll==='number'){var el=document.scrollingElement||document.documentElement;"
+    + "window.scrollTo(0,d.scroll*Math.max(0,el.scrollHeight-el.clientHeight));}"
+    + "if(d.ask)tell();});\n"
+    // 문서 안에서 누른 키 중 발표자 화면 몫(스크립트 스크롤·글자 크기)은 위로 올려보낸다
+    + "window.addEventListener('keydown',function(e){"
+    + "if(['ArrowUp','ArrowDown','+','=','-','_'].indexOf(e.key)<0)return;"
+    + "e.preventDefault();try{parent.postMessage({mgb:'key',key:e.key},'*');}catch(x){}});\n"
+    + "window.addEventListener('scroll',tell,{passive:true});\n"
+    + "setInterval(tell,400);tell();\n"
+    + "})();<\/script>";
+
+  // ---------- HTML 슬라이드 상태 ----------
+  // 다리가 보내오는 상태를 프레임별로 보관한다. 상위 창은 그 문서의 DOM을 볼 수 없다.
+  var frameState = new WeakMap();
+
+  function bridgeListen(win, onState) {
+    function handler(e) {
+      if (e.source !== win) return;                 // 다른 프레임의 말은 받지 않는다
+      var d = e.data;
+      if (!d || (d.mgb !== "state" && d.mgb !== "key")) return;
+      if (d.mgb === "state") {
+        frameState.set(win, { slide: d.slide, count: d.count, scroll: d.scroll });
       }
-    } catch (e) { /* 접근 불가 */ }
-    return -1;
+      if (onState) onState(d);
+    }
+    window.addEventListener("message", handler);
+    return function () { window.removeEventListener("message", handler); };
+  }
+
+  function htmlSlideIndex(win) {
+    var st = win && frameState.get(win);
+    return st && typeof st.slide === "number" ? st.slide : -1;
+  }
+
+  function htmlScrollRatio(win) {
+    var st = win && frameState.get(win);
+    return st && typeof st.scroll === "number" ? st.scroll : undefined;
   }
 
   function htmlSlideGoTo(win, target) {
-    var cur = htmlSlideIndex(win);
-    if (cur < 0 || !isNum(target) || cur === target) return;
-    var key = target > cur ? "ArrowRight" : "ArrowLeft";
-    var steps = Math.min(Math.abs(target - cur), 300); // 폭주 방지
-    try {
-      for (var i = 0; i < steps; i++) {
-        win.document.body.dispatchEvent(
-          new win.KeyboardEvent("keydown", { key: key, bubbles: true, cancelable: true }));
-      }
-    } catch (e) { /* 접근 불가 */ }
+    if (!win || typeof target !== "number") return;
+    try { win.postMessage({ mgb: "cmd", goto: target }, "*"); } catch (e) { /* 닫힌 창 */ }
   }
 
-  // ---------- 로컬 자료 저장 (IndexedDB) ----------
-  // 업로드한 발표 자료(JSON·PDF·HTML·이미지)와 스크립트는 이 브라우저의 IndexedDB에만
-  // 저장된다. 외부 전송 없음. 슬롯은 하나 — 새 자료를 열면 이전 자료를 대체한다.
-  // 발표자·청중 두 창이 같은 기기에서 이 슬롯을 직접 읽는다 (채널로 내용을 보내지 않는다).
-
-  function openDb() {
-    return new Promise(function (resolve, reject) {
-      var req = window.indexedDB.open("mg-brief", 2);
-      req.onupgradeneeded = function () {
-        var db = req.result;
-        // materials: 발표 중인 자료 단일 슬롯("current"). library: 탑재한 자료 목차(record.id 키).
-        if (!db.objectStoreNames.contains("materials")) db.createObjectStore("materials");
-        if (!db.objectStoreNames.contains("library")) db.createObjectStore("library", { keyPath: "id" });
-      };
-      req.onsuccess = function () { resolve(req.result); };
-      req.onerror = function () { reject(req.error); };
-    });
+  function htmlSendKey(win, key) {
+    if (!win) return;
+    try { win.postMessage({ mgb: "cmd", key: key }, "*"); } catch (e) { /* 닫힌 창 */ }
   }
 
-  function saveMaterial(record) {
-    return openDb().then(function (db) {
-      return new Promise(function (resolve, reject) {
-        var tx = db.transaction("materials", "readwrite");
-        tx.objectStore("materials").put(record, "current");
-        tx.oncomplete = function () { db.close(); resolve(); };
-        tx.onerror = function () { db.close(); reject(tx.error); };
-      });
-    });
-  }
-
-  function loadMaterial() {
-    return openDb().then(function (db) {
-      return new Promise(function (resolve, reject) {
-        var tx = db.transaction("materials", "readonly");
-        var req = tx.objectStore("materials").get("current");
-        req.onsuccess = function () { db.close(); resolve(req.result || null); };
-        req.onerror = function () { db.close(); reject(req.error); };
-      });
-    });
-  }
-
-  // ---------- 라이브러리 (IndexedDB "library" 스토어) ----------
-  // 탑재한 발표 자료를 record.id 키로 여러 개 보관한다. 목차로 훑고 골라서 발표한다.
-  // 저장소(git)에는 올라가지 않고 이 브라우저에만 남는다 — 개인정보·상담 자료 보호.
-  // ponytail: 목록 조회는 getAll — 파일 blob까지 다 읽는다. 항목이 수백 개로 커지면
-  // 메타 전용 스토어를 분리한다. 개인 자료 목차 규모(수~수십 개)에선 이대로 충분.
-
-  // ---------- 팀 공유 라이브러리 (서버) ----------
-  // 강의 자료는 팀이 함께 쓴다 — 올린 사람만 보이면 플랫폼이 아니다(2026-08-05).
-  // 파일을 서버에 올리고 주소만 목차에 싣는다. 서버가 죽어 있으면 아래 로컬 목록으로 버틴다.
-  // 올린 크기가 원본과 다르면 파일이 아니라 다른 것이 올라간 것이다(옛 auth.js 캐시가
-  // File을 JSON으로 감싸 2바이트짜리 "{}"를 올린 적이 있다). 조용히 넘기면 팀원이
-  // 빈 자료를 받으므로 여기서 멈춘다.
-  function serverUpload(file) {
-    return window.mgAuth.api("/brief/file", {
-      method: "POST",
-      headers: { "content-type": file.type || "application/octet-stream" },
-      body: file
-    }).then(function (up) {
-      if (!up || up["크기"] !== file.size) {
-        throw new Error("파일이 온전히 올라가지 않았습니다(" + (up && up["크기"]) + "/" + file.size
-          + "바이트). 새로고침(Ctrl+Shift+R) 후 다시 시도하세요.");
-      }
-      return up;
-    });
-  }
-
-  function serverLibraryList() {
-    if (!window.mgAuth || !window.mgAuth.token()) return Promise.resolve([]);
-    return window.mgAuth.api("/brief/library")
-      .then(function (d) { return Array.isArray(d) ? d : []; })
-      .catch(function () { return []; });
-  }
-
-  // 슬라이드·스크립트를 올린 뒤 주소만 담은 항목을 목차에 싣는다
-  function serverLibraryPut(record) {
-    var jobs = [serverUpload(record.file)];
-    var script = record["스크립트문서"] || null;
-    jobs.push(script ? serverUpload(script) : Promise.resolve(null));
-    return Promise.all(jobs).then(function (up) {
-      var 항목 = {
-        id: record.id,
-        "제목": record["제목"] || record["이름"],
-        "이름": record["이름"],
-        "모드": record["모드"] || "강의",
-        kind: record.kind,
-        "슬라이드주소": up[0]["주소"],
-        "슬라이드이름": record["이름"],
-        "크기": up[0]["크기"]
-      };
-      if (up[1]) {
-        항목["스크립트주소"] = up[1]["주소"];
-        항목["스크립트이름"] = script.name;
-      } else if (record["스크립트"]) {
-        항목["스크립트"] = record["스크립트"]; // 텍스트 구간은 그대로 싣는다(파일이 아니다)
-      }
-      return window.mgAuth.api("/brief/library", { method: "POST", body: 항목 })
-        .then(function () { return 항목; });
-    });
-  }
-
-  function serverLibraryDelete(id) {
-    return window.mgAuth.api("/brief/library/" + encodeURIComponent(id), { method: "DELETE" });
-  }
-
-  // 서버 목차 항목을 발표 가능한 레코드로 되돌린다 — 파일을 내려받아 File로 만든다
-  function serverRecordToMaterial(item) {
-    // 다른 기기에서 실패할 때 어느 단계인지 바로 알 수 있게 단계를 문구에 남긴다
-    function grab(url, name, type) {
-      var addr = fileUrl(url);
-      return fetch(addr, { headers: authHeader() })
-        .catch(function (e) {
-          throw new Error("[내려받기 연결 실패] " + addr + " — " + (e && e.message ? e.message : e)
-            + " (로그인이 풀렸거나 회사망이 막고 있을 수 있습니다)");
-        })
-        .then(function (r) {
-          if (!r.ok) {
-            throw new Error("[내려받기 거부 " + r.status + "] "
-              + (r.status === 401 ? "로그인이 필요합니다."
-                : r.status === 403 ? "계정이 아직 승인되지 않았습니다."
-                : r.status === 404 ? "서버에 파일이 없습니다." : addr));
-          }
-          return r.blob();
-        })
-        .then(function (b) { return new File([b], name, { type: type || b.type }); });
-    }
-    return grab(item["슬라이드주소"], item["슬라이드이름"] || item["이름"] || "slide.html")
-      .then(function (slide) {
-        var rec = { kind: item.kind || "html", id: item.id, "이름": item["이름"] || slide.name,
-                    file: slide, "제목": item["제목"], "모드": item["모드"] || "강의" };
-        if (item["스크립트"]) rec["스크립트"] = item["스크립트"];
-        if (!item["스크립트주소"]) return rec;
-        return grab(item["스크립트주소"], item["스크립트이름"] || "script.pdf")
-          .then(function (s) { rec["스크립트문서"] = s; return rec; });
-      });
-  }
-
-  // 자료 파일은 /brief/file/<파일명>으로 받는다. /media/를 그대로 fetch하면 웹서버가
-  // 서빙하는 다른 출처라 CORS에 막힌다(이미지는 <img>라서 걸리지 않았다).
-  // 이 경로는 서버가 CORS를 붙이고 승인 계정만 받아 간다.
-  function fileUrl(url) {
-    var name = String(url || "").split("/").pop().split(/[?#]/)[0];
-    var base = window.mgAuth ? window.mgAuth.apiBase() : "";
-    return base + "/brief/file/" + encodeURIComponent(name);
-  }
-
-  function authHeader() {
-    var t = window.mgAuth && window.mgAuth.token();
-    return t ? { Authorization: "Bearer " + t } : {};
+  function htmlSetScroll(win, y) {
+    if (!win) return;
+    try { win.postMessage({ mgb: "cmd", scroll: y }, "*"); } catch (e) { /* 닫힌 창 */ }
   }
 
   function libraryPut(record) {
@@ -608,30 +502,31 @@
     }
 
     if (record.kind === "html") {
-      var htmlUrl = URL.createObjectURL(record.file);
-      return Promise.resolve({
-        kind: "html",
-        title: record["이름"],
-        mode: record["모드"] || null,
-        count: 1,
-        scrollable: true,
-        mount: function (stageEl) {
-          stageEl.textContent = "";
-          var frame = document.createElement("iframe");
-          frame.className = "pg-html-frame";
-          // 슬라이드 HTML은 자기 자바스크립트로 장을 넘기고 화면 크기를 맞춘다.
-          // allow-scripts가 없으면 그 전부가 죽어 첫 장만 정적으로 보인다(2026-08-05 교정).
-          // allow-same-origin과 함께 두면 사실상 격리가 풀린다는 점은 알고 있다 —
-          // 발표자가 자기 컴퓨터에서 고른 자기 파일이고, 격리하면 스크롤 동기화도 함께
-          // 잃는다. 남의 HTML을 여는 용도로 쓰게 되면 이 조합을 다시 판단해야 한다.
-          frame.setAttribute("sandbox", "allow-scripts allow-same-origin");
-          frame.src = htmlUrl;
-          stageEl.appendChild(frame);
-          return new Promise(function (resolve) {
-            frame.onload = function () { resolve(frame); };
-          });
-        },
-        scriptFor: function () { return scriptAt(1); }
+      // 슬라이드 문서를 앱과 같은 출처로 실행하면(allow-same-origin) 그 문서의 스크립트가
+      // parent.mgAuth.token()과 localStorage에 닿는다. 라이브러리가 팀 공유가 된 뒤로는
+      // 남이 올린 HTML을 내가 여는 구조라 세션 탈취가 성립한다(2026-08-11 교정).
+      // 그래서 출처를 끊고(allow-scripts만), 필요한 대화는 아래 다리로만 주고받는다.
+      return record.file.text().then(function (html) {
+        var url = URL.createObjectURL(new Blob([html + BRIDGE], { type: "text/html" }));
+        return {
+          kind: "html",
+          title: record["이름"],
+          mode: record["모드"] || null,
+          count: 1,
+          scrollable: true,
+          mount: function (stageEl) {
+            stageEl.textContent = "";
+            var frame = document.createElement("iframe");
+            frame.className = "pg-html-frame";
+            frame.setAttribute("sandbox", "allow-scripts");
+            frame.src = url;
+            stageEl.appendChild(frame);
+            return new Promise(function (resolve) {
+              frame.onload = function () { resolve(frame); };
+            });
+          },
+          scriptFor: function () { return scriptAt(1); }
+        };
       });
     }
 
@@ -653,6 +548,10 @@
     channelName: channelName,
     htmlSlideIndex: htmlSlideIndex,
     htmlSlideGoTo: htmlSlideGoTo,
+    htmlScrollRatio: htmlScrollRatio,
+    htmlSendKey: htmlSendKey,
+    htmlSetScroll: htmlSetScroll,
+    bridgeListen: bridgeListen,
     saveMaterial: saveMaterial,
     serverLibraryList: serverLibraryList,
     serverLibraryPut: serverLibraryPut,

@@ -123,46 +123,45 @@
       var frameWin = null;
       // 키 처리기가 준비된 뒤 채워진다 (아래 onKey 정의부). 자료를 다시 실을 때마다 다시 건다.
       var bindFrameKeys = null;
+      var onKey = null;
+      // 슬라이드 문서는 출처가 끊긴 iframe이라 DOM에 닿을 수 없다 — 다리가 알려준 값을 쓴다
       function scrollRatio() {
-        if (!frameWin) return undefined;
-        try {
-          var el = frameWin.document.scrollingElement || frameWin.document.documentElement;
-          var range = el.scrollHeight - el.clientHeight;
-          return range > 0 ? Math.min(1, Math.max(0, el.scrollTop / range)) : 0;
-        } catch (err) {
-          return undefined;
-        }
+        return frameWin ? B.htmlScrollRatio(frameWin) : undefined;
       }
 
-      // HTML 자료는 장 넘김이 iframe 안에서 일어나 발표자 화면이 알 수 없다. 지켜보다
-      // 바뀌면 청중 창에 알린다. 키·클릭·목차 어느 쪽으로 넘겨도 이 한 곳으로 모인다.
+      // 장 넘김은 슬라이드 문서 안에서 일어난다. 다리가 바뀔 때마다 알려 주므로 그대로 중계한다.
+      // 되풀이 송신도 함께 한다 — 청중 쪽이 한 번 어긋나면 스스로는 돌아오지 못하기 때문이다.
       var lastSlideSent = -1;
-      var slideWatch = null;
-      function watchFrameSlide() {
-        if (slideWatch) clearInterval(slideWatch);
-        slideWatch = setInterval(function () {
-          if (!frameWin) return;
-          var i = B.htmlSlideIndex(frameWin);
-          if (i < 0 || i === lastSlideSent) return;
-          lastSlideSent = i;
-          protocol.sendPage(i);
-        }, 180);
-      }
-
       var lastScrollSent = 0;
+      var unbindFrame = null;
+      var beatTimer = null;
+
       function bindFrameScroll(frame) {
         frameWin = frame.contentWindow;
         if (bindFrameKeys) bindFrameKeys(frameWin);
-        watchFrameSlide();
-        try {
-          frameWin.addEventListener("scroll", function () {
+        if (unbindFrame) unbindFrame();
+        unbindFrame = B.bridgeListen(frameWin, function (d) {
+          if (d.mgb === "key") {
+            // 슬라이드 안에서 누른 스크립트 조작 키 — 발표자 화면이 받아 처리한다
+            if (onKey) onKey({ key: d.key, target: document.body, preventDefault: function () {} }, true);
+            return;
+          }
+          if (typeof d.slide === "number" && d.slide >= 0 && d.slide !== lastSlideSent) {
+            lastSlideSent = d.slide;
+            protocol.sendPage(d.slide);
+          }
+          if (typeof d.scroll === "number") {
             var now = Date.now();
-            if (now - lastScrollSent < 60) return;
-            lastScrollSent = now;
-            var y = scrollRatio();
-            if (typeof y === "number") protocol.sendScroll(y);
-          });
-        } catch (err) { /* 접근 불가 시 스크롤 동기화 생략 */ }
+            if (now - lastScrollSent >= 60) {
+              lastScrollSent = now;
+              protocol.sendScroll(d.scroll);
+            }
+          }
+        });
+        if (beatTimer) clearInterval(beatTimer);
+        beatTimer = setInterval(function () {
+          if (lastSlideSent >= 0) protocol.sendPage(lastSlideSent);
+        }, 1500);
       }
 
       function updateNav() {
@@ -381,17 +380,11 @@
         // 그 처리기에 키가 닿지 않아 아무 일도 일어나지 않는다 — 발표자 화면이 대신 넣어 준다.
         // 포커스를 iframe으로 옮기지 않는 이유: 그러면 스크립트 스크롤(↑↓)과 글자 크기(+-)를
         // 발표자 화면이 못 받는다.
-        function sendKeyToFrame(key) {
-          if (!frameWin) return;
-          try {
-            frameWin.document.dispatchEvent(
-              new frameWin.KeyboardEvent("keydown", { key: key, bubbles: true, cancelable: true }));
-          } catch (err) { /* 접근 불가 시 넘김은 슬라이드를 직접 클릭해서 한다 */ }
-        }
+        function sendKeyToFrame(key) { B.htmlSendKey(frameWin, key); }
 
         // fromFrame = iframe 안에서 올라온 키. 장 넘김은 슬라이드 문서가 이미 처리했으므로
         // 여기서 또 넘기면 두 장씩 간다 — 스크립트 조작만 맡는다.
-        function onKey(e, fromFrame) {
+        onKey = function (e, fromFrame) {
           if (!fromFrame && e.target.closest("input, select, textarea")) return;
           var isHtml = driver.kind === "html";
           // Space는 포커스된 버튼을 활성화해야 하므로(접근성) 버튼 위에서는 제외.
@@ -419,18 +412,13 @@
             e.preventDefault();
             zoomScript(-0.15); // 스크립트 글자 작게
           }
-        }
-
+        };
         document.addEventListener("keydown", function (e) { onKey(e, false); });
 
         // 슬라이드를 한 번 클릭하면 그다음 키는 iframe 문서로 간다. 장 넘김은 거기서
         // 처리되지만 스크립트 스크롤(↑↓)·글자 크기(+-)는 발표자 화면 몫이라 되돌려 받는다.
-        bindFrameKeys = function (win) {
-          try {
-            win.document.addEventListener("keydown", function (e) { onKey(e, true); });
-          } catch (err) { /* 접근 불가 시 스크립트 조작은 오른쪽 창을 클릭한 뒤에 */ }
-        };
-        if (frameWin) bindFrameKeys(frameWin);
+        // 슬라이드 안에서 누른 키는 다리가 postMessage로 올려 준다 (bindFrameScroll에서 받는다)
+        bindFrameKeys = null;
 
         var timer = document.getElementById("timer");
         setInterval(function () {
