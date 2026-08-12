@@ -664,3 +664,71 @@ body.brief-view {
   font-size: 18px;
   margin-bottom: 6px;
 }
+
+/* ==============================
+   손가락 조작 막대 (폰·태블릿) — 2026-08-12
+   폰에는 키보드가 없고, HTML 자료는 페이지 넘김 막대가 숨겨져 넘길 방법이 사라진다.
+   공부와 발표 연습이 폰에서 이뤄지므로 넘김은 손가락으로 닿아야 한다.
+   ============================== */
+
+.pr-touchbar { display: none; }
+
+@media (hover: none), (max-width: 1024px) {
+  .pr-touchbar {
+    display: flex;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 40;
+    gap: 8px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--brief-line);
+    background: var(--brief-panel);
+  }
+  .pr-touch-btn {
+    flex: 0 0 64px;
+    min-height: 48px;
+    border: 1px solid var(--brief-line-strong);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--brief-ink);
+    font: inherit;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pr-touch-btn.wide { flex: 1; font-size: 15px; font-weight: 650; }
+  .pr-touch-btn:active { background: var(--brief-blue-deep); border-color: var(--brief-blue-deep); color: #fff; }
+
+  /* 막대가 화면을 가리지 않게 본문 아래를 비운다 */
+  .pr-main { padding-bottom: 72px; }
+  /* 넘김을 손가락으로 하므로 키보드 안내는 접는다 */
+  .pr-hint { display: none; }
+}
+
+/* 폰 — 한 번에 하나만 본다.
+   슬라이드와 스크립트를 함께 띄우면 각각 200·460px이 되어 둘 다 어중간하다.
+   기본은 스크립트(공부·발표 연습이 주 쓰임), 조작 막대 가운데 단추로 슬라이드와 오간다. */
+@media (max-width: 767px) {
+  .pr-topbar { flex-wrap: wrap; flex: 0 0 auto; padding: 6px 12px; gap: 8px; }
+  .pr-topbar .pr-doc-title { flex: 1 1 100%; order: 3; font-size: 12px; }
+  .pr-next { display: none; }          /* 다음 페이지 미리보기는 폰에서 자리를 못 낸다 */
+  .pr-script-head span:first-child { font-size: 11px; }
+
+  .pr-main {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr);
+    overflow: hidden;
+  }
+  /* 기본: 스크립트만 */
+  .pr-stage-col { display: none; }
+  .pr-side { min-height: 0; }
+  .pr-script { height: 100%; }
+  .pr-script-body { font-size: 23px; }
+
+  /* 전환: 슬라이드만 */
+  body.brief-present.show-slide .pr-stage-col { display: flex; }
+  body.brief-present.show-slide .pr-side { display: none; }
+  body.brief-present.show-slide .pr-stage-wrap { aspect-ratio: auto; height: 100%; }
+}

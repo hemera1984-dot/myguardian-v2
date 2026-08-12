@@ -62,6 +62,14 @@
     <span class="pr-count" id="count"></span>
   </nav>
 
+  <!-- 손가락 조작 막대 — 폰·태블릿 전용. 키보드가 없고, HTML 자료는 페이지 넘김 막대가
+       숨겨지므로 넘길 방법이 사라진다. 공부·발표 연습이 폰에서 이뤄지므로 반드시 필요하다. -->
+  <div class="pr-touchbar" id="touchbar" hidden>
+    <button class="pr-touch-btn" type="button" id="t-prev" aria-label="이전">‹</button>
+    <button class="pr-touch-btn wide" type="button" id="t-fold" aria-pressed="false">슬라이드 보기</button>
+    <button class="pr-touch-btn" type="button" id="t-next" aria-label="다음">›</button>
+  </div>
+
   <div class="pr-error" id="error" hidden>
     <strong>문서를 열 수 없습니다.</strong>
     <p id="error-msg"></p>
@@ -422,6 +430,28 @@
 
         // 슬라이드를 한 번 클릭하면 그다음 키는 iframe 문서로 간다. 장 넘김은 거기서
         // 처리되지만 스크립트 스크롤(↑↓)·글자 크기(+-)는 발표자 화면 몫이라 되돌려 받는다.
+        // ── 손가락 조작 (폰·태블릿)
+        (function () {
+          var bar = document.getElementById("touchbar");
+          var fold = document.getElementById("t-fold");
+          bar.hidden = false;
+          function 넘기기(dir) {
+            if (driver.kind === "html") sendKeyToFrame(dir > 0 ? "ArrowRight" : "ArrowLeft");
+            else goTo(current + dir);
+          }
+          document.getElementById("t-prev").addEventListener("click", function () { 넘기기(-1); });
+          document.getElementById("t-next").addEventListener("click", function () { 넘기기(1); });
+          // 폰은 화면이 좁다. 슬라이드와 스크립트를 함께 띄우면 둘 다 어중간해진다 —
+          // 한 번에 하나만 보이고 이 단추로 오간다. 기본은 스크립트(공부·연습이 주 쓰임).
+          fold.addEventListener("click", function () {
+            var 슬라이드 = document.body.classList.toggle("show-slide");
+            fold.setAttribute("aria-pressed", String(슬라이드));
+            fold.textContent = 슬라이드 ? "스크립트 보기" : "슬라이드 보기";
+            // 접혀 있던 쪽이 펼쳐지면 크기를 다시 맞춘다
+            if (슬라이드) B.scaleStage(stageWrap, stage);
+          });
+        })();
+
         var timer = document.getElementById("timer");
         setInterval(function () {
           var s = Math.floor((Date.now() - startedAt) / 1000);
