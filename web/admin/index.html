@@ -109,10 +109,21 @@
           + "</select>";
       }
 
+      // 조직도 자리와 계정을 잇는 열쇠는 계정 번호다.
+      // 이름으로 잇지 않는다 — 동명이인·개명에 흔들린다.
+      // 이메일도 쓰지 않는다 — 이 저장소는 공개라 org.json에 주소가 남는다.
+      var ACCOUNTS = [];
+      function accountOf(node) {
+        var id = node && node["계정"];
+        return id ? ACCOUNTS.filter(function (a) { return a.id === id; })[0] || null : null;
+      }
+
       function loadPending() {
         return window.mgAuth.api("/admin/pending").then(function (data) {
           var pending = data["대기"] || [];
           var members = data["구성원"] || [];
+          ACCOUNTS = members;
+          if (ORG) renderOrg();          // 계정이 늦게 와도 조직도 배지가 맞게 뜨도록
 
           $("pending-list").innerHTML = pending.length
             ? pending.map(function (p) {
@@ -137,6 +148,7 @@
                   + (m.grade ? '<span class="badge-grade">' + esc(m.grade) + "</span>" : "")
                   + (m.is_admin ? '<span class="badge-grade">총관리자</span>' : "")
                   + (m.can_approve && !m.is_admin ? '<span class="badge-status st-meet">승인권한</span>' : "")
+                  + (ORG && !orgNodeFor(m.id) ? '<span class="badge-status st-hold">조직도 미배치</span>' : "")
                   + (isMe ? '<span style="font-size:12px;color:var(--platform-faint)">본인</span>'
                      : (m.status === "승인" ? '<button type="button" class="status-btn st-reject" data-suspend="' + m.id + '">정지</button>' : ""))
                   + (!isMe && AUTH.me["계정"]["총관리자"] && m.status === "승인" && !m.is_admin
@@ -281,6 +293,24 @@
 
       function members() { return ORG["구성원"] || []; }
 
+      function orgNodeFor(id) {
+        return members().filter(function (m) { return m["계정"] === id; })[0] || null;
+      }
+
+      // 붙일 수 있는 계정 — 승인된 계정 중 아직 다른 자리에 붙지 않은 것
+      function accountOptions(node) {
+        var mine = node["계정"] || 0;
+        var opts = ['<option value="">계정 없음 (미초대)</option>'];
+        ACCOUNTS.forEach(function (a) {
+          if (a.status !== "승인") return;
+          var taken = orgNodeFor(a.id);
+          if (taken && taken["코드"] !== node["코드"]) return;
+          opts.push('<option value="' + a.id + '"' + (a.id === mine ? " selected" : "") + ">"
+            + esc(a.name || a.email) + " · " + esc(a.email) + "</option>");
+        });
+        return opts.join("");
+      }
+
       function childrenOf(code) {
         return members().filter(function (m) { return m["상위"] === code; });
       }
@@ -322,6 +352,18 @@
         $("org-new-parent").innerHTML = parentOptions(null, null);
       }
 
+      // 자리의 상태는 붙은 계정이 정한다. 손으로 「미초대」를 지우고 다니면
+      // 실제로 로그인했는지와 화면이 어긋난다 (2026-08-05 사용자: 「왜 미초대로 되어있을까」).
+      function orgStatusHtml(m) {
+        if (!m["계정"]) return '<span class="badge-status st-hold">미초대</span>';
+        var a = accountOf(m);
+        if (!ACCOUNTS.length) return "";                       // 계정 목록을 아직 못 받았다
+        if (!a) return '<span class="badge-status st-reject">계정 확인 필요</span>';
+        return '<span class="badge-status ' + (a.status === "승인" ? "st-meet" : "st-hold") + '">'
+          + esc(a.status) + "</span>"
+          + '<span style="font-size:11px;color:var(--platform-faint)">' + esc(a.email) + "</span>";
+      }
+
       function nodeHtml(m, depth) {
         var h = ['<div class="org-node" style="margin-left:' + (depth * 26) + 'px">'];
         if (editing === m["코드"]) {
@@ -329,6 +371,7 @@
             + '<strong style="font-size:13px">' + esc(m["이름"]) + "</strong>"
             + '<select data-org-rank="' + esc(m["코드"]) + '" aria-label="직급" style="font:inherit;font-size:12px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:4px 7px">' + rankOptions(m["직급"]) + "</select>"
             + '<select data-org-parent="' + esc(m["코드"]) + '" aria-label="소속" style="font:inherit;font-size:12px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:4px 7px">' + parentOptions(m["상위"], subtree(m["코드"])) + "</select>"
+            + '<select data-org-account="' + esc(m["코드"]) + '" aria-label="계정" style="font:inherit;font-size:12px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:4px 7px">' + accountOptions(m) + "</select>"
             + '<button type="button" class="status-btn st-met" data-org-save="' + esc(m["코드"]) + '">저장</button>'
             + '<button type="button" class="status-btn" data-org-cancel="' + esc(m["코드"]) + '">취소</button>'
             + (childrenOf(m["코드"]).length ? "" : '<button type="button" class="status-btn st-reject" data-org-del="' + esc(m["코드"]) + '">삭제</button>'));
@@ -336,7 +379,7 @@
           h.push('<span class="badge-status st-meet">' + esc(rankName(m["직급"])) + " · " + esc(m["직급"]) + "</span>"
             + '<strong style="font-size:13px">' + esc(m["이름"]) + "</strong>"
             + (m["총관리자"] ? '<span class="badge-grade">총관리자</span>' : "")
-            + (m["상태"] === "미초대" ? '<span class="badge-status st-hold">미초대</span>' : "")
+            + orgStatusHtml(m)
             + '<button type="button" class="status-btn" data-org-edit="' + esc(m["코드"]) + '">편집</button>');
         }
         h.push("</div>");
@@ -369,8 +412,21 @@
           var m = members().find(function (x) { return x["코드"] === code; });
           var rankSel = document.querySelector('[data-org-rank="' + code + '"]');
           var parentSel = document.querySelector('[data-org-parent="' + code + '"]');
+          var accSel = document.querySelector('[data-org-account="' + code + '"]');
           m["직급"] = rankSel.value;
           m["상위"] = parentSel.value || null;
+          // 계정을 붙이면 이 자리의 주인이 정해진다. 상태는 계정이 정하므로 손대지 않는다.
+          if (accSel) {
+            if (accSel.value) {
+              m["계정"] = Number(accSel.value);
+              m["상태"] = "사용중";
+              var acc = ACCOUNTS.filter(function (x) { return x.id === Number(accSel.value); })[0];
+              if (acc && acc.name) m["이름"] = acc.name;     // 이름은 계정 쪽이 최신이다
+            } else {
+              delete m["계정"];
+              m["상태"] = "미초대";
+            }
+          }
           editing = null;
           saveLocal();
           renderOrg();

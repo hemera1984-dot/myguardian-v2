@@ -265,6 +265,7 @@
     "브리핑": "M3 5h18v12H3zM8 21h8M12 17v4",
     "케어센터": "M4 5h8v15H6a2 2 0 0 1-2-2zM12 5h8v13a2 2 0 0 1-2 2h-6zM7 9h3M7 13h3",
     "카톡카드": "M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-5 4z",
+    "보장분석": "M6 3h8l4 4v6M6 3v18h6M9 8h4M9 12h2M16.5 17.5a3 3 0 1 0-6 0 3 3 0 0 0 6 0zM18.6 19.6 21 22",
     "발행 데스크": "M4 4h16v5H4zM4 12h7v8H4zM13 12h7v8h-7z",
     "서재": "M5 4h3v16H5zM10 4h3v16h-3zM16.5 4.6l2.9.8-3.2 15.5-2.9-.8z",
     "마이가디언 홈": "M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1v-9z",
@@ -291,9 +292,11 @@
       var label = document.createElement("span");
       label.className = "nav-label";
       label.textContent = name;
+      var 바깥 = a.classList.contains("nav-ext") || a.getAttribute("target") === "_blank";
       a.textContent = "";
       if (icon) a.appendChild(icon);
       a.appendChild(label);
+      if (바깥) a.classList.add("nav-ext");   // 레일에서도 바깥 도구임을 표시로 남긴다
       a.setAttribute("title", name);
       if (a.classList.contains("active")) a.setAttribute("aria-current", "page");
     });

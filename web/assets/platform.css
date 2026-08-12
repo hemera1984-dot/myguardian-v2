@@ -738,6 +738,28 @@ body.platform {
   .home-panels {
     grid-template-columns: 1fr;
   }
+
+  /* 태블릿(768~1100)에서 3열을 고집하면 카드가 160px까지 눌려 글자가 잘린다.
+     아이패드·갤럭시탭으로도 발표 준비를 하므로 이 구간을 비워 두면 안 된다. */
+  .action-grid,
+  .menu-grid,
+  .dictionary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* 좁은 태블릿·큰 폰(768~860)은 한 줄로 — 두 열도 좁다 */
+@media (max-width: 860px) {
+  .action-grid,
+  .menu-grid {
+    grid-template-columns: 1fr;
+  }
+  /* 한 열이 되면 세로 구분선이 어긋난다 — 위쪽 괘선만 남긴다 */
+  body.platform .action-grid > * + *,
+  body.platform .install-guide-grid > * + * {
+    border-left: 0;
+    padding-left: 0;
+  }
 }
 
 @media (max-width: 767px) {
