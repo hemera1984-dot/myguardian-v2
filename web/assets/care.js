@@ -172,17 +172,22 @@
     return (h === "localhost" || h === "127.0.0.1") ? "http://localhost:8787" : "https://api.insurguard.life";
   }
 
+  // 서버가 안 되면 서버 발행분이 목록에서 조용히 빠진다. 그 상태로 지면을 열면
+  // 실제로 발행된 호를 "발행되지 않은 호"라고 안내하게 된다 — 장애 여부를 함께 돌려준다.
+  var 목록장애 = false;
   function loadIssueList() {
     var staticP = fetch(new URL("../../data/care/issues.json", window.location.href))
       .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
       .then(function (d) { return Array.isArray(d) ? d : (d.data || []); })
       .catch(function () { return []; });
     var base = apiBase();
+    var 서버실패 = false;
     var serverP = !base ? Promise.resolve([]) : fetch(base + "/care/issues")
       .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
       .then(function (d) { return Array.isArray(d) ? d : []; })
-      .catch(function () { return []; });
+      .catch(function () { 서버실패 = true; return []; });
     return Promise.all([serverP, staticP]).then(function (res) {
+      목록장애 = 서버실패;
       var seen = {};
       var merged = [];
       res[0].concat(res[1]).forEach(function (i) {
@@ -193,6 +198,9 @@
       return sortByDate(merged);
     });
   }
+
+  // 마지막 목록 조회에서 서버가 응답하지 않았는가
+  function listHadTrouble() { return 목록장애; }
 
   // 본문 — 서버에 있으면 서버, 없거나(404) 죽었으면 정적 경로
   function loadIssueBody(meta) {
@@ -887,6 +895,7 @@
     bindCompose: bindCompose,
     loadPublishers: loadPublishers,
     loadIssueList: loadIssueList,
+    listHadTrouble: listHadTrouble,
     loadIssueBody: loadIssueBody,
     sortByDate: sortByDate,
     published: published,

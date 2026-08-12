@@ -54,15 +54,24 @@
 
       // 조판(제호·기사·판권)은 care.js가 맡는다 — 발행 데스크 미리보기와 같은 함수를 쓴다.
 
+      // 목록을 못 받아온 것과 정말 없는 호를 구분한다. 서버가 잠깐 안 될 때
+      // "발행되지 않은 호"라고 하면 고객은 링크가 잘못된 줄 안다.
       function notFound() {
-        document.title = "발행물을 찾을 수 없습니다 - 케어센터";
+        var 장애 = window.care.listHadTrouble && window.care.listHadTrouble();
+        document.title = (장애 ? "발행물을 불러오지 못했습니다" : "발행물을 찾을 수 없습니다") + " - 케어센터";
         root.innerHTML = '<header class="issue-head">'
           + '<p class="issue-masthead">케어센터</p>'
-          + '<p class="issue-line">발행물을 찾을 수 없습니다</p>'
+          + '<p class="issue-line">' + (장애 ? "발행물을 불러오지 못했습니다" : "발행물을 찾을 수 없습니다") + "</p>"
           + "</header>"
-          + '<div class="issue-missing"><p>주소가 잘못되었거나 아직 발행되지 않은 호입니다.<br>'
-          + "전달받은 링크를 다시 확인하시거나 담당 설계사에게 문의해 주십시오.</p>"
+          + '<div class="issue-missing"><p>'
+          + (장애
+            ? "일시적으로 연결이 되지 않았습니다. 링크는 정상입니다.<br>잠시 뒤 다시 열어 주십시오."
+            : "주소가 잘못되었거나 아직 발행되지 않은 호입니다.<br>전달받은 링크를 다시 확인하시거나 담당 설계사에게 문의해 주십시오.")
+          + "</p>"
+          + (장애 ? '<button class="issue-return" type="button" id="issue-retry">다시 시도</button> ' : "")
           + '<a class="issue-return" href="./">케어센터 서재로 이동</a></div>';
+        var retry = document.getElementById("issue-retry");
+        if (retry) retry.addEventListener("click", function () { window.location.reload(); });
       }
 
       function render(meta, data, list, edition) {

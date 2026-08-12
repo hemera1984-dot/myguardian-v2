@@ -185,7 +185,7 @@
           var n = info && info["계정"] && info["계정"]["이름"];
           if (n) {
             ME.이름 = String(n).trim();
-            if (S.draft && !S.draft["발행인수정"]) { S.draft["발행인"] = ME.이름; saveDraft(); renderAll(); }
+            if (S.draft && !S.draft["발행인수정"]) { S.draft["발행인"] = ME.이름; saveDraft(S.draft); renderAll(); }
           }
         }).catch(function () {});
       }
@@ -588,6 +588,31 @@
         renderList();
       }
 
+      // 발행된 호를 편집용 초안으로 되돌린다. 목록 항목만으로 열면 기사 칸이 비어
+      // 발행 버튼이 터진다 — 본문을 반드시 내려받는다.
+      function 발행분열기(meta) {
+        return care.loadIssueBody(meta).then(function (body) {
+          if (!body || !Array.isArray(body["기사"])) {
+            throw new Error("본문을 읽지 못했습니다. 잠시 뒤 다시 시도해 주세요.");
+          }
+          var d2 = {
+            id: meta.id, "채널": meta["채널"], "호수": meta["호수"], "발행일": meta["발행일"],
+            "주차라벨": meta["주차라벨"], "발행인": meta["발행인"] || 발행인(),
+            "커버이미지": meta["커버이미지"] || "", "편집장의말": body["편집장의말"] || [],
+            "기사": body["기사"].map(function (a, n) {
+              return {
+                "번호": n + 1, "카테고리": a["카테고리"] || "", "제목": a["제목"] || "",
+                "부제": a["부제"] || "", "요약": a["요약"] || [], "한마디": a["한마디"] || [],
+                "본문": a["본문"] || [], "이미지": a["이미지"] || "", "방향": ""
+              };
+            })
+          };
+          saveDraft(d2);
+          openDraft(d2);
+          return d2;
+        });
+      }
+
       function openDraft(d) {
         S.draft = d;
         S.open = -1;
@@ -885,9 +910,10 @@
         var id = draftId || (S.draft && S.draft.id);
         return window.mgAuth.api("/ai/artwork", { method: "POST", body: artworkBody(target) })
           .then(function (d) {
-            setImage(target, d["주소"], id);  // 슬롯이 다시 그려지므로 안내는 그 뒤에 얹는다
+            var ok = setImage(target, d["주소"], id);  // 슬롯이 다시 그려지므로 안내는 그 뒤에 얹는다
             if (S.draft && S.draft.id === id) {
-              slotNote(target, d["의도"] ? "삽화를 만들었습니다 — " + d["의도"] : "삽화를 만들었습니다.");
+              if (ok === false) slotNote(target, "삽화는 만들었지만 저장 공간이 부족해 저장하지 못했습니다.", true);
+              else slotNote(target, d["의도"] ? "삽화를 만들었습니다 — " + d["의도"] : "삽화를 만들었습니다.");
             }
             return d;
           });
@@ -985,11 +1011,12 @@
         if (target === "cover") 대상["커버이미지"] = path;
         else {
           var a = 대상["기사"][Number(target.slice(4))];
-          if (!a) return;
+          if (!a) return false;
           a["이미지"] = path;
         }
-        saveDraft(대상);
+        var ok = saveDraft(대상);
         if (S.draft && S.draft.id === 대상.id) renderEdit();
+        return ok;
       }
 
       function uploadImage(file, target) {
@@ -1013,7 +1040,8 @@
             return d;
           });
         }).then(function (info) {
-          setImage(target, info["주소"], 올릴호);
+          // 저장에 실패했는데 "올렸습니다"라고 하면 새로고침 뒤 사진이 사라진다
+          if (setImage(target, info["주소"], 올릴호) === false) return;
           publishNote("사진을 올렸습니다.");
         }).catch(function (err) {
           publishNote(err.message || "업로드에 실패했습니다.", true);
@@ -1210,7 +1238,18 @@
           if (fixedCount) renderEdit();
           btn.textContent = "발행 중…";
           publishNote(fixedCount ? fixedCount + "곳을 고친 뒤 발행합니다." : "확인을 마쳤습니다. 발행합니다.");
-          return window.mgAuth.api("/care/publish", { method: "POST", body: payload(d) });
+          return window.mgAuth.api("/care/publish", { method: "POST", body: payload(d) })
+            .catch(function (err) {
+              // 같은 호를 다른 사람이 이미 발행했다. 말없이 덮어쓰지 않고 확인을 받는다.
+              if (err.status !== 409) throw err;
+              if (!window.confirm(err.message
+                + "\n\n덮어쓸까요? 이미 발행된 호가 이 내용으로 바뀝니다.")) {
+                throw new Error("발행을 취소했습니다.");
+              }
+              var 다시 = payload(d);
+              다시["목록항목"]["덮어쓰기"] = true;
+              return window.mgAuth.api("/care/publish", { method: "POST", body: 다시 });
+            });
         })
           .then(function (r) {
             dropDraft(d.id);
@@ -1267,23 +1306,9 @@
           var meta = S.list.find(function (i) { return i.id === id; });
           if (!meta) return;
           ed.disabled = true;
-          care.loadIssueBody(meta).then(function (body) {
-            var d2 = {
-              id: meta.id, "채널": meta["채널"], "호수": meta["호수"], "발행일": meta["발행일"],
-              "주차라벨": meta["주차라벨"], "발행인": meta["발행인"] || 발행인(),
-              "커버이미지": meta["커버이미지"] || "", "편집장의말": body["편집장의말"] || [],
-              "기사": (body["기사"] || []).map(function (a, n) {
-                return {
-                  "번호": n + 1, "카테고리": a["카테고리"] || "", "제목": a["제목"] || "",
-                  "부제": a["부제"] || "", "요약": a["요약"] || [], "한마디": a["한마디"] || [],
-                  "본문": a["본문"] || [], "이미지": a["이미지"] || "", "방향": ""
-                };
-              })
-            };
-            saveDraft(d2);
-            openDraft(d2);
-          }).catch(function () {
+          발행분열기(meta).catch(function (err) {
             ed.disabled = false;
+            publishNote(err.message || "본문을 불러오지 못해 편집을 열 수 없습니다.", true);
           });
           return;
         }
@@ -1502,7 +1527,16 @@
         // 서재에서 "데스크에서 편집"으로 넘어온 경우 그 호를 바로 연다
         var wantId = new URLSearchParams(window.location.search).get("id");
         var want = wantId && list.find(function (i) { return i.id === wantId; });
-        if (want) { openDraft(want); return; }
+        if (want) {
+          // 목록 항목을 그대로 열면 기사 칸이 없다 — 초안이 있으면 그것을, 없으면 본문을 받아 연다
+          var 있는초안 = readDraft(wantId);
+          if (있는초안) { openDraft(있는초안); return; }
+          발행분열기(want).catch(function (err) {
+            publishNote(err.message || "본문을 불러오지 못해 편집을 열 수 없습니다.", true);
+            renderList();
+          });
+          return;
+        }
         if (S.draft) syncKakao();
         else renderList();
       }).catch(function () {});

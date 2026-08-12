@@ -84,13 +84,13 @@ function 형식일치(ext, b) {
   return true;  // html은 시그니처가 없다 — 대신 브라우저가 격리해서 연다
 }
 
+// 목록이 깨졌는데 빈 목록으로 여기면 다음 탑재가 기존 목차를 통째로 덮는다.
+// 아직 안 만들어진 것과 깨진 것을 구분한다 — 깨졌으면 막는 쪽으로 실패한다.
 function readBriefLibrary() {
-  try {
-    const list = JSON.parse(readFileSync(BRIEF_LIST, "utf8"));
-    return Array.isArray(list) ? list : [];
-  } catch (e) {
-    return [];
-  }
+  if (!existsSync(BRIEF_LIST)) return [];
+  const list = JSON.parse(readFileSync(BRIEF_LIST, "utf8"));
+  if (!Array.isArray(list)) throw new Error("강의 자료 목록이 손상됐습니다.");
+  return list;
 }
 
 // 자료 파일 저장 — 파일명은 서버가 만든다(올린 이름을 믿지 않는다)
@@ -282,11 +282,13 @@ function readBytes(req, limit) {
 
 // ---------- 케어센터 발행물 저장 ----------
 
+// 발행 목록이 깨졌는데 빈 목록으로 여기면 다음 발행이 지난 호를 통째로 지운다.
+// 아직 없는 것과 깨진 것을 구분한다.
 function readCareList() {
-  try {
-    const list = JSON.parse(readFileSync(CARE_LIST, "utf8"));
-    return Array.isArray(list) ? list : [];
-  } catch { return []; }
+  if (!existsSync(CARE_LIST)) return [];
+  const list = JSON.parse(readFileSync(CARE_LIST, "utf8"));
+  if (!Array.isArray(list)) throw new Error("발행 목록이 손상됐습니다.");
+  return list;
 }
 
 // 임시 파일에 쓴 뒤 원자적으로 교체한다 — 절반만 쓰인 파일을 남기지 않는다 (pipeline과 같은 원칙)
@@ -1059,10 +1061,35 @@ async function route(req, res, url) {
     }
     const entry = { ...목록항목 };
     delete entry["상태"]; // 발행하기를 눌렀다 = 발행 확정. 발행 목록에 초안 표기를 남기지 않는다.
-    atomicWrite(join(CARE_ISSUES_DIR, id + ".json"), JSON.stringify(본문, null, 1));
-    const list = readCareList().filter((i) => i && i.id !== id);
-    list.unshift(entry);
-    atomicWrite(CARE_LIST, JSON.stringify(list, null, 1));
+
+    const list = readCareList();
+    const 이미 = list.find((i) => i && i.id === id);
+    // 두 사람이 같은 호수를 각자 만들면 id가 겹친다. 말없이 덮어쓰면 앞사람 호가 사라진다.
+    // 덮어쓰려면 "덮어쓰기"를 함께 보내야 한다 — 화면이 사용자에게 확인을 받고 넣는다.
+    if (이미 && !목록항목["덮어쓰기"]) {
+      return send(res, 409, {
+        error: `${이미["채널"]} ${이미["호수"]}호(${id})는 이미 발행돼 있습니다.`
+          + ` "${이미["제목"]}" — ${이미["발행인"] || ""} ${String(이미["발행일"] || "").slice(0, 10)}.`
+          + " 덮어쓰려면 다시 눌러 확인해 주세요.",
+        "이미발행": {
+          "제목": 이미["제목"], "발행인": 이미["발행인"], "발행일": 이미["발행일"]
+        }
+      });
+    }
+    delete entry["덮어쓰기"];
+
+    // 본문을 먼저 쓰고 목록을 쓴다. 목록 쓰기가 실패하면 본문만 바뀐 채로 남아
+    // 고객이 옛 제목·표지에 새 본문을 보게 되므로, 실패하면 본문을 되돌린다.
+    const 본문경로 = join(CARE_ISSUES_DIR, id + ".json");
+    const 옛본문 = existsSync(본문경로) ? readFileSync(본문경로) : null;
+    atomicWrite(본문경로, JSON.stringify(본문, null, 1));
+    try {
+      atomicWrite(CARE_LIST, JSON.stringify([entry, ...list.filter((i) => i && i.id !== id)], null, 1));
+    } catch (e) {
+      if (옛본문) writeFileSync(본문경로, 옛본문);
+      else { try { unlinkSync(본문경로); } catch (e2) { /* 없으면 그만 */ } }
+      throw e;
+    }
     console.log(`발행: ${entry["채널"]} ${entry["호수"]}호 (${id}) — ${me.email}`);
     return send(res, 200, { ok: true, id });
   }
@@ -1185,14 +1212,20 @@ async function route(req, res, url) {
     // 목록을 먼저 쓴다. 파일부터 지우면 목록 쓰기가 실패했을 때 파일만 사라진다.
     atomicWrite(BRIEF_LIST, JSON.stringify(남길것, null, 1));
     // 덮어쓰면서 더 이상 쓰이지 않게 된 파일만 지운다. 같은 주소를 그대로 두면 건드리지 않는다.
+    // 목록은 이미 저장됐다. 여기서 사고가 나도 그 사실을 뒤집지 않는다 —
+    // 지우지 못한 파일은 남을 뿐이고, 그건 목록이 틀리는 것보다 가볍다.
+    let 못지운것 = 0;
     if (기존) {
       const 새것 = 딸린파일(entry);
       for (const name of 딸린파일(기존)) {
         if (새것.indexOf(name) >= 0) continue;
         if (딴데서쓰나(name, 남길것, id)) continue;   // 다른 항목이 아직 쓴다
-        파일지우기(name, db, me);
+        try {
+          if (!파일지우기(name, db, me)) 못지운것 += 1;
+        } catch (e) { 못지운것 += 1; }
       }
     }
+    if (못지운것) console.warn(`강의자료 교체 중 파일 ${못지운것}개를 정리하지 못했습니다 (${id})`);
     console.log(`강의자료 탑재: ${entry["제목"]} (${id}) — ${me.email}`);
     return send(res, 200, { ok: true, id });
   }
@@ -1209,10 +1242,14 @@ async function route(req, res, url) {
     atomicWrite(BRIEF_LIST, JSON.stringify(list.filter((x) => x && String(x.id) !== id), null, 1));
     // 목록을 먼저 쓴 뒤 파일을 지운다. 남의 파일과 다른 항목이 쓰는 파일은 건너뛴다.
     const 남은목록 = list.filter((x) => x && String(x.id) !== id);
+    let 남은파일 = 0;
     for (const name of 딸린파일(gone)) {
       if (딴데서쓰나(name, 남은목록, id)) continue;
-      파일지우기(name, db, me);
+      try {
+        if (!파일지우기(name, db, me)) 남은파일 += 1;
+      } catch (e) { 남은파일 += 1; }
     }
+    if (남은파일) console.warn(`강의자료 삭제 중 파일 ${남은파일}개를 지우지 못했습니다 (${id})`);
     console.log(`강의자료 삭제: ${gone["제목"]} (${id}) — ${me.email}`);
     return send(res, 200, { ok: true });
   }
