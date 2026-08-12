@@ -11,3 +11,7 @@ server/.env
 media-local/
 .omd/
 drafts/
+
+# 확인용으로 잠깐 두는 파일 — 저장소에 들어가면 안 된다
+web/**/_tmp*
+_tmp*
