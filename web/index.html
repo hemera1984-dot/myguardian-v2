@@ -810,5 +810,20 @@
     })();
   </script>
 
+
+  <script>
+  // 보장분석(데스크)으로 넘어갈 때 마이가디언 신원을 물려준다 (2026-08-13 사용자 확정).
+  // 데스크는 자체 로그인을 갖지 않는다 — 팀원이 이미 여기 로그인해 둔 그 계정을 그대로 쓴다.
+  // 세션은 눌린 순간에만 주소 조각(#s=)으로 붙는다. 조각은 서버로 전송되지 않고,
+  // 데스크가 받자마자 주소에서 지운다. 링크 HTML 에는 토큰이 안 들어간다.
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest('a[href^="https://desk.insurguard.life"]');
+    if (!a) return;
+    var t = null;
+    try { t = localStorage.getItem("mg_session"); } catch (err) {}
+    if (!t) return;                    // 로그인 전이면 데스크가 열람키로 받는다
+    a.href = "https://desk.insurguard.life/#s=" + encodeURIComponent(t);
+  }, true);
+  </script>
 </body>
 </html>
