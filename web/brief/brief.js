@@ -275,7 +275,7 @@
     + "function key(k){document.body.dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true,cancelable:true}));}\n"
     // 목표 장까지 한 걸음씩 간다. 움직이지 않으면 그 문서가 화살표를 안 받는 것이므로 멈추고 알린다.
     + "function goTo(n){var tries=0;(function step(){var cur=idx();"
-    + "if(cur<0||cur===n||tries++>400){tell();return;}"
+    + "if(cur<0||cur===n||tries++>5000){tell();return;}"
     + "key(n>cur?'ArrowRight':'ArrowLeft');"
     + "if(idx()===cur){tell();return;}setTimeout(step,0);})();}\n"
     + "window.addEventListener('message',function(e){var d=e.data;if(!d||d.mgb!=='cmd')return;"
@@ -420,19 +420,37 @@
       .then(function (d) { return Array.isArray(d) ? d : []; });
   }
 
+  // 자료 형식마다 올릴 것이 다르다. html·pdf는 파일 하나, doc은 JSON 본문,
+  // images는 여러 장이다. 종전에는 record.file만 보고 올려 doc·images에서 바로 터졌다.
+  function 올릴것(record) {
+    if (record.kind === "doc") {
+      var text = JSON.stringify(record.doc);
+      return [new File([text], (record["이름"] || "brief") + ".json", { type: "application/json" })];
+    }
+    if (record.kind === "images") return (record.files || []).slice();
+    return record.file ? [record.file] : [];
+  }
+
   // 슬라이드·스크립트를 올린 뒤 주소만 담은 항목을 목차에 싣는다
   function serverLibraryPut(record) {
-    var jobs = [serverUpload(record.file)];
+    var files = 올릴것(record);
+    if (!files.length) {
+      return Promise.reject(new Error("올릴 파일이 없는 자료입니다."));
+    }
+    var jobs = files.map(serverUpload);
     var script = record["스크립트문서"] || null;
     jobs.push(script ? serverUpload(script) : Promise.resolve(null));
     return Promise.all(jobs).then(function (up) {
+      var 스크립트 = up[up.length - 1];
+      var 본체 = up.slice(0, up.length - 1);
       var 항목 = {
         id: record.id,
         "제목": record["제목"] || record["이름"],
         "이름": record["이름"],
         "모드": record["모드"] || "강의",
         kind: record.kind,
-        "슬라이드주소": up[0]["주소"],
+        "쪽주소": 본체.map(function (u) { return u["주소"]; }),  // images는 여러 장이다
+        "슬라이드주소": 본체[0]["주소"],
         "슬라이드이름": record["이름"],
         "크기": up[0]["크기"]
       };
@@ -472,15 +490,33 @@
         })
         .then(function (b) { return new File([b], name, { type: type || b.type }); });
     }
-    return grab(item["슬라이드주소"], item["슬라이드이름"] || item["이름"] || "slide.html")
-      .then(function (slide) {
-        var rec = { kind: item.kind || "html", id: item.id, "이름": item["이름"] || slide.name,
-                    file: slide, "제목": item["제목"], "모드": item["모드"] || "강의" };
-        if (item["스크립트"]) rec["스크립트"] = item["스크립트"];
-        if (!item["스크립트주소"]) return rec;
-        return grab(item["스크립트주소"], item["스크립트이름"] || "script.pdf")
-          .then(function (s) { rec["스크립트문서"] = s; return rec; });
-      });
+    // 형식마다 되돌리는 모양이 다르다 — 올릴 때와 짝을 맞춘다
+    var kind = item.kind || "html";
+    var 주소들 = Array.isArray(item["쪽주소"]) && item["쪽주소"].length
+      ? item["쪽주소"] : [item["슬라이드주소"]];
+
+    var 본체 = kind === "images"
+      ? Promise.all(주소들.map(function (u, n) { return grab(u, "page-" + (n + 1) + ".png"); }))
+      : grab(주소들[0], item["슬라이드이름"] || item["이름"] || "slide").then(function (f) { return [f]; });
+
+    return 본체.then(function (files) {
+      var rec = { kind: kind, id: item.id, "이름": item["이름"] || files[0].name,
+                  "제목": item["제목"], "모드": item["모드"] || "강의" };
+      if (kind === "images") rec.files = files;
+      else if (kind === "doc") {
+        // 브리핑 문서는 JSON으로 올렸다 — 다시 객체로 푼다
+        return files[0].text().then(function (t) {
+          rec.doc = JSON.parse(t);
+          return rec;
+        });
+      } else rec.file = files[0];
+      return rec;
+    }).then(function (rec) {
+      if (item["스크립트"]) rec["스크립트"] = item["스크립트"];
+      if (!item["스크립트주소"]) return rec;
+      return grab(item["스크립트주소"], item["스크립트이름"] || "script.pdf")
+        .then(function (s) { rec["스크립트문서"] = s; return rec; });
+    });
   }
 
   // 자료 파일은 /brief/file/<파일명>으로 받는다. /media/를 그대로 fetch하면 웹서버가

@@ -208,9 +208,15 @@
           try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; }
         }).filter(Boolean);
       }
+      // 저장 실패를 삼키면 화면은 "다 썼습니다"인데 새로고침하면 사라진다. 성패를 돌려준다.
       function saveDraft(d) {
-        try { localStorage.setItem(PREFIX + d.id, JSON.stringify(d)); }
-        catch (e) { publishNote("브라우저 저장 공간이 부족해 초안을 저장하지 못했습니다.", true); }
+        try {
+          localStorage.setItem(PREFIX + d.id, JSON.stringify(d));
+          return true;
+        } catch (e) {
+          publishNote("브라우저 저장 공간이 부족해 초안을 저장하지 못했습니다.", true);
+          return false;
+        }
       }
       function dropDraft(id) { localStorage.removeItem(PREFIX + id); }
 
@@ -515,6 +521,9 @@
 
       function renderCols() {
         var arts = S.draft["기사"] || [];
+        // 다른 호의 일괄 안내가 남아 있지 않게 한다. 이 호가 돌고 있으면 다음 tick이 다시 채운다.
+        var 도는중 = arts.some(function (_, i) { return 쓰는중[칸(S.draft.id, i)]; });
+        if (!도는중) el("col-write-all-note").textContent = "";
         el("col-sub").textContent = S.draft["채널"] === "일일"
           ? "일일은 한 꼭지입니다"
           : S.draft["채널"] === "주간"
@@ -731,8 +740,11 @@
           t["요약"] = toLines(d["요약"]);
           t["한마디"] = toLines(d["한마디"]);
           t["본문"] = Array.isArray(d["본문"]) ? d["본문"] : [];
+          if (!saveDraft(대상)) {
+            지난오류[k] = "본문은 받았지만 저장 공간이 부족해 저장하지 못했습니다. 지난 초안을 지우고 다시 시도하세요.";
+            throw new Error(지난오류[k]);
+          }
           delete 지난오류[k];
-          saveDraft(대상);
           if (!내화면()) return;   // 다른 호를 보고 있으면 화면은 건드리지 않는다
           renderEdit();
           // 삽화는 본문에 딸린 곁다리다. 이 약속에 매달면 삽화 시간만큼 "다 썼다"가 늦고,
@@ -781,6 +793,8 @@
       // 동시에 돌리면 가장 오래 걸리는 한 편만큼만 기다리면 된다.
       function aiColumnsAll(btn) {
         var note = el("col-write-all-note");
+        var 이호 = S.draft.id;
+        function 이화면() { return S.draft && S.draft.id === 이호; }
         var arts = S.draft["기사"] || [];
         var todo = [];
         arts.forEach(function (a, i) {
@@ -794,6 +808,7 @@
         if (needAuth(note)) return;
         var t0 = Date.now(), done = 0, failed = 0;
         function paint() {
+          if (!이화면()) return;   // 다른 호를 보고 있으면 그 화면에 이 호의 문구를 쓰지 않는다
           var s = Math.round((Date.now() - t0) / 1000);
           note.textContent = todo.length + "편을 동시에 쓰고 있습니다 — 완료 " + done + "편"
             + (failed ? " · 실패 " + failed + "편" : "")
@@ -813,6 +828,7 @@
           clearInterval(timer);
           btn.disabled = false;
           btn.textContent = was;
+          if (!이화면()) return;
           note.textContent = done + "편을 다 썼습니다."
             + (failed ? " " + failed + "편은 받지 못했습니다 — 해당 기사를 열어 다시 시도하세요." : "");
         });
@@ -861,14 +877,18 @@
         box.classList.toggle("bad", !!bad);
       }
 
-      function fetchArtwork(target) {
+      // draftId를 주면 그 호에 넣는다. 만드는 사이 다른 호로 옮겨도 뒤섞이지 않게.
+      function fetchArtwork(target, draftId) {
         if (!window.mgAuth || !window.mgAuth.token()) {
           return Promise.reject(new Error("로그인이 필요합니다. 진입 화면에서 구글 계정으로 로그인하세요."));
         }
+        var id = draftId || (S.draft && S.draft.id);
         return window.mgAuth.api("/ai/artwork", { method: "POST", body: artworkBody(target) })
           .then(function (d) {
-            setImage(target, d["주소"]);  // 슬롯이 다시 그려지므로 안내는 그 뒤에 얹는다
-            slotNote(target, d["의도"] ? "삽화를 만들었습니다 — " + d["의도"] : "삽화를 만들었습니다.");
+            setImage(target, d["주소"], id);  // 슬롯이 다시 그려지므로 안내는 그 뒤에 얹는다
+            if (S.draft && S.draft.id === id) {
+              slotNote(target, d["의도"] ? "삽화를 만들었습니다 — " + d["의도"] : "삽화를 만들었습니다.");
+            }
             return d;
           });
       }
@@ -889,14 +909,17 @@
       // 삽화가 실패해도 본문은 이미 저장돼 있다. 실패는 슬롯 안내로만 알린다.
       function autoArtwork(i) {
         var target = "col-" + i;
+        var draftId = S.draft.id;                 // 만드는 사이 호를 옮겨도 여기 붙는다
+        function 내화면() { return S.draft && S.draft.id === draftId; }
         var stage = aiBox(i);
         if (stage) { stage.hidden = false; stage.textContent = "본문을 다 썼습니다. 이어서 삽화를 만드는 중입니다."; }
         slotNote(target, "삽화를 그리고 있습니다.");
-        return fetchArtwork(target)
+        return fetchArtwork(target, draftId)
           .catch(function () {
-            slotNote(target, "삽화는 만들지 못했습니다. 다시 만들기를 누르거나 직접 올리세요.", true);
+            if (내화면()) slotNote(target, "삽화는 만들지 못했습니다. 다시 만들기를 누르거나 직접 올리세요.", true);
           })
           .then(function () {
+            if (!내화면()) return;                // 다른 호를 보고 있으면 화면도 표지도 건드리지 않는다
             var s = aiBox(i);
             if (s) s.hidden = true;
             return autoCover();
@@ -954,11 +977,19 @@
       // ══ 이미지 업로드 ══════════════════════════════════════════════
       var imgTarget = null;
 
-      function setImage(target, path) {
-        if (target === "cover") S.draft["커버이미지"] = path;
-        else S.draft["기사"][Number(target.slice(4))]["이미지"] = path;
-        saveDraft(S.draft);
-        renderEdit();
+      // 이미지도 호를 따라간다. 만드는 사이 다른 호로 옮기면 그 호에 붙어 버린다.
+      // draftId를 주면 그 호에, 안 주면 지금 보고 있는 호에 넣는다.
+      function setImage(target, path, draftId) {
+        var 대상 = !draftId || (S.draft && S.draft.id === draftId) ? S.draft : readDraft(draftId);
+        if (!대상) return;                       // 초안이 지워졌다
+        if (target === "cover") 대상["커버이미지"] = path;
+        else {
+          var a = 대상["기사"][Number(target.slice(4))];
+          if (!a) return;
+          a["이미지"] = path;
+        }
+        saveDraft(대상);
+        if (S.draft && S.draft.id === 대상.id) renderEdit();
       }
 
       function uploadImage(file, target) {
@@ -971,6 +1002,7 @@
           return;
         }
         publishNote("사진을 올리는 중입니다…");
+        var 올릴호 = S.draft && S.draft.id;   // 올리는 사이 호를 옮겨도 여기 붙는다
         fetch(window.mgAuth.apiBase() + "/media/upload", {
           method: "POST",
           headers: { "Content-Type": file.type, "Authorization": "Bearer " + window.mgAuth.token() },
@@ -981,7 +1013,7 @@
             return d;
           });
         }).then(function (info) {
-          setImage(target, info["주소"]);
+          setImage(target, info["주소"], 올릴호);
           publishNote("사진을 올렸습니다.");
         }).catch(function (err) {
           publishNote(err.message || "업로드에 실패했습니다.", true);

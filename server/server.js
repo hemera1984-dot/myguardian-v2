@@ -120,13 +120,13 @@ function briefFileName(url) {
 // 남의 파일 주소를 자기 항목에 적어 넣어 남의 파일을 지우는 것도 막을 수 없다.
 const BRIEF_OWNERS = join(BRIEF_DIR, "files.json");
 
+// 장부를 못 읽으면 빈 장부로 여기지 않는다. 빈 장부로 여기면 모든 파일이 주인 미상이 되어
+// 아무나 지울 수 있고 계정별 용량도 0이 된다 — 막는 쪽으로 실패해야 한다.
 function readOwners() {
-  try {
-    const m = JSON.parse(readFileSync(BRIEF_OWNERS, "utf8"));
-    return m && typeof m === "object" && !Array.isArray(m) ? m : {};
-  } catch (e) {
-    return {};
-  }
+  if (!existsSync(BRIEF_OWNERS)) return {};       // 아직 한 번도 안 만들어졌다
+  const m = JSON.parse(readFileSync(BRIEF_OWNERS, "utf8"));  // 깨졌으면 여기서 던진다
+  if (!m || typeof m !== "object" || Array.isArray(m)) throw new Error("파일 장부가 손상됐습니다.");
+  return m;
 }
 
 function writeOwners(m) {
@@ -153,8 +153,15 @@ function briefUsage(email) {
 function 파일지우기(name, db, me) {
   const owners = readOwners();
   const 주인 = owners[name];
-  if (주인 && 주인 !== me.email && !canApprove(db, me)) return false;
-  try { unlinkSync(join(BRIEF_FILES, name)); } catch (e) { /* 이미 없으면 그만이다 */ }
+  // 주인을 모르는 파일도 아무나 지우게 두지 않는다 — 승인 권한자만 정리할 수 있다
+  if (주인 !== me.email && !canApprove(db, me)) return false;
+  try {
+    unlinkSync(join(BRIEF_FILES, name));
+  } catch (e) {
+    // 파일이 이미 없으면 장부만 정리하면 되지만, 권한·디스크 오류면 파일이 남는다.
+    // 그 경우 장부를 지우면 주인 없는 파일이 되므로 장부를 그대로 둔다.
+    if (e && e.code !== "ENOENT") return false;
+  }
   delete owners[name];
   writeOwners(owners);
   return true;
@@ -163,11 +170,19 @@ function 파일지우기(name, db, me) {
 // 항목에 딸린 파일 이름들 — 지울 대상을 고를 때 쓴다
 function 딸린파일(item) {
   const out = [];
-  for (const k of ["슬라이드주소", "스크립트주소"]) {
-    const name = briefFileName(item && item[k]);
-    if (name) out.push(name);
+  const 주소 = [];
+  if (item && Array.isArray(item["쪽주소"])) 주소.push(...item["쪽주소"]);
+  for (const k of ["슬라이드주소", "스크립트주소"]) if (item && item[k]) 주소.push(item[k]);
+  for (const v of 주소) {
+    const name = briefFileName(v);
+    if (name && out.indexOf(name) < 0) out.push(name);
   }
   return out;
+}
+
+// 다른 항목이 아직 쓰고 있는 파일인가 — 쓰고 있으면 지우지 않는다
+function 딴데서쓰나(name, list, 제외id) {
+  return list.some((x) => x && String(x.id) !== 제외id && 딸린파일(x).indexOf(name) >= 0);
 }
 
 // 자료를 고치거나 지울 수 있는 사람 — 올린 본인, 또는 승인 권한을 가진 관리자
@@ -1059,9 +1074,14 @@ async function route(req, res, url) {
   if (req.method === "GET" && path === "/brief/library") {
     // 소유 판정용 메일은 서버 안에서만 쓴다. 목록에는 이름만 내보내고,
     // 화면이 "내가 올린 것"을 가릴 수 있게 그 여부만 알려 준다.
+    const 지울수있음 = canApprove(db, me);
     return send(res, 200, readBriefLibrary().map((it) => {
       const { 올린이메일, ...rest } = it || {};
-      return { ...rest, "내가올림": 올린이메일 === me.email };
+      return {
+        ...rest,
+        "내가올림": 올린이메일 === me.email,
+        "지울수있음": 올린이메일 === me.email || 지울수있음
+      };
     }));
   }
 
@@ -1122,12 +1142,28 @@ async function route(req, res, url) {
     if (!String(항목["제목"] || "").trim()) return send(res, 400, { error: "제목이 비어 있습니다." });
     // 주소는 이 서버가 내준 것만 받는다. 접두사만 보면 %2e%2e 같은 것이 통과하므로
     // 파일명 형식까지 확인하고, 목록에는 검증된 이름으로 다시 지어 넣는다.
+    const owners = readOwners();
     const 주소 = {};
-    for (const k of ["슬라이드주소", "스크립트주소"]) {
-      if (항목[k] === undefined) continue;
-      const name = briefFileName(항목[k]);
-      if (!name) return send(res, 400, { error: k + "가 이 서버의 자료 주소가 아닙니다." });
-      주소[k] = "/brief/file/" + name;
+    // 주소는 이 서버가 내준 것이면서, 내가 올린 파일이어야 한다.
+    // 안 그러면 남의 파일 주소를 자기 항목에 붙여 놓고 지워 버릴 수 있다.
+    function 확인(v, 이름표) {
+      const name = briefFileName(v);
+      if (!name) { throw new Error(이름표 + "가 이 서버의 자료 주소가 아닙니다."); }
+      if (!existsSync(join(BRIEF_FILES, name))) { throw new Error(이름표 + "의 파일이 서버에 없습니다."); }
+      if (owners[name] !== me.email && !canApprove(db, me)) {
+        throw new Error(이름표 + "는 다른 사람이 올린 파일입니다.");
+      }
+      return "/brief/file/" + name;
+    }
+    try {
+      for (const k of ["슬라이드주소", "스크립트주소"]) {
+        if (항목[k] !== undefined) 주소[k] = 확인(항목[k], k);
+      }
+      if (Array.isArray(항목["쪽주소"])) {
+        주소["쪽주소"] = 항목["쪽주소"].map((v, n) => 확인(v, "쪽주소 " + (n + 1)));
+      }
+    } catch (e) {
+      return send(res, 400, { error: e.message });
     }
     const list = readBriefLibrary();
     const 기존 = list.find((x) => x && String(x.id) === id);
@@ -1152,7 +1188,9 @@ async function route(req, res, url) {
     if (기존) {
       const 새것 = 딸린파일(entry);
       for (const name of 딸린파일(기존)) {
-        if (새것.indexOf(name) < 0) 파일지우기(name, db, me);
+        if (새것.indexOf(name) >= 0) continue;
+        if (딴데서쓰나(name, 남길것, id)) continue;   // 다른 항목이 아직 쓴다
+        파일지우기(name, db, me);
       }
     }
     console.log(`강의자료 탑재: ${entry["제목"]} (${id}) — ${me.email}`);
@@ -1169,8 +1207,12 @@ async function route(req, res, url) {
       return send(res, 403, { error: "다른 사람이 올린 자료입니다. 올린 사람만 지울 수 있습니다." });
     }
     atomicWrite(BRIEF_LIST, JSON.stringify(list.filter((x) => x && String(x.id) !== id), null, 1));
-    // 목록을 먼저 쓴 뒤 파일을 지운다. 남의 파일은 장부를 보고 건너뛴다.
-    for (const name of 딸린파일(gone)) 파일지우기(name, db, me);
+    // 목록을 먼저 쓴 뒤 파일을 지운다. 남의 파일과 다른 항목이 쓰는 파일은 건너뛴다.
+    const 남은목록 = list.filter((x) => x && String(x.id) !== id);
+    for (const name of 딸린파일(gone)) {
+      if (딴데서쓰나(name, 남은목록, id)) continue;
+      파일지우기(name, db, me);
+    }
     console.log(`강의자료 삭제: ${gone["제목"]} (${id}) — ${me.email}`);
     return send(res, 200, { ok: true });
   }

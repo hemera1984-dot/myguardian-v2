@@ -222,7 +222,7 @@
             장애 = err && err.message ? err.message : "팀 목록을 불러오지 못했습니다.";
             return [];
           }),
-          window.mgBrief.libraryList()
+          window.mgBrief.libraryList().catch(function () { return []; })
         ])
           .then(function (res) {
             var seen = {};
@@ -274,6 +274,12 @@
             main.appendChild(el("span", "l-meta", bits.join(" · ")));
             main.addEventListener("click", function () { presentRecord(it); });
             row.appendChild(main);
+            // 남이 올린 팀 자료는 지울 수 없다 — 눌러 놓고 403을 받는 것보다 안 보이는 편이 낫다.
+            // 권한 판정은 서버가 한다. 화면이 다시 계산하지 않는다.
+            if (it.__팀 && it["지울수있음"] === false) {
+              box.appendChild(row);
+              return;
+            }
             var del = el("button", "lib-del", "삭제");
             del.type = "button";
             del.addEventListener("click", function () {
