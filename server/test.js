@@ -8,7 +8,7 @@ import { rmSync } from "node:fs";
 import {
   openDb, seedGrades, upsertAccount, findByGoogleSub, createSession, accountForToken,
   listPending, approve, suspend, isDescendantOf, getAccount, deleteSessionsFor,
-  setApprover, listMembers
+  setApprover, listMembers, getDoc, setDoc
 } from "./db.js";
 import { artworkSvg } from "./artwork.js";
 
@@ -141,6 +141,19 @@ check("삽화 조립 — 팔레트 밖 색·이상 좌표는 튕겨낸다", () =
   assert.ok(svg.includes('fill="#111111"'), "모르는 색은 잉크로 떨어진다");
   assert.equal((svg.match(/<circle|<rect|<polygon/g) || []).length, 4, "배경 1 + 도형 3");
   assert.ok(artworkSvg({ 배경: "빨강" }, "표지").includes('width="1200" height="1600"'), "표지는 3:4 판형");
+});
+
+check("조직도는 서버에 남는다 — 고친 사람만 보이던 localStorage를 대신한다", () => {
+  assert.equal(getDoc(db, "org"), null, "아직 저장한 적이 없으면 비어 있다");
+  const boss = findByGoogleSub(db, "g-boss");
+  const org = { 구성원: [{ 코드: "fc01", 이름: "안창민", 직급: "GSL", 상위: null, 계정: boss.id, 이메일: boss.email }] };
+  setDoc(db, "org", JSON.stringify(org), boss.id);
+  assert.deepEqual(JSON.parse(getDoc(db, "org")), org);
+  // 같은 열쇠로 다시 쓰면 덮어쓴다 (줄이 쌓이지 않는다)
+  org["구성원"][0]["직급"] = "SSL";
+  setDoc(db, "org", JSON.stringify(org), boss.id);
+  assert.equal(db.prepare("SELECT COUNT(*) c FROM app_docs").get().c, 1);
+  assert.equal(JSON.parse(getDoc(db, "org"))["구성원"][0]["직급"], "SSL");
 });
 
 db.close();

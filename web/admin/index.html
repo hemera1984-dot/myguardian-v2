@@ -55,7 +55,7 @@
       </section>
 
       <section class="section-block">
-        <div class="section-head"><div><h2>조직도</h2><p>직급 변경·소속 이동·구성원 추가는 이 기기에 즉시 저장됩니다. 저장소 반영은 "변경 JSON 복사"로 개발 세션에 전달하세요 (2차 공사에서 서버 저장으로 바뀝니다).</p></div></div>
+        <div class="section-head"><div><h2>조직도</h2><p>직급 변경·소속 이동·구성원 추가·계정 연결은 서버에 바로 저장됩니다. 다른 사람 화면에도 그대로 보입니다.</p></div></div>
         <div class="surface-card">
           <p id="org-mode" style="margin:0 0 10px;font-size:12px;color:var(--platform-faint)"></p>
           <div id="org-tree"><span style="color:var(--platform-faint);font-size:12px">조직도를 불러오는 중입니다.</span></div>
@@ -66,8 +66,8 @@
             <button class="install-secondary" type="button" id="org-add" style="padding:8px 14px">구성원 추가</button>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-            <button class="install-secondary" type="button" id="org-export" style="padding:8px 14px">변경 JSON 복사</button>
-            <button class="install-secondary" type="button" id="org-reset" style="padding:8px 14px">로컬 변경 버리기</button>
+
+
           </div>
         </div>
       </section>
@@ -272,24 +272,20 @@
         window.mg.copy($("invite-text").value, this);
       });
 
-      // ── 조직도 — data/org.json 기준 + 이 기기의 수정본(localStorage) 오버레이.
-      // 정적 1차에서는 브라우저가 저장소 파일을 고칠 수 없으므로, 수정은 기기에 저장하고
-      // "변경 JSON 복사"로 저장소에 반영한다. 2차(서버)에서 즉시 저장으로 교체 예정.
-      var ORG_KEY = "mg_admin_org";
+      // ── 조직도 — 서버에 저장한다.
+      // 전에는 브라우저(localStorage)에만 두고 "변경 JSON 복사"로 저장소에 옮겼다.
+      // 고쳐도 나만 보였고, 자리마다 붙는 이메일이 공개 저장소에 남았다.
+      // 이제 자료는 서버 DB에 있고 저장소에는 뼈대(직급표)만 남는다 (2026-08-05 사용자).
       var ORG = null;
       var editing = null; // 편집 중인 구성원 코드
 
-      function loadLocal() {
-        try {
-          var t = JSON.parse(localStorage.getItem(ORG_KEY));
-          if (t && t["구성원"]) return t;
-        } catch (e) {}
-        return null;
-      }
-
-      function saveLocal() {
-        localStorage.setItem(ORG_KEY, JSON.stringify(ORG));
-        $("org-mode").textContent = "이 기기의 수정본을 보는 중입니다. 저장소 반영 전까지 다른 기기에는 보이지 않습니다.";
+      function saveOrg() {
+        $("org-mode").textContent = "저장 중…";
+        return window.mgAuth.api("/org", { method: "POST", body: ORG })
+          .then(function () { $("org-mode").textContent = "서버에 저장했습니다. 전원이 같은 조직도를 봅니다."; })
+          .catch(function (e) {
+            $("org-mode").textContent = "저장하지 못했습니다 — " + (e && e.message ? e.message : "다시 시도해 주세요");
+          });
       }
 
       function rankName(code) {
@@ -396,14 +392,14 @@
         return h.join("");
       }
 
-      fetch("../../data/org.json")
-        .then(function (r) { return r.json(); })
+      // 서버에 아직 아무것도 없으면 저장소 뼈대(data/org.json)로 시작한다.
+      window.mgAuth.api("/org")
+        .catch(function () {
+          return fetch("../../data/org.json").then(function (r) { return r.json(); });
+        })
         .then(function (base) {
-          var local = loadLocal();
-          ORG = local || base;
-          $("org-mode").textContent = local
-            ? "이 기기의 수정본을 보는 중입니다. 저장소 반영 전까지 다른 기기에는 보이지 않습니다."
-            : "저장소 조직도(data/org.json)를 보는 중입니다.";
+          ORG = base;
+          $("org-mode").textContent = "";
           renderOrg();
         })
         .catch(function () {
@@ -441,7 +437,7 @@
             }
           }
           editing = null;
-          saveLocal();
+          saveOrg();
           renderOrg();
         }
         else if (btn.dataset.orgDel) {
@@ -449,7 +445,7 @@
           if (childrenOf(code).length) return; // 하위가 있으면 삭제 불가
           ORG["구성원"] = members().filter(function (x) { return x["코드"] !== code; });
           editing = null;
-          saveLocal();
+          saveOrg();
           renderOrg();
         }
       });
@@ -471,19 +467,13 @@
           "상태": "미초대"
         });
         $("org-new-name").value = "";
-        saveLocal();
+        saveOrg();
         renderOrg();
       });
 
-      $("org-export").addEventListener("click", function () {
-        if (!ORG) return;
-        window.mg.copy(JSON.stringify(ORG, null, 1), this);
-      });
-
-      $("org-reset").addEventListener("click", function () {
-        localStorage.removeItem(ORG_KEY);
-        window.location.reload();
-      });
+      // 「변경 JSON 복사」·「로컬 변경 버리기」는 걷어냈다 — 서버가 곧 원본이라 옮길 것도,
+      // 버릴 로컬 사본도 없다. 옛 사본이 남아 있으면 지운다.
+      try { localStorage.removeItem("mg_admin_org"); } catch (e) {}
     })();
   </script>
 </body>
