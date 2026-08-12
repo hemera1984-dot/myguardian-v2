@@ -247,7 +247,14 @@
           B.scaleStage(stageWrap, stage);
           bindVideo();
           if (frame) bindFrameScroll(frame);
-        }).catch(function () {});
+        }).catch(function (err) {
+          // 조용히 삼키면 페이지 번호만 넘어가고 화면은 이전 장에 머문다.
+          // 발표자는 청중이 다른 것을 보고 있다는 사실을 모른다.
+          if (seq !== renderSeq) return;
+          document.getElementById("hint").textContent =
+            n + "쪽을 그리지 못했습니다 — " + (err && err.message ? err.message : "알 수 없는 오류")
+            + ". 청중 화면도 이 쪽을 보지 못합니다.";
+        });
 
         updateScript();
 

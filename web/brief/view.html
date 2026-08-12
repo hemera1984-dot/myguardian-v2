@@ -53,6 +53,8 @@
         var seq = ++renderSeq;
         driver.mount(slot, n).then(function (frame) {
           if (seq !== renderSeq) return;
+          document.getElementById("wait").hidden = true;
+          stageWrap.hidden = false;
           stage.dataset.page = String(n);
           if (frame) {
             frameWin = frame.contentWindow;
@@ -67,7 +69,16 @@
           }
           pointer.classList.remove("on");
           B.scaleStage(stageWrap, stage);
-        }).catch(function () {});
+        }).catch(function (err) {
+          // 청중 창이 빈 장에 머무는데 아무 표시가 없으면 발표자도 청중도 모른다
+          if (seq !== renderSeq) return;
+          var wait = document.getElementById("wait");
+          wait.hidden = false;
+          stageWrap.hidden = true;
+          wait.querySelector("strong").textContent = n + "쪽을 그리지 못했습니다.";
+          wait.querySelector("div").lastChild.textContent =
+            (err && err.message ? err.message : "잠시 뒤 발표자가 다시 넘기면 복구됩니다.");
+        });
       }
 
       function applyVideo(action, time) {
