@@ -8,7 +8,7 @@
 // 서버에서 npm install 할 일이 없어 배포가 단순하다.
 
 import { createServer } from "node:http";
-import { mkdirSync, writeFileSync, readFileSync, renameSync, existsSync, unlinkSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, renameSync, existsSync, unlinkSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import {
@@ -94,10 +94,13 @@ function readBriefLibrary() {
 }
 
 // 자료 파일 저장 — 파일명은 서버가 만든다(올린 이름을 믿지 않는다)
-function saveBriefFile(bytes, ext) {
+function saveBriefFile(bytes, ext, email) {
   const name = new Date().toISOString().slice(0, 10).replace(/-/g, "")
     + "-" + randomBytes(6).toString("hex") + ext;
   writeFileSync(join(BRIEF_FILES, name), bytes);
+  const owners = readOwners();
+  owners[name] = email;
+  writeOwners(owners);
   return { 파일명: name, 주소: "/brief/file/" + name, 크기: bytes.length };
 }
 
@@ -112,24 +115,59 @@ function briefFileName(url) {
   return BRIEF_NAME.test(name) ? name : "";
 }
 
-// 쌓인 용량 — 목록에 남은 파일 기준으로 센다
+// 파일 장부 — 어떤 파일을 누가 올렸는지 적어 둔다.
+// 목록(library.json)만 보고 판단하면 목록에 오르지 않은 파일이 셈에서 빠지고,
+// 남의 파일 주소를 자기 항목에 적어 넣어 남의 파일을 지우는 것도 막을 수 없다.
+const BRIEF_OWNERS = join(BRIEF_DIR, "files.json");
+
+function readOwners() {
+  try {
+    const m = JSON.parse(readFileSync(BRIEF_OWNERS, "utf8"));
+    return m && typeof m === "object" && !Array.isArray(m) ? m : {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function writeOwners(m) {
+  atomicWrite(BRIEF_OWNERS, JSON.stringify(m, null, 1));
+}
+
+// 쌓인 용량 — 실제 디스크를 센다. 클라이언트가 보낸 크기나 목록 등재 여부를 믿지 않는다.
 function briefUsage(email) {
+  const owners = readOwners();
   let 전체 = 0, 내것 = 0;
-  for (const it of readBriefLibrary()) {
-    const n = Number(it && it["크기"]) || 0;
-    전체 += n;
-    if (email && it && it["올린이메일"] === email) 내것 += n;
+  let names = [];
+  try { names = readdirSync(BRIEF_FILES); } catch (e) { return { 전체: 0, 내것: 0 }; }
+  for (const name of names) {
+    let size = 0;
+    try { size = statSync(join(BRIEF_FILES, name)).size; } catch (e) { continue; }
+    전체 += size;
+    if (email && owners[name] === email) 내것 += size;
   }
   return { 전체, 내것 };
 }
 
-// 목록에서 내려간 자료의 실제 파일을 지운다
-function 지우기(item) {
+// 파일 하나를 지운다. 올린 본인이거나 승인 권한자만 지울 수 있다 —
+// 남의 파일 주소를 자기 항목에 적어 넣고 그 항목을 지우는 수법을 막는다.
+function 파일지우기(name, db, me) {
+  const owners = readOwners();
+  const 주인 = owners[name];
+  if (주인 && 주인 !== me.email && !canApprove(db, me)) return false;
+  try { unlinkSync(join(BRIEF_FILES, name)); } catch (e) { /* 이미 없으면 그만이다 */ }
+  delete owners[name];
+  writeOwners(owners);
+  return true;
+}
+
+// 항목에 딸린 파일 이름들 — 지울 대상을 고를 때 쓴다
+function 딸린파일(item) {
+  const out = [];
   for (const k of ["슬라이드주소", "스크립트주소"]) {
     const name = briefFileName(item && item[k]);
-    if (!name) continue;
-    try { unlinkSync(join(BRIEF_FILES, name)); } catch (e) { /* 이미 없으면 그만이다 */ }
+    if (name) out.push(name);
   }
+  return out;
 }
 
 // 자료를 고치거나 지울 수 있는 사람 — 올린 본인, 또는 승인 권한을 가진 관리자
@@ -585,7 +623,8 @@ async function route(req, res, url) {
       "- 카테고리: 이 글이 어느 꼭지인지 2~6자 라벨. 예: 시사, 경제, 보험, 자산, 세무, 건강.",
       "- 부제: 제목을 보완하는 한 줄.",
       "- 요약: 150자에서 200자. 서재 카드에 실린다.",
-      "- 본문: 블록 배열. t가 h면 소제목, p면 문단이다. 소제목으로 흐름을 나눈다.",
+      "- 본문: 블록 배열. t가 h면 소제목, p면 문단이다."
+        + (일일 ? " 일일은 짧으므로 소제목 없이 문단만 쓴다." : " 소제목으로 흐름을 나눈다."),
       "- 한마디: 설계사가 덧붙이는 한 문장."
     ].filter(Boolean).join("\n");
 
@@ -1018,7 +1057,12 @@ async function route(req, res, url) {
   // 승인 계정이면 누구나 목록을 보고 발표할 수 있어야 한다(2026-08-05 사용자 지시).
   // 상담 자료는 여기 올리지 않는다 — 화면이 이미 강의 모드에서만 탑재를 연다.
   if (req.method === "GET" && path === "/brief/library") {
-    return send(res, 200, readBriefLibrary());
+    // 소유 판정용 메일은 서버 안에서만 쓴다. 목록에는 이름만 내보내고,
+    // 화면이 "내가 올린 것"을 가릴 수 있게 그 여부만 알려 준다.
+    return send(res, 200, readBriefLibrary().map((it) => {
+      const { 올린이메일, ...rest } = it || {};
+      return { ...rest, "내가올림": 올린이메일 === me.email };
+    }));
   }
 
   // 자료 파일 내려받기. 파일은 웹서버가 서빙하지 않는 폴더에 있으므로 이 경로가 유일한 출구다.
@@ -1052,13 +1096,18 @@ async function route(req, res, url) {
     const type = String(req.headers["content-type"] || "").split(";")[0].trim();
     const ext = BRIEF_TYPES[type];
     if (!ext) return send(res, 400, { error: "지원하지 않는 형식입니다. (HTML·PDF·JSON·이미지)" });
-    const 쓴양 = briefUsage(me.email);
-    if (쓴양.전체 >= MAX_BRIEF_TOTAL) return send(res, 507, { error: "저장 공간이 가득 찼습니다. 지난 자료를 지우고 다시 시도하세요." });
-    if (쓴양.내것 >= MAX_BRIEF_PER_ACCOUNT) return send(res, 507, { error: "올릴 수 있는 용량을 넘었습니다. 올린 자료를 지우고 다시 시도하세요." });
     const bytes = await readBytes(req, MAX_BRIEF);
     if (!bytes.length) return send(res, 400, { error: "빈 파일입니다." });
     if (!형식일치(ext, bytes)) return send(res, 400, { error: "파일 내용이 형식과 맞지 않습니다." });
-    return send(res, 200, saveBriefFile(bytes, ext));
+    // 받은 뒤에 센다 — 이 파일 크기까지 더해야 상한이 실제로 지켜진다
+    const 쓴양 = briefUsage(me.email);
+    if (쓴양.전체 + bytes.length > MAX_BRIEF_TOTAL) {
+      return send(res, 507, { error: "저장 공간이 가득 찼습니다. 지난 자료를 지우고 다시 시도하세요." });
+    }
+    if (쓴양.내것 + bytes.length > MAX_BRIEF_PER_ACCOUNT) {
+      return send(res, 507, { error: "올릴 수 있는 용량을 넘었습니다. 올린 자료를 지우고 다시 시도하세요." });
+    }
+    return send(res, 200, saveBriefFile(bytes, ext, me.email));
   }
 
   if (req.method === "POST" && path === "/brief/library") {
@@ -1096,10 +1145,16 @@ async function route(req, res, url) {
       "등록일": new Date().toISOString()
     };
     const 남길것 = list.filter((x) => x && String(x.id) !== id);
-    // 덮어쓰는 경우 이전 파일은 지운다 — 안 지우면 쓰레기가 쌓이고 용량 계산이 어긋난다
-    if (기존) 지우기(기존);
     남길것.unshift(entry);
+    // 목록을 먼저 쓴다. 파일부터 지우면 목록 쓰기가 실패했을 때 파일만 사라진다.
     atomicWrite(BRIEF_LIST, JSON.stringify(남길것, null, 1));
+    // 덮어쓰면서 더 이상 쓰이지 않게 된 파일만 지운다. 같은 주소를 그대로 두면 건드리지 않는다.
+    if (기존) {
+      const 새것 = 딸린파일(entry);
+      for (const name of 딸린파일(기존)) {
+        if (새것.indexOf(name) < 0) 파일지우기(name, db, me);
+      }
+    }
     console.log(`강의자료 탑재: ${entry["제목"]} (${id}) — ${me.email}`);
     return send(res, 200, { ok: true, id });
   }
@@ -1113,8 +1168,9 @@ async function route(req, res, url) {
     if (!canEditBrief(db, me, gone)) {
       return send(res, 403, { error: "다른 사람이 올린 자료입니다. 올린 사람만 지울 수 있습니다." });
     }
-    지우기(gone);  // 목록만 지우면 파일이 남아 용량을 먹는다
     atomicWrite(BRIEF_LIST, JSON.stringify(list.filter((x) => x && String(x.id) !== id), null, 1));
+    // 목록을 먼저 쓴 뒤 파일을 지운다. 남의 파일은 장부를 보고 건너뛴다.
+    for (const name of 딸린파일(gone)) 파일지우기(name, db, me);
     console.log(`강의자료 삭제: ${gone["제목"]} (${id}) — ${me.email}`);
     return send(res, 200, { ok: true });
   }

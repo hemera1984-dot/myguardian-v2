@@ -121,8 +121,7 @@
 
       // HTML 자료: iframe 스크롤을 비율로 송신
       var frameWin = null;
-      // 키 처리기가 준비된 뒤 채워진다 (아래 onKey 정의부). 자료를 다시 실을 때마다 다시 건다.
-      var bindFrameKeys = null;
+      // 슬라이드 안에서 누른 키는 다리가 postMessage로 올려 준다 (bindFrameScroll에서 받는다)
       var onKey = null;
       // 슬라이드 문서는 출처가 끊긴 iframe이라 DOM에 닿을 수 없다 — 다리가 알려준 값을 쓴다
       function scrollRatio() {
@@ -138,7 +137,6 @@
 
       function bindFrameScroll(frame) {
         frameWin = frame.contentWindow;
-        if (bindFrameKeys) bindFrameKeys(frameWin);
         if (unbindFrame) unbindFrame();
         unbindFrame = B.bridgeListen(frameWin, function (d) {
           if (d.mgb === "key") {
@@ -417,9 +415,6 @@
 
         // 슬라이드를 한 번 클릭하면 그다음 키는 iframe 문서로 간다. 장 넘김은 거기서
         // 처리되지만 스크립트 스크롤(↑↓)·글자 크기(+-)는 발표자 화면 몫이라 되돌려 받는다.
-        // 슬라이드 안에서 누른 키는 다리가 postMessage로 올려 준다 (bindFrameScroll에서 받는다)
-        bindFrameKeys = null;
-
         var timer = document.getElementById("timer");
         setInterval(function () {
           var s = Math.floor((Date.now() - startedAt) / 1000);

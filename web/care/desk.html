@@ -458,7 +458,10 @@
           return head
             + '<div class="write-row">'
             + '<button class="btn btn-write" type="button" data-ai="column" data-col="' + i + '">AI 작성</button>'
-            + '<span class="hint">' + (weekly ? "주간 1,700~2,800자" : "월간 8,000~10,000자, 최대 5분") + " · 부제·요약·본문을 한 번에 씁니다</span>"
+            + '<span class="hint">'
+              + (S.draft["채널"] === "일일" ? "일일 700~1,200자"
+                : weekly ? "주간 1,700~2,800자" : "월간 8,000~10,000자, 최대 5분")
+              + " · 부제·요약·본문을 한 번에 씁니다</span>"
             + "</div>"
             + '<details class="manual"><summary>직접 쓰기</summary>' + colFieldsHtml(a, i) + "</details>"
             + "</div>";
@@ -534,8 +537,9 @@
         arts.forEach(function (_, i) {
           var box = aiBox(i);
           if (!box) return;
-          if (쓰는중[i]) { box.hidden = false; box.textContent = "본문을 쓰고 있습니다."; }
-          else if (지난오류[i]) { box.hidden = false; box.textContent = 지난오류[i]; }
+          var k = 칸(S.draft.id, i);
+          if (쓰는중[k]) { box.hidden = false; box.textContent = "본문을 쓰고 있습니다."; }
+          else if (지난오류[k]) { box.hidden = false; box.textContent = 지난오류[k]; }
         });
       }
 
@@ -683,20 +687,27 @@
         });
       }
 
-      // 지금 쓰고 있는 칼럼 번호. renderEdit가 버튼을 새로 그려도 이 표시는 남으므로
-      // 같은 편을 두 번 눌러 중복 실행되고 늦게 온 응답이 앞 결과를 덮어쓰는 일을 막는다.
+      // 지금 쓰고 있는 칼럼과 실패로 남은 문구. 호 id까지 키에 넣는다 —
+      // 기사 번호만으로 키를 잡으면 다른 호의 같은 번호가 막히고 문구가 섞인다.
       var 쓰는중 = {};
       var 지난오류 = {};
+      function 칸(id, i) { return id + ":" + i; }
 
       // 한 편 쓰기 — 여러 편을 동시에 돌릴 수 있게 약속을 돌려준다.
       // 진행 표시는 매 초 id로 다시 찾는다. 다른 편이 끝나 renderEdit가 돌아도 끊기지 않게.
+      // 쓰는 도중 다른 호로 옮겨도 결과는 시작할 때의 호에 저장된다.
       function writeColumn(i) {
-        if (쓰는중[i]) return 쓰는중[i];
+        var draftId = S.draft.id;
+        var k = 칸(draftId, i);
+        if (쓰는중[k]) return 쓰는중[k];
         var a = S.draft["기사"][i];
         var monthly = S.draft["채널"] === "월간";
+        var chan = chFull();
+        // 화면이 이 호를 보고 있을 때만 진행 표시를 건드린다
+        function 내화면() { return S.draft && S.draft.id === draftId; }
         var t0 = Date.now();
         function tick() {
-          var box = aiBox(i);
+          var box = 내화면() ? aiBox(i) : null;
           if (!box) return;
           var s = Math.round((Date.now() - t0) / 1000);
           box.hidden = false;
@@ -708,16 +719,21 @@
         var timer = setInterval(tick, 1000);
         var p = window.mgAuth.api("/ai/column", {
           method: "POST",
-          body: { "제목": a["제목"], "채널": chFull(), "카테고리": a["카테고리"], "방향": a["방향"] || "" }
+          body: { "제목": a["제목"], "채널": chan, "카테고리": a["카테고리"], "방향": a["방향"] || "" }
         }).then(function (d) {
           clearInterval(timer);
-          if (S.draft["채널"] !== "주간" && d["카테고리"]) a["카테고리"] = d["카테고리"];
-          a["부제"] = d["부제"] || a["부제"];
-          a["요약"] = toLines(d["요약"]);
-          a["한마디"] = toLines(d["한마디"]);
-          a["본문"] = Array.isArray(d["본문"]) ? d["본문"] : [];
-          delete 지난오류[i];
-          saveDraft(S.draft);
+          // 쓰는 사이에 다른 호로 옮겼을 수 있다. 결과는 시작한 호에 저장한다.
+          var 대상 = 내화면() ? S.draft : readDraft(draftId);
+          if (!대상 || !대상["기사"] || !대상["기사"][i]) return;   // 초안이 지워졌다
+          var t = 대상["기사"][i];
+          if (대상["채널"] !== "주간" && d["카테고리"]) t["카테고리"] = d["카테고리"];
+          t["부제"] = d["부제"] || t["부제"];
+          t["요약"] = toLines(d["요약"]);
+          t["한마디"] = toLines(d["한마디"]);
+          t["본문"] = Array.isArray(d["본문"]) ? d["본문"] : [];
+          delete 지난오류[k];
+          saveDraft(대상);
+          if (!내화면()) return;   // 다른 호를 보고 있으면 화면은 건드리지 않는다
           renderEdit();
           // 삽화는 본문에 딸린 곁다리다. 이 약속에 매달면 삽화 시간만큼 "다 썼다"가 늦고,
           // 삽화 실패가 본문 실패로 집계된다. 이어서 돌리되 기다리지 않는다.
@@ -725,15 +741,15 @@
         }).catch(function (err) {
           clearInterval(timer);
           // 다른 편이 끝나 화면을 다시 그려도 이 문구가 지워지지 않게 따로 남긴다
-          지난오류[i] = (err.message || "본문을 받지 못했습니다.") + " 제목·방향을 손보고 다시 시도하세요.";
-          var box = aiBox(i);
-          if (box) { box.hidden = false; box.textContent = 지난오류[i]; }
+          지난오류[k] = (err.message || "본문을 받지 못했습니다.") + " 제목·방향을 손보고 다시 시도하세요.";
+          var box = 내화면() ? aiBox(i) : null;
+          if (box) { box.hidden = false; box.textContent = 지난오류[k]; }
           throw err;
         }).finally(function () {
           clearInterval(timer);
-          delete 쓰는중[i];
+          delete 쓰는중[k];
         });
-        쓰는중[i] = p;
+        쓰는중[k] = p;
         return p;
       }
 
@@ -746,7 +762,7 @@
           return;
         }
         if (needAuth(box)) return;
-        if (쓰는중[i]) {
+        if (쓰는중[칸(S.draft.id, i)]) {
           box.hidden = false;
           box.textContent = "이미 쓰는 중입니다. 끝날 때까지 기다려 주세요.";
           return;
@@ -768,7 +784,8 @@
         var arts = S.draft["기사"] || [];
         var todo = [];
         arts.forEach(function (a, i) {
-          if (String(a["제목"] || "").trim() && !((a["본문"] || []).length) && !쓰는중[i]) todo.push(i);
+          if (String(a["제목"] || "").trim() && !((a["본문"] || []).length)
+            && !쓰는중[칸(S.draft.id, i)]) todo.push(i);
         });
         if (!todo.length) {
           note.textContent = "제목이 정해졌고 본문이 비어 있는 기사가 없습니다. 다시 쓰려면 각 기사에서 따로 눌러 주세요.";
@@ -1102,7 +1119,7 @@
         return window.mgAuth.api("/ai/verify", {
           method: "POST",
           body: {
-            "채널": d["채널"] === "월간" ? "월간 안창민" : "주간 안창민",
+            "채널": d["채널"] + " 안창민",
             "호수": d["호수"],
             "기사": (d["기사"] || []).map(function (a, i) {
               return {

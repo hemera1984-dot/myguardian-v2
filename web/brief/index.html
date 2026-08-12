@@ -215,7 +215,15 @@
         var box = document.getElementById("library-list");
         // 팀 목차(서버)를 앞에 두고, 이 브라우저에만 있던 옛 자료를 뒤에 붙인다.
         // 같은 id면 서버 것이 이긴다 — 팀이 함께 보는 쪽이 기준이다.
-        Promise.all([window.mgBrief.serverLibraryList(), window.mgBrief.libraryList()])
+        // 서버가 안 되면 그 사실을 알린다 — 빈 목록으로 삼키면 "자료 없음"으로 보인다
+        var 장애 = null;
+        Promise.all([
+          window.mgBrief.serverLibraryList().catch(function (err) {
+            장애 = err && err.message ? err.message : "팀 목록을 불러오지 못했습니다.";
+            return [];
+          }),
+          window.mgBrief.libraryList()
+        ])
           .then(function (res) {
             var seen = {};
             var items = [];
@@ -225,6 +233,14 @@
           })
           .then(function (items) {
           box.textContent = "";
+          if (장애) {
+            var warn = el("div", "empty-inline");
+            var wi = el("div");
+            wi.appendChild(el("strong", null, "팀 목록을 불러오지 못했습니다"));
+            wi.appendChild(el("span", null, 장애 + " 아래 목록은 이 브라우저에 있는 것만입니다."));
+            warn.appendChild(wi);
+            box.appendChild(warn);
+          }
           var rows = items.filter(function (it) { return it["모드"] === mode; });
           rows.sort(function (a, b) { return String(b["등록일"] || "").localeCompare(String(a["등록일"] || "")); });
           if (!rows.length) {

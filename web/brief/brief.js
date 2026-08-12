@@ -296,15 +296,30 @@
   // 다리가 보내오는 상태를 프레임별로 보관한다. 상위 창은 그 문서의 DOM을 볼 수 없다.
   var frameState = new WeakMap();
 
+  // 프레임 안 문서는 우리가 만든 것이 아니다 — 형식과 범위를 가려서 받는다.
+  var KEYS_UP = ["ArrowUp", "ArrowDown", "+", "=", "-", "_"];
+  function num(v) { return typeof v === "number" && isFinite(v); }
+
   function bridgeListen(win, onState) {
     function handler(e) {
       if (e.source !== win) return;                 // 다른 프레임의 말은 받지 않는다
       var d = e.data;
-      if (!d || (d.mgb !== "state" && d.mgb !== "key")) return;
+      if (!d || typeof d !== "object") return;
       if (d.mgb === "state") {
-        frameState.set(win, { slide: d.slide, count: d.count, scroll: d.scroll });
+        if (!num(d.slide) || !num(d.count) || !num(d.scroll)) return;
+        if (d.slide < -1 || d.count < 0 || d.count > 5000) return;
+        if (d.scroll < 0 || d.scroll > 1) return;
+        frameState.set(win, {
+          slide: Math.round(d.slide), count: Math.round(d.count), scroll: d.scroll
+        });
+        if (onState) onState({ mgb: "state", slide: Math.round(d.slide), count: Math.round(d.count), scroll: d.scroll });
+        return;
       }
-      if (onState) onState(d);
+      if (d.mgb === "key") {
+        // 올려보낼 수 있는 키는 스크립트 조작용뿐이다. 장 넘김 키는 받지 않는다.
+        if (KEYS_UP.indexOf(d.key) < 0) return;
+        if (onState) onState({ mgb: "key", key: d.key });
+      }
     }
     window.addEventListener("message", handler);
     return function () { window.removeEventListener("message", handler); };
@@ -397,11 +412,12 @@
     });
   }
 
+  // 실패를 빈 목록으로 바꾸면 "탑재한 자료 없음"으로 보여 장애를 알 수 없다.
+  // 로그인 전이면 빈 목록이 맞고, 그 밖의 실패는 그대로 알린다.
   function serverLibraryList() {
     if (!window.mgAuth || !window.mgAuth.token()) return Promise.resolve([]);
     return window.mgAuth.api("/brief/library")
-      .then(function (d) { return Array.isArray(d) ? d : []; })
-      .catch(function () { return []; });
+      .then(function (d) { return Array.isArray(d) ? d : []; });
   }
 
   // 슬라이드·스크립트를 올린 뒤 주소만 담은 항목을 목차에 싣는다
