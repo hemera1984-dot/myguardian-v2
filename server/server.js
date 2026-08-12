@@ -14,7 +14,7 @@ import { randomBytes } from "node:crypto";
 import {
   openDb, seedGrades, upsertAccount, createSession, accountForToken, deleteSession,
   listGrades, listPending, listMembers, getAccount, approve, suspend, setAdmin,
-  setApprover, isDescendantOf
+  setApprover, isDescendantOf, setDisplayName
 } from "./db.js";
 import { artworkSvg } from "./artwork.js";
 
@@ -1177,6 +1177,20 @@ async function route(req, res, url) {
     if (target.status !== "승인") return send(res, 400, { error: "승인된 계정에만 줄 수 있습니다." });
     setApprover(db, target.id, !!부여);
     return send(res, 200, { ok: true });
+  }
+
+  // 이름 고치기 — 구글 계정의 표시 이름이 실제 이름과 다른 사람이 있다(별명·오기·영문).
+  // 승인 권한을 가진 사람이면 고칠 수 있다. 빈 값으로 보내면 구글 이름으로 되돌린다.
+  if (req.method === "POST" && path === "/admin/set-name") {
+    if (!canApprove(db, me)) return send(res, 403, { error: "승인 권한이 없습니다." });
+    const { 대상, 이름 } = await readJson(req);
+    const target = getAccount(db, Number(대상));
+    if (!target) return send(res, 404, { error: "대상 계정을 찾을 수 없습니다." });
+    const v = String(이름 || "").trim();
+    if (v.length > 40) return send(res, 400, { error: "이름이 너무 깁니다." });
+    setDisplayName(db, target.id, v);
+    console.log(`이름 고침: ${target.email} → ${v || "(구글 이름으로 되돌림)"} — ${me.email}`);
+    return send(res, 200, { ok: true, "이름": v || target.name });
   }
 
   // 관리자 임명·회수는 총관리자 전용 (기존 결정 유지)

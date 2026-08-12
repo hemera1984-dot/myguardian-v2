@@ -52,6 +52,11 @@ export function openDb(file) {
   try { db.exec("ALTER TABLE accounts ADD COLUMN can_approve INTEGER NOT NULL DEFAULT 0"); }
   catch (e) { /* 이미 있음 */ }
 
+  // 구글 계정의 표시 이름이 실제 이름과 다른 사람이 있다(별명·오기·영문 표기).
+  // 관리자가 고쳐 넣는 이름을 따로 둔다 — 다시 로그인해도 구글 값이 덮어쓰지 않는다.
+  try { db.exec("ALTER TABLE accounts ADD COLUMN display_name TEXT"); }
+  catch (e) { /* 이미 있음 */ }
+
   return db;
 }
 
@@ -113,6 +118,12 @@ export function accountForToken(db, token) {
     db.prepare("DELETE FROM sessions WHERE token = ?").run(token);
     return null;
   }
+  // 관리자가 고쳐 넣은 이름이 있으면 그것이 이 사람의 이름이다.
+  // 발행인·올린이 표기가 전부 이 값을 쓰므로 여기서 한 번에 바꿔 둔다.
+  if (row.display_name && String(row.display_name).trim()) {
+    row.google_name = row.name;
+    row.name = String(row.display_name).trim();
+  }
   return row;
 }
 
@@ -136,9 +147,17 @@ export function listPending(db) {
 
 export function listMembers(db) {
   return db.prepare(
-    `SELECT id, email, name, status, grade, parent_id, is_admin, can_approve, approved_at
+    `SELECT id, email, COALESCE(NULLIF(display_name, ''), name) AS name,
+            name AS google_name, display_name,
+            status, grade, parent_id, is_admin, can_approve, approved_at
      FROM accounts WHERE status <> '대기' ORDER BY id`
   ).all();
+}
+
+// 관리자가 고쳐 넣는 이름. 빈 값이면 구글 이름으로 되돌린다.
+export function setDisplayName(db, targetId, name) {
+  const v = String(name || "").trim();
+  db.prepare("UPDATE accounts SET display_name = ? WHERE id = ?").run(v || null, targetId);
 }
 
 export function setApprover(db, targetId, canApprove) {

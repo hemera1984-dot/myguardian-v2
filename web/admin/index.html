@@ -131,6 +131,8 @@
                 return '<div class="org-node" style="flex-wrap:wrap">'
                   + '<span class="badge-status ' + (m.status === "승인" ? "st-meet" : "st-hold") + '">' + esc(m.status) + "</span>"
                   + '<strong style="font-size:13px">' + esc(m.name || m.email) + "</strong>"
+                  + (m.display_name && m.google_name && m.display_name !== m.google_name
+                     ? '<span style="font-size:11px;color:var(--platform-faint)">구글: ' + esc(m.google_name) + "</span>" : "")
                   + '<span style="font-size:12px;color:var(--platform-muted)">' + esc(m.email) + "</span>"
                   + (m.grade ? '<span class="badge-grade">' + esc(m.grade) + "</span>" : "")
                   + (m.is_admin ? '<span class="badge-grade">총관리자</span>' : "")
@@ -145,6 +147,9 @@
                      ? '<button type="button" class="status-btn" data-admin="' + m.id + '" data-on="' + (m.is_admin ? "0" : "1") + '">'
                        + (m.is_admin ? "관리자 회수" : "관리자 임명") + "</button>"
                      : "")
+                  // 구글 계정 이름이 실제 이름과 다른 사람이 있다 — 여기서 고쳐 넣는다
+                  + '<button type="button" class="status-btn" data-rename="' + m.id
+                    + '" data-name="' + esc(m.name || "") + '">이름 고치기</button>'
                   + "</div>";
               }).join("")
             : '<span style="color:var(--platform-faint);font-size:12px">구성원이 없습니다.</span>';
@@ -176,6 +181,15 @@
             id = Number(btn.dataset.admin);
             req = window.mgAuth.api("/admin/set-admin", {
               method: "POST", body: { "대상": id, "임명": btn.dataset.on === "1" }
+            });
+          } else if (btn.dataset.rename) {
+            id = Number(btn.dataset.rename);
+            var 새이름 = window.prompt(
+              "이 사람의 이름을 적어 주세요. 비워 두면 구글 계정 이름으로 되돌립니다.",
+              btn.dataset.name || "");
+            if (새이름 === null) return;
+            req = window.mgAuth.api("/admin/set-name", {
+              method: "POST", body: { "대상": id, "이름": 새이름 }
             });
           } else { return; }
 
