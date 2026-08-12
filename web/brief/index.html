@@ -246,8 +246,21 @@
           if (!rows.length) {
             var empty = el("div", "empty-inline");
             var inner = el("div");
-            inner.appendChild(el("strong", null, "탑재한 자료 없음"));
-            inner.appendChild(el("span", null, "아래 '내 컴퓨터에서 열기'로 슬라이드·스크립트를 올린 뒤 '라이브러리에 탑재'를 누르면 목차에 남습니다."));
+            // 태블릿·다른 기기에서 로그인 없이 열면 팀 자료가 안 보인다.
+            // "자료 없음"이라고만 하면 자료가 사라진 줄 안다.
+            var 로그인함 = window.mgAuth && window.mgAuth.token();
+            inner.appendChild(el("strong", null, 로그인함 ? "탑재한 자료 없음" : "로그인하면 팀 자료가 보입니다"));
+            inner.appendChild(el("span", null, 로그인함
+              ? "아래 '내 컴퓨터에서 열기'로 슬라이드·스크립트를 올린 뒤 '라이브러리에 탑재'를 누르면 목차에 남습니다."
+              : "팀이 함께 쓰는 강의 자료는 로그인한 뒤에 보입니다. 아이패드·갤럭시탭에서도 같은 구글 계정으로 로그인하면 그대로 발표할 수 있습니다."));
+            if (!로그인함) {
+              var go = el("a", "local-button primary", "구글 계정으로 로그인");
+              go.href = "../intro.html";
+              go.style.marginTop = "12px";
+              go.style.display = "inline-block";
+              go.style.textDecoration = "none";
+              inner.appendChild(go);
+            }
             empty.appendChild(inner);
             box.appendChild(empty);
             return;

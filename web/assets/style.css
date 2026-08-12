@@ -1698,7 +1698,7 @@ body.magazine :focus-visible {
   color: var(--ink-sub);
 }
 
-/* 일일 꼭지 고르기 — 경제냐 시사냐에 따라 서버가 붙이는 필자가 달라진다 (2026-08-05) */
+/* 일간 꼭지 고르기 — 경제냐 시사냐에 따라 서버가 붙이는 필자가 달라진다 (2026-08-05) */
 .cat-pick {
   margin-left: 6px;
   padding: 3px 11px;
@@ -3219,7 +3219,7 @@ body.shelf-body { background: #f4f1ea; }
 
 .verify-report .v-src a:hover { text-decoration: underline; }
 
-/* 일일은 매일 쌓인다 — 서가에 다 세우면 표지 진열이 무너진다. 최근 10권만 세우고 나머지는 접는다. */
+/* 일간은 매일 쌓인다 — 서가에 다 세우면 표지 진열이 무너진다. 최근 10권만 세우고 나머지는 접는다. */
 .shelf__more { margin-top: 18px; }
 .shelf__more > summary {
   cursor: pointer;

@@ -36,7 +36,7 @@
 
       <div class="pill-tabs shelf-tabs" role="tablist" aria-label="채널">
         <button type="button" class="active" data-ch="">전체</button>
-        <button type="button" data-ch="일일">일일 안창민</button>
+        <button type="button" data-ch="일간">일간 안창민</button>
         <button type="button" data-ch="주간">주간 안창민</button>
         <button type="button" data-ch="월간">월간 안창민</button>
       </div>
@@ -100,7 +100,7 @@
           box.innerHTML = '<div class="placeholder-panel">아직 발행물이 없습니다. 첫 호가 준비되는 대로 서재에 꽂힙니다.</div>';
           return;
         }
-        var order = ["월간", "주간", "일일"];
+        var order = ["월간", "주간", "일간"];
         list.forEach(function (i) { if (order.indexOf(i["채널"]) < 0) order.push(i["채널"]); });
         box.className = "shelf-wrap";
         box.innerHTML = order.map(function (ch, n) {
@@ -110,11 +110,11 @@
             + '<div class="shelf__head"><h2 class="shelf__title">' + esc(ch) + " " + esc(pubName(rows[0])) + "</h2>"
             + '<span class="shelf__count">' + rows.length + "권</span></div>"
             + '<div class="shelf__grid">'
-            + rows.slice(0, ch === "일일" ? 10 : rows.length)
+            + rows.slice(0, ch === "일간" ? 10 : rows.length)
                 .map(function (i, idx) { return coverCard(i, idx === 0); }).join("")
             + "</div>"
-            + (ch === "일일" && rows.length > 10
-                ? '<details class="shelf__more"><summary>지난 일일 ' + (rows.length - 10) + "권 더 보기</summary>"
+            + (ch === "일간" && rows.length > 10
+                ? '<details class="shelf__more"><summary>지난 일간 ' + (rows.length - 10) + "권 더 보기</summary>"
                   + '<div class="shelf__grid">'
                   + rows.slice(10).map(function (i) { return coverCard(i, false); }).join("")
                   + "</div></details>"

@@ -109,13 +109,19 @@
           + "</select>";
       }
 
-      // 조직도 자리와 계정을 잇는 열쇠는 계정 번호다.
-      // 이름으로 잇지 않는다 — 동명이인·개명에 흔들린다.
-      // 이메일도 쓰지 않는다 — 이 저장소는 공개라 org.json에 주소가 남는다.
+      // 조직도 자리와 계정을 잇는 열쇠는 계정 번호다. 이름으로 잇지 않는다 —
+      // 동명이인·개명에 흔들린다. 이메일은 함께 적어 두되(사람이 읽으라고) 판정은
+      // 번호로 한다. 번호가 아직 없는 자리는 이메일로 찾아 붙는다.
       var ACCOUNTS = [];
       function accountOf(node) {
-        var id = node && node["계정"];
-        return id ? ACCOUNTS.filter(function (a) { return a.id === id; })[0] || null : null;
+        if (!node) return null;
+        if (node["계정"]) {
+          var byId = ACCOUNTS.filter(function (a) { return a.id === node["계정"]; })[0];
+          if (byId) return byId;
+        }
+        if (node["이메일"])
+          return ACCOUNTS.filter(function (a) { return a.email === node["이메일"]; })[0] || null;
+        return null;
       }
 
       function loadPending() {
@@ -148,7 +154,7 @@
                   + (m.grade ? '<span class="badge-grade">' + esc(m.grade) + "</span>" : "")
                   + (m.is_admin ? '<span class="badge-grade">총관리자</span>' : "")
                   + (m.can_approve && !m.is_admin ? '<span class="badge-status st-meet">승인권한</span>' : "")
-                  + (ORG && !orgNodeFor(m.id) ? '<span class="badge-status st-hold">조직도 미배치</span>' : "")
+                  + (ORG && !orgNodeForAccount(m) ? '<span class="badge-status st-hold">조직도 미배치</span>' : "")
                   + (isMe ? '<span style="font-size:12px;color:var(--platform-faint)">본인</span>'
                      : (m.status === "승인" ? '<button type="button" class="status-btn st-reject" data-suspend="' + m.id + '">정지</button>' : ""))
                   + (!isMe && AUTH.me["계정"]["총관리자"] && m.status === "승인" && !m.is_admin
@@ -293,19 +299,22 @@
 
       function members() { return ORG["구성원"] || []; }
 
-      function orgNodeFor(id) {
-        return members().filter(function (m) { return m["계정"] === id; })[0] || null;
+      function orgNodeForAccount(a) {
+        return members().filter(function (m) {
+          return (a.id && m["계정"] === a.id) || (a.email && m["이메일"] === a.email);
+        })[0] || null;
       }
 
       // 붙일 수 있는 계정 — 승인된 계정 중 아직 다른 자리에 붙지 않은 것
       function accountOptions(node) {
-        var mine = node["계정"] || 0;
+        var mine = accountOf(node);
+        var mineId = mine ? mine.id : 0;
         var opts = ['<option value="">계정 없음 (미초대)</option>'];
         ACCOUNTS.forEach(function (a) {
           if (a.status !== "승인") return;
-          var taken = orgNodeFor(a.id);
+          var taken = orgNodeForAccount(a);
           if (taken && taken["코드"] !== node["코드"]) return;
-          opts.push('<option value="' + a.id + '"' + (a.id === mine ? " selected" : "") + ">"
+          opts.push('<option value="' + a.id + '"' + (a.id === mineId ? " selected" : "") + ">"
             + esc(a.name || a.email) + " · " + esc(a.email) + "</option>");
         });
         return opts.join("");
@@ -355,7 +364,7 @@
       // 자리의 상태는 붙은 계정이 정한다. 손으로 「미초대」를 지우고 다니면
       // 실제로 로그인했는지와 화면이 어긋난다 (2026-08-05 사용자: 「왜 미초대로 되어있을까」).
       function orgStatusHtml(m) {
-        if (!m["계정"]) return '<span class="badge-status st-hold">미초대</span>';
+        if (!m["계정"] && !m["이메일"]) return '<span class="badge-status st-hold">미초대</span>';
         var a = accountOf(m);
         if (!ACCOUNTS.length) return "";                       // 계정 목록을 아직 못 받았다
         if (!a) return '<span class="badge-status st-reject">계정 확인 필요</span>';
@@ -418,12 +427,16 @@
           // 계정을 붙이면 이 자리의 주인이 정해진다. 상태는 계정이 정하므로 손대지 않는다.
           if (accSel) {
             if (accSel.value) {
+              var acc = ACCOUNTS.filter(function (x) { return x.id === Number(accSel.value); })[0];
               m["계정"] = Number(accSel.value);
               m["상태"] = "사용중";
-              var acc = ACCOUNTS.filter(function (x) { return x.id === Number(accSel.value); })[0];
-              if (acc && acc.name) m["이름"] = acc.name;     // 이름은 계정 쪽이 최신이다
+              if (acc) {
+                m["이메일"] = acc.email;
+                if (acc.name) m["이름"] = acc.name;          // 이름은 계정 쪽이 최신이다
+              }
             } else {
               delete m["계정"];
+              delete m["이메일"];
               m["상태"] = "미초대";
             }
           }

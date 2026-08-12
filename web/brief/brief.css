@@ -600,6 +600,24 @@ body.brief-present {
   .pr-main { grid-template-columns: minmax(0, 0.8fr) minmax(380px, 1fr); }
 }
 
+/* 태블릿 세로(아이패드 820·1024)에서 두 칸을 나란히 두면 슬라이드도 스크립트도 좁다.
+   위아래로 쌓아 슬라이드를 넓게 쓰고 스크립트를 그 아래 둔다 (2026-08-11). */
+@media (max-width: 1024px) and (orientation: portrait) {
+  .pr-main {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    overflow-y: auto;
+  }
+  .pr-stage-col { flex: 0 0 auto; }
+  .pr-stage-wrap { aspect-ratio: 16 / 10; flex: 0 0 auto; }
+  .pr-side { flex: 0 0 auto; min-height: 40vh; }
+  .pr-script { min-height: 300px; }
+  .pr-script-body { font-size: 19px; }
+  /* 태블릿은 손가락으로 넘긴다 — 발표 조작 단추를 키보드 없이도 쓸 수 있게 키운다 */
+  .pr-nav { padding: 10px 12px; }
+  .pr-nav .pr-button { min-width: 56px; min-height: 44px; font-size: 18px; }
+}
+
 @media (max-width: 767px) {
   .pr-main { grid-template-columns: 1fr; overflow-y: auto; }
   .pr-stage-col { flex: 0 0 auto; }

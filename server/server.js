@@ -14,7 +14,7 @@ import { randomBytes } from "node:crypto";
 import {
   openDb, seedGrades, upsertAccount, createSession, accountForToken, deleteSession,
   listGrades, listPending, listMembers, getAccount, approve, suspend, setAdmin,
-  setApprover, isDescendantOf, setDisplayName
+  setApprover, isDescendantOf, setDisplayName, getDoc, setDoc
 } from "./db.js";
 import { artworkSvg } from "./artwork.js";
 
@@ -544,14 +544,14 @@ async function route(req, res, url) {
   }
 
   // 칼럼 성격 — 채널로 무엇을 쓸 자리인지 정한다.
-  // 일일은 오늘의 경제·시사 한 꼭지, 주간은 보험·자산·세무, 월간은 자유 주제다
-  // (2026-08-05 채널 역할 분리 — 일일과 주간이 같은 소재를 다루면 주간이 재탕이 된다).
+  // 일간은 오늘의 경제·시사 한 꼭지, 주간은 보험·자산·세무, 월간은 자유 주제다
+  // (2026-08-05 채널 역할 분리 — 일간과 주간이 같은 소재를 다루면 주간이 재탕이 된다).
   function 칼럼성격(채널, 카테고리) {
     const c = String(카테고리 || "").trim();
     if (c) return c;
     const ch = String(채널 || "");
     if (ch.indexOf("월간") >= 0) return "자유 주제";
-    if (ch.indexOf("일일") >= 0) return "경제";  // 데스크에서 경제·시사 중 고른다. 못 고른 때의 기본값
+    if (ch.indexOf("일간") >= 0) return "경제";  // 데스크에서 경제·시사 중 고른다. 못 고른 때의 기본값
     return "보험·자산·세무";
   }
 
@@ -613,12 +613,12 @@ async function route(req, res, url) {
     const 카테고리 = 칼럼성격(채널, body["카테고리"]);
     const 방향 = String(body["방향"] || "").slice(0, 500);
     const 월간 = 채널.indexOf("월간") >= 0;
-    const 일일 = 채널.indexOf("일일") >= 0;
-    const 분량 = 월간 ? "8000자에서 10000자" : 일일 ? "700자에서 1200자" : "1800자에서 2800자";
+    const 일간 = 채널.indexOf("일간") >= 0;
+    const 분량 = 월간 ? "8000자에서 10000자" : 일간 ? "700자에서 1200자" : "1800자에서 2800자";
     const 결 = 월간
       ? "월간이므로 배경·현황·전망·시사점을 두루 짚고, 소제목으로 흐름을 나눈다."
-      : 일일
-        ? "일일이므로 오늘 하나만 다룬다. 소제목 없이 세 문단 안팎으로 쓰고, 배경 설명은 최소로 줄인다."
+      : 일간
+        ? "일간이므로 오늘 하나만 다룬다. 소제목 없이 세 문단 안팎으로 쓰고, 배경 설명은 최소로 줄인다."
         : "주간이므로 핵심을 빠르게 전달한다.";
 
     const prompt = [
@@ -641,7 +641,7 @@ async function route(req, res, url) {
       "- 부제: 제목을 보완하는 한 줄.",
       "- 요약: 150자에서 200자. 서재 카드에 실린다.",
       "- 본문: 블록 배열. t가 h면 소제목, p면 문단이다."
-        + (일일 ? " 일일은 짧으므로 소제목 없이 문단만 쓴다." : " 소제목으로 흐름을 나눈다."),
+        + (일간 ? " 일간은 짧으므로 소제목 없이 문단만 쓴다." : " 소제목으로 흐름을 나눈다."),
       "- 한마디: 설계사가 덧붙이는 한 문장."
     ].filter(Boolean).join("\n");
 
@@ -1056,8 +1056,8 @@ async function route(req, res, url) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(목록항목["발행일"] || ""))) {
       return send(res, 400, { error: "발행일 형식 오류: YYYY-MM-DD" });
     }
-    if (["일일", "주간", "월간"].indexOf(목록항목["채널"]) < 0) {
-      return send(res, 400, { error: "채널은 일일·주간·월간 중 하나여야 합니다." });
+    if (["일간", "주간", "월간"].indexOf(목록항목["채널"]) < 0) {
+      return send(res, 400, { error: "채널은 일간·주간·월간 중 하나여야 합니다." });
     }
     const entry = { ...목록항목 };
     delete entry["상태"]; // 발행하기를 눌렀다 = 발행 확정. 발행 목록에 초안 표기를 남기지 않는다.
@@ -1262,6 +1262,24 @@ async function route(req, res, url) {
     const bytes = await readBytes(req, MAX_IMAGE);
     if (!bytes.length) return send(res, 400, { error: "빈 파일입니다." });
     return send(res, 200, saveMedia(bytes, ext));
+  }
+
+  // ── 조직도 ──
+  // 자리마다 계정 번호·이메일이 붙는다. 저장소(공개)가 아니라 여기 둔다.
+  // 열람은 로그인한 사람 전원 — 조직도는 원래 다 같이 보는 것이다.
+  if (req.method === "GET" && path === "/org") {
+    const v = getDoc(db, "org");
+    if (!v) return send(res, 404, { error: "서버에 저장된 조직도가 없습니다." });
+    return send(res, 200, JSON.parse(v));
+  }
+
+  if (req.method === "POST" && path === "/org") {
+    if (!canApprove(db, me)) return send(res, 403, { error: "조직도는 승인 권한자만 고칠 수 있습니다." });
+    const body = await readJson(req);
+    if (!body || !Array.isArray(body["구성원"]))
+      return send(res, 400, { error: "구성원 목록이 없습니다." });
+    setDoc(db, "org", JSON.stringify(body), me.id);
+    return send(res, 200, { ok: true });
   }
 
   if (req.method === "GET" && path === "/admin/pending") {

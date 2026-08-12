@@ -38,6 +38,15 @@ export function openDb(file) {
       approved_by INTEGER REFERENCES accounts(id)
     );
 
+    -- 조직도 — 전에는 브라우저(localStorage)에만 있어서 고쳐도 나만 보였다.
+    -- 자리마다 계정 번호·이메일이 붙으므로 저장소가 아니라 여기 둔다(공개 저장소 금지).
+    CREATE TABLE IF NOT EXISTS app_docs (
+      key        TEXT PRIMARY KEY,
+      value      TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      updated_by INTEGER
+    );
+
     CREATE TABLE IF NOT EXISTS sessions (
       token      TEXT PRIMARY KEY,
       account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
@@ -152,6 +161,19 @@ export function listMembers(db) {
             status, grade, parent_id, is_admin, can_approve, approved_at
      FROM accounts WHERE status <> '대기' ORDER BY id`
   ).all();
+}
+
+// 조직도처럼 통째로 오가는 문서 하나. 조각으로 쪼개 봐야 화면이 통째로 쓰고 읽는다.
+export function getDoc(db, key) {
+  const r = db.prepare("SELECT value FROM app_docs WHERE key = ?").get(key);
+  return r ? r.value : null;
+}
+export function setDoc(db, key, value, byId) {
+  db.prepare(
+    `INSERT INTO app_docs (key, value, updated_at, updated_by) VALUES (?, ?, ?, ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value,
+       updated_at = excluded.updated_at, updated_by = excluded.updated_by`
+  ).run(key, value, new Date().toISOString(), byId ?? null);
 }
 
 // 관리자가 고쳐 넣는 이름. 빈 값이면 구글 이름으로 되돌린다.
