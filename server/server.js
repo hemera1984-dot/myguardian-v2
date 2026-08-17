@@ -37,6 +37,8 @@ const MEDIA_BASE = process.env.MEDIA_BASE || "";  // 예: https://api.insurguard
 const CARE_DIR = process.env.CARE_DIR || "./care";
 const CARE_ISSUES_DIR = join(CARE_DIR, "issues");
 const CARE_LIST = join(CARE_DIR, "issues.json");
+// 독자가 지면을 읽는 곳. 호별 표지 페이지(/r/<id>)가 여기로 넘긴다.
+const SITE = (process.env.SITE_BASE || "https://app.insurguard.life").replace(/\/$/, "");
 
 // 지면 사진 업로드 — 받아들일 형식과 크기. 확장자는 서버가 정한다(파일명을 믿지 않는다).
 const IMAGE_TYPES = {
@@ -394,6 +396,46 @@ async function route(req, res, url) {
     if (!existsSync(file)) return send(res, 404, { error: "없는 발행물입니다." });
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     return res.end(readFileSync(file));
+  }
+
+  // 호별 표지 페이지 — 카톡에 붙일 주소다.
+  // 카톡 미리보기 로봇은 자바스크립트를 실행하지 않으므로 issue.html?id=X 를 보내면
+  // 정적으로 박힌 기본 표지만 읽는다. 그래서 호마다 다른 og 태그를 서버가 직접 그려 주고,
+  // 사람은 곧바로 지면으로 넘긴다. 로그인 없는 공개 경로다(독자가 고객이다).
+  const 표지 = req.method === "GET" && /^\/r\/([a-z0-9-]{1,64})$/.exec(path);
+  if (표지) {
+    // 옛 호는 정적 저장소(data/care)에만 있어 서버 목록에 없다. 404로 막으면 링크가 죽으므로
+    // 미리보기만 기본 표지로 두고 지면으로는 그대로 넘긴다.
+    const 호 = readCareList().find((i) => i && i.id === 표지[1]) || { id: 표지[1], "채널": "안창민" };
+    const h = (s) => String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const 제목 = 호["호수"]
+      ? `『${호["채널"]} ${호["발행인"] || "안창민"}』 `
+          + (호["주차라벨"] ? 호["주차라벨"] + " " : "") + `통권 ${호["호수"]}호`
+      : "안창민 케어센터";
+    const 설명 = String(호["요약"] || (호["목차"] || []).map((t) => t && t["제목"]).filter(Boolean).join(" · ")
+      || "보험·경제·상속을 쉽게 풀어 전하는 발행물입니다.").slice(0, 150);
+    // 카톡은 SVG를 미리보기로 그리지 않는다 — 삽화 표지인 호는 기본 이미지로 돌린다
+    const 커버 = String(호["커버이미지"] || "");
+    const 그림 = (커버 && !/\.svg$/i.test(커버))
+      ? (/^https?:/i.test(커버) ? 커버 : SITE + "/" + 커버.replace(/^\//, ""))
+      : SITE + "/web/assets/img/hero-care.jpg";
+    const 지면 = SITE + "/web/care/issue.html?id=" + encodeURIComponent(호.id);
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=300" });
+    return res.end('<!DOCTYPE html>\n<html lang="ko">\n<head>\n<meta charset="UTF-8">\n'
+      + '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
+      + `<title>${h(제목)}</title>\n`
+      + `<meta name="description" content="${h(설명)}">\n`
+      + '<meta property="og:type" content="article">\n'
+      + '<meta property="og:site_name" content="안창민 케어센터">\n'
+      + `<meta property="og:title" content="${h(제목)}">\n`
+      + `<meta property="og:description" content="${h(설명)}">\n`
+      + `<meta property="og:image" content="${h(그림)}">\n`
+      + `<meta property="og:url" content="${h(지면)}">\n`
+      + '<meta name="twitter:card" content="summary_large_image">\n'
+      + `<meta http-equiv="refresh" content="0; url=${h(지면)}">\n`
+      + `<script>location.replace(${JSON.stringify(지면)});</script>\n`
+      + `</head>\n<body>\n<p><a href="${h(지면)}">${h(제목)}</a> 를 여는 중입니다.</p>\n</body>\n</html>\n`);
   }
 
   // 이 아래는 세션 필요

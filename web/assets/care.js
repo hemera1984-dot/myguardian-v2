@@ -59,10 +59,17 @@
     orgInput.addEventListener("input", onChange);
   }
 
+  // 카톡에 붙일 주소 — 서버의 호별 표지 페이지로 보낸다.
+  // 카톡 미리보기 로봇은 자바스크립트를 실행하지 않아서 issue.html?id=X 를 보내면
+  // 호와 무관하게 정적으로 박힌 기본 표지만 읽는다(2026-08-17). 표지 페이지가
+  // 호마다 다른 og 태그를 내주고 사람은 곧바로 지면으로 넘어간다.
+  // 에디션(팀원 발행분)은 표지가 같으므로 지면 주소를 그대로 쓴다.
   function issueUrl(issue, edition) {
-    var query = "issue.html?id=" + encodeURIComponent(issue.id)
-      + (edition ? "&fc=" + encodeURIComponent(edition["코드"]) : "");
-    return new URL(query, window.location.href).href;
+    if (edition) {
+      return new URL("issue.html?id=" + encodeURIComponent(issue.id)
+        + "&fc=" + encodeURIComponent(edition["코드"]), window.location.href).href;
+    }
+    return apiBase() + "/r/" + encodeURIComponent(issue.id);
   }
 
   // 공유 발행 에디션(결정 2026-07-20): edition을 주면 발행인·링크·서명이 그 FC로 바뀐다.
@@ -749,39 +756,6 @@
     return h.join("");
   }
 
-  // 호별 카톡 미리보기용 OG 페이지 — 카톡은 자바스크립트를 실행하지 않으므로
-  // issue.html?id=X 로는 호마다 다른 미리보기가 안 나온다. 발행 시 이 함수로
-  // 호별 정적 페이지를 떠서 그 주소를 공유한다. (생성·저장은 다음 단계)
-  var SITE = "https://app.insurguard.life";
-
-  function ogPageHtml(meta, data) {
-    var pub = meta["발행인"] || "안창민";
-    var title = "『" + meta["채널"] + " " + pub + "』 " + (meta["주차라벨"] || "") + " 통권 " + meta["호수"] + "호";
-    var arts = (data && data["기사"]) || [];
-    var desc = meta["요약"] || arts.map(function (a) { return a["제목"]; }).join(" · ");
-    desc = String(desc).slice(0, 150);
-    // 카톡은 SVG를 미리보기로 그리지 않는다 — 삽화 표지인 호는 기본 이미지로 돌린다
-    var cover = /\.svg$/i.test(meta["커버이미지"] || "") ? "" : meta["커버이미지"];
-    var img = cover
-      ? (/^https?:/.test(cover) ? cover : SITE + "/" + cover)
-      : SITE + "/web/assets/img/hero-care.jpg";
-    var url = SITE + "/web/care/issue.html?id=" + encodeURIComponent(meta.id);
-    return '<!DOCTYPE html>\n<html lang="ko">\n<head>\n<meta charset="UTF-8">\n'
-      + '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
-      + "<title>" + esc(title) + "</title>\n"
-      + '<meta name="description" content="' + esc(desc) + '">\n'
-      + '<meta property="og:type" content="article">\n'
-      + '<meta property="og:site_name" content="안창민 케어센터">\n'
-      + '<meta property="og:title" content="' + esc(title) + '">\n'
-      + '<meta property="og:description" content="' + esc(desc) + '">\n'
-      + '<meta property="og:image" content="' + esc(img) + '">\n'
-      + '<meta property="og:url" content="' + esc(url) + '">\n'
-      + '<meta name="twitter:card" content="summary_large_image">\n'
-      + '<meta http-equiv="refresh" content="0; url=' + esc(url) + '">\n'
-      + '<script>location.replace("' + esc(url) + '");<\/script>\n'
-      + "</head>\n<body>\n<p><a href=\"" + esc(url) + '">' + esc(title) + "를 여는 중입니다.</a></p>\n</body>\n</html>\n";
-  }
-
   // ── 기사 넘기기 (2026-08-03)
   // 기사 셋을 한 판에 이어 붙이면 스크롤이 끝없이 길어져 읽기 전에 지친다.
   // 기사 하나만 펼치고, 다 읽으면 옆으로 넘긴다 — 폰은 스와이프, 노트북은 좌우 화살표.
@@ -885,7 +859,6 @@
     displayCat: displayCat,
     mediaSrc: mediaSrc,
     issueHtml: issueHtml,
-    ogPageHtml: ogPageHtml,
     coverHtml: coverHtml,
     loadSender: loadSender,
     saveSender: saveSender,
