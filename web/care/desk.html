@@ -155,15 +155,16 @@
       var care = window.care;
       var esc = care.esc;
 
-      // 주간은 꼭지가 고정이다(사양 2026-08-02). 월간은 세 칸 모두 자유 주제.
-      // 채널별 고정 꼭지 (2026-08-05 역할 분리). 일간이 경제·시사를 맡으므로 주간은
-      // 보험·자산·세무로 옮겨 재탕을 없앤다. 이미 발행된 과월호의 꼭지 표기는 건드리지 않는다.
+      // 채널별 꼭지 기본값. 주간만 보험·자산·세무를 기본으로 잡아 일간과의 재탕을 줄인다.
+      // 일간·월간은 자유 주제 — 카테고리는 쓰고 나면 자동으로 붙는다(2026-08-17).
+      // 주간도 고정이 아니라 기본값이다 — 칼럼마다 눌러서 바꿀 수 있다.
+      // 이미 발행된 과월호의 꼭지 표기는 건드리지 않는다.
       var CH_CATS = {
-        "일간": ["경제"],
+        "일간": [""],
         "주간": ["보험", "자산", "세무"],
         "월간": ["", "", ""]
       };
-      var DAILY_CATS = ["경제", "시사"];   // 일간은 한 꼭지 — 둘 중에서 고른다
+      var WEEKLY_CATS = ["보험", "자산", "세무", "부동산", "시사"];
       function catsOf(ch) { return CH_CATS[ch] || CH_CATS["월간"]; }
       var PREFIX = "mg_care_draft_";
 
@@ -340,7 +341,7 @@
           box.innerHTML = '<div><label for="new-date">발행일</label>'
             + '<input type="date" id="new-date" value="' + diso + '"></div>'
             + '<button class="btn" type="button" id="new-go">' + no + '호 만들기</button>'
-            + '<p class="new-note">일간은 한 꼭지입니다. 경제와 시사 중에서 고릅니다.</p>';
+            + '<p class="new-note">일간은 한 꼭지입니다. 주제는 자유이고, 카테고리는 작성하면 자동으로 붙습니다.</p>';
         } else if (S.ch === "주간") {
           var sun = new Date();
           sun.setDate(sun.getDate() + ((7 - sun.getDay()) % 7));
@@ -348,7 +349,7 @@
           box.innerHTML = '<div><label for="new-date">발행일 (일요일)</label>'
             + '<input type="date" id="new-date" value="' + iso + '"></div>'
             + '<button class="btn" type="button" id="new-go">' + no + '호 만들기</button>'
-            + '<p class="new-note">칼럼 세 꼭지는 ' + catsOf("주간").join(" · ") + ' 로 고정입니다.</p>';
+            + '<p class="new-note">칼럼 세 꼭지는 ' + catsOf("주간").join(" · ") + '. 소재가 안 맞으면 칼럼마다 바꿀 수 있습니다.</p>';
         } else {
           var now = new Date();
           box.innerHTML = '<div><label for="new-month">발행 연·월</label>'
@@ -434,18 +435,15 @@
         var written = blocksLen(a["본문"]) > 0;
         var target = "칼럼 " + (i + 1);
 
-        var daily = S.draft["채널"] === "일간";
         var head = '<div class="col-edit">'
           + (weekly
-              ? '<p class="col-fixed">' + esc(a["카테고리"] || "") + ' <span>주간 고정 꼭지</span></p>'
-              : daily
-                ? '<p class="col-fixed">오늘의 꼭지 '
-                    + DAILY_CATS.map(function (c) {
-                        return '<button type="button" class="cat-pick' + (a["카테고리"] === c ? " on" : "")
-                          + '" data-catpick="' + esc(c) + '" data-col="' + i + '">' + esc(c) + "</button>";
-                      }).join("")
-                    + "</p>"
-                : '<p class="col-fixed">' + esc(a["카테고리"] || "카테고리는 작성하면 자동으로 붙습니다") + "</p>")
+              ? '<p class="col-fixed">이 칼럼 꼭지 '
+                  + WEEKLY_CATS.map(function (c) {
+                      return '<button type="button" class="cat-pick' + (a["카테고리"] === c ? " on" : "")
+                        + '" data-catpick="' + esc(c) + '" data-col="' + i + '">' + esc(c) + "</button>";
+                    }).join("")
+                  + "</p>"
+              : '<p class="col-fixed">' + esc(a["카테고리"] || "카테고리는 작성하면 자동으로 붙습니다") + "</p>")
 
           + '<div class="fld"><label for="f-title-' + i + '">제목</label>'
           + '<input type="text" id="f-title-' + i + '" data-f="제목" data-col="' + i + '" value="' + esc(a["제목"]) + '" placeholder="' + esc(target) + ' 제목을 쓰거나 주제를 추천받으세요">'
@@ -525,9 +523,9 @@
         var 도는중 = arts.some(function (_, i) { return 쓰는중[칸(S.draft.id, i)]; });
         if (!도는중) el("col-write-all-note").textContent = "";
         el("col-sub").textContent = S.draft["채널"] === "일간"
-          ? "일간은 한 꼭지입니다"
+          ? "일간은 한 꼭지, 주제는 자유입니다"
           : S.draft["채널"] === "주간"
-            ? "주간은 세 꼭지가 고정입니다" : "월간은 세 꼭지 모두 자유 주제입니다";
+            ? "주간은 세 꼭지, 꼭지는 칼럼마다 고를 수 있습니다" : "월간은 세 꼭지 모두 자유 주제입니다";
         el("col-list").innerHTML = arts.map(function (a, i) {
           var open = S.open === i;
           return '<div class="col-item' + (open ? " open" : "") + '">'
@@ -760,7 +758,8 @@
           var 대상 = 내화면() ? S.draft : readDraft(draftId);
           if (!대상 || !대상["기사"] || !대상["기사"][i]) return;   // 초안이 지워졌다
           var t = 대상["기사"][i];
-          if (대상["채널"] !== "주간" && d["카테고리"]) t["카테고리"] = d["카테고리"];
+          // 고른 꼭지가 있으면 서버가 돌려준 값으로 덮지 않는다(월간만 자동으로 붙는다)
+          if (!t["카테고리"] && d["카테고리"]) t["카테고리"] = d["카테고리"];
           t["부제"] = d["부제"] || t["부제"];
           t["요약"] = toLines(d["요약"]);
           t["한마디"] = toLines(d["한마디"]);
