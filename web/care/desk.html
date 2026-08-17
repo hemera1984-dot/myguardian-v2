@@ -164,7 +164,9 @@
         "주간": ["보험", "자산", "세무"],
         "월간": ["", "", ""]
       };
-      var WEEKLY_CATS = ["보험", "자산", "세무", "부동산", "시사"];
+      // 눌러서 고르는 꼭지 — 세 채널 공통. 여기 없는 것은 손보기의 카테고리 칸에 직접 쓴다.
+      var PICK_CATS = ["보험", "자산", "세무", "부동산", "상속·증여",
+                       "경제", "정치", "시사", "IT", "AI", "건강", "교양"];
       function catsOf(ch) { return CH_CATS[ch] || CH_CATS["월간"]; }
       var PREFIX = "mg_care_draft_";
 
@@ -341,7 +343,7 @@
           box.innerHTML = '<div><label for="new-date">발행일</label>'
             + '<input type="date" id="new-date" value="' + diso + '"></div>'
             + '<button class="btn" type="button" id="new-go">' + no + '호 만들기</button>'
-            + '<p class="new-note">일간은 한 꼭지입니다. 주제는 자유이고, 카테고리는 작성하면 자동으로 붙습니다.</p>';
+            + '<p class="new-note">일간은 한 꼭지입니다. 꼭지는 칼럼에서 골라 씁니다.</p>';
         } else if (S.ch === "주간") {
           var sun = new Date();
           sun.setDate(sun.getDate() + ((7 - sun.getDay()) % 7));
@@ -349,13 +351,13 @@
           box.innerHTML = '<div><label for="new-date">발행일 (일요일)</label>'
             + '<input type="date" id="new-date" value="' + iso + '"></div>'
             + '<button class="btn" type="button" id="new-go">' + no + '호 만들기</button>'
-            + '<p class="new-note">칼럼 세 꼭지는 ' + catsOf("주간").join(" · ") + '. 소재가 안 맞으면 칼럼마다 바꿀 수 있습니다.</p>';
+            + '<p class="new-note">칼럼 세 꼭지 기본값은 ' + catsOf("주간").join(" · ") + '. 칼럼마다 바꿀 수 있습니다.</p>';
         } else {
           var now = new Date();
           box.innerHTML = '<div><label for="new-month">발행 연·월</label>'
             + '<input type="month" id="new-month" value="' + now.getFullYear() + "-" + pad2(now.getMonth() + 1) + '"></div>'
             + '<button class="btn" type="button" id="new-go">' + no + '호 만들기</button>'
-            + '<p class="new-note">칼럼 세 꼭지 모두 자유 주제입니다. 카테고리는 작성하면 자동으로 붙습니다.</p>';
+            + '<p class="new-note">칼럼 세 꼭지 모두 자유 주제입니다. 꼭지는 칼럼에서 골라 씁니다.</p>';
         }
       }
 
@@ -436,14 +438,12 @@
         var target = "칼럼 " + (i + 1);
 
         var head = '<div class="col-edit">'
-          + (weekly
-              ? '<p class="col-fixed">이 칼럼 꼭지 '
-                  + WEEKLY_CATS.map(function (c) {
-                      return '<button type="button" class="cat-pick' + (a["카테고리"] === c ? " on" : "")
-                        + '" data-catpick="' + esc(c) + '" data-col="' + i + '">' + esc(c) + "</button>";
-                    }).join("")
-                  + "</p>"
-              : '<p class="col-fixed">' + esc(a["카테고리"] || "카테고리는 작성하면 자동으로 붙습니다") + "</p>")
+          + '<p class="col-fixed">이 칼럼 꼭지 '
+          + PICK_CATS.map(function (c) {
+              return '<button type="button" class="cat-pick' + (a["카테고리"] === c ? " on" : "")
+                + '" data-catpick="' + esc(c) + '" data-col="' + i + '">' + esc(c) + "</button>";
+            }).join("")
+          + ' <span class="cat-note">없으면 아래 카테고리 칸에 직접</span></p>'
 
           + '<div class="fld"><label for="f-title-' + i + '">제목</label>'
           + '<input type="text" id="f-title-' + i + '" data-f="제목" data-col="' + i + '" value="' + esc(a["제목"]) + '" placeholder="' + esc(target) + ' 제목을 쓰거나 주제를 추천받으세요">'
@@ -494,11 +494,9 @@
 
       // 수정 칸 묶음 — 쓰기 전에는 "직접 쓰기", 쓴 뒤에는 "손보기" 안에 들어간다
       function colFieldsHtml(a, i) {
-        var weekly = S.draft["채널"] === "주간";
         var sumLen = linesLen(a["요약"]);
         var bodyLen = blocksLen(a["본문"]);
-        return (weekly ? "" :
-            '<div class="fld"><label for="f-cat-' + i + '">카테고리</label>'
+        return ('<div class="fld"><label for="f-cat-' + i + '">카테고리</label>'
             + '<input type="text" id="f-cat-' + i + '" data-f="카테고리" data-col="' + i + '" value="' + esc(a["카테고리"]) + '" placeholder="비워두면 작성 시 자동으로 붙습니다"></div>')
 
           + '<div class="fld"><label for="f-sub-' + i + '">부제</label>'
@@ -523,9 +521,9 @@
         var 도는중 = arts.some(function (_, i) { return 쓰는중[칸(S.draft.id, i)]; });
         if (!도는중) el("col-write-all-note").textContent = "";
         el("col-sub").textContent = S.draft["채널"] === "일간"
-          ? "일간은 한 꼭지, 주제는 자유입니다"
+          ? "일간은 한 꼭지입니다"
           : S.draft["채널"] === "주간"
-            ? "주간은 세 꼭지, 꼭지는 칼럼마다 고를 수 있습니다" : "월간은 세 꼭지 모두 자유 주제입니다";
+            ? "주간은 세 꼭지입니다" : "월간은 세 꼭지 모두 자유 주제입니다";
         el("col-list").innerHTML = arts.map(function (a, i) {
           var open = S.open === i;
           return '<div class="col-item' + (open ? " open" : "") + '">'

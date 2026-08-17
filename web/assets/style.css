@@ -1698,9 +1698,9 @@ body.magazine :focus-visible {
   color: var(--ink-sub);
 }
 
-/* 일간 꼭지 고르기 — 경제냐 시사냐에 따라 서버가 붙이는 필자가 달라진다 (2026-08-05) */
+/* 꼭지 고르기 — 고른 꼭지에 따라 서버가 붙이는 필자가 달라진다. 세 채널 공통(2026-08-17) */
 .cat-pick {
-  margin-left: 6px;
+  margin: 0 0 5px 6px;
   padding: 3px 11px;
   border: 1px solid var(--line-strong, #cbd3de);
   border-radius: 3px;
@@ -2340,8 +2340,9 @@ a.latest-card {
 .shelf-row { border-bottom: 1px solid var(--line); }
 
 /* 칼럼 편집 두 상태 (2026-08-02) — 입력을 최소로, 결과는 읽기 좋게 */
-.col-fixed { margin: 0 0 14px; font-size: 12px; font-weight: 700; color: var(--accent); }
+.col-fixed { margin: 0 0 14px; font-size: 12px; font-weight: 700; color: var(--accent); line-height: 2.1; }
 .col-fixed span { margin-left: 6px; font-weight: 600; color: var(--ink-faint); }
+.cat-note { font-size: 11px; }
 .fld label .opt { margin-left: 5px; font-weight: 600; color: var(--ink-faint); }
 .write-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 6px 0 4px; }
 .btn-write {
