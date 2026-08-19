@@ -284,6 +284,13 @@
     + "if(typeof d.scroll==='number'){var el=document.scrollingElement||document.documentElement;"
     + "window.scrollTo(0,d.scroll*Math.max(0,el.scrollHeight-el.clientHeight));}"
     + "if(d.ask)tell();});\n"
+    // 전체화면(F)은 여기서 직접 처리한다. 위로 올려보내면 상위 창의 처리기는 사용자
+    // 조작으로 인정받지 못해 requestFullscreen이 거부된다 — 진짜 키를 받은 이 문서만 할 수 있다.
+    + "window.addEventListener('keydown',function(e){"
+    + "if(e.key!=='f'&&e.key!=='F')return;e.preventDefault();"
+    + "try{if(document.fullscreenElement)document.exitFullscreen();"
+    + "else document.documentElement.requestFullscreen();}catch(x){}"
+    + "try{parent.postMessage({mgb:'key',key:'f'},'*');}catch(x){}});\n"
     // 문서 안에서 누른 키 중 발표자 화면 몫(스크립트 스크롤·글자 크기)은 위로 올려보낸다
     + "window.addEventListener('keydown',function(e){"
     + "if(['ArrowUp','ArrowDown','+','=','-','_'].indexOf(e.key)<0)return;"
@@ -722,6 +729,9 @@
             var frame = document.createElement("iframe");
             frame.className = "pg-html-frame";
             frame.setAttribute("sandbox", "allow-scripts");
+            // 전체화면 권한은 기본이 self라 출처가 끊긴 iframe에는 안 내려간다.
+            // 이 줄이 없으면 슬라이드 문서 안에서 F를 눌러도 전체화면이 막힌다(2026-08-17).
+            frame.setAttribute("allow", "fullscreen");
             frame.src = url;
             stageEl.appendChild(frame);
             return new Promise(function (resolve) {

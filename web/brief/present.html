@@ -424,6 +424,13 @@
           } else if (e.key === "-" || e.key === "_") {
             e.preventDefault();
             zoomScript(-0.15); // 스크립트 글자 작게
+          } else if (!fromFrame && (e.key === "f" || e.key === "F")) {
+            // 발표자 화면에도 전체화면이 있어야 한다 — 청중 창 없이 노트북 하나로
+            // 발표하는 자리가 있다. fromFrame은 제외한다: 슬라이드 문서가 이미 자기를
+            // 전체화면으로 만들었으므로 여기서 또 걸면 두 번 겹친다.
+            e.preventDefault();
+            if (document.fullscreenElement) document.exitFullscreen();
+            else document.documentElement.requestFullscreen().catch(function () {});
           }
         };
         document.addEventListener("keydown", function (e) { onKey(e, false); });
