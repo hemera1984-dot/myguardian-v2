@@ -3231,3 +3231,15 @@ body.shelf-body { background: #f4f1ea; }
   letter-spacing: -0.03em;
 }
 .shelf__more[open] > summary { margin-bottom: 16px; }
+
+/* 제목이 내세운 수치를 서버가 확인하지 못했을 때 — 편집자에게만 보이는 경고 (2026-08-23) */
+.r-warn {
+  margin: 8px 0 0;
+  padding: 7px 11px;
+  border-left: 3px solid var(--point, #bc003a);
+  background: var(--point-soft, #ffeff0);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--point, #bc003a);
+  word-break: keep-all;
+}
