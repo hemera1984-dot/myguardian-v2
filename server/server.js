@@ -37,6 +37,11 @@ const MEDIA_BASE = process.env.MEDIA_BASE || "";  // 예: https://api.insurguard
 const CARE_DIR = process.env.CARE_DIR || "./care";
 const CARE_ISSUES_DIR = join(CARE_DIR, "issues");
 const CARE_LIST = join(CARE_DIR, "issues.json");
+// 네이버 뉴스 검색 (NAVER API HUB). 앤트로픽 웹 검색은 색인이 늦어 당일 한국 기사를
+// 못 물어온다 — 오늘 나온 기사로 칼럼을 쓰려면 이쪽이 필요하다(2026-08-23).
+const NAVER_ID = process.env.NAVER_CLIENT_ID || "";
+const NAVER_SECRET = process.env.NAVER_CLIENT_SECRET || "";
+
 // 독자가 지면을 읽는 곳. 호별 표지 페이지(/r/<id>)가 여기로 넘긴다.
 const SITE = (process.env.SITE_BASE || "https://app.insurguard.life").replace(/\/$/, "");
 
@@ -239,6 +244,35 @@ function cors(req, res) {
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
     res.setHeader("Access-Control-Max-Age", "86400");
+  }
+}
+
+// 네이버 뉴스 검색 — 제목으로 실제 기사를 찾는다. 키가 없으면 조용히 빈 배열을 돌려주고
+// 앤트로픽 웹 검색만으로 간다(기능이 통째로 멈추지 않게).
+async function naverNews(query, display = 5) {
+  if (!NAVER_ID || !NAVER_SECRET) return [];
+  const url = "https://naverapihub.apigw.ntruss.com/search/v1/news?"
+    + new URLSearchParams({ query: String(query).slice(0, 200), display: String(display), sort: "date", format: "json" });
+  try {
+    const r = await fetch(url, {
+      headers: { "X-NCP-APIGW-API-KEY-ID": NAVER_ID, "X-NCP-APIGW-API-KEY": NAVER_SECRET },
+      signal: AbortSignal.timeout(10000)
+    });
+    if (!r.ok) { console.error("네이버 검색 실패:", r.status); return []; }
+    const d = await r.json();
+    // 네이버는 검색어를 <b>로 감싸 돌려주고 HTML 엔티티도 섞여 온다 — 벗겨서 넘긴다
+    const 벗기기 = (t) => String(t || "").replace(/<[^>]*>/g, "")
+      .replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">").replace(/&#39;/g, "'").trim();
+    return (d.items || []).map((it) => ({
+      제목: 벗기기(it.title).slice(0, 200),
+      요약: 벗기기(it.description).slice(0, 400),
+      링크: String(it.originallink || it.link || "").slice(0, 400),
+      발행: String(it.pubDate || "").slice(0, 40)
+    }));
+  } catch (e) {
+    console.error("네이버 검색 오류:", e.message);
+    return [];
   }
 }
 
@@ -660,6 +694,18 @@ async function route(req, res, url) {
         ? "일간이므로 오늘 하나만 다룬다. 소제목 없이 세 문단 안팎으로 쓰고, 배경 설명은 최소로 줄인다."
         : "주간이므로 핵심을 빠르게 전달한다.";
 
+    // 제목으로 네이버를 먼저 뒤진다. 편집자가 붙여 넣는 것은 대개 오늘 나온 기사 제목이고,
+    // 앤트로픽 웹 검색은 색인이 늦어 당일 기사를 못 찾는다(2026-08-23 상속예금 1.9조원 건).
+    const 네이버 = await naverNews(제목, 5);
+    const 기사거리 = 네이버.length
+      ? ["", "제목으로 네이버 뉴스를 찾은 결과다. 이 중 제목과 같은 사안을 다룬 기사가 있으면",
+         "그 기사가 이 글의 사안이다. 여기 실린 수치·기관·날짜는 확인된 것으로 보고 써도 된다.",
+         ...네이버.map((n, i) => `${i + 1}. ${n.제목} (${n.발행})
+   ${n.요약}
+   ${n.링크}`)].join("
+")
+      : "";
+
     const prompt = [
       `잡지 "${채널}"의 "${카테고리}" 칼럼 본문을 쓴다.`,
       필자(카테고리),
@@ -670,6 +716,8 @@ async function route(req, res, url) {
       "",
       "먼저 웹을 검색해 사실을 모은 뒤에 쓴다. 검색 없이 쓰면 「무엇이 일어났는가」가 빠지고",
       "「어떻게 볼 것인가」만 남아 칼럼이 아니라 소감문이 된다.",
+      "",
+      기사거리,
       "",
       "**첫 검색은 제목 그 자체로 한다.** 편집자가 실제 기사 제목을 그대로 붙여 넣는 일이 잦다.",
       "제목 문장을 검색어로 넣어 그 기사를 찾고, 찾으면 그 기사가 다룬 사안을 이 글의 사안으로 삼는다.",
@@ -744,7 +792,13 @@ async function route(req, res, url) {
     if (r.error === 422) return send(res, 422, { error: "이 제목으로는 본문을 쓸 수 없습니다." });
     if (r.error) return send(res, 502, { error: "본문을 받아오지 못했습니다. 잠시 후 다시 시도하세요." });
     // 무엇을 찾아 썼는지 함께 돌려준다 — 검색이 안 돌았으면 화면에서 바로 보인다.
-    return send(res, 200, { ...r.value, "출처": r.출처 || [], "검색질의": r.질의 || [] });
+    const 네이버출처 = 네이버.map((n) => ({ url: n.링크, 제목: n.제목 }));
+    return send(res, 200, {
+      ...r.value,
+      "출처": [...네이버출처, ...(r.출처 || [])],
+      "검색질의": r.질의 || [],
+      "네이버건수": 네이버.length
+    });
   }
 
   // 이미지 프롬프트 — 표지·칼럼 그림을 생성기에 넣을 지시문으로 만들어 준다.
