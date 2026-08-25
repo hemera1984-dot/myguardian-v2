@@ -53,8 +53,25 @@ export function openDb(file) {
       expires_at TEXT NOT NULL
     );
 
+    -- 고객 레코드 — 서버는 내용을 모른다(헌법: 종단간 암호화).
+    -- 여기 있는 것은 암호문과 그것을 여는 두 벌의 감싼 열쇠뿐이다.
+    -- 열쇠_fc = 담당 FC의 열쇠로 감싼 데이터열쇠. 평상시 이것으로 연다.
+    -- 열쇠_비상 = 지점 비상 공개키로 감싼 같은 데이터열쇠. 분실·퇴사 때만 쓴다.
+    -- 서버는 둘 다 풀지 못한다 — 감싸고 푸는 일은 전부 기기에서 일어난다.
+    CREATE TABLE IF NOT EXISTS clients (
+      고객코드    TEXT NOT NULL,
+      소유계정    INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      암호문      TEXT NOT NULL,
+      열쇠_fc     TEXT NOT NULL,
+      열쇠_비상   TEXT NOT NULL,
+      비상키지문  TEXT NOT NULL DEFAULT '',
+      갱신시각    TEXT NOT NULL,
+      PRIMARY KEY (소유계정, 고객코드)
+    );
+
     CREATE INDEX IF NOT EXISTS idx_accounts_status ON accounts(status);
     CREATE INDEX IF NOT EXISTS idx_sessions_account ON sessions(account_id);
+    CREATE INDEX IF NOT EXISTS idx_clients_owner ON clients(소유계정);
   `);
 
   // 이미 만들어진 DB에 컬럼 추가 (있으면 그냥 실패하므로 삼킨다)
@@ -217,4 +234,48 @@ export function isDescendantOf(db, accountId, ancestorId) {
     cur = getAccount(db, cur.parent_id);
   }
   return false;
+}
+
+// ── 고객 레코드 (암호문만 오간다)
+// 서버는 암호문·감싼 열쇠를 그대로 보관하고 돌려줄 뿐 아무것도 해석하지 않는다.
+
+export function listClients(db, ownerId) {
+  return db.prepare(
+    "SELECT 고객코드, 암호문, 열쇠_fc, 열쇠_비상, 비상키지문, 갱신시각"
+    + " FROM clients WHERE 소유계정 = ? ORDER BY 갱신시각 DESC"
+  ).all(ownerId);
+}
+
+// 목록만 — 내용 없이 무엇이 언제 바뀌었는지. 기기가 받아갈 것을 고를 때 쓴다.
+export function listClientStamps(db, ownerId) {
+  return db.prepare(
+    "SELECT 고객코드, 갱신시각 FROM clients WHERE 소유계정 = ? ORDER BY 고객코드"
+  ).all(ownerId);
+}
+
+export function putClient(db, ownerId, rec) {
+  db.prepare(
+    "INSERT INTO clients (고객코드, 소유계정, 암호문, 열쇠_fc, 열쇠_비상, 비상키지문, 갱신시각)"
+    + " VALUES (?, ?, ?, ?, ?, ?, ?)"
+    + " ON CONFLICT(소유계정, 고객코드) DO UPDATE SET"
+    + " 암호문 = excluded.암호문, 열쇠_fc = excluded.열쇠_fc,"
+    + " 열쇠_비상 = excluded.열쇠_비상, 비상키지문 = excluded.비상키지문,"
+    + " 갱신시각 = excluded.갱신시각"
+  ).run(rec.고객코드, ownerId, rec.암호문, rec.열쇠_fc, rec.열쇠_비상,
+        rec.비상키지문 || "", new Date().toISOString());
+}
+
+export function deleteClient(db, ownerId, code) {
+  return db.prepare("DELETE FROM clients WHERE 소유계정 = ? AND 고객코드 = ?")
+    .run(ownerId, code).changes;
+}
+
+// 총관리자가 평상시 볼 수 있는 전부 — 어느 FC가 몇 명을 관리 중인가(헌법).
+export function clientCounts(db) {
+  return db.prepare(
+    "SELECT a.id AS 계정, COALESCE(NULLIF(a.display_name,''), a.name) AS 이름,"
+    + " COUNT(c.고객코드) AS 건수, MAX(c.갱신시각) AS 최근갱신"
+    + " FROM accounts a LEFT JOIN clients c ON c.소유계정 = a.id"
+    + " WHERE a.status = '승인' GROUP BY a.id ORDER BY 건수 DESC"
+  ).all();
 }

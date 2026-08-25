@@ -1,0 +1,49 @@
+<!-- 금고 자체 검사 — 브라우저로 이 파일을 열면 8가지를 확인한다.
+     감싸기·풀기·비상 복구·틀린 문구 차단·다른 기기·계정 격리·평문 유출 없음.
+     vault.js를 고치면 반드시 다시 돌린다. 서버·로그인 없이 파일만으로 돈다. -->
+<meta charset="utf-8">
+<body><pre id="out">돌리는 중…</pre>
+<script src="../web/assets/vault.js"></script>
+<script>
+var V = window.mgVault, out = document.getElementById('out'), log = [];
+function 적기(t, ok) { log.push((ok === true ? '통과  ' : ok === false ? '실패  ' : '      ') + t); out.textContent = log.join('\n'); }
+(async function () {
+  try {
+    적기('쓸 수 있나: ' + V.쓸수있나());
+    var 키쌍 = await V.비상열쇠만들기();
+    적기('비상 열쇠쌍 생성 · 지문 ' + 키쌍.지문, true);
+
+    var 공개 = await V.비상공개키(키쌍.공개키);
+    var fc = await V.fc열쇠('내잠금문구1234', 'hemera1984@gmail.com');
+    var 레코드 = { 고객코드: 'C-2026-001', 이름: '홍길동', 연락처: '010-1234-5678', 메모: '가나다'.repeat(50) };
+
+    var 봉투 = await V.감싸기(레코드, { fc열쇠: fc, 비상공개키: 공개, 지문: 키쌍.지문 });
+    적기('감싸기 · 암호문 ' + 봉투.암호문.length + '자 · 열쇠_fc ' + 봉투.열쇠_fc.length + ' · 열쇠_비상 ' + 봉투.열쇠_비상.length, true);
+    적기('평문이 안 새는가: ' + (JSON.stringify(봉투).indexOf('홍길동') < 0 && JSON.stringify(봉투).indexOf('010-1234') < 0), JSON.stringify(봉투).indexOf('홍길동') < 0);
+
+    var 푼것 = await V.풀기(봉투, fc);
+    적기('FC 열쇠로 풀기 · 원본과 같은가: ' + (JSON.stringify(푼것) === JSON.stringify(레코드)), JSON.stringify(푼것) === JSON.stringify(레코드));
+
+    var 비상 = await V.비상풀기(봉투, 키쌍.개인키);
+    적기('비상 개인키로 풀기 · 원본과 같은가: ' + (JSON.stringify(비상) === JSON.stringify(레코드)), JSON.stringify(비상) === JSON.stringify(레코드));
+
+    var 다른fc = await V.fc열쇠('틀린잠금문구', 'hemera1984@gmail.com');
+    var 막혔나 = false;
+    try { await V.풀기(봉투, 다른fc); } catch (e) { 막혔나 = true; }
+    적기('틀린 잠금문구는 막히는가: ' + 막혔나, 막혔나);
+
+    var 같은fc = await V.fc열쇠('내잠금문구1234', 'hemera1984@gmail.com');
+    var 다른기기 = await V.풀기(봉투, 같은fc);
+    적기('다른 기기에서 같은 잠금문구로 열리는가: ' + (다른기기.이름 === '홍길동'), 다른기기.이름 === '홍길동');
+
+    var 남의계정 = await V.fc열쇠('내잠금문구1234', 'other@example.com');
+    var 계정격리 = false;
+    try { await V.풀기(봉투, 남의계정); } catch (e) { 계정격리 = true; }
+    적기('같은 문구라도 다른 계정이면 막히는가: ' + 계정격리, 계정격리);
+
+    적기('');
+    적기('결과: ' + log.filter(function (l) { return l.indexOf('실패') === 0; }).length + '건 실패');
+    window.끝 = log.join('\n');
+  } catch (e) { 적기('오류: ' + e.message, false); window.끝 = log.join('\n'); }
+})();
+</script></body>

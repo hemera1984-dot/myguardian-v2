@@ -14,7 +14,8 @@ import { randomBytes } from "node:crypto";
 import {
   openDb, seedGrades, upsertAccount, createSession, accountForToken, deleteSession,
   listGrades, listPending, listMembers, getAccount, approve, suspend, setAdmin,
-  setApprover, isDescendantOf, setDisplayName, getDoc, setDoc
+  setApprover, isDescendantOf, setDisplayName, getDoc, setDoc,
+  listClients, listClientStamps, putClient, deleteClient, clientCounts
 } from "./db.js";
 import { artworkSvg } from "./artwork.js";
 
@@ -487,6 +488,61 @@ async function route(req, res, url) {
 
   // 승인 대기 상태에서는 여기까지만 — 데이터 경로는 열지 않는다
   if (me.status !== "승인") return send(res, 403, { error: "승인 대기 중입니다." });
+
+  // ── 고객 레코드 ────────────────────────────────────────────────────────────
+  // 서버는 암호문만 만진다. 내용도, 여는 열쇠도 여기 없다(헌법: 종단간 암호화).
+  // 소유 계정은 언제나 로그인한 사람이다 — 남의 것을 지정할 수 있는 경로를 두지 않는다.
+
+  if (req.method === "GET" && path === "/clients") {
+    return send(res, 200, listClients(db, me.id));
+  }
+
+  // 무엇이 언제 바뀌었는지만. 기기가 받아갈 것을 고를 때 쓴다(전부 내려받지 않게).
+  if (req.method === "GET" && path === "/clients/stamps") {
+    return send(res, 200, listClientStamps(db, me.id));
+  }
+
+  // 총관리자가 평상시 볼 수 있는 전부 — 어느 FC가 몇 명인가. 내용은 여기에도 없다.
+  if (req.method === "GET" && path === "/clients/counts") {
+    if (!me.is_admin) return send(res, 403, { error: "총관리자만 볼 수 있습니다." });
+    return send(res, 200, clientCounts(db));
+  }
+
+  if (req.method === "PUT" && path === "/clients") {
+    const body = await readJson(req, 4 * 1024 * 1024);
+    const 목록 = Array.isArray(body) ? body : [body];
+    if (!목록.length) return send(res, 400, { error: "올릴 레코드가 없습니다." });
+    if (목록.length > 500) return send(res, 400, { error: "한 번에 500건까지 올릴 수 있습니다." });
+    const 글자 = (v, 최대) => typeof v === "string" && v.length > 0 && v.length <= 최대;
+    for (const r of 목록) {
+      if (!r || typeof r !== "object" || Array.isArray(r)) {
+        return send(res, 400, { error: "레코드 형식 오류입니다." });
+      }
+      // 고객코드는 기본키가 된다 — 형식을 좁혀 둔다(헌법: 고객은 코드로만 표기)
+      if (!/^[A-Za-z0-9-]{1,40}$/.test(String(r["고객코드"] || ""))) {
+        return send(res, 400, { error: "고객코드 형식 오류: 영문·숫자·하이픈 1~40자." });
+      }
+      // 감싼 열쇠가 한쪽이라도 비면 나중에 못 연다. 여기서 막는다.
+      if (!글자(r["암호문"], 2 * 1024 * 1024) || !글자(r["열쇠_fc"], 4096)
+        || !글자(r["열쇠_비상"], 4096)) {
+        return send(res, 400, { error: "암호문과 두 벌의 감싼 열쇠가 모두 있어야 합니다." });
+      }
+      if (r["비상키지문"] != null && !글자(r["비상키지문"], 128)) {
+        return send(res, 400, { error: "비상키지문 형식 오류입니다." });
+      }
+    }
+    for (const r of 목록) putClient(db, me.id, r);
+    console.log(`고객 저장: ${목록.length}건 — ${me.email}`);
+    return send(res, 200, { ok: true, 건수: 목록.length });
+  }
+
+  const 고객삭제 = req.method === "DELETE" && /^\/clients\/([A-Za-z0-9-]{1,40})$/.exec(path);
+  if (고객삭제) {
+    const n = deleteClient(db, me.id, 고객삭제[1]);
+    if (!n) return send(res, 404, { error: "없는 고객입니다." });
+    console.log(`고객 삭제: ${고객삭제[1]} — ${me.email}`);
+    return send(res, 200, { ok: true });
+  }
 
   // 기사 제목 다듬기 — 가제를 넣으면 다듬은 제목 3안을 준다.
   // 승인된 계정이면 누구나. 키는 서버에만 있고 응답에 실리지 않는다.
