@@ -283,7 +283,15 @@
     + "if(typeof d.goto==='number')goTo(d.goto);"
     + "if(typeof d.scroll==='number'){var el=document.scrollingElement||document.documentElement;"
     + "window.scrollTo(0,d.scroll*Math.max(0,el.scrollHeight-el.clientHeight));}"
+    + "if(d.청중)청중();"
     + "if(d.ask)tell();});\n"
+    // 자료가 자기 화면에 띄우는 조작 안내(「F 전체화면 · ← 뒤로」)는 발표자 몫이다.
+    // 청중 창에서는 감춘다 — 빔프로젝터에 단축키 안내가 걸려 있을 이유가 없다.
+    // 자료마다 #bar 또는 #hint를 쓴다. 앞으로 만드는 자료는 data-발표자용을 붙이면 된다.
+    + "function 청중(){if(document.getElementById('mg-audience'))return;"
+    + "var s=document.createElement('style');s.id='mg-audience';"
+    + "s.textContent='#bar,#hint,[data-발표자용]{display:none !important}';"
+    + "(document.head||document.documentElement).appendChild(s);}\n"
     // 전체화면(F)은 여기서 직접 처리한다. 위로 올려보내면 상위 창의 처리기는 사용자
     // 조작으로 인정받지 못해 requestFullscreen이 거부된다 — 진짜 키를 받은 이 문서만 할 수 있다.
     + "window.addEventListener('keydown',function(e){"
@@ -355,6 +363,17 @@
   function htmlSetScroll(win, y) {
     if (!win) return;
     try { win.postMessage({ mgb: "cmd", scroll: y }, "*"); } catch (e) { /* 닫힌 창 */ }
+  }
+
+  // 청중 창에서만 부른다 — 자료가 자기 화면에 띄우는 단축키 안내를 감춘다.
+  // 자료가 늦게 그리는 경우가 있어 몇 번 되풀이한다(다리 쪽은 한 번만 먹는다).
+  function htmlAudience(win) {
+    if (!win) return;
+    [0, 300, 1200].forEach(function (ms) {
+      setTimeout(function () {
+        try { win.postMessage({ mgb: "cmd", 청중: true }, "*"); } catch (e) { /* 닫힌 창 */ }
+      }, ms);
+    });
   }
 
 
@@ -764,6 +783,7 @@
     htmlScrollRatio: htmlScrollRatio,
     htmlSendKey: htmlSendKey,
     htmlSetScroll: htmlSetScroll,
+    htmlAudience: htmlAudience,
     bridgeListen: bridgeListen,
     saveMaterial: saveMaterial,
     serverLibraryList: serverLibraryList,

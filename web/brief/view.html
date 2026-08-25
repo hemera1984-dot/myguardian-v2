@@ -58,6 +58,8 @@
           stage.dataset.page = String(n);
           if (frame) {
             frameWin = frame.contentWindow;
+            // 자료가 자기 화면에 띄우는 단축키 안내는 발표자 몫이다 — 빔프로젝터에서는 감춘다
+            B.htmlAudience(frameWin);
             if (unbindFrame) unbindFrame();
             unbindFrame = B.bridgeListen(frameWin, function () {
               if (pendingSlide !== null) {
