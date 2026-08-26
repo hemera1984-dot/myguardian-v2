@@ -510,7 +510,18 @@ async function route(req, res, url) {
 
   if (req.method === "PUT" && path === "/clients") {
     const body = await readJson(req, 4 * 1024 * 1024);
-    const 목록 = Array.isArray(body) ? body : [body];
+    // 총관리자는 다른 FC 몫으로 대신 올릴 수 있다(2026-08-24). 예전 PC의 폴더를 팀원마다
+    // 넘겨 각자 올리게 하는 대신 총관리자가 한 번에 처리하기 위한 길이다.
+    // 총관리자는 지점 비상 개인키로 어차피 전부 열 수 있으므로 새로 잃는 권한이 없다.
+    const 배열 = Array.isArray(body) ? body : (body && Array.isArray(body["레코드"]) ? body["레코드"] : [body]);
+    let 주인 = me.id;
+    if (!Array.isArray(body) && body && body["소유"] != null) {
+      if (!me.is_admin) return send(res, 403, { error: "다른 사람 몫으로 올리는 것은 총관리자만 할 수 있습니다." });
+      const 대상 = getAccount(db, Number(body["소유"]));
+      if (!대상 || 대상.status !== "승인") return send(res, 400, { error: "승인된 계정이 아닙니다." });
+      주인 = 대상.id;
+    }
+    const 목록 = 배열;
     if (!목록.length) return send(res, 400, { error: "올릴 레코드가 없습니다." });
     if (목록.length > 500) return send(res, 400, { error: "한 번에 500건까지 올릴 수 있습니다." });
     const 글자 = (v, 최대) => typeof v === "string" && v.length > 0 && v.length <= 최대;
@@ -531,9 +542,10 @@ async function route(req, res, url) {
         return send(res, 400, { error: "비상키지문 형식 오류입니다." });
       }
     }
-    for (const r of 목록) putClient(db, me.id, r);
-    console.log(`고객 저장: ${목록.length}건 — ${me.email}`);
-    return send(res, 200, { ok: true, 건수: 목록.length });
+    for (const r of 목록) putClient(db, 주인, r);
+    console.log(`고객 저장: ${목록.length}건 — ${me.email}`
+      + (주인 === me.id ? "" : ` (대신 올림 → 계정 ${주인})`));
+    return send(res, 200, { ok: true, 건수: 목록.length, 소유: 주인 });
   }
 
   const 고객삭제 = req.method === "DELETE" && /^\/clients\/([A-Za-z0-9-]{1,40})$/.exec(path);

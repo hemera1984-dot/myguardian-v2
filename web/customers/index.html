@@ -54,8 +54,22 @@
               <button class="btn" type="button" id="btn-vault-get">서버에서 불러오기</button>
               <button class="btn" type="button" id="btn-vault-put" hidden>서버에 올리기</button>
               <button class="btn" type="button" id="btn-vault-lock" hidden>금고 잠그기</button>
+              <button class="btn" type="button" id="btn-vault-pw">잠금문구 바꾸기</button>
             </p>
             <p id="vault-note" style="margin:10px 0 0;font-size:12px" hidden></p>
+
+            <div id="proxy-box" hidden style="margin-top:14px;border-top:1px solid var(--platform-line);padding-top:12px">
+              <p style="margin:0 0 10px;font-size:12.5px;line-height:1.7;color:var(--platform-sub);word-break:keep-all">
+                <b>팀원 몫으로 대신 올리기</b> — 총관리자만 보입니다. 예전 PC의 팀원 폴더를 연결한 뒤
+                여기서 그 사람을 고르고 <b>그 사람이 처음 쓸 잠금문구</b>를 정해 올립니다.
+                그 사람은 자기 기기에서 그 문구로 바로 열 수 있고, 「잠금문구 바꾸기」로 본인 것으로 바꿉니다.
+              </p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                <select id="proxy-who" aria-label="누구 몫으로" style="font:inherit;font-size:13px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:7px 10px"></select>
+                <input type="password" id="proxy-pw" placeholder="그 사람이 처음 쓸 잠금문구 (8자 이상)" aria-label="첫 잠금문구" autocomplete="new-password" style="font:inherit;font-size:13px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:7px 10px;min-width:250px">
+                <button class="btn" type="button" id="btn-proxy-put">이 사람 몫으로 올리기</button>
+              </div>
+            </div>
           </div>
           <div id="new-form" hidden style="margin-top:14px;flex-wrap:wrap;gap:8px;align-items:center;display:flex">
             <input type="text" id="new-name" placeholder="고객 이름" aria-label="고객 이름" style="font:inherit;font-size:0.9rem;border:1px solid var(--platform-line-strong);border-radius:4px;padding:8px 12px">
@@ -957,6 +971,62 @@
         UI.잠그기();
         금고버튼(false);
         금고알림("금고를 잠갔습니다. 다시 열려면 잠금문구가 필요합니다.");
+      });
+
+      $("btn-vault-pw").addEventListener("click", function () {
+        var btn = this;
+        btn.disabled = true;
+        UI.문구바꾸기().then(function (r) {
+          금고알림("잠금문구를 바꿨습니다. 고객 " + (r["건수"] || 0) + "명을 새 문구로 다시 잠갔습니다."
+            + " 다른 기기에서도 이제 새 문구로 여세요.");
+        }).catch(function (e) {
+          if (e.message === "취소") { $("vault-note").hidden = true; return; }
+          금고알림(e.message || "바꾸지 못했습니다.", true);
+        }).finally(function () { btn.disabled = false; });
+      });
+
+      // ── 팀원 몫으로 대신 올리기 (총관리자 전용)
+      // 예전 PC의 폴더를 팀원마다 넘겨 각자 올리게 하는 대신 한 자리에서 처리한다.
+      // 총관리자는 지점 비상 개인키로 어차피 전부 열 수 있으므로 새로 생기는 권한은 없다.
+      window.mgAuth.me().then(function (info) {
+        var 나 = (info && info["계정"]) || {};
+        if (!나["총관리자"]) return;
+        return window.mgAuth.api("/admin/pending").then(function (d) {
+          var 사람 = (d["구성원"] || []).filter(function (m) {
+            return m.status === "승인" && m.id !== 나.id;
+          });
+          if (!사람.length) return;
+          $("proxy-who").innerHTML = 사람.map(function (m) {
+            return '<option value="' + m.id + '" data-mail="' + esc(m.email) + '">'
+              + esc(m.name || m.email) + "</option>";
+          }).join("");
+          $("proxy-box").hidden = false;
+        });
+      }).catch(function () {});
+
+      $("btn-proxy-put").addEventListener("click", function () {
+        var btn = this;
+        var sel = $("proxy-who");
+        var opt = sel.options[sel.selectedIndex];
+        if (!opt) return 금고알림("올려 줄 사람을 고르세요.", true);
+        if (!ALL.length) return 금고알림("먼저 그 사람의 폴더를 연결하세요.", true);
+        var 문구 = $("proxy-pw").value;
+        if (문구.length < 8) return 금고알림("그 사람이 처음 쓸 잠금문구를 8자 이상으로 정하세요.", true);
+        if (!confirm(opt.textContent + " 몫으로 고객 " + ALL.length + "명을 올립니다."
+          + String.fromCharCode(10, 10)
+          + "지금 연결된 폴더가 그 사람 폴더가 맞는지 확인하세요."
+          + " 그 사람은 방금 정한 잠금문구로 열게 됩니다.")) return;
+        btn.disabled = true;
+        금고알림("잠그는 중입니다.");
+        UI.대신올리기(ALL.map(보낼모양), {
+          계정: Number(opt.value), 이메일: opt.dataset.mail, 잠금문구: 문구
+        }).then(function (r) {
+          $("proxy-pw").value = "";
+          금고알림(opt.textContent + " 몫으로 " + (r["건수"] || ALL.length) + "명을 올렸습니다."
+            + " 그 사람에게 잠금문구를 직접 전하고, 로그인해서 「잠금문구 바꾸기」로 본인 것으로 바꾸라고 하세요.");
+        }).catch(function (e) {
+          금고알림(e.message || "올리지 못했습니다.", true);
+        }).finally(function () { btn.disabled = false; });
       });
 
       // 폴더를 연결하면 올리기 버튼이 열린다 — onLoaded 뒤에 상태를 맞춘다

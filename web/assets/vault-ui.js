@@ -140,7 +140,67 @@
     });
   }
 
+  // 총관리자가 다른 FC 몫으로 올린다. 그 사람 이메일과 첫 잠금문구로 열쇠를 만들어
+  // 감싸므로, 그 사람은 자기 기기에서 그 문구로 바로 열 수 있다.
+  // 총관리자는 지점 비상 개인키로 어차피 전부 열 수 있으므로 새로 생기는 권한은 없다.
+  function 대신올리기(레코드들, 대상) {
+    var 목록 = Array.isArray(레코드들) ? 레코드들 : [레코드들];
+    if (!대상 || !대상.계정 || !대상.이메일) {
+      return Promise.reject(new Error("누구 몫으로 올릴지 정해야 합니다."));
+    }
+    if (!대상.잠금문구 || 대상.잠금문구.length < 8) {
+      return Promise.reject(new Error("그 사람이 처음 쓸 잠금문구를 8자 이상으로 정하세요."));
+    }
+    return Promise.all([
+      V.fc열쇠(대상.잠금문구, String(대상.이메일).toLowerCase()),
+      비상키받기()
+    ]).then(function (a) {
+      var 남의열쇠 = a[0], 비상 = a[1];
+      return Promise.all(목록.map(function (r) {
+        return V.감싸기(r, { fc열쇠: 남의열쇠, 비상공개키: 비상.키, 지문: 비상.지문 });
+      }));
+    }).then(function (봉투들) {
+      return api("/clients", { method: "PUT", body: { "소유": 대상.계정, "레코드": 봉투들 } });
+    });
+  }
+
+  // 잠금문구 바꾸기 — 전부 내려 풀고 새 문구로 다시 감싸 올린다.
+  // 총관리자가 정해 준 첫 문구를 본인 것으로 바꾸는 자리다.
+  function 문구바꾸기() {
+    var 나;
+    return window.mgAuth.me().then(function (info) {
+      나 = (info && info["계정"]) || {};
+      return 열기();
+    }).then(function (옛열쇠) {
+      return api("/clients").then(function (행들) {
+        return Promise.all(행들.map(function (행) { return V.풀기(행, 옛열쇠); }));
+      });
+    }).then(function (고객들) {
+      return 상자("잠금문구 바꾸기",
+        "새 문구로 " + 고객들.length + "명을 모두 다시 잠급니다."
+        + " 바꾸고 나면 옛 문구로는 열리지 않습니다.", "바꾸기"
+      ).then(function (새문구) {
+        return Promise.all([
+          V.fc열쇠(새문구, String(나["이메일"] || "").toLowerCase()),
+          비상키받기()
+        ]).then(function (a) {
+          return Promise.all(고객들.map(function (r) {
+            return V.감싸기(r, { fc열쇠: a[0], 비상공개키: a[1].키, 지문: a[1].지문 });
+          })).then(function (봉투들) {
+            if (!봉투들.length) { 열쇠 = a[0]; return { 건수: 0 }; }
+            return api("/clients", { method: "PUT", body: 봉투들 }).then(function (r) {
+              열쇠 = a[0];   // 이제부터 새 문구가 이 탭의 열쇠다
+              return r;
+            });
+          });
+        });
+      });
+    });
+  }
+
   window.mgVaultUI = {
+    대신올리기: 대신올리기,
+    문구바꾸기: 문구바꾸기,
     열기: 열기,
     잠그기: 잠그기,
     올리기: 올리기,
