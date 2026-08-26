@@ -1470,6 +1470,45 @@ async function route(req, res, url) {
     return send(res, 200, { ok: true });
   }
 
+  // ── 지점 비상 공개키
+  // 공개키만 여기 둔다. 개인키는 서버에 절대 오지 않는다 — 안창민이 오프라인 보관한다.
+  // FC 기기는 이 공개키로 데이터열쇠를 감싸므로 로그인한 사람 전원이 읽을 수 있어야 한다.
+  if (req.method === "GET" && path === "/vault/pubkey") {
+    const v = getDoc(db, "비상공개키");
+    if (!v) return send(res, 404, { error: "지점 비상 열쇠가 아직 없습니다." });
+    return send(res, 200, JSON.parse(v));
+  }
+
+  if (req.method === "PUT" && path === "/vault/pubkey") {
+    if (!me.is_admin) return send(res, 403, { error: "총관리자만 지점 비상 열쇠를 정할 수 있습니다." });
+    const body = await readJson(req);
+    const jwk = body && body["공개키"];
+    // RSA-OAEP 공개키 JWK의 최소 형태만 확인한다. 서버는 이걸 쓰지 않고 보관만 한다.
+    if (!jwk || jwk.kty !== "RSA" || typeof jwk.n !== "string" || typeof jwk.e !== "string") {
+      return send(res, 400, { error: "RSA 공개키(JWK)가 아닙니다." });
+    }
+    if (!/^[\w-]{10,128}$/.test(String(body["지문"] || ""))) {
+      return send(res, 400, { error: "지문이 없습니다." });
+    }
+    // 바꿔치기하면 이미 올라간 레코드의 비상 경로가 끊긴다(FC 열쇠는 그대로).
+    // 실수로 덮는 일이 없게, 이미 있으면 명시적으로 "교체"를 함께 보내야 한다.
+    const 이전 = getDoc(db, "비상공개키");
+    if (이전 && !body["교체"]) {
+      const p = JSON.parse(이전);
+      return send(res, 409, {
+        error: `이미 지점 비상 열쇠가 있습니다(지문 ${p["지문"]}, ${String(p["정한날"] || "").slice(0, 10)}).`
+          + " 교체하면 지금까지 올라간 레코드의 비상 경로가 끊깁니다 —"
+          + " 각 FC가 자기 레코드를 다시 올려야 복구됩니다.",
+        "기존지문": p["지문"]
+      });
+    }
+    setDoc(db, "비상공개키", JSON.stringify({
+      "공개키": jwk, "지문": String(body["지문"]), "정한날": new Date().toISOString(), "정한이": me.email
+    }), me.id);
+    console.log(`지점 비상 공개키 ${이전 ? "교체" : "등록"}: 지문 ${body["지문"]} — ${me.email}`);
+    return send(res, 200, { ok: true, "지문": String(body["지문"]) });
+  }
+
   if (req.method === "GET" && path === "/admin/pending") {
     if (!canApprove(db, me)) return send(res, 403, { error: "승인 권한이 없습니다." });
     return send(res, 200, { 대기: listPending(db), 구성원: listMembers(db) });

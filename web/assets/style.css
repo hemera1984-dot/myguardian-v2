@@ -3243,3 +3243,41 @@ body.shelf-body { background: #f4f1ea; }
   color: var(--point, #bc003a);
   word-break: keep-all;
 }
+
+/* 금고 잠금문구 상자 — 고객 정보를 열기 전에 가로막는다 (2026-08-24) */
+.vault-veil {
+  position: fixed; inset: 0; z-index: 900;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: rgba(23, 32, 51, 0.55);
+}
+.vault-box {
+  width: min(420px, 100%);
+  padding: 26px 24px 22px;
+  background: var(--surface, #fff);
+  border: 2px solid var(--ink, #172033);
+  border-radius: 6px;
+}
+.vault-box h2 { margin: 0 0 8px; font-size: 19px; font-weight: 700; letter-spacing: -0.035em; }
+.vault-why {
+  margin: 0 0 18px; font-size: 12.5px; line-height: 1.65;
+  color: var(--ink-sub, #596579); word-break: keep-all;
+}
+.vault-why b { color: var(--point, #bc003a); }
+.vault-box label {
+  display: block; margin: 0 0 5px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--ink-sub, #596579);
+}
+.vault-box input {
+  width: 100%; margin: 0 0 14px; padding: 9px 11px;
+  font: inherit; font-size: 14px;
+  border: 1px solid var(--line-strong, #cbd3de); border-radius: 4px;
+  background: var(--surface, #fff); color: var(--ink, #172033);
+}
+.vault-box input:focus { outline: none; border-color: var(--point, #bc003a); }
+.vault-err {
+  margin: 0 0 12px; padding: 7px 10px;
+  border-left: 3px solid var(--point, #bc003a); background: var(--point-soft, #ffeff0);
+  font-size: 12px; font-weight: 700; color: var(--point, #bc003a);
+}
+.vault-row { display: flex; gap: 8px; }
+.vault-row .btn { flex: 1; min-height: 40px; }

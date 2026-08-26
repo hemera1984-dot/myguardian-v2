@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="../assets/platform.css">
   <script src="../assets/platform.js"></script>
   <script src="../assets/auth.js"></script>
+  <script src="../assets/vault.js"></script>
 </head>
 <body class="platform">
   <div class="install-shell">
@@ -69,6 +70,23 @@
 
 
           </div>
+        </div>
+      </section>
+
+      <section class="section-block" id="vault-block" hidden>
+        <div class="section-head"><div><h2>지점 비상 열쇠</h2><p>고객 정보는 담당 FC의 잠금문구로 잠깁니다. 문구를 잊거나 팀을 떠난 사람의 자료는 이 비상 열쇠로만 열립니다.</p></div></div>
+        <div class="surface-card">
+          <p id="vault-state" style="margin:0 0 12px;font-size:13px">확인 중입니다.</p>
+          <div id="vault-make" hidden>
+            <p style="margin:0 0 12px;font-size:12.5px;line-height:1.7;color:var(--platform-sub);word-break:keep-all">
+              열쇠쌍을 만들면 <b>개인키 파일이 한 번만 내려받아집니다.</b> 서버에는 공개키만 올라가고
+              개인키는 어디에도 남지 않습니다. 이 파일을 잃으면 비상 복구 경로가 사라지고,
+              <b style="color:var(--platform-point)">새어 나가면 팀 전원의 고객 정보가 새어 나갑니다.</b>
+              USB나 금고 등 인터넷에 닿지 않는 곳에 보관하세요. 저장소·클라우드·메일에 두지 마세요.
+            </p>
+            <button class="install-secondary" type="button" id="vault-gen" style="padding:8px 14px">비상 열쇠쌍 만들기</button>
+          </div>
+          <p id="vault-msg" style="margin:12px 0 0;font-size:12px" hidden></p>
         </div>
       </section>
 
@@ -474,6 +492,83 @@
       // 「변경 JSON 복사」·「로컬 변경 버리기」는 걷어냈다 — 서버가 곧 원본이라 옮길 것도,
       // 버릴 로컬 사본도 없다. 옛 사본이 남아 있으면 지운다.
       try { localStorage.removeItem("mg_admin_org"); } catch (e) {}
+
+      // ── 지점 비상 열쇠 (총관리자 전용)
+      // 개인키는 만들어지는 즉시 파일로 내려가고 이 화면 어디에도 남지 않는다.
+      // 서버로 가는 것은 공개키와 지문뿐이다.
+      function 금고알림(m, 나쁨) {
+        var box = $("vault-msg");
+        box.hidden = false;
+        box.textContent = m;
+        box.style.color = 나쁨 ? "var(--platform-point)" : "var(--platform-sub)";
+      }
+
+      function 금고상태() {
+        return window.mgAuth.api("/vault/pubkey").then(function (d) {
+          $("vault-state").innerHTML = "지점 비상 열쇠가 있습니다. 지문 <b>" + esc(d["지문"] || "")
+            + "</b> · 정한 날 " + esc(String(d["정한날"] || "").slice(0, 10))
+            + "<br><span style=\"color:var(--platform-faint)\">개인키 파일은 본인이 보관 중이어야 합니다. 서버에는 공개키만 있습니다.</span>";
+          $("vault-make").hidden = true;
+        }).catch(function () {
+          $("vault-state").innerHTML = "<b style=\"color:var(--platform-point)\">아직 지점 비상 열쇠가 없습니다.</b>"
+            + " 이것을 만들기 전에는 고객 정보를 서버에 올릴 수 없습니다.";
+          $("vault-make").hidden = false;
+        });
+      }
+
+      function 파일로내리기(이름, 내용) {
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([내용], { type: "application/json" }));
+        a.download = 이름;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+      }
+
+      var 금고구획 = $("vault-block");
+      if (금고구획) {
+        $("vault-gen").addEventListener("click", function () {
+          var btn = this;
+          if (!window.mgVault || !window.mgVault.쓸수있나()) {
+            return 금고알림("이 브라우저에서는 암호 기능을 쓸 수 없습니다(HTTPS 필요).", true);
+          }
+          if (!confirm("비상 열쇠쌍을 만듭니다." + "\n\n" +
+            "개인키 파일이 곧바로 내려받아집니다. 이 파일을 잃으면 비상 복구 경로가 사라지고," + 
+            " 새어 나가면 팀 전원의 고객 정보가 새어 나갑니다." + "\n\n" +
+            "인터넷에 닿지 않는 곳에 보관할 준비가 됐습니까?")) return;
+          btn.disabled = true;
+          금고알림("열쇠쌍을 만드는 중입니다. 몇 초 걸립니다.");
+          window.mgVault.비상열쇠만들기().then(function (쌍) {
+            // 서버에 올리기 전에 먼저 내려받는다 — 순서가 반대면 공개키만 올라가고
+            // 개인키를 못 받은 상태가 생긴다(그러면 아무도 못 여는 레코드가 쌓인다).
+            파일로내리기(
+              "마이가디언-지점비상개인키-" + 쌍.지문 + ".json",
+              JSON.stringify({
+                "설명": "마이가디언 지점 비상 개인키. 이 파일 하나로 팀 전원의 고객 정보를 열 수 있습니다.",
+                "경고": "서버·저장소·클라우드·메일에 두지 마세요. 인터넷에 닿지 않는 곳에 보관하세요.",
+                "지문": 쌍.지문, "만든날": new Date().toISOString(), "개인키": 쌍.개인키
+              }, null, 1)
+            );
+            return window.mgAuth.api("/vault/pubkey", {
+              method: "PUT", body: { "공개키": 쌍.공개키, "지문": 쌍.지문 }
+            }).then(function () {
+              금고알림("만들었습니다. 개인키 파일(지문 " + 쌍.지문 + ")을 안전한 곳으로 옮기세요.");
+              return 금고상태();
+            });
+          }).catch(function (e) {
+            금고알림(e.message || "만들지 못했습니다.", true);
+          }).finally(function () { btn.disabled = false; });
+        });
+
+        // 총관리자에게만 보인다 — 다른 사람에게는 구획 자체를 열지 않는다
+        window.mgAuth.me().then(function (info) {
+          if (info && info["계정"] && info["계정"]["총관리자"]) {
+            금고구획.hidden = false;
+            금고상태();
+          }
+        }).catch(function () {});
+      }
     })();
   </script>
 </body>
