@@ -20,21 +20,21 @@
       <p class="nav-group-label">업무</p>
       <a href="../">홈</a><a class="active" href="./">고객관리</a><a href="../claims/">청구·지급</a><a href="../cases/">사례·판례</a><a href="../learn/">학습</a><a href="../brief/">브리핑</a>      <p class="nav-group-label">발행</p><a href="../care/shelf.html">케어센터</a><a href="../card/">카톡카드</a>
     </nav>
-    <div class="sidebar-status"><strong>내 고객</strong><span>데이터는 이 기기 밖으로 나가지 않습니다.</span></div>
+    <div class="sidebar-status"><strong>내 고객</strong><span>서버로는 잠긴 채로만 나갑니다.</span></div>
   </aside>
   <div class="platform-overlay" id="platform-overlay"></div>
   <div class="platform-shell">
-    <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">고객관리</span><span class="topbar-note">로컬 고객 폴더 기반 — 외부 전송 없음</span></header>
+    <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">고객관리</span><span class="topbar-note">내 PC 폴더 + 서버 금고 — 서버는 내용을 읽지 못함</span></header>
     <main class="platform-main">
       <!-- 3단 헤딩 — eyebrow → 제목 → 설명 (플랫폼 공통 문법, 2026-07-31 정돈) -->
       <div class="page-heading">
         <p class="eyebrow">내 고객</p>
         <h1>고객관리</h1>
-        <p>내 고객 저장소를 연결해 등록·진행상태·미팅·메모를 처리합니다. 모든 처리는 브라우저 안에서만 이루어지고 어디에도 전송되지 않습니다.</p>
+        <p>내 고객 저장소를 연결해 등록·진행상태·미팅·메모를 처리합니다. 서버 금고에 올리면 다른 기기에서도 열리며, 잠그고 푸는 일은 이 기기에서만 일어나 서버는 내용을 읽지 못합니다.</p>
       </div>
 
       <section class="section-block" id="connect-block">
-        <div class="section-head"><div><h2>내 고객 저장소</h2><p>내 PC의 고객 저장소(mg-clients)를 한 번 연결하면 기존 고객 전체가 목록에 올라옵니다. 이후 등록·삭제·이관은 이 화면에서 처리하며, 모든 처리는 브라우저 안에서만 이루어지고 어디에도 전송되지 않습니다.</p></div></div>
+        <div class="section-head"><div><h2>내 고객 저장소</h2><p>내 PC의 고객 저장소(mg-clients)를 한 번 연결하면 기존 고객 전체가 목록에 올라옵니다. 이후 등록·삭제·이관은 이 화면에서 처리합니다. 서버 금고에 올리기 전까지는 이 PC 밖으로 나가지 않고, 올릴 때도 잠긴 채로만 나갑니다.</p></div></div>
         <div class="surface-card">
           <div class="empty-inline" id="connect-box">
             <div><strong>연결된 저장소 없음</strong><span>저장소 폴더를 선택해 시작합니다. 폴더명(C-YYYY-NNN)이 곧 고객코드이며, 기존 고객은 한 번에 등록됩니다.</span></div>
@@ -262,7 +262,10 @@
           ? " 중복 코드 " + dupCodes.length + "건은 첫 폴더만 표시: " + dupCodes.join(", ") + "."
           : "";
         ALL = unique.sort(function (a, b) { return a.code < b.code ? -1 : 1; });
-        $("connect-box").innerHTML = "<div><strong>연결됨: " + esc(rootName) + "</strong><span>고객 " + ALL.length + "명을 불러왔습니다. 데이터는 이 기기 안에서만 처리됩니다." + esc(dupNote) + "</span></div>";
+        $("connect-box").innerHTML = "<div><strong>연결됨: " + esc(rootName) + "</strong><span>고객 " + ALL.length + "명을 불러왔습니다. "
+          + (SOURCE === "서버" ? "서버 금고에서 잠긴 채로 받아 이 기기에서 풀었습니다."
+              : "아직 이 PC 안에만 있습니다.")
+          + esc(dupNote) + "</span></div>";
         $("work-block").hidden = false;
         renderList();
       }
