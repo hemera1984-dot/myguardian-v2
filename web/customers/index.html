@@ -57,6 +57,10 @@
               <button class="btn" type="button" id="btn-vault-pw">잠금문구 바꾸기</button>
             </p>
             <p id="vault-note" style="margin:10px 0 0;font-size:12px" hidden></p>
+            <div id="vault-login" hidden style="margin-top:10px">
+              <p style="margin:0 0 8px;font-size:12.5px;color:var(--platform-sub)">서버 금고를 열려면 먼저 로그인하세요.</p>
+              <div id="vault-gbtn"></div>
+            </div>
 
             <div id="proxy-box" hidden style="margin-top:14px;border-top:1px solid var(--platform-line);padding-top:12px">
               <p style="margin:0 0 10px;font-size:12.5px;line-height:1.7;color:var(--platform-sub);word-break:keep-all">
@@ -652,7 +656,14 @@
       // ── 하랑지점 일정 연동 (C:\projects\ourbranch\docs\myguardian-schedule-interop.md 계약) ──
       // 서버에는 고객코드 + 마스킹 표기(안*민, 010-****-3016)만 — 원본 이름·번호는 이 기기 로컬에만.
       // 로컬 우선: 전송 실패는 미팅 저장을 막지 않고 큐(localStorage)에 쌓였다가 재전송된다.
-      var BRANCH_API = ""; // ourbranch 배포 후 채운다 (예: https://branch-api.insurguard.life) — 빈 값이면 비활성
+      // 하랑지점은 별도 도메인이 아니라 같은 서버의 /branch/ 밑에 붙어 있다(Caddy).
+      // branch-api.insurguard.life는 다른 IP를 가리키므로 쓰지 않는다(2026-08-31 확인).
+      // 로그인 토큰은 마이가디언 것을 그대로 쓴다 — 하랑지점이 같은 인증 DB를 읽는다.
+      var BRANCH_API = (function () {
+        var h = location.hostname;
+        if (h === "localhost" || h === "127.0.0.1") return "http://localhost:8788";
+        return "https://api.insurguard.life/branch";
+      })();
       function maskName(n) {
         if (!n) return "";
         if (n.length < 2) return n;
@@ -930,6 +941,25 @@
         };
       }
 
+      // 로그인 안 된 채로 금고 단추를 누르면 "로그인이 필요합니다"에서 멈춘다.
+      // 여기서 바로 로그인할 수 있어야 한다 — 다른 화면으로 보내지 않는다.
+      function 로그인붙이기() {
+        var box = $("vault-login");
+        if (!box || box.dataset.done) return;
+        box.dataset.done = "1";
+        box.hidden = false;
+        window.mgAuth.renderButton($("vault-gbtn"), function () {
+          location.reload();   // 토큰이 생겼으니 화면을 다시 그린다
+        }, function (e) {
+          금고알림(e.message || "로그인하지 못했습니다.", true);
+        });
+      }
+
+      function 로그인필요(e) {
+        var m = String((e && e.message) || "");
+        return m.indexOf("로그인") >= 0 || m.indexOf("401") >= 0;
+      }
+
       $("btn-vault-get").addEventListener("click", function () {
         var btn = this;
         btn.disabled = true;
@@ -951,6 +981,7 @@
         }).catch(function (e) {
           금고알림(e.message === "취소" ? "" : (e.message || "불러오지 못했습니다."), true);
           if (e.message === "취소") $("vault-note").hidden = true;
+          if (로그인필요(e)) 로그인붙이기();
         }).finally(function () { btn.disabled = false; });
       });
 
@@ -985,7 +1016,19 @@
         }).catch(function (e) {
           if (e.message === "취소") { $("vault-note").hidden = true; return; }
           금고알림(e.message || "바꾸지 못했습니다.", true);
+          if (로그인필요(e)) 로그인붙이기();
         }).finally(function () { btn.disabled = false; });
+      });
+
+      // 들어오자마자 로그인 상태를 확인한다 — 단추를 눌러 봐야 아는 것은 불편하다.
+      // 로그인돼 있으면 금고 단추가 그대로 서고, 아니면 그 자리에 로그인 단추가 선다.
+      window.mgAuth.me().then(function (info) {
+        var 나 = (info && info["계정"]) || {};
+        if (나["상태"] && 나["상태"] !== "승인") {
+          금고알림("계정이 아직 승인되지 않았습니다. 총관리자에게 승인을 요청하세요.", true);
+        }
+      }).catch(function (e) {
+        if (로그인필요(e)) 로그인붙이기();
       });
 
       // ── 팀원 몫으로 대신 올리기 (총관리자 전용)

@@ -1482,6 +1482,34 @@ async function route(req, res, url) {
     return send(res, 200, { ok: true });
   }
 
+  // ── 상담 스크립트 (FC 개인)
+  // 고객 이름을 끼워 넣을 틀이다. 고객 정보가 아니므로 암호화하지 않는다 — 사람마다
+  // 자기 것만 쓰고 읽는다. 기본 틀은 화면이 들고 있고, 여기에는 고친 것만 쌓인다.
+  if (req.method === "GET" && path === "/scripts") {
+    const v = getDoc(db, "scripts:" + me.id);
+    return send(res, 200, v ? JSON.parse(v) : null);
+  }
+
+  if (req.method === "PUT" && path === "/scripts") {
+    const body = await readJson(req, 512 * 1024);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return send(res, 400, { error: "스크립트 묶음 형식 오류입니다." });
+    }
+    // 카테고리마다 배열 하나. 너무 길면 화면이 못 감당하므로 여기서 자른다.
+    for (const [k, v] of Object.entries(body)) {
+      if (!Array.isArray(v)) return send(res, 400, { error: `${k}가 배열이 아닙니다.` });
+      if (v.length > 50) return send(res, 400, { error: `${k}는 50개까지 넣을 수 있습니다.` });
+      for (const it of v) {
+        if (!it || typeof it !== "object") return send(res, 400, { error: "항목 형식 오류입니다." });
+        if (String(it["제목"] || "").length > 100 || String(it["본문"] || "").length > 5000) {
+          return send(res, 400, { error: "제목 100자·본문 5000자를 넘을 수 없습니다." });
+        }
+      }
+    }
+    setDoc(db, "scripts:" + me.id, JSON.stringify(body), me.id);
+    return send(res, 200, { ok: true });
+  }
+
   // ── 지점 비상 공개키
   // 공개키만 여기 둔다. 개인키는 서버에 절대 오지 않는다 — 안창민이 오프라인 보관한다.
   // FC 기기는 이 공개키로 데이터열쇠를 감싸므로 로그인한 사람 전원이 읽을 수 있어야 한다.
