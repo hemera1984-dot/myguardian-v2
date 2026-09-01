@@ -8,8 +8,10 @@ import { rmSync } from "node:fs";
 import {
   openDb, seedGrades, upsertAccount, findByGoogleSub, createSession, accountForToken,
   listPending, approve, suspend, isDescendantOf, getAccount, deleteSessionsFor,
-  setApprover, listMembers, getDoc, setDoc
+  setApprover, listMembers, getDoc, setDoc,
+  listClients, listClientStamps, putClient, deleteClient, clientCounts
 } from "./db.js";
+import { createCipheriv, createDecipheriv, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { artworkSvg } from "./artwork.js";
 
 const FILE = "./test-auth.db";
@@ -154,6 +156,88 @@ check("조직도는 서버에 남는다 — 고친 사람만 보이던 localStor
   setDoc(db, "org", JSON.stringify(org), boss.id);
   assert.equal(db.prepare("SELECT COUNT(*) c FROM app_docs").get().c, 1);
   assert.equal(JSON.parse(getDoc(db, "org"))["구성원"][0]["직급"], "SSL");
+});
+
+// ── 고객 레코드 — 소유 격리와 암호 (2026-08-31 잠금문구 폐지 뒤 추가)
+// 검수에서 「새 암호·권한 경로를 검증하는 테스트가 없다」는 지적을 받아 넣었다.
+
+const KEY = randomBytes(32);
+function 감싸기(obj) {
+  const iv = randomBytes(12);
+  const c = createCipheriv("aes-256-gcm", KEY, iv);
+  const ct = Buffer.concat([c.update(JSON.stringify(obj), "utf8"), c.final()]);
+  return [iv.toString("base64"), ct.toString("base64"), c.getAuthTag().toString("base64")].join(".");
+}
+function 풀기(str) {
+  const [iv, ct, tag] = String(str).split(".");
+  const d = createDecipheriv("aes-256-gcm", KEY, Buffer.from(iv, "base64"));
+  d.setAuthTag(Buffer.from(tag, "base64"));
+  return JSON.parse(Buffer.concat([d.update(Buffer.from(ct, "base64")), d.final()]).toString("utf8"));
+}
+
+check("고객은 소유 계정 밖으로 새지 않는다", () => {
+  const a = findByGoogleSub(db, "g-boss");
+  const b = findByGoogleSub(db, "g-fc1");
+  putClient(db, a.id, { "고객코드": "C-2026-001", "암호문": 감싸기({ 이름: "가" }), "열쇠_fc": "", "열쇠_비상": "", "비상키지문": "" });
+  putClient(db, b.id, { "고객코드": "C-2026-001", "암호문": 감싸기({ 이름: "나" }), "열쇠_fc": "", "열쇠_비상": "", "비상키지문": "" });
+  assert.equal(listClients(db, a.id).length, 1);
+  assert.equal(listClients(db, b.id).length, 1);
+  // 같은 고객코드라도 사람마다 따로 산다 — 남의 것을 덮지 않는다
+  assert.equal(풀기(listClients(db, a.id)[0].암호문).이름, "가");
+  assert.equal(풀기(listClients(db, b.id)[0].암호문).이름, "나");
+  // 삭제도 자기 것만
+  assert.equal(deleteClient(db, a.id, "C-2026-001"), 1);
+  assert.equal(listClients(db, b.id).length, 1, "남의 것은 그대로 있어야 한다");
+  assert.equal(listClientStamps(db, b.id).length, 1);
+});
+
+check("암호문이 한 글자라도 바뀌면 풀리지 않는다 (인증 태그)", () => {
+  const 봉투 = 감싸기({ 이름: "다", 연락처: "010-0000-0000" });
+  assert.equal(풀기(봉투).이름, "다");
+  assert.ok(!봉투.includes("010-0000-0000"), "봉투에 평문이 남으면 안 된다");
+  const 부분 = 봉투.split(".");
+  const 상한 = Buffer.from(부분[1], "base64");
+  상한[0] ^= 1;
+  부분[1] = 상한.toString("base64");
+  assert.throws(() => 풀기(부분.join(".")), "손댄 암호문은 반드시 실패해야 한다");
+});
+
+check("다른 열쇠로는 열리지 않는다", () => {
+  const 봉투 = 감싸기({ 이름: "라" });
+  const 남의열쇠 = randomBytes(32);
+  assert.throws(() => {
+    const [iv, ct, tag] = 봉투.split(".");
+    const d = createDecipheriv("aes-256-gcm", 남의열쇠, Buffer.from(iv, "base64"));
+    d.setAuthTag(Buffer.from(tag, "base64"));
+    Buffer.concat([d.update(Buffer.from(ct, "base64")), d.final()]);
+  });
+});
+
+check("열람 비밀번호는 해시로만 남고 틀린 값은 걸러진다", () => {
+  const SCRYPT = { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 };   // 시험은 가볍게
+  const 해시 = (pw, salt) => scryptSync(String(pw), salt, 32, SCRYPT).toString("base64");
+  const salt = randomBytes(16).toString("base64");
+  const 보관 = JSON.stringify({ salt, hash: 해시("바른비밀번호", salt), 방식: SCRYPT });
+  const boss = findByGoogleSub(db, "g-boss");
+  setDoc(db, "열람비번", 보관, boss.id);
+  const v = JSON.parse(getDoc(db, "열람비번"));
+  assert.ok(!getDoc(db, "열람비번").includes("바른비밀번호"), "원문이 남으면 안 된다");
+  const 맞나 = (pw) => {
+    const a = Buffer.from(해시(pw, v.salt), "base64");
+    const b = Buffer.from(v.hash, "base64");
+    return a.length === b.length && timingSafeEqual(a, b);
+  };
+  assert.ok(맞나("바른비밀번호"));
+  assert.ok(!맞나("틀린비밀번호"));
+  assert.ok(!맞나(""));
+});
+
+check("총관리자 화면의 건수 집계는 내용을 담지 않는다", () => {
+  const rows = clientCounts(db);
+  assert.ok(rows.length > 0);
+  for (const r of rows) {
+    assert.deepEqual(Object.keys(r).sort(), ["건수", "계정", "이름", "최근갱신"].sort());
+  }
 });
 
 db.close();

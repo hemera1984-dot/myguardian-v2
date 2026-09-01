@@ -65,7 +65,15 @@ function 레코드풀기(str) {
 }
 
 // 총관리자 열람 비밀번호 — 남의 고객을 볼 때만 묻는다. 원문은 저장하지 않는다.
-function 비번해시(pw, salt) { return scryptSync(String(pw), salt, 32).toString("base64"); }
+// OWASP 권고선(N=2^17). Node 기본 N=2^14보다 8배 무겁다. 메모리 상한을 함께 올려야 돈다.
+const SCRYPT = { N: 131072, r: 8, p: 1, maxmem: 256 * 1024 * 1024 };
+function 비번해시(pw, salt, opt) {
+  const o = opt || SCRYPT;
+  return scryptSync(String(pw), salt, 32, o).toString("base64");
+}
+
+// 열람 비밀번호 틀린 횟수 (계정별). 서버가 사는 동안만 기억한다.
+const 열람실패 = new Map();
 
 const NAVER_ID = process.env.NAVER_CLIENT_ID || "";
 const NAVER_SECRET = process.env.NAVER_CLIENT_SECRET || "";
@@ -520,13 +528,28 @@ async function route(req, res, url) {
   // 감싸고 푸는 일은 서버가 한다(2026-08-31 잠금문구 폐지). 설계사는 아무것도 넣지 않는다.
   // FC는 자기 것만 본다. 남의 것은 총관리자가 열람 비밀번호를 넣을 때만 열린다.
 
+  // 틀린 횟수를 센다. 총관리자 세션이 털렸을 때 비밀번호를 무한정 두드리지 못하게 한다.
+  // 서버가 살아 있는 동안만 유지되면 충분하다 — 재시작이 잦은 서비스가 아니다.
   function 비번맞나(pw) {
     const v = getDoc(db, "열람비번");
     if (!v) return false;
-    const { salt, hash } = JSON.parse(v);
-    const a = Buffer.from(비번해시(pw, salt), "base64");
+    const { salt, hash, 방식 } = JSON.parse(v);
+    const a = Buffer.from(비번해시(pw, salt, 방식), "base64");
     const b = Buffer.from(hash, "base64");
     return a.length === b.length && timingSafeEqual(a, b);
+  }
+
+  function 너무많이틀렸나() {
+    const r = 열람실패.get(me.id);
+    if (!r) return 0;
+    if (Date.now() > r.until) { 열람실패.delete(me.id); return 0; }
+    return r.n >= 5 ? Math.ceil((r.until - Date.now()) / 1000) : 0;
+  }
+  function 틀림() {
+    const r = 열람실패.get(me.id) || { n: 0, until: 0 };
+    r.n++;
+    r.until = Date.now() + Math.min(15 * 60000, 1000 * Math.pow(2, r.n));
+    열람실패.set(me.id, r);
   }
 
   // 못 푸는 레코드 하나 때문에 목록 전체가 죽으면 안 된다 — 그 건만 세고 넘긴다
@@ -567,7 +590,14 @@ async function route(req, res, url) {
     if (!getDoc(db, "열람비번")) {
       return send(res, 409, { error: "열람 비밀번호가 아직 정해지지 않았습니다. 먼저 정하세요." });
     }
-    if (!비번맞나(비밀번호)) return send(res, 403, { error: "열람 비밀번호가 맞지 않습니다." });
+    const 남은 = 너무많이틀렸나();
+    if (남은) return send(res, 429, { error: `여러 번 틀렸습니다. ${남은}초 뒤에 다시 시도하세요.` });
+    if (!비번맞나(비밀번호)) {
+      틀림();
+      console.log(`열람 비밀번호 실패 — ${me.email}`);
+      return send(res, 403, { error: "열람 비밀번호가 맞지 않습니다." });
+    }
+    열람실패.delete(me.id);
     const 대상 = getAccount(db, Number(남의것[1]));
     if (!대상) return send(res, 404, { error: "없는 계정입니다." });
     console.log(`남의 고객 열람: 계정 ${대상.id} — ${me.email}`);
@@ -594,7 +624,8 @@ async function route(req, res, url) {
       return send(res, 403, { error: "지금 쓰는 열람 비밀번호가 맞지 않습니다." });
     }
     const salt = randomBytes(16).toString("base64");
-    setDoc(db, "열람비번", JSON.stringify({ salt, hash: 비번해시(비밀번호, salt) }), me.id);
+    // 파라미터를 함께 남긴다 — 나중에 더 올려도 옛 해시를 그대로 검증할 수 있다
+    setDoc(db, "열람비번", JSON.stringify({ salt, hash: 비번해시(비밀번호, salt), 방식: SCRYPT }), me.id);
     console.log(`열람 비밀번호 설정 — ${me.email}`);
     return send(res, 200, { ok: true });
   }
@@ -605,6 +636,13 @@ async function route(req, res, url) {
     let 주인 = me.id;
     if (!Array.isArray(body) && body && body["소유"] != null) {
       if (!me.is_admin) return send(res, 403, { error: "다른 사람 몫으로 올리는 것은 총관리자만 할 수 있습니다." });
+      // 읽기만 막고 쓰기를 열어 두면 세션이 털렸을 때 남의 고객이 통째로 덮인다.
+      // 남의 것에 손대는 일은 읽든 쓰든 열람 비밀번호를 요구한다(2026-08-31 검수 지적).
+      const 남은2 = 너무많이틀렸나();
+      if (남은2) return send(res, 429, { error: `여러 번 틀렸습니다. ${남은2}초 뒤에 다시 시도하세요.` });
+      if (!getDoc(db, "열람비번")) return send(res, 409, { error: "열람 비밀번호를 먼저 정하세요." });
+      if (!비번맞나(body["비밀번호"])) { 틀림(); return send(res, 403, { error: "열람 비밀번호가 맞지 않습니다." }); }
+      열람실패.delete(me.id);
       const 대상 = getAccount(db, Number(body["소유"]));
       if (!대상 || 대상.status !== "승인") return send(res, 400, { error: "승인된 계정이 아닙니다." });
       주인 = 대상.id;
@@ -1607,45 +1645,6 @@ async function route(req, res, url) {
     }
     setDoc(db, "scripts:" + me.id, JSON.stringify(body), me.id);
     return send(res, 200, { ok: true });
-  }
-
-  // ── 지점 비상 공개키
-  // 공개키만 여기 둔다. 개인키는 서버에 절대 오지 않는다 — 안창민이 오프라인 보관한다.
-  // FC 기기는 이 공개키로 데이터열쇠를 감싸므로 로그인한 사람 전원이 읽을 수 있어야 한다.
-  if (req.method === "GET" && path === "/vault/pubkey") {
-    const v = getDoc(db, "비상공개키");
-    if (!v) return send(res, 404, { error: "지점 비상 열쇠가 아직 없습니다." });
-    return send(res, 200, JSON.parse(v));
-  }
-
-  if (req.method === "PUT" && path === "/vault/pubkey") {
-    if (!me.is_admin) return send(res, 403, { error: "총관리자만 지점 비상 열쇠를 정할 수 있습니다." });
-    const body = await readJson(req);
-    const jwk = body && body["공개키"];
-    // RSA-OAEP 공개키 JWK의 최소 형태만 확인한다. 서버는 이걸 쓰지 않고 보관만 한다.
-    if (!jwk || jwk.kty !== "RSA" || typeof jwk.n !== "string" || typeof jwk.e !== "string") {
-      return send(res, 400, { error: "RSA 공개키(JWK)가 아닙니다." });
-    }
-    if (!/^[\w-]{10,128}$/.test(String(body["지문"] || ""))) {
-      return send(res, 400, { error: "지문이 없습니다." });
-    }
-    // 바꿔치기하면 이미 올라간 레코드의 비상 경로가 끊긴다(FC 열쇠는 그대로).
-    // 실수로 덮는 일이 없게, 이미 있으면 명시적으로 "교체"를 함께 보내야 한다.
-    const 이전 = getDoc(db, "비상공개키");
-    if (이전 && !body["교체"]) {
-      const p = JSON.parse(이전);
-      return send(res, 409, {
-        error: `이미 지점 비상 열쇠가 있습니다(지문 ${p["지문"]}, ${String(p["정한날"] || "").slice(0, 10)}).`
-          + " 교체하면 지금까지 올라간 레코드의 비상 경로가 끊깁니다 —"
-          + " 각 FC가 자기 레코드를 다시 올려야 복구됩니다.",
-        "기존지문": p["지문"]
-      });
-    }
-    setDoc(db, "비상공개키", JSON.stringify({
-      "공개키": jwk, "지문": String(body["지문"]), "정한날": new Date().toISOString(), "정한이": me.email
-    }), me.id);
-    console.log(`지점 비상 공개키 ${이전 ? "교체" : "등록"}: 지문 ${body["지문"]} — ${me.email}`);
-    return send(res, 200, { ok: true, "지문": String(body["지문"]) });
   }
 
   if (req.method === "GET" && path === "/admin/pending") {

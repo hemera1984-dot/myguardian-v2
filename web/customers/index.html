@@ -19,17 +19,17 @@
       <p class="nav-group-label">업무</p>
       <a href="../">홈</a><a class="active" href="./">고객관리</a><a href="../claims/">청구·지급</a><a href="../cases/">사례·판례</a><a href="../learn/">학습</a><a href="../brief/">브리핑</a>      <p class="nav-group-label">발행</p><a href="../care/shelf.html">케어센터</a><a href="../card/">카톡카드</a>
     </nav>
-    <div class="sidebar-status"><strong>내 고객</strong><span>서버로는 잠긴 채로만 나갑니다.</span></div>
+    <div class="sidebar-status"><strong>내 고객</strong><span>담당자 본인과 총관리자만 봅니다.</span></div>
   </aside>
   <div class="platform-overlay" id="platform-overlay"></div>
   <div class="platform-shell">
-    <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">고객관리</span><span class="topbar-note">내 PC 폴더 + 서버 금고 — 서버는 내용을 읽지 못함</span></header>
+    <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">고객관리</span><span class="topbar-note">내 PC 폴더 + 서버 보관 — 담당자 본인과 총관리자만 열람</span></header>
     <main class="platform-main">
       <!-- 3단 헤딩 — eyebrow → 제목 → 설명 (플랫폼 공통 문법, 2026-07-31 정돈) -->
       <div class="page-heading">
         <p class="eyebrow">내 고객</p>
         <h1>고객관리</h1>
-        <p>내 고객 저장소를 연결해 등록·진행상태·미팅·메모를 처리합니다. 서버 금고에 올리면 다른 기기에서도 열리며, 잠그고 푸는 일은 이 기기에서만 일어나 서버는 내용을 읽지 못합니다.</p>
+        <p>내 고객 저장소를 연결해 등록·진행상태·미팅·메모를 처리합니다. 서버에 올리면 폰·태블릿 어디서든 열리며, 저장은 암호문으로 이루어집니다.</p>
       </div>
 
       <section class="section-block" id="connect-block">
@@ -70,6 +70,7 @@
                 <button class="btn" type="button" id="btn-admin-setpw">열람 비밀번호 정하기</button>
               </div>
               <p id="admin-note" style="margin:10px 0 0;font-size:12px" hidden></p>
+              <p style="margin:8px 0 0"><button class="btn" type="button" id="btn-admin-close" hidden>열어 둔 팀원 고객 닫기</button></p>
             </div>
           </div>
           <div id="new-form" hidden style="margin-top:14px;flex-wrap:wrap;gap:8px;align-items:center;display:flex">
@@ -1019,22 +1020,53 @@
           var 이름 = (r["대상"] || {})["이름"] || opt.textContent;
           if (!r.고객.length) return 관리알림(이름 + " 님은 서버에 올린 고객이 없습니다.");
           onLoaded(r.고객.map(받은모양), 이름 + " 님 고객");
-          관리알림(이름 + " 님 고객 " + r.고객.length + "명을 열었습니다. 이 목록은 읽기 전용입니다.");
+          관리알림(이름 + " 님 고객 " + r.고객.length + "명을 열었습니다. 읽기 전용이며 5분 뒤 자동으로 닫힙니다.");
+          if (남의것타이머) clearTimeout(남의것타이머);
+          남의것타이머 = setTimeout(function () { 남의것닫기("5분이 지나 팀원 고객을 닫았습니다."); }, 300000);
         }).catch(function (e) {
           관리알림(e.message || "열지 못했습니다.", true);
         }).finally(function () { btn.disabled = false; });
       });
 
+      // 열람 비밀번호는 prompt로 받지 않는다 — 글자가 그대로 보이고 확인 입력도 없다.
+      // 오타로 한 번 정하면 그 오타가 있어야 바꿀 수 있어 화면에서 되돌릴 수 없게 된다.
+      function 비번상자(처음) {
+        return new Promise(function (resolve, reject) {
+          var w = document.createElement("div");
+          w.className = "vault-veil";
+          w.innerHTML = '<form class="vault-box"><h2>열람 비밀번호 ' + (처음 ? "정하기" : "바꾸기") + "</h2>"
+            + '<p class="vault-why">팀원 고객을 볼 때 묻는 비밀번호입니다. 서버에는 해시로만 저장됩니다.</p>'
+            + (처음 ? "" : '<label for="vp-old">지금 쓰는 비밀번호</label><input type="password" id="vp-old" autocomplete="current-password" required>')
+            + '<label for="vp-new">새 비밀번호 (8자 이상)</label><input type="password" id="vp-new" autocomplete="new-password" required>'
+            + '<label for="vp-new2">한 번 더</label><input type="password" id="vp-new2" autocomplete="new-password" required>'
+            + '<p class="vault-err" hidden></p>'
+            + '<div class="vault-row"><button type="submit" class="btn btn-primary">정하기</button>'
+            + '<button type="button" class="btn" data-close>취소</button></div></form>';
+          document.body.appendChild(w);
+          var err = w.querySelector(".vault-err");
+          w.querySelector("#vp-new").focus();
+          w.querySelector("[data-close]").addEventListener("click", function () { w.remove(); reject(new Error("취소")); });
+          w.querySelector("form").addEventListener("submit", function (e) {
+            e.preventDefault();
+            var n = w.querySelector("#vp-new").value, n2 = w.querySelector("#vp-new2").value;
+            var o = 처음 ? "" : w.querySelector("#vp-old").value;
+            function 알림(m) { err.hidden = false; err.textContent = m; }
+            if (n.length < 8) return 알림("8자 이상으로 정하세요.");
+            if (n !== n2) return 알림("두 번 넣은 값이 다릅니다.");
+            if (!처음 && !o) return 알림("지금 쓰는 비밀번호를 넣으세요.");
+            w.remove();
+            resolve({ 새것: n, 지금것: o });
+          });
+        });
+      }
+
       $("btn-admin-setpw").addEventListener("click", function () {
         var btn = this;
-        var 새것 = prompt("새 열람 비밀번호를 넣으세요 (8자 이상).");
-        if (!새것) return;
-        if (새것.length < 8) return 관리알림("8자 이상으로 정하세요.", true);
         btn.disabled = true;
         UI.열람비번상태().then(function (st) {
-          var 지금 = st["정해짐"] ? prompt("지금 쓰는 열람 비밀번호를 넣으세요.") : "";
-          if (st["정해짐"] && !지금) throw new Error("취소");
-          return UI.열람비번정하기(새것, 지금);
+          return 비번상자(!st["정해짐"]);
+        }).then(function (v) {
+          return UI.열람비번정하기(v.새것, v.지금것);
         }).then(function () {
           관리알림("열람 비밀번호를 정했습니다.");
         }).catch(function (e) {
@@ -1042,13 +1074,27 @@
         }).finally(function () { btn.disabled = false; });
       });
 
+      // 남의 고객은 열어 둔 채로 두지 않는다 — 닫기 단추와 5분 자동 잠금
+      var 남의것타이머 = null;
+      function 남의것닫기(말) {
+        if (남의것타이머) { clearTimeout(남의것타이머); 남의것타이머 = null; }
+        if (SOURCE !== "남") return;
+        ALL = [];
+        SOURCE = "폴더";
+        $("work-block").hidden = true;
+        $("connect-box").innerHTML = "<div><strong>연결된 저장소 없음</strong><span>팀원 고객을 닫았습니다.</span></div>";
+        $("btn-admin-close").hidden = true;
+        관리알림(말 || "팀원 고객을 닫았습니다.");
+      }
+      $("btn-admin-close").addEventListener("click", function () { 남의것닫기(); });
+
       // 폴더를 연결하면 올리기 버튼이 열린다 — onLoaded 뒤에 상태를 맞춘다
       var 원래onLoaded = onLoaded;
       onLoaded = function (list, rootName) {
         SOURCE = rootName === "서버 고객" ? "서버" : (/님 고객$/.test(rootName) ? "남" : "폴더");
         올리기단추(SOURCE === "폴더" && list.length > 0);
         원래onLoaded(list, rootName);
-        금고버튼(!UI.잠겼나());
+        $("btn-admin-close").hidden = SOURCE !== "남";
       };
     })();
   </script>
