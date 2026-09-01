@@ -18,6 +18,7 @@ import {
   listClients, listClientStamps, putClient, deleteClient, clientCounts
 } from "./db.js";
 import { artworkSvg } from "./artwork.js";
+import { chartSvg } from "./chart.js";
 
 const PORT = Number(process.env.PORT || 8787);
 const DB_FILE = process.env.DB_FILE || "./myguardian.db";
@@ -1006,6 +1007,71 @@ async function route(req, res, url) {
       "검색질의": r.질의 || [],
       "네이버건수": 네이버.length
     });
+  }
+
+  // 데이터 그림 — 기사가 실제로 든 수치로 그린다(2026-08-31).
+  // 종전 삽화는 네모·원·삼각을 아무 데나 놓는 것이라 기사와 상관이 없어 오히려 이상했다.
+  // 코드로 그려 값어치가 나오는 건 추상 도형이 아니라 기사 안의 숫자다.
+  // 쓸 수치가 둘 미만이면 그리지 않는다 — 가짜로 채우지 않는다(헌법).
+  if (req.method === "POST" && path === "/ai/chart") {
+    if (!ANTHROPIC_KEY) return send(res, 503, { error: "AI 기능이 설정되지 않았습니다." });
+    const body = await readJson(req, 512 * 1024);
+    const 제목 = String(body["제목"] || "").slice(0, 200);
+    const 본문 = (Array.isArray(body["본문"]) ? body["본문"] : [])
+      .map((b) => String(b && b.x || "")).join("\n").slice(0, 20000);
+    if (!본문.trim()) return send(res, 400, { error: "본문이 먼저 필요합니다." });
+
+    const prompt = [
+      "아래 기사에서 그림으로 그릴 수치를 뽑는다. 경제지가 본문 옆에 싣는 그래프를 만드는 일이다.",
+      "",
+      `제목: ${제목}`,
+      "본문:",
+      본문,
+      "",
+      "규칙:",
+      "- **본문에 실제로 적힌 수치만 쓴다.** 없는 값을 지어내거나 어림잡아 채우지 않는다.",
+      "- 쓸 수치가 둘 미만이면 그리지 않는다 — 그때는 항목을 빈 배열로 두고 사유를 적는다.",
+      "- 종류: 시간에 따른 흐름이면 「선」, 몇 개를 견주면 「막대」, 둘을 크게 맞세우면 「견줌」.",
+      "- 단위를 하나로 맞춘다. 억원과 조원을 섞지 않는다(억원으로 통일하는 식).",
+      "- 표기는 사람이 읽는 말로 짧게: 1조8945억, 628만, 556.",
+      "- 강조는 기사가 말하려는 그 항목의 번호(0부터). 없으면 -1.",
+      "- 출처는 본문에 적힌 기관·보도·시점을 그대로 옮긴다. 없으면 빈 문자열."
+    ].join("\n");
+
+    const r = await claude(prompt, {
+      type: "object",
+      properties: {
+        그릴수있나: { type: "boolean" },
+        사유: { type: "string" },
+        종류: { type: "string", enum: ["막대", "선", "견줌"] },
+        제목: { type: "string" },
+        단위: { type: "string" },
+        출처: { type: "string" },
+        강조: { type: "integer" },
+        항목: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { 이름: { type: "string" }, 값: { type: "number" }, 표기: { type: "string" } },
+            required: ["이름", "값", "표기"],
+            additionalProperties: false
+          }
+        }
+      },
+      required: ["그릴수있나", "사유", "종류", "제목", "단위", "출처", "강조", "항목"],
+      additionalProperties: false
+    }, { effort: "medium", maxTokens: 4000, timeout: 120000 });
+
+    if (r.error) return send(res, 502, { error: "그림 자료를 받아오지 못했습니다." });
+    const spec = r.value;
+    if (!spec["그릴수있나"]) {
+      return send(res, 200, { "그림없음": true, "사유": spec["사유"] || "쓸 수치가 없습니다." });
+    }
+    const svg = chartSvg(spec);
+    if (!svg) return send(res, 200, { "그림없음": true, "사유": "쓸 수치가 둘 미만입니다." });
+    const 저장 = saveMedia(Buffer.from(svg, "utf8"), "svg");
+    console.log(`데이터 그림: ${spec["종류"]} ${spec["항목"].length}개 — ${me.email}`);
+    return send(res, 200, { ...저장, "종류": spec["종류"], "항목수": spec["항목"].length, "출처": spec["출처"] });
   }
 
   // 이미지 프롬프트 — 표지·칼럼 그림을 생성기에 넣을 지시문으로 만들어 준다.
