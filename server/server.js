@@ -1031,7 +1031,10 @@ async function route(req, res, url) {
       "규칙:",
       "- **본문에 실제로 적힌 수치만 쓴다.** 없는 값을 지어내거나 어림잡아 채우지 않는다.",
       "- 쓸 수치가 둘 미만이면 그리지 않는다 — 그때는 항목을 빈 배열로 두고 사유를 적는다.",
-      "- 종류: 시간에 따른 흐름이면 「선」, 몇 개를 견주면 「막대」, 둘을 크게 맞세우면 「견줌」.",
+      "- 종류: 시간에 따른 변화면 「선」, 몇 개를 견주면 「막대」, 둘을 크게 맞세우면 「견줌」,",
+      "  절차·제도를 단계로 설명하면 「흐름」. 수치가 없어도 흐름은 그릴 수 있다.",
+      "- 「흐름」일 때는 항목 대신 칸을 채운다. 칸 2~5개, 각 칸에 이름과 한 줄 설명.",
+      "  막히는 자리에 막힘을 참으로 준다 — 기사가 문제라고 말하는 그 단계다. 없으면 전부 거짓.",
       "- 단위를 하나로 맞춘다. 억원과 조원을 섞지 않는다(억원으로 통일하는 식).",
       "- 표기는 사람이 읽는 말로 짧게: 1조8945억, 628만, 556.",
       "- 강조는 기사가 말하려는 그 항목의 번호(0부터). 없으면 -1.",
@@ -1043,7 +1046,7 @@ async function route(req, res, url) {
       properties: {
         그릴수있나: { type: "boolean" },
         사유: { type: "string" },
-        종류: { type: "string", enum: ["막대", "선", "견줌"] },
+        종류: { type: "string", enum: ["막대", "선", "견줌", "흐름"] },
         제목: { type: "string" },
         단위: { type: "string" },
         출처: { type: "string" },
@@ -1056,9 +1059,18 @@ async function route(req, res, url) {
             required: ["이름", "값", "표기"],
             additionalProperties: false
           }
+        },
+        칸: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { 이름: { type: "string" }, 설명: { type: "string" }, 막힘: { type: "boolean" } },
+            required: ["이름", "설명", "막힘"],
+            additionalProperties: false
+          }
         }
       },
-      required: ["그릴수있나", "사유", "종류", "제목", "단위", "출처", "강조", "항목"],
+      required: ["그릴수있나", "사유", "종류", "제목", "단위", "출처", "강조", "항목", "칸"],
       additionalProperties: false
     }, { effort: "medium", maxTokens: 4000, timeout: 120000 });
 
@@ -1068,10 +1080,11 @@ async function route(req, res, url) {
       return send(res, 200, { "그림없음": true, "사유": spec["사유"] || "쓸 수치가 없습니다." });
     }
     const svg = chartSvg(spec);
-    if (!svg) return send(res, 200, { "그림없음": true, "사유": "쓸 수치가 둘 미만입니다." });
+    if (!svg) return send(res, 200, { "그림없음": true, "사유": "그릴 것이 둘 미만입니다." });
     const 저장 = saveMedia(Buffer.from(svg, "utf8"), "svg");
-    console.log(`데이터 그림: ${spec["종류"]} ${spec["항목"].length}개 — ${me.email}`);
-    return send(res, 200, { ...저장, "종류": spec["종류"], "항목수": spec["항목"].length, "출처": spec["출처"] });
+    const 개수 = spec["종류"] === "흐름" ? (spec["칸"] || []).length : (spec["항목"] || []).length;
+    console.log(`데이터 그림: ${spec["종류"]} ${개수}개 — ${me.email}`);
+    return send(res, 200, { ...저장, "종류": spec["종류"], "항목수": 개수, "출처": spec["출처"] });
   }
 
   // 이미지 프롬프트 — 표지·칼럼 그림을 생성기에 넣을 지시문으로 만들어 준다.
