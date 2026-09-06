@@ -748,9 +748,27 @@ async function route(req, res, url) {
 
   // ── 케어 발행 AI (2026-08-02, v1 기능 복구) ─────────────────────────────
   // 공통 호출부. 외부 패키지를 쓰지 않는 서버라 공식 SDK 대신 원시 HTTP를 쓴다.
+  // 망이 한 번 끊겼다고 쓰던 것이 날아가면 안 된다. 잠깐 쉬고 한 번 더 걸어 본다.
+  // 다시 걸어도 될 실패만 다시 건다 — 거절·형식 오류는 다시 걸어도 같은 결과다.
+  async function 다시걸기(부르기, 횟수 = 2) {
+    let 마지막;
+    for (let i = 0; i < 횟수; i++) {
+      try { return await 부르기(); }
+      catch (e) {
+        마지막 = e;
+        const 망문제 = e && (e.name === "TypeError" || e.name === "TimeoutError"
+          || /fetch failed|ECONN|ENOTFOUND|EAI_AGAIN|socket|network/i.test(String(e.message)));
+        if (!망문제 || i === 횟수 - 1) throw e;
+        console.warn(`AI 호출이 끊겼다 — ${i + 1}번째, 다시 건다: ${e.message}`);
+        await new Promise((r) => setTimeout(r, 1200 * (i + 1)));
+      }
+    }
+    throw 마지막;
+  }
+
   async function claude(prompt, schema, opts) {
     const o = opts || {};
-    const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+    const upstream = await 다시걸기(() => fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "x-api-key": ANTHROPIC_KEY,
@@ -767,7 +785,7 @@ async function route(req, res, url) {
         messages: [{ role: "user", content: prompt }]
       }),
       signal: AbortSignal.timeout(o.timeout || 60000)
-    });
+    }));
     if (!upstream.ok) {
       const detail = await upstream.text().catch(() => "");
       console.error("AI 호출 실패:", upstream.status, detail.slice(0, 300));
@@ -1285,7 +1303,7 @@ async function route(req, res, url) {
     // 서버 도구는 API가 알아서 돌린다. 다만 도구 반복 한도에 걸리면 pause_turn으로
     // 끊기므로 그때는 응답을 그대로 붙여 다시 보낸다(공식 재개 방식).
     for (let turn = 0; turn < 4; turn++) {
-      const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+      const upstream = await 다시걸기(() => fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
           "x-api-key": ANTHROPIC_KEY,
@@ -1303,7 +1321,7 @@ async function route(req, res, url) {
           messages: messages
         }),
         signal: AbortSignal.timeout(o.timeout || 600000)
-      });
+      }));
       if (!upstream.ok) {
         const detail = await upstream.text().catch(() => "");
         console.error("검증 호출 실패:", upstream.status, detail.slice(0, 300));
@@ -1811,7 +1829,16 @@ const server = createServer((req, res) => {
   route(req, res, url).catch((err) => {
     const msg = err && err.message ? err.message : "처리 중 오류가 발생했습니다.";
     // 검증 실패는 사용자 입력 문제이므로 400, 나머지는 500
-    send(res, /토큰|형식|JSON|앱의|발급자|만료|미인증/.test(msg) ? 400 : 500, { error: msg });
+    if (/토큰|형식|JSON|앱의|발급자|만료|미인증/.test(msg)) return send(res, 400, { error: msg });
+    // 속사정을 그대로 내보내면 사용자는 "fetch failed" 같은 말을 보고 자기 입력을 고치려 든다.
+    // 로그에는 원문을 남기고 화면에는 무엇을 하면 되는지만 알린다(2026-09-06).
+    console.error("처리 실패:", url.pathname, msg);
+    const 망 = /fetch failed|ECONN|ENOTFOUND|EAI_AGAIN|socket|network|timeout|aborted/i.test(msg);
+    send(res, 망 ? 503 : 500, {
+      error: 망
+        ? "서버가 외부와 연결되지 않았습니다. 입력은 그대로 두고 잠시 뒤 다시 눌러 주세요."
+        : "서버에서 처리하지 못했습니다. 잠시 뒤 다시 시도해 주세요."
+    });
   });
 });
 

@@ -674,6 +674,18 @@
         });
       }
 
+      // 속사정을 그대로 보여주면 "fetch failed" 같은 말을 보고 자기 입력을 고치려 든다.
+      // 무엇을 하면 되는지만 알린다 — 망 문제면 입력을 건드리지 말라고 분명히 말한다(2026-09-06).
+      function 사람말(err) {
+        var m = String((err && err.message) || "");
+        if (!m) return "요청이 실패했습니다. 잠시 뒤 다시 눌러 주세요.";
+        if (/fetch failed|Failed to fetch|NetworkError|ECONN|ENOTFOUND|timeout|aborted|연결되지 않/i.test(m)) {
+          return "서버와 연결되지 않았습니다. 입력은 그대로 두고 잠시 뒤 다시 눌러 주세요.";
+        }
+        if (/로그인|401/.test(m)) return "로그인이 풀렸습니다. 새로고침한 뒤 다시 로그인해 주세요.";
+        return m;   // 서버가 사람 말로 준 것은 그대로 보여준다
+      }
+
       function runAi(btn, label, box, req, done) {
         btn.disabled = true;
         var was = btn.textContent;
@@ -681,7 +693,7 @@
         box.hidden = false;
         box.textContent = "요청 중입니다…";
         req.then(done).catch(function (err) {
-          box.textContent = err.message || "요청이 실패했습니다.";
+          box.textContent = 사람말(err);
         }).finally(function () {
           btn.disabled = false;
           btn.textContent = was;
@@ -787,7 +799,9 @@
         }).catch(function (err) {
           clearInterval(timer);
           // 다른 편이 끝나 화면을 다시 그려도 이 문구가 지워지지 않게 따로 남긴다
-          지난오류[k] = (err.message || "본문을 받지 못했습니다.") + " 제목·방향을 손보고 다시 시도하세요.";
+          // 망 문제인데 "제목을 손보라"고 하면 멀쩡한 제목을 고치게 만든다
+          var 말 = 사람말(err);
+          지난오류[k] = /연결되지 않|로그인/.test(말) ? 말 : (말 + " 제목·방향을 손보고 다시 시도하세요.");
           var box = 내화면() ? aiBox(i) : null;
           if (box) { box.hidden = false; box.textContent = 지난오류[k]; }
           throw err;
