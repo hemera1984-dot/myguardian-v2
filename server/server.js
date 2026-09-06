@@ -1078,7 +1078,7 @@ async function route(req, res, url) {
     return send(res, 200, {
       ...r.value,
       "출처": [...네이버출처, ...(r.출처 || [])],
-      "검색질의": r.질의 || [],
+      "검색횟수": r.검색횟수 || 0,
       "네이버건수": 네이버.length
     });
   }
@@ -1339,14 +1339,14 @@ async function route(req, res, url) {
   async function claudeWeb(prompt, schema, opts) {
     const o = opts || {};
     let messages = [{ role: "user", content: prompt }];
-    // 검색이 실제로 돌았는지 남긴다 — 질의와 출처를 응답에 실어 보고에 쓴다.
-    const 질의 = [];
+    // 검색이 실제로 돌았는지 남긴다 — 횟수와 출처를 응답에 실어 보고에 쓴다.
+    let 검색횟수 = 0;
     const 출처 = [];
     function 수확(content) {
       (content || []).forEach((b) => {
-        if (b.type === "server_tool_use" && b.name === "web_search" && b.input && b.input.query) {
-          if (질의.indexOf(b.input.query) < 0) 질의.push(String(b.input.query).slice(0, 200));
-        }
+        // web_search_20260209은 질의를 input에 담아 주지 않는다(속으로 코드 실행을 쓴다).
+        // 확인해 보니 input이 비어 온다 — 질의를 모을 수 없다. 몇 번 찾았는지만 센다.
+        if (b.type === "server_tool_use" && b.name === "web_search") 검색횟수 += 1;
         if (b.type === "web_search_tool_result" && Array.isArray(b.content)) {
           b.content.forEach((r) => {
             if (r && r.url && !출처.some((x) => x.url === r.url)) {
@@ -1393,7 +1393,7 @@ async function route(req, res, url) {
       }
       const texts = (data.content || []).filter((b) => b.type === "text");
       const last = texts[texts.length - 1];
-      try { return { value: JSON.parse(last.text), 질의, 출처 }; } catch (e) { return { error: 502 }; }
+      try { return { value: JSON.parse(last.text), 검색횟수, 출처 }; } catch (e) { return { error: 502 }; }
     }
     return { error: 504 };
   }
@@ -1506,7 +1506,7 @@ async function route(req, res, url) {
           적용가능: 위치 >= 0 && !!원문
         };
       });
-      return { 번호, 결과, 요약: String(r.value["요약"] || ""), 질의: r.질의 || [], 출처: r.출처 || [] };
+      return { 번호, 결과, 요약: String(r.value["요약"] || ""), 검색횟수: r.검색횟수 || 0, 출처: r.출처 || [] };
     });
 
     const 결과들 = await Promise.all(jobs);
