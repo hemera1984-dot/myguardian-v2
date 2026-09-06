@@ -766,6 +766,56 @@ async function route(req, res, url) {
     throw 마지막;
   }
 
+  // SSE를 읽어 응답을 복원한다. 흘려받지 않으면 5분 넘는 요청은 아무것도 안 흐르는 사이
+  // 중간 장비가 연결을 끊어 버린다(2026-09-07 /ai/column 실패 원인). 글자가 계속 흐르면 안 끊긴다.
+  // content_block_start/delta/stop을 모아 블록을 되살린다 — pause_turn 재개에 그 블록이 필요하다.
+  async function 흘려받기(upstream) {
+    const reader = upstream.body.getReader();
+    const dec = new TextDecoder();
+    const blocks = [];
+    let buf = "", stop_reason = null, 남은 = "";
+
+    const 먹기 = (line) => {
+      if (!line.startsWith("data:")) return;
+      let d;
+      try { d = JSON.parse(line.slice(5).trim()); } catch { return; }
+      if (d.type === "content_block_start") {
+        blocks[d.index] = JSON.parse(JSON.stringify(d.content_block));
+        if (blocks[d.index].type === "tool_use" || blocks[d.index].type === "server_tool_use") {
+          blocks[d.index]._json = "";        // input은 조각으로 온다
+        }
+      } else if (d.type === "content_block_delta") {
+        const b = blocks[d.index];
+        if (!b) return;
+        if (d.delta.type === "text_delta") b.text = (b.text || "") + d.delta.text;
+        else if (d.delta.type === "thinking_delta") b.thinking = (b.thinking || "") + d.delta.thinking;
+        else if (d.delta.type === "input_json_delta") b._json += d.delta.partial_json;
+      } else if (d.type === "content_block_stop") {
+        const b = blocks[d.index];
+        if (b && b._json !== undefined) {
+          try { b.input = b._json ? JSON.parse(b._json) : {}; } catch { b.input = {}; }
+          delete b._json;
+        }
+      } else if (d.type === "message_delta") {
+        if (d.delta && d.delta.stop_reason) stop_reason = d.delta.stop_reason;
+      } else if (d.type === "error") {
+        throw new Error("스트림 오류: " + ((d.error && d.error.message) || "알 수 없음"));
+      }
+    };
+
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop();                      // 마지막 조각은 다음 덩어리와 이어 붙인다
+      for (const l of lines) 먹기(l.trim());
+    }
+    if (buf.trim()) 먹기(buf.trim());
+    void 남은;
+    return { content: blocks.filter(Boolean), stop_reason };
+  }
+
   async function claude(prompt, schema, opts) {
     const o = opts || {};
     const upstream = await 다시걸기(() => fetch("https://api.anthropic.com/v1/messages", {
@@ -778,6 +828,7 @@ async function route(req, res, url) {
       body: JSON.stringify({
         model: TITLE_MODEL,
         max_tokens: o.maxTokens || 2000,
+        stream: true,
         output_config: {
           effort: o.effort || "low",
           format: { type: "json_schema", schema: schema }
@@ -791,9 +842,9 @@ async function route(req, res, url) {
       console.error("AI 호출 실패:", upstream.status, detail.slice(0, 300));
       return { error: 502 };
     }
-    const data = await upstream.json();
+    const data = await 흘려받기(upstream);
     if (data.stop_reason === "refusal") return { error: 422 };
-    const textBlock = (data.content || []).find((b) => b.type === "text");
+    const textBlock = (data.content || []).filter((b) => b.type === "text").pop();
     try { return { value: JSON.parse(textBlock.text) }; } catch (e) { return { error: 502 }; }
   }
 
@@ -1318,6 +1369,7 @@ async function route(req, res, url) {
         body: JSON.stringify({
           model: TITLE_MODEL,
           max_tokens: o.maxTokens || 16000,
+          stream: true,
           tools: [{ type: "web_search_20260209", name: "web_search", max_uses: o.maxUses || 8 }],
           output_config: {
             effort: o.effort || "medium",
@@ -1332,7 +1384,7 @@ async function route(req, res, url) {
         console.error("검증 호출 실패:", upstream.status, detail.slice(0, 300));
         return { error: 502 };
       }
-      const data = await upstream.json();
+      const data = await 흘려받기(upstream);
       수확(data.content);
       if (data.stop_reason === "refusal") return { error: 422 };
       if (data.stop_reason === "pause_turn") {
