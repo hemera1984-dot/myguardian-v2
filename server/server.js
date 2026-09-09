@@ -551,7 +551,8 @@ async function route(req, res, url) {
       // 우리 앱 말고는 이 틀을 끼워 넣지 못한다
       "Content-Security-Policy": "frame-ancestors " + (ORIGINS.length ? ORIGINS.join(" ") : "'none'"),
       "X-Content-Type-Options": "nosniff",
-      "Cache-Control": "public, max-age=300"
+      // 틀은 작다. 캐시로 굳혀 두면 고친 것이 몇 분간 안 나타난다(오늘 이미 한 번 겪었다).
+      "Cache-Control": "no-cache"
     });
     return res.end(틀);
   }
