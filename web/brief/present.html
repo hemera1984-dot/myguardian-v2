@@ -147,6 +147,11 @@
         frameWin = frame.contentWindow;
         if (unbindFrame) unbindFrame();
         unbindFrame = B.bridgeListen(frameWin, function (d) {
+          if (d.mgb === "넘김") {
+            // 자료가 장 목록을 자기 안에 감추면 쪽 번호로 못 맞춘다 — 키를 그대로 넘긴다
+            protocol.send넘김(d.key);
+            return;
+          }
           if (d.mgb === "key") {
             // 슬라이드 안에서 누른 스크립트 조작 키 — 발표자 화면이 받아 처리한다
             if (onKey) onKey({ key: d.key, target: document.body, preventDefault: function () {} }, true);

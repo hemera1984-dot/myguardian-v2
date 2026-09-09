@@ -221,8 +221,14 @@
       if (m.video == null) return true;
       return typeof m.video === "object" && (m.video.time === undefined || isNum(m.video.time));
     },
-    scroll: function (m) { return isNum(m.y) && m.y >= 0 && m.y <= 1; }
+    scroll: function (m) { return isNum(m.y) && m.y >= 0 && m.y <= 1; },
+    // 장 넘김 키 그대로 전달 — 자료가 장 목록을 자기 안에 감추고 있어(하이퍼프레임)
+    // 몇 쪽인지 셀 수 없을 때 쓴다. 두 화면이 같은 장에서 시작해 같은 키를 받는다.
+    "키": function (m) { return 넘김키.indexOf(m.key) >= 0; }
   };
+
+  // 넘길 때 쓰는 키만 받는다 — 아무 키나 청중 화면에 밀어 넣지 않는다.
+  var 넘김키 = ["ArrowRight", "ArrowLeft", "PageDown", "PageUp", " ", "Home", "End"];
 
   function createProtocol(transport, handlers) {
     handlers = handlers || {};
@@ -253,6 +259,9 @@
       },
       sendScroll: function (y) {
         transport.send({ v: 1, type: "scroll", y: y });
+      },
+      send넘김: function (key) {
+        transport.send({ v: 1, type: "키", key: key });
       }
     };
   }
@@ -300,6 +309,12 @@
     + "try{if(document.fullscreenElement)document.exitFullscreen();"
     + "else document.documentElement.requestFullscreen();}catch(x){}"
     + "try{parent.postMessage({mgb:'key',key:'f'},'*');}catch(x){}});\n"
+    // 장 넘김 키는 청중 화면도 같이 받아야 한다. 자료가 장 목록을 자기 안에 감추면
+    // 몇 쪽인지 셀 수 없어(장 -1/0) 쪽 번호로는 못 맞춘다 — 키를 그대로 흘려보낸다.
+    // preventDefault를 하지 않는다: 이 문서도 제 할 일(넘기기)을 계속해야 한다.
+    + "window.addEventListener('keydown',function(e){"
+    + "if(['ArrowRight','ArrowLeft','PageDown','PageUp',' ','Home','End'].indexOf(e.key)<0)return;"
+    + "try{parent.postMessage({mgb:'넘김',key:e.key},'*');}catch(x){}});\n"
     // 문서 안에서 누른 키 중 발표자 화면 몫(스크립트 스크롤·글자 크기)은 위로 올려보낸다
     + "window.addEventListener('keydown',function(e){"
     + "if(['ArrowUp','ArrowDown','+','=','-','_'].indexOf(e.key)<0)return;"

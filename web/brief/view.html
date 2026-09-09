@@ -156,7 +156,10 @@
             pointer.classList.add("on");
           },
           video: function (msg) { applyVideo(msg.action, msg.time); },
-          scroll: function (msg) { applyScroll(msg.y); }
+          scroll: function (msg) { applyScroll(msg.y); },
+          // 발표자 자료에서 누른 넘김 키를 이 화면 자료에도 그대로 넣는다.
+          // 쪽 번호를 셀 수 없는 자료(하이퍼프레임)를 맞추는 유일한 길이다.
+          "키": function (msg) { if (frameWin) B.htmlSendKey(frameWin, msg.key); }
         });
 
         // 발표자보다 먼저 열렸으면 최초 hello가 유실된다 — 준비될 때까지 재요청
