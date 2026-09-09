@@ -305,7 +305,23 @@
     + "if(d.청중)청중();"
     + "if(d.크기)흔들기();"
     + "if(d.자리){if(컨)자리맞추기(d.자리);else 대기자리=d.자리;}"
+    + "if(d.연결){연결=d.연결;잇기();}"
     + "if(d.ask)tell();});\n"
+    // 자료(하이퍼프레임)는 자기 발표자·청중 동기화를 갖고 있다 — 영상 재생·정지·위치까지
+    // 맞추고, 청중 쪽은 음소거로 자동재생한다(막히면 풀기 단추). 다만 통로 이름을
+    // location.pathname으로 짓는데 blob 문서는 그 값이 제각각이라 두 자료가 서로를 못 찾는다.
+    // 통로를 만드는 순간 이름을 앱의 채널 이름으로 바꿔 끼우고, 자료에 통로를 다시 열게 한다.
+    // 장 위치는 위의 자리 방식이 맡고, 이 통로는 영상만 맡는다(자료는 present()를 부르지
+    // 않으면 위치를 스스로 올리지 않는다).
+    + "var 연결=null,이었다=false;\n"
+    + "function 잇기(){if(!연결||이었다)return;"
+    + "var e=document.querySelector('hyperframes-slideshow');if(!e||typeof e.initChannel!=='function')return;"
+    + "이었다=true;try{var 원=window.BroadcastChannel;"
+    + "var 새=function(n){if(typeof n==='string'&&n.indexOf('hf-slideshow:')===0)n='hf-slideshow:mg:'+연결.채널;return new 원(n);};"
+    + "새.prototype=원.prototype;window.BroadcastChannel=새;"
+    + "if(연결.청중)e.setAttribute('mode','audience');"
+    + "e.initChannel();}catch(x){}}\n"
+    + "setInterval(잇기,800);\n"
     // 자기 조종기를 내주는 자료(하이퍼프레임)는 자리로 맞춘다 — 키를 훔쳐 듣는 것보다 확실하다.
     // 마우스로 넘기든 키로 넘기든 조종기가 알려 주고, 어긋나도 다음 신호에 제자리로 온다.
     // 조종기는 자료가 다 서야 생기므로 계속 살핀다.
@@ -479,6 +495,17 @@
   function html자리(win, pos) {
     if (!win) return;
     try { win.postMessage({ mgb: "cmd", "자리": pos }, "*"); } catch (e) { /* 닫힌 창 */ }
+  }
+
+  // 자료의 자체 동기화 통로를 앱 채널 이름으로 잇는다 — 영상 재생·정지가 청중에게 건너간다.
+  // 자료가 늦게 서므로 htmlAudience처럼 되풀이한다(다리 쪽은 한 번만 먹는다).
+  function html연결(win, 채널, 청중) {
+    if (!win || !채널) return;
+    [0, 1200, 3000, 6000, 10000, 15000, 22000].forEach(function (ms) {
+      setTimeout(function () {
+        try { win.postMessage({ mgb: "cmd", "연결": { "채널": String(채널), "청중": !!청중 } }, "*"); } catch (e) { /* 닫힌 창 */ }
+      }, ms);
+    });
   }
 
   function htmlSendKey(win, key) {
@@ -912,6 +939,7 @@
     htmlScrollRatio: htmlScrollRatio,
     htmlSendKey: htmlSendKey,
     html자리: html자리,
+    html연결: html연결,
     htmlSetScroll: htmlSetScroll,
     htmlAudience: htmlAudience,
     bridgeListen: bridgeListen,

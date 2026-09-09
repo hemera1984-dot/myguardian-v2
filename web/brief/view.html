@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="brief.css">
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="brief.js?v=20260909d"></script>
+  <script src="brief.js?v=20260909e"></script>
 </head>
 <body class="brief-view">
   <div class="vw-stage-wrap stage-wrap" id="stage-wrap" hidden>
@@ -39,6 +39,7 @@
       var frameWin = null;      // HTML 자료 iframe (다리를 통해서만 대화한다)
       var unbindFrame = null;
       var pendingSlide = null;  // 프레임이 뜨기 전에 도착한 장
+      var 채널이름 = null;      // connect()에서 정해진다 — 자료 안 영상 통로 이름에도 쓴다
 
       var stageWrap = document.getElementById("stage-wrap");
       var stage = document.getElementById("stage");
@@ -60,6 +61,8 @@
             frameWin = frame.contentWindow;
             // 자료가 자기 화면에 띄우는 단축키 안내는 발표자 몫이다 — 빔프로젝터에서는 감춘다
             B.htmlAudience(frameWin);
+            // 자료의 영상 동기화 통로를 같은 채널 이름으로 잇는다(청중 역할 — 음소거 자동재생)
+            B.html연결(frameWin, 채널이름, true);
             if (unbindFrame) unbindFrame();
             unbindFrame = B.bridgeListen(frameWin, function () {
               if (pendingSlide !== null) {
@@ -134,6 +137,7 @@
       }
 
       function connect(id) {
+        채널이름 = id;
         var transport = B.createBroadcastTransport(B.channelName(id));
         protocol = B.createProtocol(transport, {
           page: function (msg) {
