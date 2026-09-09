@@ -107,7 +107,7 @@ const BRIEF_TYPES = {
   "image/webp": ".webp",
   "image/gif": ".gif"
 };
-const MAX_BRIEF = 80 * 1024 * 1024;
+const MAX_BRIEF = 100 * 1024 * 1024;
 // 총량·인당 상한 — 파일당 제한만 두면 반복 업로드로 디스크를 소진할 수 있다
 const MAX_BRIEF_TOTAL = 4 * 1024 * 1024 * 1024;
 const MAX_BRIEF_PER_ACCOUNT = 800 * 1024 * 1024;
