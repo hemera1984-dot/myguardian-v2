@@ -107,7 +107,7 @@ const BRIEF_TYPES = {
   "image/webp": ".webp",
   "image/gif": ".gif"
 };
-const MAX_BRIEF = 40 * 1024 * 1024;
+const MAX_BRIEF = 80 * 1024 * 1024;
 // 총량·인당 상한 — 파일당 제한만 두면 반복 업로드로 디스크를 소진할 수 있다
 const MAX_BRIEF_TOTAL = 4 * 1024 * 1024 * 1024;
 const MAX_BRIEF_PER_ACCOUNT = 800 * 1024 * 1024;
@@ -1635,6 +1635,14 @@ async function route(req, res, url) {
     const type = String(req.headers["content-type"] || "").split(";")[0].trim();
     const ext = BRIEF_TYPES[type];
     if (!ext) return send(res, 400, { error: "지원하지 않는 형식입니다. (HTML·PDF·JSON·이미지)" });
+    // 크기는 받기 전에 본다. 다 받고 나서 끊으면 브라우저는 "연결 실패"만 보고,
+    // 발표 자료가 왜 안 올라갔는지 알 길이 없다(2026-09-09 10회차 48MB 건).
+    const 길이 = Number(req.headers["content-length"] || 0);
+    if (길이 > MAX_BRIEF) {
+      req.resume();
+      const mb = (n) => Math.round(n / (1024 * 1024));
+      return send(res, 413, { error: `파일이 너무 큽니다 — ${mb(길이)}MB. ${mb(MAX_BRIEF)}MB까지 올릴 수 있습니다.` });
+    }
     const bytes = await readBytes(req, MAX_BRIEF);
     if (!bytes.length) return send(res, 400, { error: "빈 파일입니다." });
     if (!형식일치(ext, bytes)) return send(res, 400, { error: "파일 내용이 형식과 맞지 않습니다." });
