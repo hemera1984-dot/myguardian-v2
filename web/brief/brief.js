@@ -224,7 +224,14 @@
     scroll: function (m) { return isNum(m.y) && m.y >= 0 && m.y <= 1; },
     // 장 넘김 키 그대로 전달 — 자료가 장 목록을 자기 안에 감추고 있어(하이퍼프레임)
     // 몇 쪽인지 셀 수 없을 때 쓴다. 두 화면이 같은 장에서 시작해 같은 키를 받는다.
-    "키": function (m) { return 넘김키.indexOf(m.key) >= 0; }
+    "키": function (m) { return 넘김키.indexOf(m.key) >= 0; },
+    // 자료가 알려 준 절대 위치. 어긋나도 다음 신호에 제자리로 온다.
+    "자리": function (m) {
+      var p = m.pos;
+      return !!p && typeof p.sequenceId === "string"
+        && isNum(p.slideIndex) && isNum(p.fragmentIndex)
+        && p.slideIndex >= 0 && p.slideIndex <= 5000;
+    }
   };
 
   // 넘길 때 쓰는 키만 받는다 — 아무 키나 청중 화면에 밀어 넣지 않는다.
@@ -262,6 +269,9 @@
       },
       send넘김: function (key) {
         transport.send({ v: 1, type: "키", key: key });
+      },
+      send자리: function (pos) {
+        transport.send({ v: 1, type: "자리", pos: pos });
       }
     };
   }
@@ -294,7 +304,23 @@
     + "window.scrollTo(0,d.scroll*Math.max(0,el.scrollHeight-el.clientHeight));}"
     + "if(d.청중)청중();"
     + "if(d.크기)흔들기();"
+    + "if(d.자리){if(컨)자리맞추기(d.자리);else 대기자리=d.자리;}"
     + "if(d.ask)tell();});\n"
+    // 자기 조종기를 내주는 자료(하이퍼프레임)는 자리로 맞춘다 — 키를 훔쳐 듣는 것보다 확실하다.
+    // 마우스로 넘기든 키로 넘기든 조종기가 알려 주고, 어긋나도 다음 신호에 제자리로 온다.
+    // 조종기는 자료가 다 서야 생기므로 계속 살핀다.
+    + "var 컨=null,대기자리=null;\n"
+    + "function 자리보고(){try{var p=컨.position;"
+    + "parent.postMessage({mgb:'자리',pos:{sequenceId:p.sequenceId,slideIndex:p.slideIndex,fragmentIndex:p.fragmentIndex}},'*');}catch(x){}}\n"
+    + "function 자리맞추기(p){try{컨.syncTo(p.sequenceId,p.slideIndex,p.fragmentIndex);}catch(x){}}\n"
+    + "function 붙잡기(){if(컨)return;"
+    + "var e=document.querySelector('hyperframes-slideshow');var c=e&&e.controller;if(!c)return;컨=c;"
+    + "try{parent.postMessage({mgb:'자리있음'},'*');}catch(x){}"
+    + "try{c.onChange(function(){자리보고();});}catch(x){}"
+    // 되풀이해서 알린다 — 청중 창이 늦게 열려도, 어쩌다 어긋나도 제자리로 온다.
+    + "setInterval(자리보고,1500);"
+    + "if(대기자리){자리맞추기(대기자리);대기자리=null;}else{자리보고();}}\n"
+    + "붙잡기();setInterval(붙잡기,800);\n"
     // 자료가 자기 화면에 띄우는 조작 안내(「F 전체화면 · ← 뒤로」)는 발표자 몫이다.
     // 청중 창에서는 감춘다 — 빔프로젝터에 단축키 안내가 걸려 있을 이유가 없다.
     // 자료마다 #bar 또는 #hint를 쓴다. 앞으로 만드는 자료는 data-발표자용을 붙이면 된다.
@@ -312,7 +338,7 @@
     // 장 넘김 키는 청중 화면도 같이 받아야 한다. 자료가 장 목록을 자기 안에 감추면
     // 몇 쪽인지 셀 수 없어(장 -1/0) 쪽 번호로는 못 맞춘다 — 키를 그대로 흘려보낸다.
     // preventDefault를 하지 않는다: 이 문서도 제 할 일(넘기기)을 계속해야 한다.
-    + "function 넘김보고(k){"
+    + "function 넘김보고(k){if(컨)return;"
     + "if(['ArrowRight','ArrowLeft','PageDown','PageUp',' ','Home','End'].indexOf(k)<0)return;"
     + "try{parent.postMessage({mgb:'넘김',key:k},'*');}catch(x){}}\n"
     // 잡는 단계(capture)에서 듣는다. 자료가 자기 처리기에서 전파를 끊으면 거품 단계까지
@@ -416,6 +442,18 @@
       if (d.mgb === "넘김") {
         if (넘김키.indexOf(d.key) < 0) return;
         if (onState) onState({ mgb: "넘김", key: d.key });
+        return;
+      }
+      // 자기 조종기를 내주는 자료는 자리로 맞춘다 — 마우스로 넘겨도 잡힌다.
+      if (d.mgb === "자리있음") {
+        if (onState) onState({ mgb: "자리있음" });
+        return;
+      }
+      if (d.mgb === "자리") {
+        var p = d.pos;
+        if (!p || typeof p.sequenceId !== "string" || !num(p.slideIndex) || !num(p.fragmentIndex)) return;
+        if (p.slideIndex < 0 || p.slideIndex > 5000) return;
+        if (onState) onState({ mgb: "자리", pos: { sequenceId: p.sequenceId, slideIndex: p.slideIndex, fragmentIndex: p.fragmentIndex } });
       }
     }
     window.addEventListener("message", handler);
@@ -435,6 +473,12 @@
   function htmlSlideGoTo(win, target) {
     if (!win || typeof target !== "number") return;
     try { win.postMessage({ mgb: "cmd", goto: target }, "*"); } catch (e) { /* 닫힌 창 */ }
+  }
+
+  // 자료에 절대 위치를 넣는다 — 자기 조종기를 내주는 자료(하이퍼프레임)에만 먹는다.
+  function html자리(win, pos) {
+    if (!win) return;
+    try { win.postMessage({ mgb: "cmd", "자리": pos }, "*"); } catch (e) { /* 닫힌 창 */ }
   }
 
   function htmlSendKey(win, key) {
@@ -867,6 +911,7 @@
     htmlSlideGoTo: htmlSlideGoTo,
     htmlScrollRatio: htmlScrollRatio,
     htmlSendKey: htmlSendKey,
+    html자리: html자리,
     htmlSetScroll: htmlSetScroll,
     htmlAudience: htmlAudience,
     bridgeListen: bridgeListen,

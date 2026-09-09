@@ -159,7 +159,9 @@
           scroll: function (msg) { applyScroll(msg.y); },
           // 발표자 자료에서 누른 넘김 키를 이 화면 자료에도 그대로 넣는다.
           // 쪽 번호를 셀 수 없는 자료(하이퍼프레임)를 맞추는 유일한 길이다.
-          "키": function (msg) { if (frameWin) B.htmlSendKey(frameWin, msg.key); }
+          "키": function (msg) { if (frameWin) B.htmlSendKey(frameWin, msg.key); },
+          // 자료가 알려 준 절대 위치 — 마우스로 넘겨도, 어긋나 있어도 여기서 맞춰진다
+          "자리": function (msg) { if (frameWin) B.html자리(frameWin, msg.pos); }
         });
 
         // 발표자보다 먼저 열렸으면 최초 hello가 유실된다 — 준비될 때까지 재요청
