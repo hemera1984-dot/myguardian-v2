@@ -312,9 +312,18 @@
     // 장 넘김 키는 청중 화면도 같이 받아야 한다. 자료가 장 목록을 자기 안에 감추면
     // 몇 쪽인지 셀 수 없어(장 -1/0) 쪽 번호로는 못 맞춘다 — 키를 그대로 흘려보낸다.
     // preventDefault를 하지 않는다: 이 문서도 제 할 일(넘기기)을 계속해야 한다.
-    + "window.addEventListener('keydown',function(e){"
-    + "if(['ArrowRight','ArrowLeft','PageDown','PageUp',' ','Home','End'].indexOf(e.key)<0)return;"
-    + "try{parent.postMessage({mgb:'넘김',key:e.key},'*');}catch(x){}});\n"
+    + "function 넘김보고(k){"
+    + "if(['ArrowRight','ArrowLeft','PageDown','PageUp',' ','Home','End'].indexOf(k)<0)return;"
+    + "try{parent.postMessage({mgb:'넘김',key:k},'*');}catch(x){}}\n"
+    + "window.addEventListener('keydown',function(e){넘김보고(e.key);});\n"
+    // 자료가 자기 안에 또 틀을 세우면(하이퍼프레임의 플레이어) 그 안에서 누른 키는
+    // 바깥 문서까지 올라오지 않는다. 같은 출처이므로 그 안쪽 창에도 귀를 붙인다.
+    // 틀이 늦게 서므로 몇 번에 나눠 붙인다(같은 창에 두 번 붙지 않게 표시를 남긴다).
+    + "function 안쪽귀(){var fs=document.querySelectorAll('iframe');"
+    + "for(var i=0;i<fs.length;i++){try{var w=fs[i].contentWindow;"
+    + "if(!w||w.__mg귀)continue;w.__mg귀=1;"
+    + "w.addEventListener('keydown',function(e){넘김보고(e.key);},true);}catch(x){}}}\n"
+    + "[400,1200,3000,6000,10000,15000,22000].forEach(function(ms){setTimeout(안쪽귀,ms);});\n"
     // 문서 안에서 누른 키 중 발표자 화면 몫(스크립트 스크롤·글자 크기)은 위로 올려보낸다
     + "window.addEventListener('keydown',function(e){"
     + "if(['ArrowUp','ArrowDown','+','=','-','_'].indexOf(e.key)<0)return;"
