@@ -45,8 +45,11 @@ self.addEventListener("fetch", function (e) {
 
   // 동일 출처 GET 전부: 네트워크 우선, 오류(4xx/5xx)·오프라인 시 캐시 폴백.
   // 배포 즉시 최신을 받도록 캐시 우선을 쓰지 않는다. 정상 응답은 다음 오프라인을 위해 캐시.
+  // no-cache는 "받지 마라"가 아니라 "묻고 받아라"다 — 브라우저 HTTP 캐시가 있어도
+  // 서버에 바뀌었는지 물어보고, 그대로면 304로 끝난다. 이게 없으면 깃허브 페이지스의
+  // max-age=600 때문에 배포 후 10분간 옛 파일이 그대로 나온다(2026-09-09 apiBase 사고).
   e.respondWith(
-    fetch(req).then(function (resp) {
+    fetch(req, { cache: "no-cache" }).then(function (resp) {
       if (cacheable(resp)) {
         var copy = resp.clone();
         e.waitUntil(caches.open(CACHE_NAME).then(function (cache) { return cache.put(req, copy); }));
