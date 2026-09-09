@@ -284,6 +284,7 @@
     + "if(typeof d.scroll==='number'){var el=document.scrollingElement||document.documentElement;"
     + "window.scrollTo(0,d.scroll*Math.max(0,el.scrollHeight-el.clientHeight));}"
     + "if(d.청중)청중();"
+    + "if(d.크기)흔들기();"
     + "if(d.ask)tell();});\n"
     // 자료가 자기 화면에 띄우는 조작 안내(「F 전체화면 · ← 뒤로」)는 발표자 몫이다.
     // 청중 창에서는 감춘다 — 빔프로젝터에 단축키 안내가 걸려 있을 이유가 없다.
@@ -303,6 +304,11 @@
     + "window.addEventListener('keydown',function(e){"
     + "if(['ArrowUp','ArrowDown','+','=','-','_'].indexOf(e.key)<0)return;"
     + "e.preventDefault();try{parent.postMessage({mgb:'key',key:e.key},'*');}catch(x){}});\n"
+    // 자료가 안 보이는 상태(숨긴 칸·크기 0)에서 실리면 스스로 크기를 0으로 재고 끝낸다.
+    // 하이퍼프레임 자료가 그렇다 — 나중에 칸이 보여도 다시 재지 않아 화면 밖으로 튀거나
+    // 검게 남는다(2026-09-09 재현). 그래서 몇 번 흔들어 다시 재게 한다.
+    + "function 흔들기(){try{window.dispatchEvent(new Event('resize'));}catch(e){}}\n"
+    + "[300,900,2000,4000,8000,15000].forEach(function(ms){setTimeout(흔들기,ms);});\n"
     + "window.addEventListener('scroll',tell,{passive:true});\n"
     + "setInterval(tell,400);tell();\n"
     + "})();<\/script>";
