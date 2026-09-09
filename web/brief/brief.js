@@ -318,8 +318,12 @@
   // 틀은 api 출처라 앱의 토큰·저장소에 닿지 못하고, 자료는 제 출처를 가져 안쪽 iframe도 연다.
   // 자료가 서버로 올라가는 것이 아니다 — 틀은 빈 껍데기고 본문은 이 브라우저 안에서만 오간다.
   function 틀에담기(frame, 본문, stageEl) {
-    // 서버 주소는 mgAuth가 쥐고 있다(fileUrl과 같은 출처를 쓴다).
-    var 서버 = window.mgAuth ? window.mgAuth.apiBase() : "";
+    // 발표·청중 화면(present.html·view.html)은 auth.js를 싣지 않는다 — 로그인 없이
+    // IndexedDB의 자료만 열기 때문이다. 그래서 mgAuth가 없고, 여기서 서버 주소를
+    // 못 찾아 옛 방식으로 떨어졌다(2026-09-09 콘솔로 확인). 규칙은 auth.js와 같다.
+    var 서버 = window.mgAuth ? window.mgAuth.apiBase()
+      : (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+        ? "http://localhost:8787" : "https://api.insurguard.life";
     return new Promise(function (resolve) {
       var 끝났다 = false;
       // 틀을 못 쓰는 경우(로그인 전·망 끊김·서버 정지) 종전 방식으로 연다. 이 길에서는
