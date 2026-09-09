@@ -529,6 +529,9 @@
     return 본체.then(function (files) {
       var rec = { kind: kind, id: item.id, "이름": item["이름"] || files[0].name,
                   "제목": item["제목"], "모드": item["모드"] || "강의" };
+      // 남이 올린 자료인지 표시해 둔다 — HTML 자료를 얼마나 풀어 줄지 여기서 갈린다.
+      // 서버가 내려준 "내가올림"이 유일한 근거다. 내 파일을 직접 연 경우엔 이 함수를 안 거친다.
+      rec["남의것"] = item["내가올림"] !== true;
       if (kind === "images") rec.files = files;
       else if (kind === "doc") {
         // 브리핑 문서는 JSON으로 올렸다 — 다시 객체로 푼다
@@ -734,7 +737,8 @@
       // 슬라이드 문서를 앱과 같은 출처로 실행하면(allow-same-origin) 그 문서의 스크립트가
       // parent.mgAuth.token()과 localStorage에 닿는다. 라이브러리가 팀 공유가 된 뒤로는
       // 남이 올린 HTML을 내가 여는 구조라 세션 탈취가 성립한다(2026-08-11 교정).
-      // 그래서 출처를 끊고(allow-scripts만), 필요한 대화는 아래 다리로만 주고받는다.
+      // 그래서 남의 자료는 출처를 끊고, 대화는 아래 다리로만 주고받는다.
+      // 내 자료는 끊지 않는다 — 근거는 아래 sandbox 줄에 적었다(2026-09-09).
       return record.file.text().then(function (html) {
         var url = URL.createObjectURL(new Blob([html + BRIDGE], { type: "text/html" }));
         return {
@@ -747,7 +751,15 @@
             stageEl.textContent = "";
             var frame = document.createElement("iframe");
             frame.className = "pg-html-frame";
-            frame.setAttribute("sandbox", "allow-scripts");
+            // 남이 올린 자료만 출처를 끊는다. 내 자료까지 끊으면 화면이 검게 뜬다 —
+            // 하이퍼프레임처럼 자기 안에 다시 iframe을 세우는 자료는 출처가 없으면
+            // 그 안쪽 틀을 못 연다(2026-09-09 10회차). 내가 만들어 올린 자료는
+            // 내 세션과 같은 신뢰도라 열어 준다.
+            // ponytail: 남의 HTML 자료는 여전히 이 형식이면 검게 뜬다.
+            // 제대로 풀려면 자료를 앱과 다른 출처(예: api 도메인)에서 띄워야 한다.
+            frame.setAttribute("sandbox", record["남의것"]
+              ? "allow-scripts"
+              : "allow-scripts allow-same-origin");
             // 전체화면 권한은 기본이 self라 출처가 끊긴 iframe에는 안 내려간다.
             // 이 줄이 없으면 슬라이드 문서 안에서 F를 눌러도 전체화면이 막힌다(2026-08-17).
             frame.setAttribute("allow", "fullscreen");
