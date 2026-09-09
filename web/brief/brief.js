@@ -307,6 +307,38 @@
     + "setInterval(tell,400);tell();\n"
     + "})();<\/script>";
 
+  // ---------- 자료를 다른 출처에 담기 ----------
+  // 서버가 내주는 빈 틀(/brief/frame)을 띄우고, 자료 본문을 postMessage로 넣는다.
+  // 틀은 api 출처라 앱의 토큰·저장소에 닿지 못하고, 자료는 제 출처를 가져 안쪽 iframe도 연다.
+  // 자료가 서버로 올라가는 것이 아니다 — 틀은 빈 껍데기고 본문은 이 브라우저 안에서만 오간다.
+  function 틀에담기(frame, 본문, stageEl) {
+    return new Promise(function (resolve) {
+      var 끝났다 = false;
+      function 받기(e) {
+        if (끝났다 || e.source !== frame.contentWindow) return;
+        if (!e.data || e.data["틀"] !== "준비") return;
+        끝났다 = true;
+        window.removeEventListener("message", 받기);
+        e.source.postMessage({ "틀": "자료", html: 본문 }, e.origin);
+        resolve(frame);
+      }
+      window.addEventListener("message", 받기);
+      frame.src = apiBase() + "/brief/frame";
+      stageEl.appendChild(frame);
+      // 틀이 안 뜨면(망 끊김·서버 정지) 종전 방식으로 되돌린다. 이 길에서는 출처가 없어
+      // 자기 안에 iframe을 세우는 자료가 검게 뜨지만, 보통 HTML 자료는 그대로 열린다.
+      setTimeout(function () {
+        if (끝났다) return;
+        끝났다 = true;
+        window.removeEventListener("message", 받기);
+        console.warn("자료 틀을 못 받았습니다 — 서버에 닿지 않아 예전 방식으로 엽니다.");
+        frame.setAttribute("sandbox", "allow-scripts");
+        frame.onload = function () { resolve(frame); };
+        frame.src = URL.createObjectURL(new Blob([본문], { type: "text/html" }));
+      }, 6000);
+    });
+  }
+
   // ---------- HTML 슬라이드 상태 ----------
   // 다리가 보내오는 상태를 프레임별로 보관한다. 상위 창은 그 문서의 DOM을 볼 수 없다.
   var frameState = new WeakMap();
@@ -369,7 +401,9 @@
   // 자료가 늦게 그리는 경우가 있어 몇 번 되풀이한다(다리 쪽은 한 번만 먹는다).
   function htmlAudience(win) {
     if (!win) return;
-    [0, 300, 1200].forEach(function (ms) {
+    // 자료가 큰 경우 다리가 서는 데 십수 초가 걸린다(50MB 자료 실측 15초).
+    // 1.2초에서 끊으면 청중 화면에 단축키 안내가 그대로 남는다(2026-09-09).
+    [0, 300, 1200, 3000, 6000, 10000, 15000, 22000].forEach(function (ms) {
       setTimeout(function () {
         try { win.postMessage({ mgb: "cmd", 청중: true }, "*"); } catch (e) { /* 닫힌 창 */ }
       }, ms);
@@ -529,9 +563,6 @@
     return 본체.then(function (files) {
       var rec = { kind: kind, id: item.id, "이름": item["이름"] || files[0].name,
                   "제목": item["제목"], "모드": item["모드"] || "강의" };
-      // 남이 올린 자료인지 표시해 둔다 — HTML 자료를 얼마나 풀어 줄지 여기서 갈린다.
-      // 서버가 내려준 "내가올림"이 유일한 근거다. 내 파일을 직접 연 경우엔 이 함수를 안 거친다.
-      rec["남의것"] = item["내가올림"] !== true;
       if (kind === "images") rec.files = files;
       else if (kind === "doc") {
         // 브리핑 문서는 JSON으로 올렸다 — 다시 객체로 푼다
@@ -734,13 +765,15 @@
     }
 
     if (record.kind === "html") {
-      // 슬라이드 문서를 앱과 같은 출처로 실행하면(allow-same-origin) 그 문서의 스크립트가
-      // parent.mgAuth.token()과 localStorage에 닿는다. 라이브러리가 팀 공유가 된 뒤로는
-      // 남이 올린 HTML을 내가 여는 구조라 세션 탈취가 성립한다(2026-08-11 교정).
-      // 그래서 남의 자료는 출처를 끊고, 대화는 아래 다리로만 주고받는다.
-      // 내 자료는 끊지 않는다 — 근거는 아래 sandbox 줄에 적었다(2026-09-09).
+      // 슬라이드 문서를 앱과 같은 출처로 실행하면 그 문서의 스크립트가 parent.mgAuth.token()과
+      // localStorage에 닿는다. 라이브러리는 팀이 함께 쓰므로 남이 올린 HTML을 내가 여는
+      // 구조고, 그러면 세션 탈취가 성립한다(2026-08-11 교정).
+      // 그렇다고 출처를 통째로 끊으면(allow-scripts만) 자기 안에 다시 iframe을 세우는 자료가
+      // 검은 화면으로 뜬다(2026-09-09 10회차 하이퍼프레임). 둘 다 피하는 길은 하나뿐이다 —
+      // 앱이 아닌 다른 출처에서 띄운다. 자료는 서버의 빈 틀(/brief/frame)에 담아 돌리고,
+      // 그 틀은 api 출처라 앱의 저장소에 닿지 못한다. 대화는 아래 다리로만 오간다.
       return record.file.text().then(function (html) {
-        var url = URL.createObjectURL(new Blob([html + BRIDGE], { type: "text/html" }));
+        var 본문 = html + BRIDGE;
         return {
           kind: "html",
           title: record["이름"],
@@ -751,23 +784,13 @@
             stageEl.textContent = "";
             var frame = document.createElement("iframe");
             frame.className = "pg-html-frame";
-            // 남이 올린 자료만 출처를 끊는다. 내 자료까지 끊으면 화면이 검게 뜬다 —
-            // 하이퍼프레임처럼 자기 안에 다시 iframe을 세우는 자료는 출처가 없으면
-            // 그 안쪽 틀을 못 연다(2026-09-09 10회차). 내가 만들어 올린 자료는
-            // 내 세션과 같은 신뢰도라 열어 준다.
-            // ponytail: 남의 HTML 자료는 여전히 이 형식이면 검게 뜬다.
-            // 제대로 풀려면 자료를 앱과 다른 출처(예: api 도메인)에서 띄워야 한다.
-            frame.setAttribute("sandbox", record["남의것"]
-              ? "allow-scripts"
-              : "allow-scripts allow-same-origin");
-            // 전체화면 권한은 기본이 self라 출처가 끊긴 iframe에는 안 내려간다.
+            // allow-same-origin은 "제 출처를 지킨다"는 뜻이지 앱과 같아진다는 뜻이 아니다.
+            // 이 틀의 출처는 api라 앱의 토큰·저장소에는 닿지 않는다.
+            frame.setAttribute("sandbox", "allow-scripts allow-same-origin");
+            // 전체화면 권한은 기본이 self라 다른 출처의 iframe에는 안 내려간다.
             // 이 줄이 없으면 슬라이드 문서 안에서 F를 눌러도 전체화면이 막힌다(2026-08-17).
             frame.setAttribute("allow", "fullscreen");
-            frame.src = url;
-            stageEl.appendChild(frame);
-            return new Promise(function (resolve) {
-              frame.onload = function () { resolve(frame); };
-            });
+            return 틀에담기(frame, 본문, stageEl);
           },
           scriptFor: function () { return scriptAt(1); }
         };

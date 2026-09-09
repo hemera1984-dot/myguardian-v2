@@ -509,6 +509,49 @@ async function route(req, res, url) {
       + `</head>\n<body>\n<p><a href="${h(지면)}">${h(제목)}</a> 를 여는 중입니다.</p>\n</body>\n</html>\n`);
   }
 
+  // 발표 자료를 띄우는 빈 틀. 자료는 앱(app.insurguard.life)이 아니라 이 출처에서 돈다.
+  // 왜 나눠야 하나: 하이퍼프레임처럼 자기 안에 다시 iframe을 세우는 자료는, 출처를 통째로
+  // 끊으면(sandbox allow-scripts만) 그 안쪽 틀을 열지 못해 검은 화면이 된다(2026-09-09 10회차).
+  // 그렇다고 앱과 같은 출처에서 돌리면 자료의 스크립트가 앱의 로그인 토큰에 닿는다.
+  // 그래서 출처를 주되 앱의 것이 아닌 출처를 준다 — 자료는 여기서 제 기능을 다 쓰고,
+  // 앱의 저장소에는 닿지 못한다. 자료는 상위 창이 postMessage로 넣어 준다(서버에 안 남는다).
+  // 담기는 내용이 없으므로 이 틀 자체는 로그인을 요구하지 않는다.
+  if (req.method === "GET" && path === "/brief/frame") {
+    const 틀 = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>발표 자료</title>
+<style>html,body{margin:0;width:100%;height:100%;background:#000;overflow:hidden}</style>
+</head>
+<body>
+<script>
+(function () {
+  var 허용 = ${JSON.stringify(ORIGINS)};
+  var 썼다 = false;
+  window.addEventListener("message", function (e) {
+    if (썼다 || 허용.indexOf(e.origin) < 0) return;
+    var d = e.data;
+    if (!d || d["틀"] !== "자료" || typeof d.html !== "string") return;
+    썼다 = true;
+    document.open(); document.write(d.html); document.close();
+  });
+  try { parent.postMessage({ "틀": "준비" }, "*"); } catch (x) {}
+})();
+</script>
+</body>
+</html>
+`;
+    res.writeHead(200, {
+      "Content-Type": "text/html; charset=utf-8",
+      // 우리 앱 말고는 이 틀을 끼워 넣지 못한다
+      "Content-Security-Policy": "frame-ancestors " + (ORIGINS.length ? ORIGINS.join(" ") : "'none'"),
+      "X-Content-Type-Options": "nosniff",
+      "Cache-Control": "public, max-age=300"
+    });
+    return res.end(틀);
+  }
+
   // 이 아래는 세션 필요
   const me = accountForToken(db, bearer(req));
   if (!me) return send(res, 401, { error: "로그인이 필요합니다." });
