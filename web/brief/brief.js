@@ -312,8 +312,21 @@
   // 틀은 api 출처라 앱의 토큰·저장소에 닿지 못하고, 자료는 제 출처를 가져 안쪽 iframe도 연다.
   // 자료가 서버로 올라가는 것이 아니다 — 틀은 빈 껍데기고 본문은 이 브라우저 안에서만 오간다.
   function 틀에담기(frame, 본문, stageEl) {
+    // 서버 주소는 mgAuth가 쥐고 있다(fileUrl과 같은 출처를 쓴다).
+    var 서버 = window.mgAuth ? window.mgAuth.apiBase() : "";
     return new Promise(function (resolve) {
       var 끝났다 = false;
+      // 틀을 못 쓰는 경우(로그인 전·망 끊김·서버 정지) 종전 방식으로 연다. 이 길에서는
+      // 출처가 없어 자기 안에 iframe을 세우는 자료가 검게 뜨지만, 보통 HTML 자료는 열린다.
+      function 예전방식(왜) {
+        if (끝났다) return;
+        끝났다 = true;
+        window.removeEventListener("message", 받기);
+        console.warn("자료를 예전 방식으로 엽니다 — " + 왜);
+        frame.setAttribute("sandbox", "allow-scripts");
+        frame.onload = function () { resolve(frame); };
+        frame.src = URL.createObjectURL(new Blob([본문], { type: "text/html" }));
+      }
       function 받기(e) {
         if (끝났다 || e.source !== frame.contentWindow) return;
         if (!e.data || e.data["틀"] !== "준비") return;
@@ -323,19 +336,10 @@
         resolve(frame);
       }
       window.addEventListener("message", 받기);
-      frame.src = apiBase() + "/brief/frame";
       stageEl.appendChild(frame);
-      // 틀이 안 뜨면(망 끊김·서버 정지) 종전 방식으로 되돌린다. 이 길에서는 출처가 없어
-      // 자기 안에 iframe을 세우는 자료가 검게 뜨지만, 보통 HTML 자료는 그대로 열린다.
-      setTimeout(function () {
-        if (끝났다) return;
-        끝났다 = true;
-        window.removeEventListener("message", 받기);
-        console.warn("자료 틀을 못 받았습니다 — 서버에 닿지 않아 예전 방식으로 엽니다.");
-        frame.setAttribute("sandbox", "allow-scripts");
-        frame.onload = function () { resolve(frame); };
-        frame.src = URL.createObjectURL(new Blob([본문], { type: "text/html" }));
-      }, 6000);
+      if (!서버) return 예전방식("서버 주소를 모릅니다");
+      frame.src = 서버 + "/brief/frame";
+      setTimeout(function () { 예전방식("틀이 뜨지 않습니다"); }, 6000);
     });
   }
 
