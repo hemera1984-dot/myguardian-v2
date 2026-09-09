@@ -142,14 +142,23 @@
       var lastScrollSent = 0;
       var unbindFrame = null;
       var beatTimer = null;
+      // 청중 화면에도 같은 넘김 키를 방송한다. 자료 안에서 키가 올라오기를 기다리지 않는다 —
+      // 자료가 자기 안에 또 iframe을 세우면 그 안에서 누른 키는 여기까지 안 온다
+      // (2026-09-09 하이퍼프레임). 내가 넣은 키는 내가 안다.
+      var 마지막넘김 = 0;
+      function 넘김방송(key) {
+        마지막넘김 = Date.now();
+        if (protocol) protocol.send넘김(key);
+      }
 
       function bindFrameScroll(frame) {
         frameWin = frame.contentWindow;
         if (unbindFrame) unbindFrame();
         unbindFrame = B.bridgeListen(frameWin, function (d) {
           if (d.mgb === "넘김") {
-            // 자료가 장 목록을 자기 안에 감추면 쪽 번호로 못 맞춘다 — 키를 그대로 넘긴다
-            protocol.send넘김(d.key);
+            // 자료가 장 목록을 자기 안에 감추면 쪽 번호로 못 맞춘다 — 키를 그대로 넘긴다.
+            // 내가 방금 넣은 키가 되돌아온 것이면 버린다. 두 번 보내면 두 장씩 넘어간다.
+            if (Date.now() - 마지막넘김 > 400) 넘김방송(d.key);
             return;
           }
           if (d.mgb === "key") {
@@ -398,7 +407,10 @@
         // 그 처리기에 키가 닿지 않아 아무 일도 일어나지 않는다 — 발표자 화면이 대신 넣어 준다.
         // 포커스를 iframe으로 옮기지 않는 이유: 그러면 스크립트 스크롤(↑↓)과 글자 크기(+-)를
         // 발표자 화면이 못 받는다.
-        function sendKeyToFrame(key) { B.htmlSendKey(frameWin, key); }
+        function sendKeyToFrame(key) {
+          넘김방송(key);
+          B.htmlSendKey(frameWin, key);
+        }
 
         // fromFrame = iframe 안에서 올라온 키. 장 넘김은 슬라이드 문서가 이미 처리했으므로
         // 여기서 또 넘기면 두 장씩 간다 — 스크립트 조작만 맡는다.
