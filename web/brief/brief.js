@@ -395,6 +395,13 @@
         // 올려보낼 수 있는 키는 스크립트 조작용뿐이다. 장 넘김 키는 받지 않는다.
         if (KEYS_UP.indexOf(d.key) < 0) return;
         if (onState) onState({ mgb: "key", key: d.key });
+        return;
+      }
+      // 장 넘김은 발표자 화면이 청중 화면에 방송해야 한다 — 자료가 쪽 수를 감추면
+      // 이것 말고는 두 화면을 맞출 길이 없다(2026-09-09). 넘김용 키만 통과시킨다.
+      if (d.mgb === "넘김") {
+        if (넘김키.indexOf(d.key) < 0) return;
+        if (onState) onState({ mgb: "넘김", key: d.key });
       }
     }
     window.addEventListener("message", handler);
