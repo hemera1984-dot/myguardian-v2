@@ -343,7 +343,14 @@
     + "function 청중(){if(document.getElementById('mg-audience'))return;"
     + "var s=document.createElement('style');s.id='mg-audience';"
     + "s.textContent='#bar,#hint,[data-발표자용]{display:none !important}';"
-    + "(document.head||document.documentElement).appendChild(s);}\n"
+    + "(document.head||document.documentElement).appendChild(s);"
+    // 자료(하이퍼프레임)는 음소거 재생이 한 번 거부되면 「Play audience media muted」 단추를
+    // 띄운다. 거부는 대개 영상이 아직 준비되기 전에 틀려다 끊긴 것이라(AbortError), 조금 뒤
+    // 다시 틀면 된다. 빔프로젝터에 단추가 걸려 있을 이유가 없다 — 감추고 대신 계속 다시 튼다.
+    + "setInterval(function(){try{var e=document.querySelector('hyperframes-slideshow');if(!e)return;"
+    + "var b=e.audienceMediaUnlockButton;if(b)b.style.display='none';"
+    + "if(e.blockedAudienceMedia&&e.blockedAudienceMedia.size>0&&typeof e.retryBlockedAudienceMedia==='function')e.retryBlockedAudienceMedia();"
+    + "}catch(x){}},1000);}\n"
     // 전체화면(F)은 여기서 직접 처리한다. 위로 올려보내면 상위 창의 처리기는 사용자
     // 조작으로 인정받지 못해 requestFullscreen이 거부된다 — 진짜 키를 받은 이 문서만 할 수 있다.
     + "window.addEventListener('keydown',function(e){"
