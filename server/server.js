@@ -534,7 +534,11 @@ async function route(req, res, url) {
     var d = e.data;
     if (!d || d["틀"] !== "자료" || typeof d.html !== "string") return;
     썼다 = true;
-    document.open(); document.write(d.html); document.close();
+    // document.write로 찍으면 자료가 절반만 살아난다(겉은 서되 플레이어가 안 뜬다).
+    // 파일을 열 때와 같은 길로 간다 — 이 출처에서 blob을 만들어 그 문서로 넘어간다.
+    // blob은 만든 출처를 물려받으므로 여기서도 api 출처이고, 상위 창은 그대로 앱이라
+    // 자료에 붙인 다리(postMessage)가 끊기지 않는다.
+    location.replace(URL.createObjectURL(new Blob([d.html], { type: "text/html" })));
   });
   try { parent.postMessage({ "틀": "준비" }, "*"); } catch (x) {}
 })();
