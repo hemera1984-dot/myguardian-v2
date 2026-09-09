@@ -315,15 +315,20 @@
     + "function 넘김보고(k){"
     + "if(['ArrowRight','ArrowLeft','PageDown','PageUp',' ','Home','End'].indexOf(k)<0)return;"
     + "try{parent.postMessage({mgb:'넘김',key:k},'*');}catch(x){}}\n"
-    + "window.addEventListener('keydown',function(e){넘김보고(e.key);});\n"
+    // 잡는 단계(capture)에서 듣는다. 자료가 자기 처리기에서 전파를 끊으면 거품 단계까지
+    // 오지 않는다 — 발표자가 슬라이드를 클릭한 뒤 누른 키를 놓치던 이유다(2026-09-09).
+    + "window.addEventListener('keydown',function(e){넘김보고(e.key);},true);\n"
     // 자료가 자기 안에 또 틀을 세우면(하이퍼프레임의 플레이어) 그 안에서 누른 키는
     // 바깥 문서까지 올라오지 않는다. 같은 출처이므로 그 안쪽 창에도 귀를 붙인다.
     // 틀이 늦게 서므로 몇 번에 나눠 붙인다(같은 창에 두 번 붙지 않게 표시를 남긴다).
-    + "function 안쪽귀(){var fs=document.querySelectorAll('iframe');"
-    + "for(var i=0;i<fs.length;i++){try{var w=fs[i].contentWindow;"
-    + "if(!w||w.__mg귀)continue;w.__mg귀=1;"
-    + "w.addEventListener('keydown',function(e){넘김보고(e.key);},true);}catch(x){}}}\n"
-    + "[400,1200,3000,6000,10000,15000,22000].forEach(function(ms){setTimeout(안쪽귀,ms);});\n"
+    + "function 안쪽귀(doc,깊이){if(!doc||깊이>3)return;"
+    + "var fs=doc.querySelectorAll('iframe');"
+    + "for(var i=0;i<fs.length;i++){try{var w=fs[i].contentWindow;if(!w)continue;"
+    + "if(!w.__mg귀){w.__mg귀=1;"
+    + "w.addEventListener('keydown',function(e){넘김보고(e.key);},true);}"
+    + "안쪽귀(w.document,깊이+1);}catch(x){}}}\n"
+    // 틀이 언제 서고 언제 다시 서는지 알 수 없다 — 계속 살핀다. 붙은 창은 표시로 거른다.
+    + "안쪽귀(document,0);setInterval(function(){안쪽귀(document,0);},2000);\n"
     // 문서 안에서 누른 키 중 발표자 화면 몫(스크립트 스크롤·글자 크기)은 위로 올려보낸다
     + "window.addEventListener('keydown',function(e){"
     + "if(['ArrowUp','ArrowDown','+','=','-','_'].indexOf(e.key)<0)return;"
