@@ -517,6 +517,7 @@ async function route(req, res, url) {
   // 앱의 저장소에는 닿지 못한다. 자료는 상위 창이 postMessage로 넣어 준다(서버에 안 남는다).
   // 담기는 내용이 없으므로 이 틀 자체는 로그인을 요구하지 않는다.
   if (req.method === "GET" && path === "/brief/frame") {
+    console.log("자료 틀 요청 — " + (req.headers["referer"] || "출처없음") + " · " + String(req.headers["user-agent"] || "").slice(0, 60));
     const 틀 = `<!DOCTYPE html>
 <html lang="ko">
 <head>
