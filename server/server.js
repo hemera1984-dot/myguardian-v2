@@ -1816,20 +1816,7 @@ async function route(req, res, url) {
   // ── 조직도 ──
   // 자리마다 계정 번호·이메일이 붙는다. 저장소(공개)가 아니라 여기 둔다.
   // 열람은 로그인한 사람 전원 — 조직도는 원래 다 같이 보는 것이다.
-  if (req.method === "GET" && path === "/org") {
-    const v = getDoc(db, "org");
-    if (!v) return send(res, 404, { error: "서버에 저장된 조직도가 없습니다." });
-    return send(res, 200, JSON.parse(v));
-  }
-
-  if (req.method === "POST" && path === "/org") {
-    if (!canApprove(db, me)) return send(res, 403, { error: "조직도는 승인 권한자만 고칠 수 있습니다." });
-    const body = await readJson(req);
-    if (!body || !Array.isArray(body["구성원"]))
-      return send(res, 400, { error: "구성원 목록이 없습니다." });
-    setDoc(db, "org", JSON.stringify(body), me.id);
-    return send(res, 200, { ok: true });
-  }
+  // 조직도(/org)는 걷어냈다 — 하랑지점이 원본이다(2026-09-10). 관리자 화면이 그쪽을 읽는다.
 
   // ── 상담 스크립트 (FC 개인)
   // 고객 이름을 끼워 넣을 틀이다. 고객 정보가 아니므로 암호화하지 않는다 — 사람마다

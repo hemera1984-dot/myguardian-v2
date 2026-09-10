@@ -55,25 +55,18 @@
       </section>
 
       <section class="section-block">
-        <div class="section-head"><div><h2>조직도</h2><p>직급 변경·소속 이동·구성원 추가·계정 연결은 서버에 바로 저장됩니다. 다른 사람 화면에도 그대로 보입니다.</p></div></div>
+        <div class="section-head"><div><h2>조직도 — 하랑지점</h2><p>팀·직급·도입자·위촉일은 하랑지점이 원본입니다. 여기서는 보기만 하고, 고치는 일은 하랑지점 조직도에서 합니다.</p></div></div>
         <div class="surface-card">
           <p id="org-mode" style="margin:0 0 10px;font-size:12px;color:var(--platform-faint)"></p>
-          <div id="org-tree"><span style="color:var(--platform-faint);font-size:12px">조직도를 불러오는 중입니다.</span></div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;border-top:1px solid var(--platform-line);padding-top:12px">
-            <input type="text" id="org-new-name" placeholder="새 구성원 이름" aria-label="새 구성원 이름" style="font:inherit;font-size:13px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:7px 10px;width:150px">
-            <select id="org-new-rank" aria-label="직급" style="font:inherit;font-size:13px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:7px 10px"></select>
-            <select id="org-new-parent" aria-label="소속 상위" style="font:inherit;font-size:13px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:7px 10px"></select>
-            <button class="install-secondary" type="button" id="org-add" style="padding:8px 14px">구성원 추가</button>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-
-
+          <div id="org-tree"><span style="color:var(--platform-faint);font-size:12px">하랑지점 조직도를 불러오는 중입니다.</span></div>
+          <div style="margin-top:14px;border-top:1px solid var(--platform-line);padding-top:12px">
+            <a class="install-secondary" href="https://api.insurguard.life/branch/#org" target="_blank" rel="noopener" style="padding:8px 14px;display:inline-block;text-decoration:none">하랑지점 조직도에서 고치기</a>
           </div>
         </div>
       </section>
 
-      <p class="install-note">초대받은 팀원의 실제 계정 연결(구글 로그인·승인)은 2차 공사에서 열립니다.
-        그 전까지는 설치 안내와 발행물 열람까지가 팀원 사용 범위입니다.</p>
+      <p class="install-note">계정은 하나입니다. 마이가디언에서 승인된 구글 계정으로 하랑지점도 그대로 로그인됩니다.
+        다만 팀·직급 배치는 하랑지점 조직도에서 한 번 해야 합니다 — 위 목록의 「하랑지점 미배치」가 그 표시입니다.</p>
     </main>
 
     <footer class="platform-footer">마이가디언 v2</footer>
@@ -109,27 +102,12 @@
           + "</select>";
       }
 
-      // 조직도 자리와 계정을 잇는 열쇠는 계정 번호다. 이름으로 잇지 않는다 —
-      // 동명이인·개명에 흔들린다. 이메일은 함께 적어 두되(사람이 읽으라고) 판정은
-      // 번호로 한다. 번호가 아직 없는 자리는 이메일로 찾아 붙는다.
       var ACCOUNTS = [];
-      function accountOf(node) {
-        if (!node) return null;
-        if (node["계정"]) {
-          var byId = ACCOUNTS.filter(function (a) { return a.id === node["계정"]; })[0];
-          if (byId) return byId;
-        }
-        if (node["이메일"])
-          return ACCOUNTS.filter(function (a) { return a.email === node["이메일"]; })[0] || null;
-        return null;
-      }
-
       function loadPending() {
         return window.mgAuth.api("/admin/pending").then(function (data) {
           var pending = data["대기"] || [];
           var members = data["구성원"] || [];
           ACCOUNTS = members;
-          if (ORG) { autoLink(); renderOrg(); }   // 계정이 늦게 와도 조직도 배지가 맞게 뜨도록
 
           $("pending-list").innerHTML = pending.length
             ? pending.map(function (p) {
@@ -154,7 +132,7 @@
                   + (m.grade ? '<span class="badge-grade">' + esc(m.grade) + "</span>" : "")
                   + (m.is_admin ? '<span class="badge-grade">총관리자</span>' : "")
                   + (m.can_approve && !m.is_admin ? '<span class="badge-status st-meet">승인권한</span>' : "")
-                  + (ORG && !orgNodeForAccount(m) ? '<span class="badge-status st-hold">조직도 미배치</span>' : "")
+                  + (BRANCH && !branchMemberOf(m) ? '<span class="badge-status st-hold">하랑지점 미배치</span>' : "")
                   + (isMe ? '<span style="font-size:12px;color:var(--platform-faint)">본인</span>'
                      : (m.status === "승인" ? '<button type="button" class="status-btn st-reject" data-suspend="' + m.id + '">정지</button>' : ""))
                   + (!isMe && AUTH.me["계정"]["총관리자"] && m.status === "승인" && !m.is_admin
@@ -276,227 +254,79 @@
       // 전에는 브라우저(localStorage)에만 두고 "변경 JSON 복사"로 저장소에 옮겼다.
       // 고쳐도 나만 보였고, 자리마다 붙는 이메일이 공개 저장소에 남았다.
       // 이제 자료는 서버 DB에 있고 저장소에는 뼈대(직급표)만 남는다 (2026-08-05 사용자).
-      var ORG = null;
-      var editing = null; // 편집 중인 구성원 코드
+      // ---------- 하랑지점 조직도 (읽기 전용) ----------
+      // 조직도는 하랑지점(ourbranch)이 원본이다 — 팀·직급·도입자·위촉일이 거기 있고 일정·업적
+      // 권한도 거기서 나온다. 여기서 따로 그리던 조직도는 걷어냈다(2026-09-10 사용자:
+      // 「조직도는 우리지점에 있으니까 연동시켜야지」). 두 곳에 두면 「미초대」와
+      // 「조직도 미배치」가 동시에 뜨는 식으로 어긋난다. 계정과의 고리는 이메일이다 —
+      // 하랑지점 members 표의 열쇠가 마이가디언 계정 이메일(소문자)이다.
+      var BRANCH_API = "https://api.insurguard.life/branch";
+      var BRANCH = null;   // { teams, members }
 
-      function saveOrg() {
-        $("org-mode").textContent = "저장 중…";
-        return window.mgAuth.api("/org", { method: "POST", body: ORG })
-          .then(function () { $("org-mode").textContent = "서버에 저장했습니다. 전원이 같은 조직도를 봅니다."; })
-          .catch(function (e) {
-            $("org-mode").textContent = "저장하지 못했습니다 — " + (e && e.message ? e.message : "다시 시도해 주세요");
-          });
-      }
-
-      function rankName(code) {
-        var r = (ORG["직급표"] || []).find(function (x) { return x["코드"] === code; });
-        return r ? r["이름"] : code;
-      }
-
-      function members() { return ORG["구성원"] || []; }
-
-      // 조직도 자리와 계정을 이름으로 잇는다. 자리를 이름만 넣어 만들고 계정은 따로 승인하니
-      // 둘이 남남으로 남아 「미초대」·「조직도 미배치」가 동시에 뜬다(2026-09-10 사용자 지적).
-      // 승인된 계정 중 아직 어느 자리에도 안 붙은 것이 그 이름으로 정확히 하나일 때만 잇고,
-      // 이은 결과는 서버에 저장해 다음부터는 계정 번호로 맞춘다. 헷갈리면(동명) 손으로 고른다.
-      function autoLink() {
-        if (!ORG || !ACCOUNTS.length) return false;
-        if (!(AUTH.me["승인권한"] || AUTH.me["계정"]["총관리자"])) return false;
-        var changed = false;
-        members().forEach(function (m) {
-          if (m["계정"] || m["이메일"]) return;
-          var name = String(m["이름"] || "").replace(/\s+/g, "");
-          if (!name) return;
-          var cands = ACCOUNTS.filter(function (a) {
-            return a.status === "승인" && !orgNodeForAccount(a)
-              && String(a.name || "").replace(/\s+/g, "") === name;
-          });
-          if (cands.length !== 1) return;
-          m["계정"] = cands[0].id;
-          m["이메일"] = cands[0].email;
-          changed = true;
-        });
-        if (changed) saveOrg();
-        return changed;
-      }
-
-      function orgNodeForAccount(a) {
-        return members().filter(function (m) {
-          return (a.id && m["계정"] === a.id) || (a.email && m["이메일"] === a.email);
+      function branchMemberOf(a) {
+        if (!BRANCH || !a || !a.email) return null;
+        var e = String(a.email).toLowerCase();
+        return BRANCH.members.filter(function (m) {
+          return m.active !== 0 && String(m.email).toLowerCase() === e;
         })[0] || null;
       }
 
-      // 붙일 수 있는 계정 — 승인된 계정 중 아직 다른 자리에 붙지 않은 것
-      function accountOptions(node) {
-        var mine = accountOf(node);
-        var mineId = mine ? mine.id : 0;
-        var opts = ['<option value="">계정 없음 (미초대)</option>'];
-        ACCOUNTS.forEach(function (a) {
-          if (a.status !== "승인") return;
-          var taken = orgNodeForAccount(a);
-          if (taken && taken["코드"] !== node["코드"]) return;
-          opts.push('<option value="' + a.id + '"' + (a.id === mineId ? " selected" : "") + ">"
-            + esc(a.name || a.email) + " · " + esc(a.email) + "</option>");
+      function teamHtml(name, list) {
+        list.sort(function (x, y) {
+          return (x.sort_order || 0) - (y.sort_order || 0)
+            || String(x.name).localeCompare(String(y.name), "ko");
         });
-        return opts.join("");
+        return '<div class="org-node" style="flex-direction:column;align-items:flex-start;gap:6px">'
+          + '<strong style="font-size:13px">' + esc(name)
+          + ' <span style="font-weight:400;color:var(--platform-faint)">' + list.length + "명</span></strong>"
+          + list.map(function (m) {
+              // 이름만 넣어 둔 자리(계정 없음)는 하랑지점이 @미등록.local 이메일로 표시한다
+              var seat = String(m.email).indexOf("@미등록.local") >= 0;
+              return '<div style="display:flex;gap:8px;align-items:center;margin-left:14px;flex-wrap:wrap">'
+                + '<span class="badge-grade">' + esc(m.role) + "</span>"
+                + '<span style="font-size:13px">' + esc(m.name || m.email) + "</span>"
+                + (m.is_manager ? '<span class="badge-status st-meet">관리자</span>' : "")
+                + (seat ? '<span class="badge-status st-hold">계정 미연결</span>'
+                        : '<span style="font-size:11px;color:var(--platform-faint)">' + esc(m.email) + "</span>")
+                + "</div>";
+            }).join("")
+          + "</div>";
       }
 
-      function childrenOf(code) {
-        return members().filter(function (m) { return m["상위"] === code; });
-      }
-
-      // code의 하위 트리 전체 코드 목록 (자기 포함) — 소속 이동 시 순환 방지
-      function subtree(code) {
-        var out = [code];
-        childrenOf(code).forEach(function (c) { out = out.concat(subtree(c["코드"])); });
-        return out;
-      }
-
-      function rankOptions(sel) {
-        return (ORG["직급표"] || []).map(function (r) {
-          return '<option value="' + esc(r["코드"]) + '"' + (r["코드"] === sel ? " selected" : "") + ">"
-            + esc(r["이름"]) + " (" + esc(r["코드"]) + ")</option>";
-        }).join("");
-      }
-
-      function parentOptions(sel, excludeCodes) {
-        var opts = ['<option value=""' + (!sel ? " selected" : "") + ">최상위</option>"];
-        members().forEach(function (m) {
-          if (excludeCodes && excludeCodes.indexOf(m["코드"]) >= 0) return;
-          opts.push('<option value="' + esc(m["코드"]) + '"' + (m["코드"] === sel ? " selected" : "") + ">"
-            + esc(m["이름"]) + " " + esc(m["직급"]) + "</option>");
+      function renderBranch() {
+        if (!BRANCH) return;
+        var byTeam = {};
+        BRANCH.members.forEach(function (m) {
+          if (m.active === 0) return;                       // 퇴사자는 하랑지점이 따로 보관한다
+          var k = m.team_id == null ? "none" : String(m.team_id);
+          (byTeam[k] = byTeam[k] || []).push(m);
         });
-        return opts.join("");
+        var h = BRANCH.teams.map(function (t) { return teamHtml(t.name, byTeam[String(t.id)] || []); });
+        if (byTeam.none) h.push(teamHtml("팀 미정", byTeam.none));
+        $("org-tree").innerHTML = h.join("")
+          || '<span style="color:var(--platform-faint);font-size:12px">하랑지점에 등록된 구성원이 없습니다.</span>';
       }
 
-      function renderOrg() {
-        var box = $("org-tree");
-        var roots = members().filter(function (m) { return !m["상위"] || !members().some(function (p) { return p["코드"] === m["상위"]; }); });
-        if (!roots.length) {
-          box.innerHTML = '<span style="color:var(--platform-faint);font-size:12px">구성원이 없습니다. 아래에서 추가하세요.</span>';
-        } else {
-          box.innerHTML = roots.map(function (r) { return nodeHtml(r, 0); }).join("");
-        }
-        // 추가 폼 셀렉트 갱신
-        $("org-new-rank").innerHTML = rankOptions("FC");
-        $("org-new-parent").innerHTML = parentOptions(null, null);
+      function loadBranch() {
+        var t = window.mgAuth.token();
+        return fetch(BRANCH_API + "/bootstrap", { headers: t ? { Authorization: "Bearer " + t } : {} })
+          .then(function (r) {
+            if (!r.ok) throw new Error(r.status === 403 ? "하랑지점 가입 승인이 아직입니다" : "하랑지점 응답 " + r.status);
+            return r.json();
+          })
+          .then(function (d) {
+            BRANCH = { teams: d.teams || [], members: d.members || [] };
+            $("org-mode").textContent = (d.branchName ? d.branchName + " · " : "")
+              + "하랑지점 조직도를 그대로 보여줍니다. 고치려면 하랑지점에서 하세요.";
+            renderBranch();
+            if (ACCOUNTS.length) loadPending();           // 계정 목록의 「하랑지점 미배치」 배지를 다시 그린다
+          })
+          .catch(function (e) {
+            $("org-tree").innerHTML = '<span style="color:var(--platform-faint);font-size:12px">하랑지점 조직도를 불러오지 못했습니다 — '
+              + esc(e && e.message ? e.message : "다시 시도해 주세요") + "</span>";
+          });
       }
-
-      // 자리의 상태는 붙은 계정이 정한다. 손으로 「미초대」를 지우고 다니면
-      // 실제로 로그인했는지와 화면이 어긋난다 (2026-08-05 사용자: 「왜 미초대로 되어있을까」).
-      function orgStatusHtml(m) {
-        if (!m["계정"] && !m["이메일"]) return '<span class="badge-status st-hold">미초대</span>';
-        var a = accountOf(m);
-        if (!ACCOUNTS.length) return "";                       // 계정 목록을 아직 못 받았다
-        if (!a) return '<span class="badge-status st-reject">계정 확인 필요</span>';
-        return '<span class="badge-status ' + (a.status === "승인" ? "st-meet" : "st-hold") + '">'
-          + esc(a.status) + "</span>"
-          + '<span style="font-size:11px;color:var(--platform-faint)">' + esc(a.email) + "</span>";
-      }
-
-      function nodeHtml(m, depth) {
-        var h = ['<div class="org-node" style="margin-left:' + (depth * 26) + 'px">'];
-        if (editing === m["코드"]) {
-          h.push('<span class="badge-grade">' + esc(m["코드"]) + "</span>"
-            + '<strong style="font-size:13px">' + esc(m["이름"]) + "</strong>"
-            + '<select data-org-rank="' + esc(m["코드"]) + '" aria-label="직급" style="font:inherit;font-size:12px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:4px 7px">' + rankOptions(m["직급"]) + "</select>"
-            + '<select data-org-parent="' + esc(m["코드"]) + '" aria-label="소속" style="font:inherit;font-size:12px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:4px 7px">' + parentOptions(m["상위"], subtree(m["코드"])) + "</select>"
-            + '<select data-org-account="' + esc(m["코드"]) + '" aria-label="계정" style="font:inherit;font-size:12px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:4px 7px">' + accountOptions(m) + "</select>"
-            + '<button type="button" class="status-btn st-met" data-org-save="' + esc(m["코드"]) + '">저장</button>'
-            + '<button type="button" class="status-btn" data-org-cancel="' + esc(m["코드"]) + '">취소</button>'
-            + (childrenOf(m["코드"]).length ? "" : '<button type="button" class="status-btn st-reject" data-org-del="' + esc(m["코드"]) + '">삭제</button>'));
-        } else {
-          h.push('<span class="badge-status st-meet">' + esc(rankName(m["직급"])) + " · " + esc(m["직급"]) + "</span>"
-            + '<strong style="font-size:13px">' + esc(m["이름"]) + "</strong>"
-            + (m["총관리자"] ? '<span class="badge-grade">총관리자</span>' : "")
-            + orgStatusHtml(m)
-            + '<button type="button" class="status-btn" data-org-edit="' + esc(m["코드"]) + '">편집</button>');
-        }
-        h.push("</div>");
-        childrenOf(m["코드"]).forEach(function (c) { h.push(nodeHtml(c, depth + 1)); });
-        return h.join("");
-      }
-
-      // 서버에 아직 아무것도 없으면 저장소 뼈대(data/org.json)로 시작한다.
-      window.mgAuth.api("/org")
-        .catch(function () {
-          return fetch("../../data/org.json").then(function (r) { return r.json(); });
-        })
-        .then(function (base) {
-          ORG = base;
-          $("org-mode").textContent = "";
-          // 계정 목록이 먼저 와 있으면 여기서 잇고, 계정 목록 쪽 배지(조직도 미배치)도 다시 그린다
-          if (ACCOUNTS.length && autoLink()) loadPending();
-          renderOrg();
-        })
-        .catch(function () {
-          $("org-tree").innerHTML = '<span style="color:var(--platform-faint);font-size:12px">조직도를 불러오지 못했습니다.</span>';
-        });
-
-      $("org-tree").addEventListener("click", function (e) {
-        var btn = e.target.closest("button");
-        if (!btn || !ORG) return;
-        var code;
-        if (btn.dataset.orgEdit) { editing = btn.dataset.orgEdit; renderOrg(); }
-        else if (btn.dataset.orgCancel) { editing = null; renderOrg(); }
-        else if (btn.dataset.orgSave) {
-          code = btn.dataset.orgSave;
-          var m = members().find(function (x) { return x["코드"] === code; });
-          var rankSel = document.querySelector('[data-org-rank="' + code + '"]');
-          var parentSel = document.querySelector('[data-org-parent="' + code + '"]');
-          var accSel = document.querySelector('[data-org-account="' + code + '"]');
-          m["직급"] = rankSel.value;
-          m["상위"] = parentSel.value || null;
-          // 계정을 붙이면 이 자리의 주인이 정해진다. 상태는 계정이 정하므로 손대지 않는다.
-          if (accSel) {
-            if (accSel.value) {
-              var acc = ACCOUNTS.filter(function (x) { return x.id === Number(accSel.value); })[0];
-              m["계정"] = Number(accSel.value);
-              m["상태"] = "사용중";
-              if (acc) {
-                m["이메일"] = acc.email;
-                if (acc.name) m["이름"] = acc.name;          // 이름은 계정 쪽이 최신이다
-              }
-            } else {
-              delete m["계정"];
-              delete m["이메일"];
-              m["상태"] = "미초대";
-            }
-          }
-          editing = null;
-          saveOrg();
-          renderOrg();
-        }
-        else if (btn.dataset.orgDel) {
-          code = btn.dataset.orgDel;
-          if (childrenOf(code).length) return; // 하위가 있으면 삭제 불가
-          ORG["구성원"] = members().filter(function (x) { return x["코드"] !== code; });
-          editing = null;
-          saveOrg();
-          renderOrg();
-        }
-      });
-
-      $("org-add").addEventListener("click", function () {
-        if (!ORG) return;
-        var name = $("org-new-name").value.trim();
-        if (!name) { $("org-new-name").focus(); return; }
-        var max = 0;
-        members().forEach(function (m) {
-          var mt = String(m["코드"]).match(/^fc(\d+)$/);
-          if (mt) max = Math.max(max, Number(mt[1]));
-        });
-        ORG["구성원"].push({
-          "코드": "fc" + String(max + 1).padStart(2, "0"),
-          "이름": name,
-          "직급": $("org-new-rank").value,
-          "상위": $("org-new-parent").value || null,
-          "상태": "미초대"
-        });
-        $("org-new-name").value = "";
-        saveOrg();
-        renderOrg();
-      });
+      loadBranch();
 
       // 「변경 JSON 복사」·「로컬 변경 버리기」는 걷어냈다 — 서버가 곧 원본이라 옮길 것도,
       // 버릴 로컬 사본도 없다. 옛 사본이 남아 있으면 지운다.
