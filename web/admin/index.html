@@ -129,7 +129,7 @@
           var pending = data["대기"] || [];
           var members = data["구성원"] || [];
           ACCOUNTS = members;
-          if (ORG) renderOrg();          // 계정이 늦게 와도 조직도 배지가 맞게 뜨도록
+          if (ORG) { autoLink(); renderOrg(); }   // 계정이 늦게 와도 조직도 배지가 맞게 뜨도록
 
           $("pending-list").innerHTML = pending.length
             ? pending.map(function (p) {
@@ -295,6 +295,31 @@
 
       function members() { return ORG["구성원"] || []; }
 
+      // 조직도 자리와 계정을 이름으로 잇는다. 자리를 이름만 넣어 만들고 계정은 따로 승인하니
+      // 둘이 남남으로 남아 「미초대」·「조직도 미배치」가 동시에 뜬다(2026-09-10 사용자 지적).
+      // 승인된 계정 중 아직 어느 자리에도 안 붙은 것이 그 이름으로 정확히 하나일 때만 잇고,
+      // 이은 결과는 서버에 저장해 다음부터는 계정 번호로 맞춘다. 헷갈리면(동명) 손으로 고른다.
+      function autoLink() {
+        if (!ORG || !ACCOUNTS.length) return false;
+        if (!(AUTH.me["승인권한"] || AUTH.me["계정"]["총관리자"])) return false;
+        var changed = false;
+        members().forEach(function (m) {
+          if (m["계정"] || m["이메일"]) return;
+          var name = String(m["이름"] || "").replace(/\s+/g, "");
+          if (!name) return;
+          var cands = ACCOUNTS.filter(function (a) {
+            return a.status === "승인" && !orgNodeForAccount(a)
+              && String(a.name || "").replace(/\s+/g, "") === name;
+          });
+          if (cands.length !== 1) return;
+          m["계정"] = cands[0].id;
+          m["이메일"] = cands[0].email;
+          changed = true;
+        });
+        if (changed) saveOrg();
+        return changed;
+      }
+
       function orgNodeForAccount(a) {
         return members().filter(function (m) {
           return (a.id && m["계정"] === a.id) || (a.email && m["이메일"] === a.email);
@@ -400,6 +425,8 @@
         .then(function (base) {
           ORG = base;
           $("org-mode").textContent = "";
+          // 계정 목록이 먼저 와 있으면 여기서 잇고, 계정 목록 쪽 배지(조직도 미배치)도 다시 그린다
+          if (ACCOUNTS.length && autoLink()) loadPending();
           renderOrg();
         })
         .catch(function () {
