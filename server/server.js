@@ -1961,6 +1961,34 @@ async function route(req, res, url) {
     return send(res, 200, { ok: true, "이름": v || target.name });
   }
 
+  // 직급 바꾸기 — 승인 때 잘못 고른 직급을 고친다(2026-09-10 사용자: 「BM으로 실수로 했는데」).
+  // 총관리자는 전원, 그 밖의 승인권자는 자기 하위 트리만. 총관리자의 직급은 총관리자만 건드린다.
+  // 하랑지점 명단의 직급도 같이 맞춘다(승인자 세션으로, 실패는 기록만) — 두 곳이 어긋나지 않게.
+  if (req.method === "POST" && path === "/admin/set-grade") {
+    if (!canApprove(db, me)) return send(res, 403, { error: "승인 권한이 없습니다." });
+    const { 대상, 직급 } = await readJson(req);
+    const target = getAccount(db, Number(대상));
+    if (!target) return send(res, 404, { error: "대상 계정을 찾을 수 없습니다." });
+    if (target.status !== "승인") return send(res, 400, { error: "승인된 계정만 직급을 바꿀 수 있습니다." });
+    if (!listGrades(db).some((g) => g.code === 직급)) return send(res, 400, { error: "직급 코드가 올바르지 않습니다." });
+    if (!me.is_admin && (target.is_admin || !isDescendantOf(db, target.id, me.id))) {
+      return send(res, 403, { error: "권한 범위 밖의 계정입니다." });
+    }
+    db.prepare("UPDATE accounts SET grade = ? WHERE id = ?").run(직급, target.id);
+    console.log(`직급 고침: ${target.email} ${target.grade || "-"} → ${직급} — ${me.email}`);
+    const auth = req.headers.authorization;
+    if (auth) {
+      fetch(BRANCH_API + "/admin/members", {
+        method: "POST",
+        headers: { Authorization: auth, "Content-Type": "application/json" },
+        body: JSON.stringify({ email: String(target.email).toLowerCase(), role: ROLE_OF_GRADE[직급] || "팀원" })
+      }).then(async (r) => {
+        if (!r.ok) throw new Error(r.status + " " + ((await r.json().catch(() => ({}))).error || ""));
+      }).catch((e) => console.error("하랑지점 직급 맞추기 실패:", target.email, e && e.message));
+    }
+    return send(res, 200, { ok: true });
+  }
+
   // 관리자 임명·회수는 총관리자 전용 (기존 결정 유지)
   if (req.method === "POST" && path === "/admin/set-admin") {
     if (!me.is_admin) return send(res, 403, { error: "총관리자만 가능합니다." });

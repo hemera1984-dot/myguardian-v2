@@ -129,7 +129,15 @@
                   + (m.display_name && m.google_name && m.display_name !== m.google_name
                      ? '<span style="font-size:11px;color:var(--platform-faint)">구글: ' + esc(m.google_name) + "</span>" : "")
                   + '<span style="font-size:12px;color:var(--platform-muted)">' + esc(m.email) + "</span>"
-                  + (m.grade ? '<span class="badge-grade">' + esc(m.grade) + "</span>" : "")
+                  // 승인된 계정의 직급은 여기서 바로 바꾼다 — 승인 때 잘못 고른 것을 고치는 자리
+                  + (m.status === "승인"
+                     ? '<select data-grade-of="' + m.id + '" aria-label="직급" style="font:inherit;font-size:12px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:4px 6px">'
+                       + AUTH.grades.map(function (g) {
+                           return '<option value="' + esc(g["코드"]) + '"' + (g["코드"] === m.grade ? " selected" : "") + ">"
+                             + esc(g["이름"]) + " (" + esc(g["코드"]) + ")</option>";
+                         }).join("")
+                       + "</select>"
+                     : (m.grade ? '<span class="badge-grade">' + esc(m.grade) + "</span>" : ""))
                   + (m.is_admin ? '<span class="badge-grade">총관리자</span>' : "")
                   + (m.can_approve && !m.is_admin ? '<span class="badge-status st-meet">승인권한</span>' : "")
                   + (BRANCH && !branchMemberOf(m) ? '<span class="badge-status st-hold">하랑지점 미배치</span>' : "")
@@ -153,6 +161,14 @@
       }
 
       function bindAuthActions() {
+        $("auth-body").addEventListener("change", function (e) {
+          var sel = e.target.closest("select[data-grade-of]");
+          if (!sel) return;
+          sel.disabled = true;
+          window.mgAuth.api("/admin/set-grade", { method: "POST", body: { "대상": Number(sel.dataset.gradeOf), "직급": sel.value } })
+            .then(loadPending)
+            .catch(function (err) { window.alert(err && err.message ? err.message : "직급을 바꾸지 못했습니다."); sel.disabled = false; });
+        });
         $("auth-body").addEventListener("click", function (e) {
           var btn = e.target.closest("button");
           if (!btn) return;
