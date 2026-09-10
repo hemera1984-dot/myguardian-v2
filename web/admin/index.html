@@ -140,7 +140,11 @@
                      : (m.grade ? '<span class="badge-grade">' + esc(m.grade) + "</span>" : ""))
                   + (m.is_admin ? '<span class="badge-grade">총관리자</span>' : "")
                   + (m.can_approve && !m.is_admin ? '<span class="badge-status st-meet">승인권한</span>' : "")
-                  + (BRANCH && !branchMemberOf(m) ? '<span class="badge-status st-hold">하랑지점 미배치</span>' : "")
+                  // 하랑지점 명단에 없으면 여기서 바로 넣는다 — 자리(이름만 적힌 칸)가 있으면 이어받고, 없으면 상위자 팀에 새로
+                  + (BRANCH && !branchMemberOf(m)
+                     ? '<span class="badge-status st-hold">하랑지점 미배치</span>' + seatSelect("bs-" + m.id, m)
+                       + '<button type="button" class="status-btn st-met" data-branch-join="' + m.id + '">하랑지점에 넣기</button>'
+                     : "")
                   + (isMe ? '<span style="font-size:12px;color:var(--platform-faint)">본인</span>'
                      : (m.status === "승인" ? '<button type="button" class="status-btn st-reject" data-suspend="' + m.id + '">정지</button>' : ""))
                   + (!isMe && AUTH.me["계정"]["총관리자"] && m.status === "승인" && !m.is_admin
@@ -196,6 +200,15 @@
             req = window.mgAuth.api("/admin/set-admin", {
               method: "POST", body: { "대상": id, "임명": btn.dataset.on === "1" }
             });
+          } else if (btn.dataset.branchJoin) {
+            id = Number(btn.dataset.branchJoin);
+            btn.disabled = true;
+            var 자리칸 = $("bs-" + id);
+            window.mgAuth.api("/admin/branch-join", {
+              method: "POST", body: { "대상": id, "자리": 자리칸 ? 자리칸.value : undefined }
+            }).then(loadBranch)      // 명단을 다시 받아 배지·조직도를 새로 그린다
+              .catch(function (err) { window.alert(err && err.message ? err.message : "넣지 못했습니다."); btn.disabled = false; });
+            return;
           } else if (btn.dataset.rename) {
             id = Number(btn.dataset.rename);
             var 새이름 = window.prompt(

@@ -1961,6 +1961,24 @@ async function route(req, res, url) {
     return send(res, 200, { ok: true, "이름": v || target.name });
   }
 
+  // 이미 승인된 계정을 하랑지점 명단에 넣는다 — 양방향 연결 전에 승인된 사람들 몫.
+  // 승인 때와 같은 길(자리 이어받기 또는 상위자 팀에 새로)이고, 결과를 기다려 화면에 알린다.
+  if (req.method === "POST" && path === "/admin/branch-join") {
+    if (!canApprove(db, me)) return send(res, 403, { error: "승인 권한이 없습니다." });
+    const { 대상, 자리 } = await readJson(req);
+    const target = getAccount(db, Number(대상));
+    if (!target) return send(res, 404, { error: "대상 계정을 찾을 수 없습니다." });
+    if (target.status !== "승인") return send(res, 400, { error: "승인된 계정만 넣을 수 있습니다." });
+    if (!me.is_admin && !isDescendantOf(db, target.id, me.id)) return send(res, 403, { error: "권한 범위 밖의 계정입니다." });
+    try {
+      await 하랑지점가입(req.headers.authorization, target, target.grade,
+                    target.parent_id == null ? null : getAccount(db, target.parent_id), 자리);
+    } catch (e) {
+      return send(res, 502, { error: "하랑지점에 넣지 못했습니다 — " + (e && e.message ? e.message : "") });
+    }
+    return send(res, 200, { ok: true });
+  }
+
   // 직급 바꾸기 — 승인 때 잘못 고른 직급을 고친다(2026-09-10 사용자: 「BM으로 실수로 했는데」).
   // 총관리자는 전원, 그 밖의 승인권자는 자기 하위 트리만. 총관리자의 직급은 총관리자만 건드린다.
   // 하랑지점 명단의 직급도 같이 맞춘다(승인자 세션으로, 실패는 기록만) — 두 곳이 어긋나지 않게.
