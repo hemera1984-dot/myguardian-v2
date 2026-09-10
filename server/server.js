@@ -82,6 +82,51 @@ const NAVER_SECRET = process.env.NAVER_CLIENT_SECRET || "";
 // 독자가 지면을 읽는 곳. 호별 표지 페이지(/r/<id>)가 여기로 넘긴다.
 const SITE = (process.env.SITE_BASE || "https://app.insurguard.life").replace(/\/$/, "");
 
+// ---------- 하랑지점(ourbranch) 가입 ----------
+// 계정은 하나(마이가디언 구글 로그인)지만 팀·직급 명단은 하랑지점이 갖는다. 여기서 승인하면
+// 그쪽 명단에도 넣는다. 조직도를 이름으로 미리 적어 둔 자리(@미등록.local)가 있으면 그 자리를
+// 이어받아 팀·직급·도입자를 물려받는다 — 어느 자리인지는 승인자가 화면에서 고른다(자리).
+// 안 고르면(undefined) 그 이름의 자리가 하나뿐일 때만 잇고, 아니면 상위자의 팀에 새로 넣는다.
+// 자리가 ""이면 잇지 않고 새로 넣는다. 하랑지점 쪽 권한 검사(팀·직급)는 그 서버가 한다.
+const BRANCH_API = (process.env.BRANCH_API || "https://api.insurguard.life/branch").replace(/\/$/, "");
+const ROLE_OF_GRADE = { BM: "지점장", ESL: "부지점장", SSL: "팀장", GSL: "부팀장", FC: "팀원" };
+async function 하랑지점가입(auth, target, grade, parent, 자리) {
+  if (!auth || !target) return;
+  const call = async (path, body) => {
+    const r = await fetch(BRANCH_API + path, {
+      method: body ? "POST" : "GET",
+      headers: { Authorization: auth, "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(path + " " + r.status + " " + (j.error || ""));
+    return j;
+  };
+  const 소문자 = (v) => String(v || "").toLowerCase();
+  const 붙여 = (v) => String(v || "").replace(/ /g, "");
+  const email = 소문자(target.email);
+  const name = String(target.display_name || target.name || "").trim();
+  const members = ((await call("/bootstrap")).members || []).filter((m) => m.active !== 0);
+  if (members.some((m) => 소문자(m.email) === email)) return;              // 이미 명단에 있다
+  const seats = members.filter((m) => String(m.email).includes("@미등록.local"));
+  let seat = null;
+  if (자리) seat = seats.find((m) => 소문자(m.email) === 소문자(자리)) || null;
+  else if (자리 === undefined) {
+    const same = seats.filter((m) => 붙여(m.name) === 붙여(name));
+    if (same.length === 1) seat = same[0];
+  }
+  if (seat) {
+    await call("/admin/members/link", { seatEmail: seat.email, accountEmail: email });
+    console.log(`하랑지점 자리 이어받음: ${name} ← ${seat.name} (${seat.role})`);
+    return;
+  }
+  const pm = parent ? members.find((m) => 소문자(m.email) === 소문자(parent.email)) : null;
+  const body = { email, name, role: ROLE_OF_GRADE[grade] || "팀원", teamId: pm ? pm.team_id : null };
+  if (pm) body.recruiterEmail = pm.email;
+  await call("/admin/members", body);
+  console.log(`하랑지점 가입: ${name} (${body.role}${pm ? ", 도입자 " + pm.name : ""})`);
+}
+
 // 지면 사진 업로드 — 받아들일 형식과 크기. 확장자는 서버가 정한다(파일명을 믿지 않는다).
 const IMAGE_TYPES = {
   "image/jpeg": ".jpg",
@@ -1853,7 +1898,7 @@ async function route(req, res, url) {
 
   if (req.method === "POST" && path === "/admin/approve") {
     if (!canApprove(db, me)) return send(res, 403, { error: "승인 권한이 없습니다." });
-    const { 대상, 직급, 상위 } = await readJson(req);
+    const { 대상, 직급, 상위, 자리 } = await readJson(req);
     const target = getAccount(db, Number(대상));
     if (!target) return send(res, 404, { error: "대상 계정을 찾을 수 없습니다." });
     if (target.status !== "대기") return send(res, 409, { error: "이미 처리된 계정입니다." });
@@ -1868,6 +1913,12 @@ async function route(req, res, url) {
       return send(res, 403, { error: "자기 하위 조직으로만 승인할 수 있습니다." });
     }
     approve(db, { targetId: target.id, grade: 직급, parentId, approverId: me.id });
+    // 하랑지점에도 같은 사람을 넣는다(2026-09-10 사용자: 「어느 쪽으로 초대받아 로그인하든 둘 다 가입」).
+    // 승인자의 세션을 그대로 넘긴다 — 하랑지점도 같은 세션을 읽으니 권한은 그쪽 규칙이 가른다.
+    // 실패해도 여기 승인은 되돌리지 않는다(기록만 남긴다).
+    하랑지점가입(req.headers.authorization, getAccount(db, target.id), 직급,
+              parentId == null ? null : getAccount(db, parentId), 자리)
+      .catch((e) => console.error("하랑지점 가입 실패:", target.email, e && e.message));
     return send(res, 200, { ok: true });
   }
 
