@@ -831,6 +831,38 @@
         if (saveBtn.disabled) return;
         var name = $("new-name").value.trim();
         if (!name) { $("new-msg").textContent = "이름을 입력하세요."; return; }
+        // 서버 고객이면 서버에 바로 넣는다 — 폰·태블릿·다른 PC 어디서든 새 고객을 만들 수 있어야
+        // 팀 플랫폼이다(2026-09-10 사용자: 「기존 고객 말고 새로 고객 추가해서 관리할 수 있게」).
+        // 코드는 이 화면이 아는 목록 기준 다음 번호다. 서버는 같은 코드면 덮어쓰므로, 목록을
+        // 막 받은 상태에서만 등록한다(목록이 곧 서버 상태다).
+        if (SOURCE === "서버") {
+          saveBtn.disabled = true;
+          var 새코드 = nextCode();
+          var 새프로필 = {
+            "고객코드": 새코드,
+            "담당FC": (JSON.parse(localStorage.getItem("mg_care_sender") || "{}")["이름"] || "안창민 FC"),
+            "카테고리": $("new-cat").value,
+            "등록일": localDate(),
+            "customerName": name,
+            "phone": $("new-phone").value.trim() || null
+          };
+          var 새메모 = "# 상담 메모 — " + 새코드 + "\n\n";
+          try {
+            await window.mgVaultUI.올리기([{ "고객코드": 새코드, "profile": 새프로필, "policies": { policies: [] }, "memoText": 새메모 }]);
+            ALL.push({ code: 새코드, profile: 새프로필, policies: { policies: [] }, memoText: 새메모 });
+            ALL.sort(function (a, b) { return a.code < b.code ? -1 : 1; });
+            $("new-form").hidden = true;
+            $("new-name").value = ""; $("new-phone").value = "";
+            $("new-msg").textContent = "";
+            renderList();
+            $("connect-box").querySelector("span").textContent = "고객 " + ALL.length + "명. " + 새코드 + " 서버에 등록됨.";
+          } catch (e) {
+            $("new-msg").textContent = "등록 실패: " + (e && e.message ? e.message : "서버에 저장하지 못했습니다.");
+          } finally {
+            saveBtn.disabled = false;
+          }
+          return;
+        }
         if (!ROOT_HANDLE || !CAN_CREATE) { $("new-msg").textContent = "쓰기 가능한 고객 저장소 폴더를 연결하세요."; return; }
         saveBtn.disabled = true;
         // 코드 충돌 방지: 화면에 안 보이는 폴더(profile 손상 등)가 있어도 덮어쓰지 않는다
@@ -1092,6 +1124,8 @@
       var 원래onLoaded = onLoaded;
       onLoaded = function (list, rootName) {
         SOURCE = rootName === "서버 고객" ? "서버" : (/님 고객$/.test(rootName) ? "남" : "폴더");
+        // 서버 고객은 폴더 없이도 새 고객을 만든다. 남의 고객(총관리자 열람)에는 안 만든다.
+        $("btn-new").hidden = !(CAN_CREATE || SOURCE === "서버");
         올리기단추(SOURCE === "폴더" && list.length > 0);
         원래onLoaded(list, rootName);
         $("btn-admin-close").hidden = SOURCE !== "남";
