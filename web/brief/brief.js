@@ -370,18 +370,27 @@
     // 자료가 자기 안에 또 틀을 세우면(하이퍼프레임의 플레이어) 그 안에서 누른 키는
     // 바깥 문서까지 올라오지 않는다. 같은 출처이므로 그 안쪽 창에도 귀를 붙인다.
     // 틀이 늦게 서므로 몇 번에 나눠 붙인다(같은 창에 두 번 붙지 않게 표시를 남긴다).
+    // 플레이어 iframe은 그림자 DOM 안에 있어 querySelectorAll('iframe')로는 안 보인다 — 그림자까지 훑는다.
+    + "function 틀들(root,out){var els=root.querySelectorAll('*');"
+    + "for(var i=0;i<els.length;i++){var el=els[i];if(el.tagName==='IFRAME')out.push(el);"
+    + "if(el.shadowRoot)틀들(el.shadowRoot,out);}return out;}\n"
     + "function 안쪽귀(doc,깊이){if(!doc||깊이>3)return;"
-    + "var fs=doc.querySelectorAll('iframe');"
+    + "var fs=틀들(doc,[]);"
     + "for(var i=0;i<fs.length;i++){try{var w=fs[i].contentWindow;if(!w)continue;"
     + "if(!w.__mg귀){w.__mg귀=1;"
-    + "w.addEventListener('keydown',function(e){넘김보고(e.key);},true);}"
+    + "w.addEventListener('keydown',function(e){넘김보고(e.key);},true);"
+    + "w.addEventListener('keydown',스크립트키,true);}"
     + "안쪽귀(w.document,깊이+1);}catch(x){}}}\n"
     // 틀이 언제 서고 언제 다시 서는지 알 수 없다 — 계속 살핀다. 붙은 창은 표시로 거른다.
     + "안쪽귀(document,0);setInterval(function(){안쪽귀(document,0);},2000);\n"
-    // 문서 안에서 누른 키 중 발표자 화면 몫(스크립트 스크롤·글자 크기)은 위로 올려보낸다
-    + "window.addEventListener('keydown',function(e){"
+    // 문서 안에서 누른 키 중 발표자 화면 몫(스크립트 스크롤·글자 크기)은 위로 올려보낸다.
+    // 자료에는 안 준다 — 자료(하이퍼프레임)도 ↑↓를 장 넘김으로 쓰기 때문에, 잡는 단계에서
+    // 먼저 받아 전파를 끊는다(2026-09-16 사용자: 「위아래 화살표 누르면 슬라이드도 같이 움직인다」).
+    + "function 스크립트키(e){"
     + "if(['ArrowUp','ArrowDown','+','=','-','_'].indexOf(e.key)<0)return;"
-    + "e.preventDefault();try{parent.postMessage({mgb:'key',key:e.key},'*');}catch(x){}});\n"
+    + "e.preventDefault();e.stopImmediatePropagation();"
+    + "try{parent.postMessage({mgb:'key',key:e.key},'*');}catch(x){}}\n"
+    + "window.addEventListener('keydown',스크립트키,true);\n"
     // 자료가 안 보이는 상태(숨긴 칸·크기 0)에서 실리면 스스로 크기를 0으로 재고 끝낸다.
     // 하이퍼프레임 자료가 그렇다 — 나중에 칸이 보여도 다시 재지 않아 화면 밖으로 튀거나
     // 검게 남는다(2026-09-09 재현). 그래서 몇 번 흔들어 다시 재게 한다.
