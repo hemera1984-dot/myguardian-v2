@@ -957,7 +957,10 @@
             frame.setAttribute("sandbox", "allow-scripts allow-same-origin");
             // 전체화면 권한은 기본이 self라 다른 출처의 iframe에는 안 내려간다.
             // 이 줄이 없으면 슬라이드 문서 안에서 F를 눌러도 전체화면이 막힌다(2026-08-17).
-            frame.setAttribute("allow", "fullscreen");
+            // autoplay도 넘긴다 — 소리 있는 영상(연구회 인트로)은 「그 문서를 건드린 적」이 있어야 트는데,
+            // 발표자는 스크립트 쪽을 클릭하고 화살표로 넘기므로 자료 문서는 늘 안 건드린 상태다.
+            // 허락을 넘기면 앱 화면에서의 조작이 자료에도 인정된다(2026-09-19 인트로 소리).
+            frame.setAttribute("allow", "fullscreen; autoplay");
             return 틀에담기(frame, 본문, stageEl);
           },
           scriptFor: function () { return scriptAt(1); }
