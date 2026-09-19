@@ -292,8 +292,16 @@
     // 화면 위치로 재면 부드러운 스크롤 도중에 값이 흔들려 청중 맞추기가 헛돈다(2026-09-19).
     + "var 장기록=-1;\n"
     + "(function(){var 원=Element.prototype.scrollIntoView;Element.prototype.scrollIntoView=function(){"
-    + "try{if(this.classList&&this.classList.contains('slide')){장기록=[].indexOf.call(all(),this);setTimeout(tell,0);}}catch(x){}"
+    + "try{if(this.classList&&this.classList.contains('slide')){장기록=[].indexOf.call(all(),this);setTimeout(tell,0);setTimeout(소리단속,0);}}catch(x){}"
     + "return 원.apply(this,arguments);};})();\n"
+    // 소리 있는 영상은 지금 장의 것만 돈다. 장을 세로로 쌓은 자료는 모든 영상이 한 문서에 있어,
+    // autoplay가 붙은 인트로 영상이 1번 장에서부터 소리를 낸다(자동재생 허락을 넘긴 뒤 드러남,
+    // 2026-09-19). 다른 장의 소리 영상은 세우고, 그 장에 도착하면 자료가 처음부터 다시 튼다.
+    + "function 소리단속(){try{var s=all();if(s.length<2)return;var cur=s[Math.max(0,idx())];"
+    + "var vs=document.querySelectorAll('video');for(var i=0;i<vs.length;i++){var v=vs[i];"
+    + "if(!v.muted&&!v.paused&&!(cur&&cur.contains(v)))v.pause();}}catch(x){}}\n"
+    + "document.addEventListener('play',function(e){if(e.target&&e.target.tagName==='VIDEO')소리단속();},true);\n"
+    + "[0,300,1500,4000].forEach(function(ms){setTimeout(소리단속,ms);});\n"
     + "function idx(){var s=all();for(var i=0;i<s.length;i++)if(s[i].classList.contains('active'))return i;"
     + "if(장기록>=0)return 장기록;return s.length>1?0:-1;}\n"
     + "function ratio(){var e=document.scrollingElement||document.documentElement;"
