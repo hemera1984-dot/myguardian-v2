@@ -287,20 +287,33 @@
   var BRIDGE = "\n<script>(function(){\n"
     + "if(window.__mgBridge)return; window.__mgBridge=1;\n"
     + "function all(){return document.querySelectorAll('.slide');}\n"
-    + "function idx(){var s=all();for(var i=0;i<s.length;i++)if(s[i].classList.contains('active'))return i;return -1;}\n"
+    // 장 번호를 아는 길은 둘이다. ① .active가 붙는 자료 ② 장을 세로로 쌓고 scrollIntoView로
+    // 넘기는 자료(연구회 슬라이드) — 이쪽은 자료가 장을 옮기는 순간을 가로채 번호를 적어 둔다.
+    // 화면 위치로 재면 부드러운 스크롤 도중에 값이 흔들려 청중 맞추기가 헛돈다(2026-09-19).
+    + "var 장기록=-1;\n"
+    + "(function(){var 원=Element.prototype.scrollIntoView;Element.prototype.scrollIntoView=function(){"
+    + "try{if(this.classList&&this.classList.contains('slide')){장기록=[].indexOf.call(all(),this);setTimeout(tell,0);}}catch(x){}"
+    + "return 원.apply(this,arguments);};})();\n"
+    + "function idx(){var s=all();for(var i=0;i<s.length;i++)if(s[i].classList.contains('active'))return i;"
+    + "if(장기록>=0)return 장기록;return s.length>1?0:-1;}\n"
     + "function ratio(){var e=document.scrollingElement||document.documentElement;"
     + "var r=e.scrollHeight-e.clientHeight;return r>0?Math.min(1,Math.max(0,e.scrollTop/r)):0;}\n"
     + "function tell(){try{parent.postMessage({mgb:'state',slide:idx(),count:all().length,scroll:ratio()},'*');}catch(e){}}\n"
     + "function key(k){document.body.dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true,cancelable:true}));}\n"
     // 목표 장까지 한 걸음씩 간다. 움직이지 않으면 그 문서가 화살표를 안 받는 것이므로 멈추고 알린다.
-    + "function goTo(n){var tries=0;(function step(){var cur=idx();"
+    // 한 번 눌러 안 움직여도 한 번은 더 눌러 본다 — 모션이 도는 중의 첫 누름은 「모션 즉시 완료」로
+    // 쓰이고 장은 그대로인 자료가 있다(연구회 슬라이드). 두 번 연속 제자리면 그때 멈춘다.
+    + "function goTo(n){var tries=0,헛=0;(function step(){var cur=idx();"
     + "if(cur<0||cur===n||tries++>5000){tell();return;}"
     + "key(n>cur?'ArrowRight':'ArrowLeft');"
-    + "if(idx()===cur){tell();return;}setTimeout(step,0);})();}\n"
+    + "if(idx()===cur){if(헛++<1){setTimeout(step,0);return;}tell();return;}"
+    + "헛=0;setTimeout(step,0);})();}\n"
     + "window.addEventListener('message',function(e){var d=e.data;if(!d||d.mgb!=='cmd')return;"
     + "if(d.key){key(d.key);tell();}"
     + "if(typeof d.goto==='number')goTo(d.goto);"
-    + "if(typeof d.scroll==='number'){var el=document.scrollingElement||document.documentElement;"
+    // 장으로 나뉜 자료는 스크롤 비율을 따라가지 않는다 — 장 번호로 맞추고, 스크롤은 자료가 스스로 한다.
+    // 둘을 같이 쓰면 자리만 옮겨지고 그 장의 글·그림은 꺼진 채 남는다(2026-09-19 청중 화면).
+    + "if(typeof d.scroll==='number'&&all().length<2){var el=document.scrollingElement||document.documentElement;"
     + "window.scrollTo(0,d.scroll*Math.max(0,el.scrollHeight-el.clientHeight));}"
     + "if(d.청중)청중();"
     + "if(d.크기)흔들기();"
@@ -347,6 +360,10 @@
     // 자료(하이퍼프레임)는 음소거 재생이 한 번 거부되면 「Play audience media muted」 단추를
     // 띄운다. 거부는 대개 영상이 아직 준비되기 전에 틀려다 끊긴 것이라(AbortError), 조금 뒤
     // 다시 틀면 된다. 빔프로젝터에 단추가 걸려 있을 이유가 없다 — 감추고 대신 계속 다시 튼다.
+    // 청중 창은 소리 없이 튼다 — 소리 있는 자동재생은 브라우저가 막아서 영상이 아예 안 돈다.
+    // 소리는 발표자 기기가 낸다. 자료가 영상을 늦게 만들 수도 있어 되풀이해서 끈다.
+    + "setInterval(function(){try{var vs=document.querySelectorAll('video');"
+    + "for(var i=0;i<vs.length;i++){if(!vs[i].muted)vs[i].muted=true;}}catch(x){}},1000);"
     + "setInterval(function(){try{var e=document.querySelector('hyperframes-slideshow');if(!e)return;"
     + "var b=e.audienceMediaUnlockButton;if(b)b.style.display='none';"
     + "if(e.blockedAudienceMedia&&e.blockedAudienceMedia.size>0&&typeof e.retryBlockedAudienceMedia==='function')e.retryBlockedAudienceMedia();"
@@ -394,6 +411,20 @@
     // 자료가 안 보이는 상태(숨긴 칸·크기 0)에서 실리면 스스로 크기를 0으로 재고 끝낸다.
     // 하이퍼프레임 자료가 그렇다 — 나중에 칸이 보여도 다시 재지 않아 화면 밖으로 튀거나
     // 검게 남는다(2026-09-09 재현). 그래서 몇 번 흔들어 다시 재게 한다.
+    // 세로로 쌓인 16:9 장을 16:10 칸에 띄우면 남는 자리에 다음 장 윗부분이 비쳐 하얀 띠로 보인다
+    // (2026-09-19 사용자). 장 사이를 그만큼 벌리고 가운데에 앉힌다 — 남는 자리는 검게 둔다.
+    // 자료가 1920x1080을 zoom으로 줄이는 방식이라(연구회 슬라이드 fit) 같은 식으로 잰다.
+    + "function 여백(){try{var dk=document.querySelector('.deck');var s=all();if(!dk||s.length<2)return;"
+    + "var k=Math.min(window.innerWidth/1920,window.innerHeight/1080);if(!(k>0))return;"
+    + "var g=Math.max(0,Math.round(window.innerHeight/k-1080));"
+    + "var st=document.getElementById('mg-gap');"
+    + "if(!st){st=document.createElement('style');st.id='mg-gap';(document.head||document.documentElement).appendChild(st);}"
+    + "var css='html,body{background:#000 !important}html{scrollbar-width:none}::-webkit-scrollbar{display:none}'"
+    + "+'.deck{padding-top:'+Math.round(g/2)+'px}'"
+    + "+'.slide{margin-bottom:'+g+'px !important;scroll-margin-top:'+Math.round(g/2)+'px}';"
+    + "if(st.textContent!==css){st.textContent=css;var i=Math.max(0,idx());if(s[i])s[i].scrollIntoView({block:'start'});}"
+    + "}catch(x){}}\n"
+    + "여백();window.addEventListener('resize',function(){setTimeout(여백,0);});\n"
     + "function 흔들기(){try{window.dispatchEvent(new Event('resize'));}catch(e){}}\n"
     + "[300,900,2000,4000,8000,15000].forEach(function(ms){setTimeout(흔들기,ms);});\n"
     + "window.addEventListener('scroll',tell,{passive:true});\n"
