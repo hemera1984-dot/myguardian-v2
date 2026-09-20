@@ -9,8 +9,7 @@ import {
   openDb, seedGrades, upsertAccount, findByGoogleSub, createSession, accountForToken,
   listPending, approve, suspend, isDescendantOf, getAccount, deleteSessionsFor,
   setApprover, listMembers, getDoc, setDoc,
-  listClients, listClientStamps, putClient, deleteClient, clientCounts,
-  listRequests, getRequest, addRequest, editRequest, answerRequest, deleteRequest
+  listClients, listClientStamps, putClient, deleteClient, clientCounts
 } from "./db.js";
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { artworkSvg } from "./artwork.js";
@@ -239,23 +238,6 @@ check("총관리자 화면의 건수 집계는 내용을 담지 않는다", () =
   for (const r of rows) {
     assert.deepEqual(Object.keys(r).sort(), ["건수", "계정", "이름", "최근갱신"].sort());
   }
-});
-
-check("수정 요청 — 올리면 전원 목록에 작성자 이름과 함께 뜨고, 답변은 상태와 함께 남는다", () => {
-  const fc = findByGoogleSub(db, "g-fc1"), boss = findByGoogleSub(db, "g-boss");
-  const id = addRequest(db, fc.id, { kind: "오류 신고", screen: "고객관리", title: "미팅 저장이 안 됩니다", body: "차수 추가 후 저장" });
-  let row = listRequests(db).find((r) => r.id === id);
-  assert.equal(row.status, "접수");
-  assert.equal(row.author, "김승은");
-  editRequest(db, id, { kind: "오류 신고", screen: "고객관리", title: "미팅 저장 오류", body: "고침" });
-  assert.equal(getRequest(db, id).title, "미팅 저장 오류");
-  answerRequest(db, id, { status: "완료", reply: "고쳤습니다", byId: boss.id });
-  row = listRequests(db).find((r) => r.id === id);
-  assert.equal(row.status, "완료");
-  assert.equal(row.reply, "고쳤습니다");
-  assert.equal(row.replier, "안창민");
-  assert.equal(deleteRequest(db, id), 1);
-  assert.equal(getRequest(db, id), null);
 });
 
 db.close();

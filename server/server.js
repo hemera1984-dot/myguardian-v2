@@ -15,8 +15,7 @@ import {
   openDb, seedGrades, upsertAccount, createSession, accountForToken, deleteSession,
   listGrades, listPending, listMembers, getAccount, approve, suspend, setAdmin,
   setApprover, isDescendantOf, setDisplayName, getDoc, setDoc,
-  listClients, listClientStamps, putClient, deleteClient, clientCounts,
-  listRequests, getRequest, addRequest, editRequest, answerRequest, deleteRequest
+  listClients, listClientStamps, putClient, deleteClient, clientCounts
 } from "./db.js";
 import { artworkSvg } from "./artwork.js";
 import { chartSvg } from "./chart.js";
@@ -1863,80 +1862,6 @@ async function route(req, res, url) {
   // 자리마다 계정 번호·이메일이 붙는다. 저장소(공개)가 아니라 여기 둔다.
   // 열람은 로그인한 사람 전원 — 조직도는 원래 다 같이 보는 것이다.
   // 조직도(/org)는 걷어냈다 — 하랑지점이 원본이다(2026-09-10). 관리자 화면이 그쪽을 읽는다.
-
-  // ── 수정 요청 (2026-09-20 사용자: 「팀원들이 프로그램 수정요청 등을 올릴 메뉴가 필요하다」)
-  // 올리는 것은 승인된 계정 누구나, 목록도 전원이 본다(같은 요청이 겹치지 않게).
-  // 고치고 지우는 것은 본인이 「접수」 상태일 때만. 상태와 답변은 총관리자만 단다.
-  const 요청종류 = ["수정 요청", "기능 제안", "오류 신고", "기타"];
-  const 요청상태 = ["접수", "진행", "완료", "보류"];
-  const 요청다듬기 = (b) => {
-    const kind = 요청종류.includes(b && b["종류"]) ? b["종류"] : null;
-    const title = String((b && b["제목"]) || "").trim();
-    const body = String((b && b["내용"]) || "").trim();
-    const screen = String((b && b["화면"]) || "").trim().slice(0, 40);
-    if (!kind) return { error: "종류를 골라 주세요." };
-    if (!title) return { error: "제목을 적어 주세요." };
-    if (title.length > 80) return { error: "제목은 80자까지입니다." };
-    if (body.length > 4000) return { error: "내용은 4,000자까지입니다." };
-    return { kind, title, body, screen };
-  };
-  const 요청모양 = (r) => ({
-    id: r.id, "종류": r.kind, "화면": r.screen, "제목": r.title, "내용": r.body,
-    "상태": r.status, "답변": r.reply, "답변자": r.replier || "", "작성자": r.author || "",
-    "작성일": r.created_at, "갱신일": r.updated_at,
-    "내것": r.account_id === me.id,
-    "고칠수있음": r.account_id === me.id && r.status === "접수",
-    "지울수있음": !!me.is_admin || (r.account_id === me.id && r.status === "접수")
-  });
-
-  if (req.method === "GET" && path === "/requests") {
-    return send(res, 200, { "요청": listRequests(db).map(요청모양), "총관리자": !!me.is_admin, "종류": 요청종류, "상태": 요청상태 });
-  }
-
-  if (req.method === "POST" && path === "/requests") {
-    const v = 요청다듬기(await readJson(req, 64 * 1024));
-    if (v.error) return send(res, 400, { error: v.error });
-    const id = addRequest(db, me.id, v);
-    console.log(`수정 요청 등록: #${id} [${v.kind}] ${v.title} — ${me.email}`);
-    return send(res, 200, { ok: true, id });
-  }
-
-  const 요청고침 = req.method === "POST" && /^\/requests\/(\d{1,9})$/.exec(path);
-  if (요청고침) {
-    const r = getRequest(db, Number(요청고침[1]));
-    if (!r) return send(res, 404, { error: "없는 요청입니다." });
-    if (r.account_id !== me.id) return send(res, 403, { error: "본인이 올린 요청만 고칠 수 있습니다." });
-    if (r.status !== "접수") return send(res, 409, { error: "처리가 시작된 요청은 고칠 수 없습니다. 새로 올려 주세요." });
-    const v = 요청다듬기(await readJson(req, 64 * 1024));
-    if (v.error) return send(res, 400, { error: v.error });
-    editRequest(db, r.id, v);
-    return send(res, 200, { ok: true });
-  }
-
-  const 요청답변 = req.method === "POST" && /^\/requests\/(\d{1,9})\/answer$/.exec(path);
-  if (요청답변) {
-    if (!me.is_admin) return send(res, 403, { error: "상태와 답변은 총관리자만 답니다." });
-    const r = getRequest(db, Number(요청답변[1]));
-    if (!r) return send(res, 404, { error: "없는 요청입니다." });
-    const b = await readJson(req, 64 * 1024);
-    const status = 요청상태.includes(b && b["상태"]) ? b["상태"] : null;
-    if (!status) return send(res, 400, { error: "상태 값이 올바르지 않습니다." });
-    const reply = String((b && b["답변"]) || "").trim();
-    if (reply.length > 4000) return send(res, 400, { error: "답변은 4,000자까지입니다." });
-    answerRequest(db, r.id, { status, reply, byId: me.id });
-    console.log(`수정 요청 처리: #${r.id} → ${status} — ${me.email}`);
-    return send(res, 200, { ok: true });
-  }
-
-  const 요청삭제 = req.method === "DELETE" && /^\/requests\/(\d{1,9})$/.exec(path);
-  if (요청삭제) {
-    const r = getRequest(db, Number(요청삭제[1]));
-    if (!r) return send(res, 404, { error: "없는 요청입니다." });
-    const 내것 = r.account_id === me.id && r.status === "접수";
-    if (!me.is_admin && !내것) return send(res, 403, { error: "본인이 올린 접수 상태의 요청만 지울 수 있습니다." });
-    deleteRequest(db, r.id);
-    return send(res, 200, { ok: true });
-  }
 
   // ── 상담 스크립트 (FC 개인)
   // 고객 이름을 끼워 넣을 틀이다. 고객 정보가 아니므로 암호화하지 않는다 — 사람마다

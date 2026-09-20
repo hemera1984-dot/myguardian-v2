@@ -12,36 +12,35 @@
   <script src="../assets/platform.js"></script>
   <script src="../assets/auth.js"></script>
   <style>
-    /* 이 화면 전용 — 괘선 목록. 카드·그림자 없이 헤어라인으로만 가른다(플랫폼 에디토리얼 문법). */
-    .rq-form { display: grid; grid-template-columns: 150px 170px 1fr; gap: 8px; }
+    /* 이 화면 전용 — 괘선 목록. 카드·그림자 없이 헤어라인으로만 가른다(플랫폼 에디토리얼 문법).
+       구성·문구·동작은 하랑지점의 「수정 요청」과 같다 — 게시판이 하나이기 때문이다. */
+    .rq-form { display: grid; grid-template-columns: 150px 1fr; gap: 8px; }
     .rq-form textarea { grid-column: 1 / -1; min-height: 96px; resize: vertical; }
-    .rq-form select, .rq-form input, .rq-form textarea, .rq-answer select, .rq-answer textarea {
+    .rq-form select, .rq-form input, .rq-form textarea, .rq-admin select, .rq-admin input {
       font: inherit; font-size: 13px; border: 1px solid var(--platform-line-strong);
       border-radius: 4px; padding: 8px 10px; background: #fff; color: var(--platform-ink);
     }
     .rq-actions { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
-    .rq-note { font-size: 12px; color: var(--platform-faint); }
+    .rq-note { font-size: 12px; color: var(--platform-faint); margin: 6px 0 0; }
     .rq-list { border-top: 2px solid var(--platform-ink); margin-top: 12px; }
-    .rq-row { border-bottom: 1px solid var(--platform-line); }
-    .rq-head { display: flex; gap: 10px; align-items: baseline; padding: 11px 4px; cursor: pointer; flex-wrap: wrap; }
-    .rq-head:hover { background: rgba(23, 32, 51, .03); }
-    .rq-row.open > .rq-head { box-shadow: inset 3px 0 0 var(--platform-point, #bc003a); }
-    .rq-kind { font-size: 11px; color: var(--platform-muted); min-width: 56px; }
-    .rq-title { font-size: 13.5px; font-weight: 600; flex: 1 1 240px; word-break: keep-all; }
-    .rq-meta { font-size: 11.5px; color: var(--platform-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .rq-body { padding: 4px 4px 16px 70px; }
-    .rq-text { font-size: 13px; line-height: 1.7; white-space: pre-wrap; word-break: keep-all; margin: 0 0 10px; }
-    .rq-reply { border-left: 2px solid var(--platform-ink); padding: 2px 0 2px 12px; margin: 10px 0; }
-    .rq-reply b { display: block; font-size: 11px; color: var(--platform-muted); margin-bottom: 4px; font-weight: 600; }
-    .rq-answer { display: grid; grid-template-columns: 110px 1fr; gap: 8px; margin-top: 10px; }
-    .rq-answer textarea { min-height: 72px; resize: vertical; }
+    .rq-item { border-bottom: 1px solid var(--platform-line); padding: 13px 4px; }
+    .rq-head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+    .rq-head strong { font-size: 14px; word-break: keep-all; }
+    .rq-tag { font-size: 11px; color: var(--platform-muted); border: 1px solid var(--platform-line); border-radius: 3px; padding: 1px 6px; }
+    .rq-body { font-size: 13px; line-height: 1.7; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; margin: 8px 0 0; }
+    .rq-meta { font-size: 11.5px; color: var(--platform-faint); margin: 6px 0 0; }
+    .rq-answer { border-left: 2px solid var(--platform-ink); padding: 2px 0 2px 12px; margin-top: 10px; font-size: 13px; line-height: 1.7; }
+    .rq-answer b { margin-right: 6px; }
+    .rq-admin { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--platform-line); }
+    .rq-admin input { flex: 1; min-width: 160px; }
+    .rq-shots { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .rq-shots:empty { display: none; }
+    .rq-shot { display: inline-flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+    .rq-shot img { width: 132px; height: 88px; object-fit: cover; border: 1px solid var(--platform-line); border-radius: 4px; background: #eee; }
+    .rq-done { margin-top: 18px; }
+    .rq-done > summary { cursor: pointer; font-weight: 700; font-size: 13px; color: var(--platform-muted); padding: 6px 2px; }
     .rq-empty { padding: 26px 4px; font-size: 13px; color: var(--platform-faint); }
-    @media (max-width: 720px) {
-      .rq-form { grid-template-columns: 1fr 1fr; }
-      .rq-form input { grid-column: 1 / -1; }
-      .rq-body { padding-left: 4px; }
-      .rq-answer { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 720px) { .rq-form { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body class="platform">
@@ -51,45 +50,41 @@
       <p class="nav-group-label">업무</p>
       <a href="../">홈</a><a href="../customers/">고객관리</a><a href="../claims/">청구·지급</a><a href="../cases/">사례·판례</a><a href="../learn/">학습</a><a href="../brief/">브리핑</a>      <p class="nav-group-label">발행</p><a href="../care/shelf.html">케어센터</a><a href="../card/">카톡카드</a>
     </nav>
-    <div class="sidebar-status"><strong>수정 요청</strong><span>고칠 것·필요한 것을 적어 주세요.</span></div>
+    <div class="sidebar-status"><strong>수정 요청</strong><span>하랑지점과 같은 게시판입니다.</span></div>
   </aside>
   <div class="platform-overlay" id="platform-overlay"></div>
   <div class="platform-shell">
-    <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">수정 요청</span><span class="topbar-note">프로그램에 바라는 것을 남기는 자리</span></header>
+    <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">수정 요청</span><span class="topbar-note">하랑지점과 한 게시판</span></header>
     <main class="platform-main">
       <div class="page-heading">
-        <p class="eyebrow">함께 고치기</p>
+        <p class="eyebrow">요청</p>
         <h1>수정 요청</h1>
-        <p>쓰다가 불편한 것, 안 되는 것, 있었으면 하는 것을 적어 주세요. 올린 요청은 팀 전원이 보고, 처리 상태와 답변이 여기에 달립니다.</p>
+        <p>프로그램에서 불편한 것, 있었으면 하는 것, 안 되는 것을 적어 주세요. 모두가 같이 봅니다 — 같은 생각이면 「나도 필요」를 눌러 주세요.</p>
       </div>
 
       <p id="gate" class="rq-empty" hidden></p>
 
       <div id="work" hidden>
         <section class="section-block">
-          <div class="section-head"><div><h2 id="form-title">새 요청</h2><p>고객 실명·연락처는 적지 마세요. 고객은 코드(C-2026-014)로만 적습니다.</p></div></div>
           <div class="rq-form">
-            <select id="f-kind" aria-label="종류"></select>
-            <select id="f-screen" aria-label="어느 화면">
-              <option value="">화면 (선택)</option>
-              <option>홈</option><option>고객관리</option><option>청구·지급</option><option>사례·판례</option>
-              <option>학습</option><option>브리핑</option><option>케어센터</option><option>카톡카드</option>
-              <option>하랑지점</option><option>로그인·계정</option><option>기타</option>
+            <select id="req-kind" aria-label="종류">
+              <option>프로그램 수정</option><option>기능 제안</option><option>오류 신고</option><option>기타</option>
             </select>
-            <input type="text" id="f-title" maxlength="80" placeholder="제목 — 무엇을 고치면 좋을지 한 줄로" aria-label="제목">
-            <textarea id="f-body" maxlength="4000" placeholder="어떤 화면에서 무엇을 했더니 어떻게 됐는지, 어떻게 되면 좋겠는지 적어 주세요." aria-label="내용"></textarea>
+            <input type="text" id="req-title" maxlength="100" placeholder="한 줄 제목 — 예: 고객관리에서 미팅 저장이 안 돼요" aria-label="제목">
+            <textarea id="req-body" maxlength="2000" placeholder="어느 화면에서 무엇을 했더니 어떻게 됐는지 적어 주시면 빨리 고칩니다. (어느 화면·어떤 기기인지는 자동으로 붙습니다)" aria-label="내용"></textarea>
           </div>
+          <div class="rq-shots" id="req-shots"></div>
           <div class="rq-actions">
-            <button class="btn btn-primary" type="button" id="f-save">요청 올리기</button>
-            <button class="btn" type="button" id="f-cancel" hidden>고치기 취소</button>
-            <span class="rq-note" id="f-msg"></span>
+            <button class="btn btn-primary" type="button" id="req-send">보내기</button>
+            <button class="btn" type="button" id="req-shot-add">화면 캡처 붙이기</button>
+            <input type="file" id="req-file" accept="image/png,image/jpeg,image/webp" multiple hidden>
+            <span class="rq-note" id="req-msg" style="margin:0"></span>
           </div>
+          <p class="rq-note">캡처는 4장까지. 복사한 화면은 내용 칸에서 Ctrl+V로도 붙습니다. 고객 이름·연락처가 보이면 가리고 올려 주세요 — 요청은 전원이 봅니다.</p>
         </section>
 
         <section class="section-block">
-          <div class="section-head"><div><h2>요청 목록</h2><p id="count-line"></p></div></div>
-          <div class="filter-bar" id="chips" aria-label="상태 필터"></div>
-          <div class="rq-list" id="list"></div>
+          <div class="rq-list" id="req-list"></div>
         </section>
       </div>
     </main>
@@ -99,174 +94,167 @@
   <script>
     (function () {
       "use strict";
+      // 게시판은 하랑지점 서버에 하나만 있다(2026-09-20 사용자: 「두 메뉴가 동일했으면 — 우리 시스템에서
+      // 돌아가는 거니」). 계정이 하나라 세션도 같다. 여기서 올린 글에는 「마이가디언」이 붙는다.
+      var API = /insurguard\.life$/.test(location.hostname) ? "https://api.insurguard.life/branch" : "http://localhost:8788";
+      var PROGRAM = "마이가디언";
+      var BADGE = { "접수": "st-hold", "진행 중": "st-meet", "완료": "st-met", "보류": "st-cancel" };
+      var STATES = ["접수", "진행 중", "완료", "보류"];
+      var token = window.mgAuth ? window.mgAuth.token() : null;
+      var shots = [];                                   // [{ id, url }]
+
       function $(id) { return document.getElementById(id); }
       function esc(s) {
         return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
       }
-      var BADGE = { "접수": "st-hold", "진행": "st-meet", "완료": "st-met", "보류": "st-cancel" };
-      var S = { list: [], admin: false, kinds: [], states: [], filter: "", mine: false, open: null, editing: null };
+      function gate(text) { $("gate").hidden = false; $("gate").textContent = text; $("work").hidden = true; }
 
-      function day(iso) { return String(iso || "").slice(0, 10); }
+      function api(path, opts) {
+        opts = opts || {};
+        return fetch(API + path, {
+          method: opts.method || "GET",
+          headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+          body: opts.body ? JSON.stringify(opts.body) : undefined
+        }).then(function (r) {
+          return r.json().catch(function () { return {}; }).then(function (j) {
+            if (!r.ok) {
+              var e = new Error(j.error || ("요청 실패 " + r.status));
+              e.status = r.status; e.needJoin = !!j.needJoin;
+              throw e;
+            }
+            return j;
+          });
+        });
+      }
 
-      function gate(text) {
-        $("gate").hidden = false; $("gate").textContent = text; $("work").hidden = true;
+      // 어느 화면에서 넘어왔는지·어떤 기기인지 — 하랑지점과 같은 모양으로 자동으로 붙인다
+      function context() {
+        var ua = navigator.userAgent;
+        var dev = /iPhone|iPad/.test(ua) ? "아이폰" : /Android/.test(ua) ? "안드로이드" : /Windows/.test(ua) ? "윈도우" : /Mac/.test(ua) ? "맥" : "기타";
+        var names = { customers: "고객관리", claims: "청구·지급", cases: "사례·판례", learn: "학습", brief: "브리핑", care: "케어센터", card: "카톡카드", admin: "관리자 설정" };
+        var from = "";
+        try { from = (new URL(document.referrer).pathname.split("/web/")[1] || "").split("/")[0]; } catch (e) { /* 직접 열었다 */ }
+        var standalone = window.matchMedia && window.matchMedia("(display-mode: standalone)").matches;
+        return "화면: 마이가디언 " + (names[from] || (from === "" ? "홈" : from)) + " · " + dev
+          + (standalone ? " 앱" : " 브라우저") + " · " + window.innerWidth + "×" + window.innerHeight;
+      }
+
+      // ── 화면 캡처 — 먼저 올려 번호를 받고, 보낼 때 그 번호를 싣는다 ──
+      function drawShots() {
+        $("req-shots").innerHTML = shots.map(function (s, i) {
+          return '<span class="rq-shot"><img src="' + s.url + '" alt="붙인 캡처 ' + (i + 1) + '"><button type="button" class="btn" data-i="' + i + '" style="padding:2px 8px;font-size:12px">빼기</button></span>';
+        }).join("");
+      }
+      function addShots(files) {
+        var list = Array.prototype.slice.call(files || []).filter(function (f) { return /^image\/(png|jpeg|webp)$/.test(f.type); });
+        if (!list.length) return;
+        var room = 4 - shots.length;
+        if (room <= 0) { $("req-msg").textContent = "캡처는 4장까지 붙일 수 있습니다."; return; }
+        $("req-msg").textContent = "캡처를 올리는 중…";
+        list.slice(0, room).reduce(function (p, f) {
+          return p.then(function () {
+            return fetch(API + "/requests/shots", { method: "POST", headers: { Authorization: "Bearer " + token, "Content-Type": f.type }, body: f })
+              .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || r.status); return j; }); })
+              .then(function (j) { shots.push({ id: j.id, url: URL.createObjectURL(f) }); drawShots(); });
+          });
+        }, Promise.resolve()).then(function () { $("req-msg").textContent = ""; })
+          .catch(function (e) { $("req-msg").textContent = "캡처를 못 올렸습니다 — " + (e && e.message ? e.message : ""); });
+      }
+      $("req-shot-add").addEventListener("click", function () { $("req-file").click(); });
+      $("req-file").addEventListener("change", function () { addShots(this.files); this.value = ""; });
+      $("req-body").addEventListener("paste", function (e) {
+        var fs = e.clipboardData && e.clipboardData.files;
+        if (fs && fs.length) { e.preventDefault(); addShots(fs); }
+      });
+      $("req-shots").addEventListener("click", function (e) {
+        var b = e.target.closest("button[data-i]"); if (!b) return;
+        shots.splice(Number(b.dataset.i), 1); drawShots();          // 안 붙은 캡처는 서버가 하루 뒤 청소한다
+      });
+      // 목록의 캡처 — 인증이 필요해 img src로 바로 못 건다. 받아서 붙인다.
+      function fillShots() {
+        Array.prototype.forEach.call(document.querySelectorAll("#req-list img[data-shot]"), function (img) {
+          fetch(API + "/requests/shots/" + img.dataset.shot, { headers: { Authorization: "Bearer " + token } })
+            .then(function (r) { if (!r.ok) throw new Error(r.status); return r.blob(); })
+            .then(function (b) { var u = URL.createObjectURL(b); img.src = u; img.parentNode.href = u; })
+            .catch(function () { img.alt = "캡처를 못 불러왔습니다"; });
+        });
+      }
+
+      function item(r) {
+        return '<div class="rq-item" data-id="' + r.id + '">'
+          + '<div class="rq-head"><span class="badge-status ' + (BADGE[r.status] || "st-hold") + '">' + esc(r.status) + "</span>"
+          + '<span class="rq-tag">' + esc(r.kind) + '</span><span class="rq-tag">' + esc(r.program || "하랑지점") + "</span>"
+          + "<strong>" + esc(r.title) + "</strong></div>"
+          + (r.body ? '<p class="rq-body">' + esc(r.body) + "</p>" : "")
+          + ((r.shots || []).length ? '<div class="rq-shots">' + r.shots.map(function (id) {
+              return '<a class="rq-shot" target="_blank" rel="noopener"><img data-shot="' + id + '" alt="붙인 캡처"></a>';
+            }).join("") + "</div>" : "")
+          + '<p class="rq-meta">' + esc(r.author_name || r.author_email) + " · " + esc(String(r.created).slice(0, 10)) + (r.context ? " · " + esc(r.context) : "") + "</p>"
+          + (r.answer ? '<div class="rq-answer"><b>' + esc(r.answered_by || "답변") + "</b>" + esc(r.answer) + "</div>" : "")
+          + '<div class="rq-actions">'
+          + (r.mine ? '<span class="rq-note" style="margin:0">내 요청' + (r.votes ? " · 나도 필요 " + r.votes : "") + "</span>"
+                    : '<button type="button" class="btn req-vote' + (r.voted ? " btn-primary" : "") + '">나도 필요' + (r.votes ? " " + r.votes : "") + "</button>")
+          + ((r.mine && r.status === "접수") || r.admin ? '<button type="button" class="btn req-del">지우기</button>' : "")
+          + "</div>"
+          + (r.admin
+            ? '<div class="rq-admin"><select class="req-status" aria-label="상태" style="width:110px">'
+              + STATES.map(function (s) { return "<option" + (s === r.status ? " selected" : "") + ">" + s + "</option>"; }).join("")
+              + '</select><input class="req-ans" placeholder="답변 한 줄" aria-label="답변" value="' + esc(r.answer) + '">'
+              + '<button type="button" class="btn btn-primary req-save">저장</button></div>'
+            : "")
+          + "</div>";
       }
 
       function load() {
-        return window.mgAuth.api("/requests").then(function (d) {
-          S.list = d["요청"] || []; S.admin = !!d["총관리자"];
-          S.kinds = d["종류"] || []; S.states = d["상태"] || [];
-          if (!$("f-kind").options.length) {
-            $("f-kind").innerHTML = S.kinds.map(function (k) { return "<option>" + esc(k) + "</option>"; }).join("");
-          }
+        return api("/requests").then(function (list) {
+          var open = list.filter(function (r) { return r.status === "접수" || r.status === "진행 중"; })
+            .sort(function (a, b) { return b.votes - a.votes || b.id - a.id; });          // 많이 바라는 것이 위로
+          var done = list.filter(function (r) { return r.status === "완료" || r.status === "보류"; });
           $("gate").hidden = true; $("work").hidden = false;
-          render();
+          $("req-list").innerHTML = (open.length ? open.map(item).join("") : '<p class="rq-empty">열려 있는 요청이 없습니다.</p>')
+            + (done.length ? '<details class="rq-done"><summary>끝난 요청 ' + done.length + "건</summary>" + done.map(item).join("") + "</details>" : "");
+          fillShots();
         });
       }
 
-      function visible() {
-        return S.list.filter(function (r) {
-          return (!S.filter || r["상태"] === S.filter) && (!S.mine || r["내것"]);
-        });
-      }
-
-      function render() {
-        var n = {}; S.list.forEach(function (r) { n[r["상태"]] = (n[r["상태"]] || 0) + 1; });
-        $("count-line").textContent = "전체 " + S.list.length + "건 · 접수 " + (n["접수"] || 0) + " · 진행 " + (n["진행"] || 0)
-          + " · 완료 " + (n["완료"] || 0) + " · 보류 " + (n["보류"] || 0);
-        $("chips").innerHTML = [""].concat(S.states).map(function (st) {
-          return '<button class="filter-chip' + (S.filter === st ? " active" : "") + '" type="button" data-state="' + esc(st) + '">'
-            + esc(st || "전체") + "</button>";
-        }).join("") + '<button class="filter-chip' + (S.mine ? " active" : "") + '" type="button" data-mine="1">내 요청만</button>';
-
-        var rows = visible();
-        $("list").innerHTML = rows.length ? rows.map(rowHtml).join("")
-          : '<p class="rq-empty">' + (S.list.length ? "조건에 맞는 요청이 없습니다." : "아직 올라온 요청이 없습니다. 첫 요청을 남겨 보세요.") + "</p>";
-      }
-
-      function rowHtml(r) {
-        var open = S.open === r.id;
-        var h = '<div class="rq-row' + (open ? " open" : "") + '">'
-          + '<div class="rq-head" data-open="' + r.id + '" role="button" tabindex="0" aria-expanded="' + open + '">'
-          + '<span class="badge-status ' + (BADGE[r["상태"]] || "st-hold") + '">' + esc(r["상태"]) + "</span>"
-          + '<span class="rq-kind">' + esc(r["종류"]) + "</span>"
-          + '<span class="rq-title">' + esc(r["제목"]) + "</span>"
-          + '<span class="rq-meta">' + (r["화면"] ? esc(r["화면"]) + " · " : "") + esc(r["작성자"]) + " · " + esc(day(r["작성일"])) + "</span>"
-          + "</div>";
-        if (!open) return h + "</div>";
-        h += '<div class="rq-body">'
-          + '<p class="rq-text">' + (r["내용"] ? esc(r["내용"]) : '<span class="rq-note">내용 없이 제목만 올린 요청입니다.</span>') + "</p>";
-        if (r["답변"]) {
-          h += '<div class="rq-reply"><b>답변' + (r["답변자"] ? " — " + esc(r["답변자"]) : "") + " · " + esc(day(r["갱신일"])) + "</b>"
-            + '<p class="rq-text" style="margin:0">' + esc(r["답변"]) + "</p></div>";
-        }
-        if (S.admin) {
-          h += '<div class="rq-answer">'
-            + '<select data-st="' + r.id + '" aria-label="상태">' + S.states.map(function (st) {
-                return "<option" + (st === r["상태"] ? " selected" : "") + ">" + esc(st) + "</option>";
-              }).join("") + "</select>"
-            + '<textarea data-rp="' + r.id + '" maxlength="4000" placeholder="답변 (선택) — 어떻게 처리했는지, 언제 되는지" aria-label="답변">' + esc(r["답변"]) + "</textarea>"
-            + "</div>";
-        }
-        h += '<div class="rq-actions">';
-        if (S.admin) h += '<button class="btn btn-primary" type="button" data-answer="' + r.id + '">상태·답변 저장</button>';
-        if (r["고칠수있음"]) h += '<button class="btn" type="button" data-edit="' + r.id + '">고치기</button>';
-        if (r["지울수있음"]) h += '<button class="btn btn-danger" type="button" data-del="' + r.id + '">지우기</button>';
-        h += '<span class="rq-note" data-msg="' + r.id + '"></span></div></div>';
-        return h + "</div>";
-      }
-
-      function find(id) { return S.list.filter(function (r) { return r.id === id; })[0] || null; }
-
-      function resetForm() {
-        S.editing = null;
-        $("form-title").textContent = "새 요청";
-        $("f-save").textContent = "요청 올리기";
-        $("f-cancel").hidden = true;
-        $("f-title").value = ""; $("f-body").value = ""; $("f-screen").value = "";
-      }
-
-      $("f-cancel").addEventListener("click", function () { resetForm(); $("f-msg").textContent = ""; });
-
-      $("f-save").addEventListener("click", function () {
-        var btn = this;
-        var body = { "종류": $("f-kind").value, "화면": $("f-screen").value, "제목": $("f-title").value.trim(), "내용": $("f-body").value.trim() };
-        if (!body["제목"]) { $("f-msg").textContent = "제목을 적어 주세요."; $("f-title").focus(); return; }
-        btn.disabled = true; $("f-msg").textContent = "올리는 중…";
-        var path = S.editing ? "/requests/" + S.editing : "/requests";
-        window.mgAuth.api(path, { method: "POST", body: body }).then(function () {
-          $("f-msg").textContent = S.editing ? "고쳤습니다." : "올렸습니다. 처리 상태가 이 목록에 표시됩니다.";
-          resetForm();
-          return load();
-        }).catch(function (e) {
-          $("f-msg").textContent = e && e.message ? e.message : "올리지 못했습니다. 다시 시도해 주세요.";
-        }).then(function () { btn.disabled = false; });
+      $("req-send").addEventListener("click", function () {
+        var title = $("req-title").value.trim();
+        if (!title) { $("req-msg").textContent = "제목을 적어 주세요."; $("req-title").focus(); return; }
+        var btn = this; btn.disabled = true;
+        api("/requests", { method: "POST", body: { kind: $("req-kind").value, title: title, body: $("req-body").value, context: context(),
+            program: PROGRAM, shots: shots.map(function (s) { return s.id; }) } })
+          .then(function () {
+            $("req-title").value = ""; $("req-body").value = ""; shots = []; drawShots();
+            $("req-msg").textContent = "보냈습니다. 처리되면 여기 상태가 바뀝니다.";
+            return load();
+          }).catch(function (e) { $("req-msg").textContent = e && e.message ? e.message : "보내지 못했습니다."; })
+          .then(function () { btn.disabled = false; });
       });
 
-      $("chips").addEventListener("click", function (e) {
-        var b = e.target.closest("button"); if (!b) return;
-        if (b.dataset.mine) S.mine = !S.mine; else S.filter = b.dataset.state || "";
-        render();
-      });
-
-      function toggle(id) { S.open = S.open === id ? null : id; render(); }
-
-      $("list").addEventListener("keydown", function (e) {
-        if (e.key !== "Enter" && e.key !== " ") return;
-        var hd = e.target.closest(".rq-head"); if (!hd) return;
-        e.preventDefault(); toggle(Number(hd.dataset.open));
-      });
-
-      $("list").addEventListener("click", function (e) {
-        var b = e.target.closest("button");
-        if (!b) {
-          var hd = e.target.closest(".rq-head");
-          if (hd) toggle(Number(hd.dataset.open));
+      $("req-list").addEventListener("click", function (e) {
+        var card = e.target.closest(".rq-item"); if (!card) return;
+        var id = card.dataset.id;
+        function fail(err) { window.alert(err && err.message ? err.message : "처리하지 못했습니다."); }
+        if (e.target.closest(".req-vote")) { api("/requests/" + id + "/vote", { method: "POST" }).then(load).catch(fail); return; }
+        if (e.target.closest(".req-del")) {
+          if (!window.confirm("이 요청을 지울까요?")) return;
+          api("/requests/" + id, { method: "DELETE" }).then(load).catch(fail);
           return;
         }
-        var id, r, msg;
-        if (b.dataset.answer) {
-          id = Number(b.dataset.answer);
-          msg = document.querySelector('[data-msg="' + id + '"]');
-          b.disabled = true;
-          window.mgAuth.api("/requests/" + id + "/answer", { method: "POST", body: {
-            "상태": document.querySelector('[data-st="' + id + '"]').value,
-            "답변": document.querySelector('[data-rp="' + id + '"]').value.trim()
-          } }).then(load).catch(function (err) {
-            if (msg) msg.textContent = err && err.message ? err.message : "저장하지 못했습니다.";
-            b.disabled = false;
-          });
-        } else if (b.dataset.edit) {
-          r = find(Number(b.dataset.edit)); if (!r) return;
-          S.editing = r.id;
-          $("form-title").textContent = "요청 고치기";
-          $("f-save").textContent = "고친 내용 저장";
-          $("f-cancel").hidden = false;
-          $("f-kind").value = r["종류"]; $("f-screen").value = r["화면"] || "";
-          $("f-title").value = r["제목"]; $("f-body").value = r["내용"];
-          $("f-title").focus();
-          window.scrollTo({ top: 0 });
-        } else if (b.dataset.del) {
-          id = Number(b.dataset.del);
-          if (!window.confirm("이 요청을 지울까요? 되돌릴 수 없습니다.")) return;
-          msg = document.querySelector('[data-msg="' + id + '"]');
-          b.disabled = true;
-          window.mgAuth.api("/requests/" + id, { method: "DELETE" }).then(function () {
-            if (S.editing === id) resetForm();
-            S.open = null;
-            return load();
-          }).catch(function (err) {
-            if (msg) msg.textContent = err && err.message ? err.message : "지우지 못했습니다.";
-            b.disabled = false;
-          });
+        if (e.target.closest(".req-save")) {
+          api("/requests/" + id, { method: "POST", body: { status: card.querySelector(".req-status").value, answer: card.querySelector(".req-ans").value } })
+            .then(load).catch(fail);
         }
       });
 
-      if (!window.mgAuth || !window.mgAuth.token()) {
+      if (!token) {
         gate("로그인이 필요합니다. 홈에서 구글 계정으로 로그인한 뒤 다시 열어 주세요.");
       } else {
         load().catch(function (e) {
-          gate(e && e.message ? e.message : "요청 목록을 불러오지 못했습니다.");
+          gate(e && e.needJoin
+            ? "하랑지점 명단에 아직 없는 계정입니다. 수정 요청 게시판은 하랑지점과 함께 씁니다 — 관리자에게 팀 배치를 요청해 주세요."
+            : (e && e.status === 401 ? "로그인이 풀렸습니다. 홈에서 다시 로그인해 주세요."
+              : "요청 목록을 불러오지 못했습니다 — " + (e && e.message ? e.message : "")));
         });
       }
     })();
