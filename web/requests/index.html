@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
+  <title>수정 요청 - 마이가디언</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css">
+  <link rel="stylesheet" href="../assets/platform.css">
+  <script src="../assets/platform.js"></script>
+  <script src="../assets/auth.js"></script>
+  <style>
+    /* 이 화면 전용 — 괘선 목록. 카드·그림자 없이 헤어라인으로만 가른다(플랫폼 에디토리얼 문법). */
+    .rq-form { display: grid; grid-template-columns: 150px 170px 1fr; gap: 8px; }
+    .rq-form textarea { grid-column: 1 / -1; min-height: 96px; resize: vertical; }
+    .rq-form select, .rq-form input, .rq-form textarea, .rq-answer select, .rq-answer textarea {
+      font: inherit; font-size: 13px; border: 1px solid var(--platform-line-strong);
+      border-radius: 4px; padding: 8px 10px; background: #fff; color: var(--platform-ink);
+    }
+    .rq-actions { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+    .rq-note { font-size: 12px; color: var(--platform-faint); }
+    .rq-list { border-top: 2px solid var(--platform-ink); margin-top: 12px; }
+    .rq-row { border-bottom: 1px solid var(--platform-line); }
+    .rq-head { display: flex; gap: 10px; align-items: baseline; padding: 11px 4px; cursor: pointer; flex-wrap: wrap; }
+    .rq-head:hover { background: rgba(23, 32, 51, .03); }
+    .rq-row.open > .rq-head { box-shadow: inset 3px 0 0 var(--platform-point, #bc003a); }
+    .rq-kind { font-size: 11px; color: var(--platform-muted); min-width: 56px; }
+    .rq-title { font-size: 13.5px; font-weight: 600; flex: 1 1 240px; word-break: keep-all; }
+    .rq-meta { font-size: 11.5px; color: var(--platform-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .rq-body { padding: 4px 4px 16px 70px; }
+    .rq-text { font-size: 13px; line-height: 1.7; white-space: pre-wrap; word-break: keep-all; margin: 0 0 10px; }
+    .rq-reply { border-left: 2px solid var(--platform-ink); padding: 2px 0 2px 12px; margin: 10px 0; }
+    .rq-reply b { display: block; font-size: 11px; color: var(--platform-muted); margin-bottom: 4px; font-weight: 600; }
+    .rq-answer { display: grid; grid-template-columns: 110px 1fr; gap: 8px; margin-top: 10px; }
+    .rq-answer textarea { min-height: 72px; resize: vertical; }
+    .rq-empty { padding: 26px 4px; font-size: 13px; color: var(--platform-faint); }
+    @media (max-width: 720px) {
+      .rq-form { grid-template-columns: 1fr 1fr; }
+      .rq-form input { grid-column: 1 / -1; }
+      .rq-body { padding-left: 4px; }
+      .rq-answer { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body class="platform">
+  <aside class="platform-sidebar" id="platform-sidebar">
+    <a class="platform-brand" href="../" aria-label="마이가디언 홈"><span class="brand-mark"><img src="../assets/logo.svg" alt=""></span><span><span class="brand-name">마이가디언</span><span class="brand-caption">FC 업무 플랫폼</span></span></a>
+    <nav class="platform-nav" aria-label="주요 메뉴">
+      <p class="nav-group-label">업무</p>
+      <a href="../">홈</a><a href="../customers/">고객관리</a><a href="../claims/">청구·지급</a><a href="../cases/">사례·판례</a><a href="../learn/">학습</a><a href="../brief/">브리핑</a>      <p class="nav-group-label">발행</p><a href="../care/shelf.html">케어센터</a><a href="../card/">카톡카드</a>
+    </nav>
+    <div class="sidebar-status"><strong>수정 요청</strong><span>고칠 것·필요한 것을 적어 주세요.</span></div>
+  </aside>
+  <div class="platform-overlay" id="platform-overlay"></div>
+  <div class="platform-shell">
+    <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">수정 요청</span><span class="topbar-note">프로그램에 바라는 것을 남기는 자리</span></header>
+    <main class="platform-main">
+      <div class="page-heading">
+        <p class="eyebrow">함께 고치기</p>
+        <h1>수정 요청</h1>
+        <p>쓰다가 불편한 것, 안 되는 것, 있었으면 하는 것을 적어 주세요. 올린 요청은 팀 전원이 보고, 처리 상태와 답변이 여기에 달립니다.</p>
+      </div>
+
+      <p id="gate" class="rq-empty" hidden></p>
+
+      <div id="work" hidden>
+        <section class="section-block">
+          <div class="section-head"><div><h2 id="form-title">새 요청</h2><p>고객 실명·연락처는 적지 마세요. 고객은 코드(C-2026-014)로만 적습니다.</p></div></div>
+          <div class="rq-form">
+            <select id="f-kind" aria-label="종류"></select>
+            <select id="f-screen" aria-label="어느 화면">
+              <option value="">화면 (선택)</option>
+              <option>홈</option><option>고객관리</option><option>청구·지급</option><option>사례·판례</option>
+              <option>학습</option><option>브리핑</option><option>케어센터</option><option>카톡카드</option>
+              <option>하랑지점</option><option>로그인·계정</option><option>기타</option>
+            </select>
+            <input type="text" id="f-title" maxlength="80" placeholder="제목 — 무엇을 고치면 좋을지 한 줄로" aria-label="제목">
+            <textarea id="f-body" maxlength="4000" placeholder="어떤 화면에서 무엇을 했더니 어떻게 됐는지, 어떻게 되면 좋겠는지 적어 주세요." aria-label="내용"></textarea>
+          </div>
+          <div class="rq-actions">
+            <button class="btn btn-primary" type="button" id="f-save">요청 올리기</button>
+            <button class="btn" type="button" id="f-cancel" hidden>고치기 취소</button>
+            <span class="rq-note" id="f-msg"></span>
+          </div>
+        </section>
+
+        <section class="section-block">
+          <div class="section-head"><div><h2>요청 목록</h2><p id="count-line"></p></div></div>
+          <div class="filter-bar" id="chips" aria-label="상태 필터"></div>
+          <div class="rq-list" id="list"></div>
+        </section>
+      </div>
+    </main>
+    <footer class="platform-footer">마이가디언 v2</footer>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+      function $(id) { return document.getElementById(id); }
+      function esc(s) {
+        return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      }
+      var BADGE = { "접수": "st-hold", "진행": "st-meet", "완료": "st-met", "보류": "st-cancel" };
+      var S = { list: [], admin: false, kinds: [], states: [], filter: "", mine: false, open: null, editing: null };
+
+      function day(iso) { return String(iso || "").slice(0, 10); }
+
+      function gate(text) {
+        $("gate").hidden = false; $("gate").textContent = text; $("work").hidden = true;
+      }
+
+      function load() {
+        return window.mgAuth.api("/requests").then(function (d) {
+          S.list = d["요청"] || []; S.admin = !!d["총관리자"];
+          S.kinds = d["종류"] || []; S.states = d["상태"] || [];
+          if (!$("f-kind").options.length) {
+            $("f-kind").innerHTML = S.kinds.map(function (k) { return "<option>" + esc(k) + "</option>"; }).join("");
+          }
+          $("gate").hidden = true; $("work").hidden = false;
+          render();
+        });
+      }
+
+      function visible() {
+        return S.list.filter(function (r) {
+          return (!S.filter || r["상태"] === S.filter) && (!S.mine || r["내것"]);
+        });
+      }
+
+      function render() {
+        var n = {}; S.list.forEach(function (r) { n[r["상태"]] = (n[r["상태"]] || 0) + 1; });
+        $("count-line").textContent = "전체 " + S.list.length + "건 · 접수 " + (n["접수"] || 0) + " · 진행 " + (n["진행"] || 0)
+          + " · 완료 " + (n["완료"] || 0) + " · 보류 " + (n["보류"] || 0);
+        $("chips").innerHTML = [""].concat(S.states).map(function (st) {
+          return '<button class="filter-chip' + (S.filter === st ? " active" : "") + '" type="button" data-state="' + esc(st) + '">'
+            + esc(st || "전체") + "</button>";
+        }).join("") + '<button class="filter-chip' + (S.mine ? " active" : "") + '" type="button" data-mine="1">내 요청만</button>';
+
+        var rows = visible();
+        $("list").innerHTML = rows.length ? rows.map(rowHtml).join("")
+          : '<p class="rq-empty">' + (S.list.length ? "조건에 맞는 요청이 없습니다." : "아직 올라온 요청이 없습니다. 첫 요청을 남겨 보세요.") + "</p>";
+      }
+
+      function rowHtml(r) {
+        var open = S.open === r.id;
+        var h = '<div class="rq-row' + (open ? " open" : "") + '">'
+          + '<div class="rq-head" data-open="' + r.id + '" role="button" tabindex="0" aria-expanded="' + open + '">'
+          + '<span class="badge-status ' + (BADGE[r["상태"]] || "st-hold") + '">' + esc(r["상태"]) + "</span>"
+          + '<span class="rq-kind">' + esc(r["종류"]) + "</span>"
+          + '<span class="rq-title">' + esc(r["제목"]) + "</span>"
+          + '<span class="rq-meta">' + (r["화면"] ? esc(r["화면"]) + " · " : "") + esc(r["작성자"]) + " · " + esc(day(r["작성일"])) + "</span>"
+          + "</div>";
+        if (!open) return h + "</div>";
+        h += '<div class="rq-body">'
+          + '<p class="rq-text">' + (r["내용"] ? esc(r["내용"]) : '<span class="rq-note">내용 없이 제목만 올린 요청입니다.</span>') + "</p>";
+        if (r["답변"]) {
+          h += '<div class="rq-reply"><b>답변' + (r["답변자"] ? " — " + esc(r["답변자"]) : "") + " · " + esc(day(r["갱신일"])) + "</b>"
+            + '<p class="rq-text" style="margin:0">' + esc(r["답변"]) + "</p></div>";
+        }
+        if (S.admin) {
+          h += '<div class="rq-answer">'
+            + '<select data-st="' + r.id + '" aria-label="상태">' + S.states.map(function (st) {
+                return "<option" + (st === r["상태"] ? " selected" : "") + ">" + esc(st) + "</option>";
+              }).join("") + "</select>"
+            + '<textarea data-rp="' + r.id + '" maxlength="4000" placeholder="답변 (선택) — 어떻게 처리했는지, 언제 되는지" aria-label="답변">' + esc(r["답변"]) + "</textarea>"
+            + "</div>";
+        }
+        h += '<div class="rq-actions">';
+        if (S.admin) h += '<button class="btn btn-primary" type="button" data-answer="' + r.id + '">상태·답변 저장</button>';
+        if (r["고칠수있음"]) h += '<button class="btn" type="button" data-edit="' + r.id + '">고치기</button>';
+        if (r["지울수있음"]) h += '<button class="btn btn-danger" type="button" data-del="' + r.id + '">지우기</button>';
+        h += '<span class="rq-note" data-msg="' + r.id + '"></span></div></div>';
+        return h + "</div>";
+      }
+
+      function find(id) { return S.list.filter(function (r) { return r.id === id; })[0] || null; }
+
+      function resetForm() {
+        S.editing = null;
+        $("form-title").textContent = "새 요청";
+        $("f-save").textContent = "요청 올리기";
+        $("f-cancel").hidden = true;
+        $("f-title").value = ""; $("f-body").value = ""; $("f-screen").value = "";
+      }
+
+      $("f-cancel").addEventListener("click", function () { resetForm(); $("f-msg").textContent = ""; });
+
+      $("f-save").addEventListener("click", function () {
+        var btn = this;
+        var body = { "종류": $("f-kind").value, "화면": $("f-screen").value, "제목": $("f-title").value.trim(), "내용": $("f-body").value.trim() };
+        if (!body["제목"]) { $("f-msg").textContent = "제목을 적어 주세요."; $("f-title").focus(); return; }
+        btn.disabled = true; $("f-msg").textContent = "올리는 중…";
+        var path = S.editing ? "/requests/" + S.editing : "/requests";
+        window.mgAuth.api(path, { method: "POST", body: body }).then(function () {
+          $("f-msg").textContent = S.editing ? "고쳤습니다." : "올렸습니다. 처리 상태가 이 목록에 표시됩니다.";
+          resetForm();
+          return load();
+        }).catch(function (e) {
+          $("f-msg").textContent = e && e.message ? e.message : "올리지 못했습니다. 다시 시도해 주세요.";
+        }).then(function () { btn.disabled = false; });
+      });
+
+      $("chips").addEventListener("click", function (e) {
+        var b = e.target.closest("button"); if (!b) return;
+        if (b.dataset.mine) S.mine = !S.mine; else S.filter = b.dataset.state || "";
+        render();
+      });
+
+      function toggle(id) { S.open = S.open === id ? null : id; render(); }
+
+      $("list").addEventListener("keydown", function (e) {
+        if (e.key !== "Enter" && e.key !== " ") return;
+        var hd = e.target.closest(".rq-head"); if (!hd) return;
+        e.preventDefault(); toggle(Number(hd.dataset.open));
+      });
+
+      $("list").addEventListener("click", function (e) {
+        var b = e.target.closest("button");
+        if (!b) {
+          var hd = e.target.closest(".rq-head");
+          if (hd) toggle(Number(hd.dataset.open));
+          return;
+        }
+        var id, r, msg;
+        if (b.dataset.answer) {
+          id = Number(b.dataset.answer);
+          msg = document.querySelector('[data-msg="' + id + '"]');
+          b.disabled = true;
+          window.mgAuth.api("/requests/" + id + "/answer", { method: "POST", body: {
+            "상태": document.querySelector('[data-st="' + id + '"]').value,
+            "답변": document.querySelector('[data-rp="' + id + '"]').value.trim()
+          } }).then(load).catch(function (err) {
+            if (msg) msg.textContent = err && err.message ? err.message : "저장하지 못했습니다.";
+            b.disabled = false;
+          });
+        } else if (b.dataset.edit) {
+          r = find(Number(b.dataset.edit)); if (!r) return;
+          S.editing = r.id;
+          $("form-title").textContent = "요청 고치기";
+          $("f-save").textContent = "고친 내용 저장";
+          $("f-cancel").hidden = false;
+          $("f-kind").value = r["종류"]; $("f-screen").value = r["화면"] || "";
+          $("f-title").value = r["제목"]; $("f-body").value = r["내용"];
+          $("f-title").focus();
+          window.scrollTo({ top: 0 });
+        } else if (b.dataset.del) {
+          id = Number(b.dataset.del);
+          if (!window.confirm("이 요청을 지울까요? 되돌릴 수 없습니다.")) return;
+          msg = document.querySelector('[data-msg="' + id + '"]');
+          b.disabled = true;
+          window.mgAuth.api("/requests/" + id, { method: "DELETE" }).then(function () {
+            if (S.editing === id) resetForm();
+            S.open = null;
+            return load();
+          }).catch(function (err) {
+            if (msg) msg.textContent = err && err.message ? err.message : "지우지 못했습니다.";
+            b.disabled = false;
+          });
+        }
+      });
+
+      if (!window.mgAuth || !window.mgAuth.token()) {
+        gate("로그인이 필요합니다. 홈에서 구글 계정으로 로그인한 뒤 다시 열어 주세요.");
+      } else {
+        load().catch(function (e) {
+          gate(e && e.message ? e.message : "요청 목록을 불러오지 못했습니다.");
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

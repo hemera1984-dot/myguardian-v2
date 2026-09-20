@@ -219,6 +219,7 @@
       prompt.event = e;
     });
 
+    addRequestMenu(sidebar);
     addAdminMenu(sidebar);
     buildRail(sidebar);
     fillTopbar();
@@ -269,6 +270,7 @@
     "발행 데스크": "M4 4h16v5H4zM4 12h7v8H4zM13 12h7v8h-7z",
     "서재": "M5 4h3v16H5zM10 4h3v16h-3zM16.5 4.6l2.9.8-3.2 15.5-2.9-.8z",
     "마이가디언 홈": "M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1v-9z",
+    "수정 요청": "M4 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-7l-4 4v-4H5a1 1 0 0 1-1-1zM8 8.5h8M8 11.5h5",
     "관리자 설정": "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 13.5l1.4 1-1.5 2.6-1.7-.5-1.5.9-.4 1.7h-3l-.4-1.7-1.5-.9-1.7.5-1.5-2.6 1.4-1v-3l-1.4-1 1.5-2.6 1.7.5 1.5-.9.4-1.7h3l.4 1.7 1.5.9 1.7-.5 1.5 2.6-1.4 1z"
   };
   function railIcon(name) {
@@ -311,6 +313,32 @@
     var ctx = bar.querySelector(".topbar-context");
     if (ctx) bar.insertBefore(brand, ctx);
     else bar.appendChild(brand);
+  }
+
+  // 수정 요청 메뉴 — 로그인한 계정 전원에게 보인다(2026-09-20 사용자: 「팀원들이 프로그램
+  // 수정요청 등을 올릴 메뉴」). 화면 HTML 16개를 고치지 않으려고 여기 한 곳에서 붙인다.
+  // 메뉴 상한 9개 중 아홉째다 — 더 늘리려면 헌법의 상한부터 다시 본다.
+  function addRequestMenu(sidebar) {
+    var loggedIn = false;
+    try { loggedIn = !!localStorage.getItem("mg_session"); } catch (e) {}
+    if (!loggedIn) return;
+    var nav = sidebar.querySelector(".platform-nav");
+    if (!nav || nav.querySelector("[data-request-link]")) return;
+
+    var here = window.location.pathname;
+    var depth = (here.replace(/\/[^/]*$/, "/").split("/web/")[1] || "").split("/").filter(Boolean).length;
+    var prefix = depth ? new Array(depth + 1).join("../") : "";
+
+    var label = document.createElement("p");
+    label.className = "nav-group-label";
+    label.textContent = "함께";
+    var link = document.createElement("a");
+    link.href = prefix + "requests/";
+    link.textContent = "수정 요청";
+    link.setAttribute("data-request-link", "");
+    if (/\/requests\//.test(here)) link.className = "active";
+    nav.appendChild(label);
+    nav.appendChild(link);
   }
 
   // 관리자 메뉴 — 승인 권한이 있는 계정에만 보인다.

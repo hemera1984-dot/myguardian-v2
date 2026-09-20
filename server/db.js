@@ -69,6 +69,22 @@ export function openDb(file) {
       PRIMARY KEY (소유계정, 고객코드)
     );
 
+    -- 수정 요청 — 팀원이 프로그램 수정·기능·오류를 적어 올리고 총관리자가 상태와 답변을 단다.
+    -- 고객 정보를 적는 자리가 아니다(화면이 안내한다). 그래서 암호화하지 않는다.
+    CREATE TABLE IF NOT EXISTS requests (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_id  INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      kind        TEXT NOT NULL,
+      screen      TEXT NOT NULL DEFAULT '',
+      title       TEXT NOT NULL,
+      body        TEXT NOT NULL DEFAULT '',
+      status      TEXT NOT NULL DEFAULT '접수',
+      reply       TEXT NOT NULL DEFAULT '',
+      replied_by  INTEGER REFERENCES accounts(id),
+      created_at  TEXT NOT NULL,
+      updated_at  TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_accounts_status ON accounts(status);
     CREATE INDEX IF NOT EXISTS idx_sessions_account ON sessions(account_id);
     CREATE INDEX IF NOT EXISTS idx_clients_owner ON clients(소유계정);
@@ -278,4 +294,37 @@ export function clientCounts(db) {
     + " FROM accounts a LEFT JOIN clients c ON c.소유계정 = a.id"
     + " WHERE a.status = '승인' GROUP BY a.id ORDER BY 건수 DESC"
   ).all();
+}
+
+// ---------- 수정 요청 ----------
+// 목록은 전원이 본다 — 같은 요청을 두 번 올리지 않게. 이름은 고쳐 넣은 이름이 먼저다.
+export function listRequests(db) {
+  return db.prepare(
+    `SELECT r.*, COALESCE(NULLIF(a.display_name, ''), a.name) AS author,
+            COALESCE(NULLIF(b.display_name, ''), b.name) AS replier
+       FROM requests r JOIN accounts a ON a.id = r.account_id
+       LEFT JOIN accounts b ON b.id = r.replied_by
+      ORDER BY r.id DESC`
+  ).all();
+}
+export function getRequest(db, id) {
+  return db.prepare("SELECT * FROM requests WHERE id = ?").get(id) || null;
+}
+export function addRequest(db, accountId, { kind, screen, title, body }) {
+  const t = now();
+  const r = db.prepare(
+    "INSERT INTO requests (account_id, kind, screen, title, body, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+  ).run(accountId, kind, screen, title, body, t, t);
+  return Number(r.lastInsertRowid);
+}
+export function editRequest(db, id, { kind, screen, title, body }) {
+  db.prepare("UPDATE requests SET kind = ?, screen = ?, title = ?, body = ?, updated_at = ? WHERE id = ?")
+    .run(kind, screen, title, body, now(), id);
+}
+export function answerRequest(db, id, { status, reply, byId }) {
+  db.prepare("UPDATE requests SET status = ?, reply = ?, replied_by = ?, updated_at = ? WHERE id = ?")
+    .run(status, reply, byId, now(), id);
+}
+export function deleteRequest(db, id) {
+  return db.prepare("DELETE FROM requests WHERE id = ?").run(id).changes;
 }
