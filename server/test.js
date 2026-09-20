@@ -9,7 +9,9 @@ import {
   openDb, seedGrades, upsertAccount, findByGoogleSub, createSession, accountForToken,
   listPending, approve, suspend, isDescendantOf, getAccount, deleteSessionsFor,
   setApprover, listMembers, getDoc, setDoc,
-  listClients, listClientStamps, putClient, deleteClient, clientCounts
+  listClients, listClientStamps, putClient, deleteClient, clientCounts,
+  listReqPosts, addReqPost, deleteReqPost, toggleReqVote,
+  addReqShot, attachReqShots, looseReqShots, purgeLooseReqShots
 } from "./db.js";
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { artworkSvg } from "./artwork.js";
@@ -238,6 +240,25 @@ check("총관리자 화면의 건수 집계는 내용을 담지 않는다", () =
   for (const r of rows) {
     assert.deepEqual(Object.keys(r).sort(), ["건수", "계정", "이름", "최근갱신"].sort());
   }
+});
+
+check("수정 요청 — 캡처는 올린 사람 것만 붙고, 표는 다시 누르면 거두고, 지우면 파일 경로가 나온다", () => {
+  const a = upsertAccount(db, { sub: "g-req1", email: "req1@example.com", name: "요청자" }, BOOTSTRAP);
+  const b = upsertAccount(db, { sub: "g-req2", email: "req2@example.com", name: "구경꾼" }, BOOTSTRAP);
+  const mine = addReqShot(db, a.id, { path: "a.png", mime: "image/png", size: 1 });
+  const theirs = addReqShot(db, b.id, { path: "b.png", mime: "image/png", size: 1 });
+  const id = addReqPost(db, a.id, { kind: "오류 신고", title: "시험", body: "", context: "" });
+  attachReqShots(db, id, [mine, theirs], a.id);
+  const row = listReqPosts(db, b.id).find((r) => r.id === id);
+  assert.deepEqual(row.shots, [mine]);
+  assert.equal(row.mine, false);
+  assert.equal(looseReqShots(db, b.id), 1);
+  assert.equal(toggleReqVote(db, id, b.id), true);
+  assert.equal(listReqPosts(db, b.id).find((r) => r.id === id).votes, 1);
+  assert.equal(toggleReqVote(db, id, b.id), false);
+  assert.deepEqual(purgeLooseReqShots(db, new Date(Date.now() + 1000).toISOString()), ["b.png"]);
+  assert.deepEqual(deleteReqPost(db, id), ["a.png"]);
+  assert.equal(listReqPosts(db, a.id).some((r) => r.id === id), false);
 });
 
 db.close();

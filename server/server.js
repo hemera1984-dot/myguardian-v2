@@ -15,7 +15,9 @@ import {
   openDb, seedGrades, upsertAccount, createSession, accountForToken, deleteSession,
   listGrades, listPending, listMembers, getAccount, approve, suspend, setAdmin,
   setApprover, isDescendantOf, setDisplayName, getDoc, setDoc,
-  listClients, listClientStamps, putClient, deleteClient, clientCounts
+  listClients, listClientStamps, putClient, deleteClient, clientCounts,
+  listReqPosts, getReqPost, addReqPost, editReqPost, answerReqPost, deleteReqPost, toggleReqVote,
+  addReqShot, getReqShot, looseReqShots, attachReqShots, purgeLooseReqShots
 } from "./db.js";
 import { artworkSvg } from "./artwork.js";
 import { chartSvg } from "./chart.js";
@@ -143,6 +145,8 @@ const MAX_IMAGE = 12 * 1024 * 1024;
 const BRIEF_DIR = process.env.BRIEF_DIR || "./brief";
 const BRIEF_LIST = join(BRIEF_DIR, "library.json");
 const BRIEF_FILES = join(BRIEF_DIR, "files");
+// 수정 요청의 화면 캡처 — 웹서버가 서빙하지 않는 폴더. 로그인한 계정만 경로로 받아 간다.
+const REQ_DIR = process.env.REQ_DIR || join(BRIEF_DIR, "..", "request-shots");
 const BRIEF_TYPES = {
   "text/html": ".html",
   "application/pdf": ".pdf",
@@ -1863,6 +1867,111 @@ async function route(req, res, url) {
   // 열람은 로그인한 사람 전원 — 조직도는 원래 다 같이 보는 것이다.
   // 조직도(/org)는 걷어냈다 — 하랑지점이 원본이다(2026-09-10). 관리자 화면이 그쪽을 읽는다.
 
+  // ── 수정 요청 (2026-09-20 사용자) ──────────────────────────────────────────
+  // 하랑지점의 같은 메뉴와 모양·기능·응답 모양을 맞췄다. 게시판은 따로다 — 마이가디언에 바라는
+  // 것은 마이가디언에 쌓인다. 누구나 쓰고 누구나 본다. 상태와 답변은 총관리자만 단다.
+  const REQ_KINDS = ["프로그램 수정", "기능 제안", "오류 신고", "기타"];
+  const REQ_STATUS = ["접수", "진행 중", "완료", "보류"];
+  const SHOT_EXT = { "image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp" };
+  const MAX_SHOT = 5 * 1024 * 1024, MAX_SHOTS = 4;
+
+  if (req.method === "GET" && path === "/requests") {
+    return send(res, 200, listReqPosts(db, me.id).map(({ account_id, ...r }) => ({ ...r, admin: !!me.is_admin })));
+  }
+
+  if (req.method === "POST" && path === "/requests") {
+    const b = (await readJson(req, 64 * 1024)) || {};
+    const title = String(b.title || "").trim().slice(0, 100);
+    if (!title) return send(res, 400, { error: "제목을 적어 주세요." });
+    const id = addReqPost(db, me.id, {
+      kind: REQ_KINDS.includes(b.kind) ? b.kind : "프로그램 수정", title,
+      body: String(b.body || "").trim().slice(0, 2000), context: String(b.context || "").slice(0, 200)
+    });
+    const ids = (Array.isArray(b.shots) ? b.shots : []).map(Number).filter(Number.isInteger).slice(0, MAX_SHOTS);
+    attachReqShots(db, id, ids, me.id);
+    console.log(`수정 요청 등록: #${id} ${title} — ${me.email}`);
+    return send(res, 200, { id });
+  }
+
+  // 화면 캡처 올리기 — 본문이 곧 파일이다. 돌려준 번호를 요청에 실어 보낸다.
+  if (req.method === "POST" && path === "/requests/shots") {
+    const mime = String(req.headers["content-type"] || "").split(";")[0].trim();
+    const ext = SHOT_EXT[mime];
+    if (!ext) return send(res, 400, { error: "사진(PNG·JPG·WEBP)만 붙일 수 있습니다." });
+    if (Number(req.headers["content-length"] || 0) > MAX_SHOT) {
+      req.resume();
+      return send(res, 413, { error: "캡처 한 장은 5MB까지입니다." });
+    }
+    if (looseReqShots(db, me.id) >= MAX_SHOTS * 3) return send(res, 429, { error: "붙이지 않은 캡처가 너무 많습니다. 잠시 뒤 다시 해 주세요." });
+    const bytes = await readBytes(req, MAX_SHOT);
+    if (!bytes.length) return send(res, 400, { error: "빈 파일입니다." });
+    if (!형식일치(ext, bytes)) return send(res, 400, { error: "내용이 그 형식이 아닙니다." });
+    const rel = randomBytes(12).toString("hex") + ext;
+    mkdirSync(REQ_DIR, { recursive: true });
+    writeFileSync(join(REQ_DIR, rel), bytes);
+    return send(res, 200, { id: addReqShot(db, me.id, { path: rel, mime, size: bytes.length }) });
+  }
+
+  // 캡처 보기 — 요청이 전원 열람이라 붙은 캡처도 같다. 아직 안 붙은 것은 올린 사람만 본다.
+  const 캡처보기 = req.method === "GET" && /^\/requests\/shots\/(\d{1,9})$/.exec(path);
+  if (캡처보기) {
+    const f = getReqShot(db, Number(캡처보기[1]));
+    if (!f || (f.post_id == null && f.account_id !== me.id)) return send(res, 404, { error: "없는 캡처입니다." });
+    if (!/^[0-9a-f]{24}\.(png|jpg|webp)$/.test(f.path)) return send(res, 404, { error: "없는 캡처입니다." });
+    let bytes;
+    try { bytes = readFileSync(join(REQ_DIR, f.path)); } catch (e) { return send(res, 404, { error: "파일이 없습니다." }); }
+    res.writeHead(200, {
+      "Content-Type": f.mime, "Content-Length": bytes.length,
+      "X-Content-Type-Options": "nosniff", "Cache-Control": "private, max-age=3600"
+    });
+    return res.end(bytes);
+  }
+
+  const 요청표 = req.method === "POST" && /^\/requests\/(\d{1,9})\/vote$/.exec(path);
+  if (요청표) {
+    const r = getReqPost(db, Number(요청표[1]));
+    if (!r) return send(res, 404, { error: "없는 요청입니다." });
+    if (r.account_id === me.id) return send(res, 400, { error: "본인 요청입니다." });     // 이미 한 표다
+    return send(res, 200, { voted: toggleReqVote(db, r.id, me.id) });
+  }
+
+  const 요청고침 = req.method === "POST" && /^\/requests\/(\d{1,9})$/.exec(path);
+  if (요청고침) {
+    const r = getReqPost(db, Number(요청고침[1]));
+    if (!r) return send(res, 404, { error: "없는 요청입니다." });
+    const b = (await readJson(req, 64 * 1024)) || {};
+    if (b.status !== undefined || b.answer !== undefined) {
+      if (!me.is_admin) return send(res, 403, { error: "상태·답변은 총관리자만 답니다." });
+      if (b.status !== undefined && !REQ_STATUS.includes(b.status)) return send(res, 400, { error: "상태 값이 올바르지 않습니다." });
+      const who = getAccount(db, me.id);
+      answerReqPost(db, r.id, {
+        status: b.status ?? r.status, answer: String(b.answer ?? r.answer).slice(0, 2000),
+        by: (who && (who.display_name || who.name)) || ""
+      });
+      console.log(`수정 요청 처리: #${r.id} → ${b.status ?? r.status} — ${me.email}`);
+      return send(res, 200, { ok: true });
+    }
+    // 글은 쓴 사람만, 아직 「접수」일 때만 고친다 — 진행 중에 내용이 바뀌면 무엇을 고치던 것인지 흐려진다
+    if (r.account_id !== me.id) return send(res, 403, { error: "본인 요청만 고칠 수 있습니다." });
+    if (r.status !== "접수") return send(res, 403, { error: "이미 처리 중인 요청입니다." });
+    const title = b.title !== undefined ? String(b.title).trim().slice(0, 100) : r.title;
+    if (!title) return send(res, 400, { error: "제목을 적어 주세요." });
+    editReqPost(db, r.id, {
+      kind: REQ_KINDS.includes(b.kind) ? b.kind : r.kind, title,
+      body: b.body !== undefined ? String(b.body).trim().slice(0, 2000) : r.body
+    });
+    return send(res, 200, { ok: true });
+  }
+
+  const 요청삭제 = req.method === "DELETE" && /^\/requests\/(\d{1,9})$/.exec(path);
+  if (요청삭제) {
+    const r = getReqPost(db, Number(요청삭제[1]));
+    if (!r) return send(res, 404, { error: "없는 요청입니다." });
+    if (r.account_id !== me.id && !me.is_admin) return send(res, 403, { error: "본인 요청만 지울 수 있습니다." });
+    for (const rel of deleteReqPost(db, r.id)) { try { unlinkSync(join(REQ_DIR, rel)); } catch (e) { /* 이미 없음 */ } }
+    return send(res, 200, { ok: true });
+  }
+
   // ── 상담 스크립트 (FC 개인)
   // 고객 이름을 끼워 넣을 틀이다. 고객 정보가 아니므로 암호화하지 않는다 — 사람마다
   // 자기 것만 쓰고 읽는다. 기본 틀은 화면이 들고 있고, 여기에는 고친 것만 쌓인다.
@@ -2041,7 +2150,16 @@ const server = createServer((req, res) => {
   });
 });
 
+// 올려만 놓고 안 붙인 캡처는 하루 뒤 지운다
+function 캡처청소() {
+  for (const rel of purgeLooseReqShots(db, new Date(Date.now() - 86400e3).toISOString())) {
+    try { unlinkSync(join(REQ_DIR, rel)); } catch (e) { /* 이미 없음 */ }
+  }
+}
+setInterval(캡처청소, 86400e3).unref();
+
 server.listen(PORT, () => {
+  캡처청소();
   console.log(`마이가디언 인증 서버 :${PORT} — DB ${DB_FILE}`);
   if (!ORIGINS.length) console.warn("ALLOWED_ORIGINS가 비어 있어 브라우저 호출이 차단됩니다.");
   if (!BOOTSTRAP.length) console.warn("BOOTSTRAP_ADMINS가 비어 있어 첫 총관리자를 만들 수 없습니다.");

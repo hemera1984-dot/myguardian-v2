@@ -69,6 +69,39 @@ export function openDb(file) {
       PRIMARY KEY (소유계정, 고객코드)
     );
 
+    -- 수정 요청 — 마이가디언에 바라는 것을 적는 자리. 하랑지점의 같은 메뉴와 모양·기능을 맞추되
+    -- 게시판은 따로다(2026-09-20 사용자: 「마이가디언 수정요청은 마이가디언에 있어야지」).
+    -- 전원이 본다 — 같은 요청이 두 번 올라오지 않고 「나도 필요」로 무엇이 급한지 드러난다.
+    -- 고객 정보를 적는 자리가 아니다(화면이 안내한다). 그래서 암호화하지 않는다.
+    CREATE TABLE IF NOT EXISTS req_posts (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_id  INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      kind        TEXT NOT NULL DEFAULT '프로그램 수정',
+      title       TEXT NOT NULL,
+      body        TEXT NOT NULL DEFAULT '',
+      context     TEXT NOT NULL DEFAULT '',
+      status      TEXT NOT NULL DEFAULT '접수',
+      answer      TEXT NOT NULL DEFAULT '',
+      answered_by TEXT NOT NULL DEFAULT '',
+      created     TEXT NOT NULL,
+      updated     TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS req_votes (
+      post_id    INTEGER NOT NULL REFERENCES req_posts(id) ON DELETE CASCADE,
+      account_id INTEGER NOT NULL,
+      PRIMARY KEY (post_id, account_id)
+    );
+    -- 화면 캡처. 먼저 올리고(post_id NULL) 요청을 보낼 때 붙인다. 끝내 안 붙은 것은 하루 뒤 청소.
+    CREATE TABLE IF NOT EXISTS req_shots (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      post_id    INTEGER REFERENCES req_posts(id) ON DELETE CASCADE,
+      path       TEXT NOT NULL,
+      mime       TEXT NOT NULL,
+      size       INTEGER NOT NULL,
+      account_id INTEGER NOT NULL,
+      created    TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_accounts_status ON accounts(status);
     CREATE INDEX IF NOT EXISTS idx_sessions_account ON sessions(account_id);
     CREATE INDEX IF NOT EXISTS idx_clients_owner ON clients(소유계정);
@@ -82,6 +115,10 @@ export function openDb(file) {
   // 관리자가 고쳐 넣는 이름을 따로 둔다 — 다시 로그인해도 구글 값이 덮어쓰지 않는다.
   try { db.exec("ALTER TABLE accounts ADD COLUMN display_name TEXT"); }
   catch (e) { /* 이미 있음 */ }
+
+  // 2026-09-20 오전에 만들었다 걷어낸 옛 requests 표 — 비어 있으면 치운다(모양이 달라 다시 안 쓴다)
+  try { if (db.prepare("SELECT COUNT(*) n FROM requests").get().n === 0) db.exec("DROP TABLE requests"); }
+  catch (e) { /* 없음 */ }
 
   return db;
 }
@@ -278,4 +315,70 @@ export function clientCounts(db) {
     + " FROM accounts a LEFT JOIN clients c ON c.소유계정 = a.id"
     + " WHERE a.status = '승인' GROUP BY a.id ORDER BY 건수 DESC"
   ).all();
+}
+
+// ---------- 수정 요청 ----------
+// 이름은 고쳐 넣은 이름이 먼저다. 이메일은 내보내지 않는다 — 누구 글인지는 이름과 mine으로 충분하다.
+export function listReqPosts(db, meId) {
+  const votes = db.prepare("SELECT account_id FROM req_votes WHERE post_id = ?");
+  const shots = db.prepare("SELECT id FROM req_shots WHERE post_id = ? ORDER BY id");
+  return db.prepare(
+    `SELECT r.*, COALESCE(NULLIF(a.display_name, ''), a.name) AS author_name
+       FROM req_posts r JOIN accounts a ON a.id = r.account_id ORDER BY r.id DESC LIMIT 300`
+  ).all().map((r) => {
+    const v = votes.all(r.id).map((x) => x.account_id);
+    return { ...r, votes: v.length, voted: v.includes(meId), shots: shots.all(r.id).map((x) => x.id), mine: r.account_id === meId };
+  });
+}
+export function getReqPost(db, id) {
+  return db.prepare("SELECT * FROM req_posts WHERE id = ?").get(id) || null;
+}
+export function addReqPost(db, accountId, { kind, title, body, context }) {
+  const t = now();
+  const r = db.prepare("INSERT INTO req_posts (account_id, kind, title, body, context, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?)")
+    .run(accountId, kind, title, body, context, t, t);
+  return Number(r.lastInsertRowid);
+}
+export function editReqPost(db, id, { kind, title, body }) {
+  db.prepare("UPDATE req_posts SET kind = ?, title = ?, body = ?, updated = ? WHERE id = ?").run(kind, title, body, now(), id);
+}
+export function answerReqPost(db, id, { status, answer, by }) {
+  db.prepare("UPDATE req_posts SET status = ?, answer = ?, answered_by = ?, updated = ? WHERE id = ?").run(status, answer, by, now(), id);
+}
+// 지우면서 딸린 캡처의 파일 경로를 돌려준다 — 파일은 부른 쪽이 지운다
+export function deleteReqPost(db, id) {
+  const paths = db.prepare("SELECT path FROM req_shots WHERE post_id = ?").all(id).map((x) => x.path);
+  db.prepare("DELETE FROM req_shots WHERE post_id = ?").run(id);
+  db.prepare("DELETE FROM req_votes WHERE post_id = ?").run(id);
+  db.prepare("DELETE FROM req_posts WHERE id = ?").run(id);
+  return paths;
+}
+// 「나도 필요」 — 다시 누르면 거둔다
+export function toggleReqVote(db, postId, accountId) {
+  const has = db.prepare("SELECT 1 FROM req_votes WHERE post_id = ? AND account_id = ?").get(postId, accountId);
+  if (has) db.prepare("DELETE FROM req_votes WHERE post_id = ? AND account_id = ?").run(postId, accountId);
+  else db.prepare("INSERT INTO req_votes (post_id, account_id) VALUES (?, ?)").run(postId, accountId);
+  return !has;
+}
+export function addReqShot(db, accountId, { path, mime, size }) {
+  const r = db.prepare("INSERT INTO req_shots (post_id, path, mime, size, account_id, created) VALUES (NULL, ?, ?, ?, ?, ?)")
+    .run(path, mime, size, accountId, now());
+  return Number(r.lastInsertRowid);
+}
+export function getReqShot(db, id) {
+  return db.prepare("SELECT * FROM req_shots WHERE id = ?").get(id) || null;
+}
+export function looseReqShots(db, accountId) {
+  return db.prepare("SELECT COUNT(*) n FROM req_shots WHERE account_id = ? AND post_id IS NULL").get(accountId).n;
+}
+// 내가 올린 것, 아직 어디에도 안 붙은 것만 붙는다
+export function attachReqShots(db, postId, ids, accountId) {
+  const st = db.prepare("UPDATE req_shots SET post_id = ? WHERE id = ? AND account_id = ? AND post_id IS NULL");
+  for (const id of ids) st.run(postId, id, accountId);
+}
+// 올려만 놓고 안 붙인 캡처 — 기준 시각보다 오래된 것을 지우고 파일 경로를 돌려준다
+export function purgeLooseReqShots(db, olderThanIso) {
+  const rows = db.prepare("SELECT id, path FROM req_shots WHERE post_id IS NULL AND created < ?").all(olderThanIso);
+  for (const r of rows) db.prepare("DELETE FROM req_shots WHERE id = ?").run(r.id);
+  return rows.map((r) => r.path);
 }

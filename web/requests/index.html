@@ -13,7 +13,7 @@
   <script src="../assets/auth.js"></script>
   <style>
     /* 이 화면 전용 — 괘선 목록. 카드·그림자 없이 헤어라인으로만 가른다(플랫폼 에디토리얼 문법).
-       구성·문구·동작은 하랑지점의 「수정 요청」과 같다 — 게시판이 하나이기 때문이다. */
+       구성·문구·동작은 하랑지점의 「수정 요청」과 같다. 게시판은 따로다 — 마이가디언 요청은 마이가디언 서버에 쌓인다. */
     .rq-form { display: grid; grid-template-columns: 150px 1fr; gap: 8px; }
     .rq-form textarea { grid-column: 1 / -1; min-height: 96px; resize: vertical; }
     .rq-form select, .rq-form input, .rq-form textarea, .rq-admin select, .rq-admin input {
@@ -50,11 +50,11 @@
       <p class="nav-group-label">업무</p>
       <a href="../">홈</a><a href="../customers/">고객관리</a><a href="../claims/">청구·지급</a><a href="../cases/">사례·판례</a><a href="../learn/">학습</a><a href="../brief/">브리핑</a>      <p class="nav-group-label">발행</p><a href="../care/shelf.html">케어센터</a><a href="../card/">카톡카드</a>
     </nav>
-    <div class="sidebar-status"><strong>수정 요청</strong><span>하랑지점과 같은 게시판입니다.</span></div>
+    <div class="sidebar-status"><strong>수정 요청</strong><span>마이가디언에 바라는 것을 적습니다.</span></div>
   </aside>
   <div class="platform-overlay" id="platform-overlay"></div>
   <div class="platform-shell">
-    <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">수정 요청</span><span class="topbar-note">하랑지점과 한 게시판</span></header>
+    <header class="platform-topbar"><button class="mobile-menu" id="mobile-menu" type="button" aria-label="메뉴 열기" aria-expanded="false"><span></span></button><span class="mobile-brand">마이가디언</span><span class="topbar-context">수정 요청</span><span class="topbar-note">고쳐 달라는 것 · 새로 바라는 것</span></header>
     <main class="platform-main">
       <div class="page-heading">
         <p class="eyebrow">요청</p>
@@ -94,10 +94,9 @@
   <script>
     (function () {
       "use strict";
-      // 게시판은 하랑지점 서버에 하나만 있다(2026-09-20 사용자: 「두 메뉴가 동일했으면 — 우리 시스템에서
-      // 돌아가는 거니」). 계정이 하나라 세션도 같다. 여기서 올린 글에는 「마이가디언」이 붙는다.
-      var API = /insurguard\.life$/.test(location.hostname) ? "https://api.insurguard.life/branch" : "http://localhost:8788";
-      var PROGRAM = "마이가디언";
+      // 모양·기능은 하랑지점 메뉴와 같고 게시판은 마이가디언 서버에 따로 있다(2026-09-20 사용자:
+      // 「마이가디언 수정요청은 마이가디언에 있어야지」).
+      var API = window.mgAuth.apiBase();
       var BADGE = { "접수": "st-hold", "진행 중": "st-meet", "완료": "st-met", "보류": "st-cancel" };
       var STATES = ["접수", "진행 중", "완료", "보류"];
       var token = window.mgAuth ? window.mgAuth.token() : null;
@@ -119,7 +118,7 @@
           return r.json().catch(function () { return {}; }).then(function (j) {
             if (!r.ok) {
               var e = new Error(j.error || ("요청 실패 " + r.status));
-              e.status = r.status; e.needJoin = !!j.needJoin;
+              e.status = r.status;
               throw e;
             }
             return j;
@@ -183,7 +182,7 @@
       function item(r) {
         return '<div class="rq-item" data-id="' + r.id + '">'
           + '<div class="rq-head"><span class="badge-status ' + (BADGE[r.status] || "st-hold") + '">' + esc(r.status) + "</span>"
-          + '<span class="rq-tag">' + esc(r.kind) + '</span><span class="rq-tag">' + esc(r.program || "하랑지점") + "</span>"
+          + '<span class="rq-tag">' + esc(r.kind) + "</span>"
           + "<strong>" + esc(r.title) + "</strong></div>"
           + (r.body ? '<p class="rq-body">' + esc(r.body) + "</p>" : "")
           + ((r.shots || []).length ? '<div class="rq-shots">' + r.shots.map(function (id) {
@@ -222,7 +221,7 @@
         if (!title) { $("req-msg").textContent = "제목을 적어 주세요."; $("req-title").focus(); return; }
         var btn = this; btn.disabled = true;
         api("/requests", { method: "POST", body: { kind: $("req-kind").value, title: title, body: $("req-body").value, context: context(),
-            program: PROGRAM, shots: shots.map(function (s) { return s.id; }) } })
+            shots: shots.map(function (s) { return s.id; }) } })
           .then(function () {
             $("req-title").value = ""; $("req-body").value = ""; shots = []; drawShots();
             $("req-msg").textContent = "보냈습니다. 처리되면 여기 상태가 바뀝니다.";
@@ -251,10 +250,8 @@
         gate("로그인이 필요합니다. 홈에서 구글 계정으로 로그인한 뒤 다시 열어 주세요.");
       } else {
         load().catch(function (e) {
-          gate(e && e.needJoin
-            ? "하랑지점 명단에 아직 없는 계정입니다. 수정 요청 게시판은 하랑지점과 함께 씁니다 — 관리자에게 팀 배치를 요청해 주세요."
-            : (e && e.status === 401 ? "로그인이 풀렸습니다. 홈에서 다시 로그인해 주세요."
-              : "요청 목록을 불러오지 못했습니다 — " + (e && e.message ? e.message : "")));
+          gate(e && e.status === 401 ? "로그인이 풀렸습니다. 홈에서 다시 로그인해 주세요."
+            : "요청 목록을 불러오지 못했습니다 — " + (e && e.message ? e.message : ""));
         });
       }
     })();
