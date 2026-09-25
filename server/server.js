@@ -30,7 +30,8 @@ const BOOTSTRAP = (process.env.BOOTSTRAP_ADMINS || "").split(",")
   .map((s) => s.trim().toLowerCase()).filter(Boolean);
 // 기사 제목 다듬기 중계 — API 키는 서버에만 두고 브라우저에 노출하지 않는다.
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || "";
-const TITLE_MODEL = process.env.TITLE_MODEL || "claude-opus-5";
+// 2026-09-26 Opus 5.5 로 교체. 생물 분야 분류기가 새로 붙어 거절되면 fallbacks 가 대체 모델로 다시 돌린다
+const TITLE_MODEL = process.env.TITLE_MODEL || "claude-opus-5-5";
 
 const MEDIA_DIR = process.env.MEDIA_DIR || "./media";
 const MEDIA_BASE = process.env.MEDIA_BASE || "";  // 예: https://api.insurguard.life/media
@@ -804,10 +805,12 @@ async function route(req, res, url) {
       headers: {
         "x-api-key": ANTHROPIC_KEY,
         "anthropic-version": "2023-06-01",
+        "anthropic-beta": "server-side-fallback-2026-07-01",
         "content-type": "application/json"
       },
       body: JSON.stringify({
         model: TITLE_MODEL,
+        fallbacks: "default",
         max_tokens: 2000,
         output_config: {
           effort: "low",
@@ -887,6 +890,7 @@ async function route(req, res, url) {
         if (!b) return;
         if (d.delta.type === "text_delta") b.text = (b.text || "") + d.delta.text;
         else if (d.delta.type === "thinking_delta") b.thinking = (b.thinking || "") + d.delta.thinking;
+        else if (d.delta.type === "signature_delta") b.signature = (b.signature || "") + d.delta.signature;
         else if (d.delta.type === "input_json_delta") b._json += d.delta.partial_json;
       } else if (d.type === "content_block_stop") {
         const b = blocks[d.index];
@@ -921,10 +925,12 @@ async function route(req, res, url) {
       headers: {
         "x-api-key": ANTHROPIC_KEY,
         "anthropic-version": "2023-06-01",
+        "anthropic-beta": "server-side-fallback-2026-07-01",
         "content-type": "application/json"
       },
       body: JSON.stringify({
         model: TITLE_MODEL,
+        fallbacks: "default",
         max_tokens: o.maxTokens || 2000,
         stream: true,
         output_config: {
@@ -1462,10 +1468,12 @@ async function route(req, res, url) {
         headers: {
           "x-api-key": ANTHROPIC_KEY,
           "anthropic-version": "2023-06-01",
+          "anthropic-beta": "server-side-fallback-2026-07-01",
           "content-type": "application/json"
         },
         body: JSON.stringify({
           model: TITLE_MODEL,
+          fallbacks: "default",
           max_tokens: o.maxTokens || 16000,
           stream: true,
           tools: [{ type: "web_search_20260209", name: "web_search", max_uses: o.maxUses || 8 }],
