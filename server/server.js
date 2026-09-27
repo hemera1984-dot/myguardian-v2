@@ -621,7 +621,7 @@ async function route(req, res, url) {
     // 파일을 열 때와 같은 길로 간다 — 이 출처에서 blob을 만들어 그 문서로 넘어간다.
     // blob은 만든 출처를 물려받으므로 여기서도 api 출처이고, 상위 창은 그대로 앱이라
     // 자료에 붙인 다리(postMessage)가 끊기지 않는다.
-    location.replace(URL.createObjectURL(new Blob([d.html], { type: "text/html" })));
+    location.replace(URL.createObjectURL(new Blob([d.html], { type: "text/html;charset=utf-8" })));
   });
   try { parent.postMessage({ "틀": "준비" }, "*"); } catch (x) {}
 })();

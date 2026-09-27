@@ -4,7 +4,8 @@
 // v3까지 정적 자산(css/js)을 "캐시 우선"으로 두어, 배포해도 낡은 CSS·JS가 남아
 //   화면이 안 바뀌던 문제(다음 로드까지 지연)를 없앤다. 오프라인 지원은 캐시 폴백으로 유지.
 // cacheable() 게이트로 2xx·basic 응답만 저장한다(오류 응답이 정상 캐시를 덮지 않게).
-var CACHE_NAME = "myguardian-shell-v4";
+// v5(2026-09-27): 쿼리 붙은 탐색 사본(청중 창 &_=시각)이 쌓이던 것을 비운다.
+var CACHE_NAME = "myguardian-shell-v5";
 var APP_SHELL = [
   "./",
   "index.html",
@@ -48,18 +49,24 @@ self.addEventListener("fetch", function (e) {
   // no-cache는 "받지 마라"가 아니라 "묻고 받아라"다 — 브라우저 HTTP 캐시가 있어도
   // 서버에 바뀌었는지 물어보고, 그대로면 304로 끝난다. 이게 없으면 깃허브 페이지스의
   // max-age=600 때문에 배포 후 10분간 옛 파일이 그대로 나온다(2026-09-09 apiBase 사고).
+  // 탐색 요청(화면)은 쿼리를 떼고 다룬다. 쿼리는 화면 안 스크립트가 읽는 값이지 다른 파일이
+  // 아니다 — 청중 창은 주소 끝에 &_=시각을 달아 매번 달라서, 그대로 넣으면 사본이 끝없이 쌓이고
+  // 끊겼을 때 그 주소 사본이 없어 플랫폼 홈(index.html)으로 떨어졌다(2026-09-27).
+  var nav = req.mode === "navigate";
+  var key = nav && url.search ? url.origin + url.pathname : req;
+  function 사본() { return caches.match(req, { ignoreSearch: nav }); }
   e.respondWith(
     fetch(req, { cache: "no-cache" }).then(function (resp) {
       if (cacheable(resp)) {
         var copy = resp.clone();
-        e.waitUntil(caches.open(CACHE_NAME).then(function (cache) { return cache.put(req, copy); }));
+        e.waitUntil(caches.open(CACHE_NAME).then(function (cache) { return cache.put(key, copy); }));
         return resp;
       }
       // 비정상 HTTP 응답은 캐시하지 않고, 기존 정상 캐시가 있으면 그걸 반환
-      return caches.match(req).then(function (hit) { return hit || resp; });
+      return 사본().then(function (hit) { return hit || resp; });
     }).catch(function () {
-      return caches.match(req).then(function (hit) {
-        return hit || (req.mode === "navigate" ? caches.match("index.html") : Response.error());
+      return 사본().then(function (hit) {
+        return hit || (nav ? caches.match("index.html") : Response.error());
       });
     })
   );

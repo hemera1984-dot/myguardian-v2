@@ -25,9 +25,12 @@
 
   function assertDoc(doc) {
     if (!doc || typeof doc !== "object") throw new Error("문서 형식이 올바르지 않습니다.");
-    if (!doc.id || !doc["제목"] || !Array.isArray(doc["페이지"]) || !doc["페이지"].length) {
+    if (!doc.id || !doc["제목"] || !Array.isArray(doc["페이지"])) {
       throw new Error("브리핑 문서가 아닙니다. (id·제목·페이지 필요)");
     }
+    // 빈 칸(null)이 섞인 페이지 배열은 renderPage에서 멎는다 — 걸러 내고 센다(2026-09-27).
+    doc["페이지"] = doc["페이지"].filter(function (p) { return p && typeof p === "object"; });
+    if (!doc["페이지"].length) throw new Error("브리핑 문서가 아닙니다. (id·제목·페이지 필요)");
     return doc;
   }
 
@@ -311,12 +314,15 @@
     // 목표 장까지 한 걸음씩 간다. 움직이지 않으면 그 문서가 화살표를 안 받는 것이므로 멈추고 알린다.
     // 한 번 눌러 안 움직여도 한 번은 더 눌러 본다 — 모션이 도는 중의 첫 누름은 「모션 즉시 완료」로
     // 쓰이고 장은 그대로인 자료가 있다(연구회 슬라이드). 두 번 연속 제자리면 그때 멈춘다.
-    + "function goTo(n){var tries=0,헛=0;(function step(){var cur=idx();"
+    // 새 목표가 오면 앞 걸음은 멈춘다(세대 번호) — 둘이 같이 돌면 서로 반대로 누른다(2026-09-27).
+    + "var 세대=0;\n"
+    + "function goTo(n){var 내=++세대,tries=0,헛=0;(function step(){if(내!==세대)return;var cur=idx();"
     + "if(cur<0||cur===n||tries++>5000){tell();return;}"
     + "key(n>cur?'ArrowRight':'ArrowLeft');"
     + "if(idx()===cur){if(헛++<1){setTimeout(step,0);return;}tell();return;}"
     + "헛=0;setTimeout(step,0);})();}\n"
-    + "window.addEventListener('message',function(e){var d=e.data;if(!d||d.mgb!=='cmd')return;"
+    // 명령은 이 자료를 담은 앱 창에서 온 것만 받는다 — 자료 안의 다른 틀이 흉내 내지 못하게.
+    + "window.addEventListener('message',function(e){if(e.source!==parent)return;var d=e.data;if(!d||d.mgb!=='cmd')return;"
     + "if(d.key){key(d.key);tell();}"
     + "if(typeof d.goto==='number')goTo(d.goto);"
     // 장으로 나뉜 자료는 스크롤 비율을 따라가지 않는다 — 장 번호로 맞추고, 스크롤은 자료가 스스로 한다.
@@ -461,7 +467,7 @@
         console.warn("자료를 예전 방식으로 엽니다 — " + 왜);
         frame.setAttribute("sandbox", "allow-scripts");
         frame.onload = function () { resolve(frame); };
-        frame.src = URL.createObjectURL(new Blob([본문], { type: "text/html" }));
+        frame.src = URL.createObjectURL(new Blob([본문], { type: "text/html;charset=utf-8" }));
       }
       function 받기(e) {
         if (끝났다 || e.source !== frame.contentWindow) return;
@@ -554,13 +560,24 @@
 
   // 자료의 자체 동기화 통로를 앱 채널 이름으로 잇는다 — 영상 재생·정지가 청중에게 건너간다.
   // 자료가 늦게 서므로 htmlAudience처럼 되풀이한다(다리 쪽은 한 번만 먹는다).
+  // 다리가 처음 말을 걸어오는 순간에 한 번 부른다. 정해진 시각만 믿으면 다리가 22초 넘어
+  // 서는 느린 기기에서 명령이 영영 안 걸린다(2026-09-27). 다리 쪽 명령은 한 번 받으면 유지된다.
+  function 다리서면(win, fn) {
+    function h(e) {
+      if (e.source !== win || !e.data || typeof e.data.mgb !== "string") return;
+      window.removeEventListener("message", h);
+      fn();
+    }
+    window.addEventListener("message", h);
+  }
+
   function html연결(win, 채널, 청중) {
     if (!win || !채널) return;
-    [0, 1200, 3000, 6000, 10000, 15000, 22000].forEach(function (ms) {
-      setTimeout(function () {
-        try { win.postMessage({ mgb: "cmd", "연결": { "채널": String(채널), "청중": !!청중 } }, "*"); } catch (e) { /* 닫힌 창 */ }
-      }, ms);
-    });
+    function send() {
+      try { win.postMessage({ mgb: "cmd", "연결": { "채널": String(채널), "청중": !!청중 } }, "*"); } catch (e) { /* 닫힌 창 */ }
+    }
+    [0, 1200, 3000, 6000, 10000, 15000, 22000].forEach(function (ms) { setTimeout(send, ms); });
+    다리서면(win, send);
   }
 
   function htmlSendKey(win, key) {
@@ -579,11 +596,11 @@
     if (!win) return;
     // 자료가 큰 경우 다리가 서는 데 십수 초가 걸린다(50MB 자료 실측 15초).
     // 1.2초에서 끊으면 청중 화면에 단축키 안내가 그대로 남는다(2026-09-09).
-    [0, 300, 1200, 3000, 6000, 10000, 15000, 22000].forEach(function (ms) {
-      setTimeout(function () {
-        try { win.postMessage({ mgb: "cmd", 청중: true }, "*"); } catch (e) { /* 닫힌 창 */ }
-      }, ms);
-    });
+    function send() {
+      try { win.postMessage({ mgb: "cmd", 청중: true }, "*"); } catch (e) { /* 닫힌 창 */ }
+    }
+    [0, 300, 1200, 3000, 6000, 10000, 15000, 22000].forEach(function (ms) { setTimeout(send, ms); });
+    다리서면(win, send);
   }
 
 
@@ -894,6 +911,9 @@
           mode: record["모드"] || null,
           count: pdf.numPages,
           mount: function (stageEl, n) {
+            // 빠르게 넘기면 늦게 끝난 앞 장 렌더가 뒤 장을 덮는다 — 칸마다 마지막 요청만 붙인다(2026-09-27)
+            var 표 = {};
+            stageEl.__mgMount = 표;
             return pdf.getPage(n).then(function (page) {
               var raw = page.getViewport({ scale: 1 });
               var scale = Math.min(CANVAS_W / raw.width, CANVAS_H / raw.height);
@@ -905,6 +925,7 @@
               canvas.style.height = Math.floor(viewport.height / 2) + "px";
               var task = page.render({ canvasContext: canvas.getContext("2d"), viewport: viewport });
               return task.promise.then(function () {
+                if (stageEl.__mgMount !== 표) return null;
                 stageEl.textContent = "";
                 var box = el("div", "pg-media-center");
                 box.appendChild(canvas);

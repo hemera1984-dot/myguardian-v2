@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="brief.css">
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="brief.js?v=20260919d"></script>
+  <script src="brief.js?v=20260927a"></script>
 </head>
 <body class="brief-view">
   <div class="vw-stage-wrap stage-wrap" id="stage-wrap" hidden>
@@ -207,9 +207,21 @@
         var tryLoad = function () {
           if (driver) return;
           B.loadMaterial().then(function (record) {
-            if (driver || !record || record.id !== localId) return;
+            if (driver || !record) return;
+            if (record.id !== localId) {
+              // 발표자가 그사이 다른 자료를 열었다 — 조용히 멈추지 않고 새 자료를 따라간다.
+              // 창 이름이 하나라(present.html) 이 창이 프로젝터에 남은 그 창이다(2026-09-27).
+              clearInterval(loadTimer);
+              location.replace("view.html?local=1&ch=" + encodeURIComponent(record.id) + "&_=" + Date.now());
+              return;
+            }
             return B.createDriver(record, { audience: true }).then(ready);
-          }).catch(function () {});
+          }).catch(function (err) {
+            // 삼키면 청중 창이 「연결 대기 중」에 멈춘 채 왜인지 알 수 없다 — 화면에 띄운다.
+            // 되풀이해 여는 것은 자료가 아직 없을 때를 위한 것이라 실패하면 멈춘다(새로고침으로 다시).
+            clearInterval(loadTimer);
+            showError(new Error((err && err.message ? err.message : String(err)) + " — 새로고침(F5)하면 다시 엽니다."));
+          });
         };
         tryLoad();
         var loadTimer = setInterval(function () {
