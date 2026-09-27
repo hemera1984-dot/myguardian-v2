@@ -1617,7 +1617,8 @@ async function route(req, res, url) {
 
     const 결과들 = await Promise.all(jobs);
     const 검증 = 결과들.flatMap((x) => x.결과);
-    const 질의 = [...new Set(결과들.flatMap((x) => x.질의 || []))];
+    // 검색 도구가 질의문을 돌려주지 않는다 — 횟수와 출처로 센다
+    const 검색 = 결과들.reduce((n, x) => n + (x.검색횟수 || 0), 0);
     const 출처 = [];
     결과들.forEach((x) => (x.출처 || []).forEach((s) => {
       if (!출처.some((y) => y.url === s.url)) 출처.push(s);
@@ -1626,13 +1627,13 @@ async function route(req, res, url) {
     const 고침 = 검증.filter((f) => f.조치 !== "유지").length;
     const 요약 = [
       실패.length ? `${실패.join("·")}번 칼럼은 검증하지 못했습니다.` : "",
-      질의.length ? `웹에서 ${질의.length}건을 검색해 ${출처.length}개 자료를 확인했습니다.`
+      검색 || 출처.length ? `웹에서 ${검색}번 검색해 ${출처.length}개 자료를 확인했습니다.`
         : "웹 검색이 이루어지지 않았습니다.",
       고침 ? `${고침}곳을 고쳤습니다.` : "고칠 곳은 없었습니다.",
       검증.length - 고침 ? `${검증.length - 고침}곳은 확인만 필요합니다.` : ""
     ].filter(Boolean).join(" ");
-    console.log(`검증: ${채널} ${호수}호 — 검색 ${질의.length}건 / 지적 ${검증.length}건 / 자동수정 ${고침}건 — ${me.email}`);
-    return send(res, 200, { 검증, 요약, 실패, 질의, 출처: 출처.slice(0, 40) });
+    console.log(`검증: ${채널} ${호수}호 — 검색 ${검색}번·출처 ${출처.length}개 / 지적 ${검증.length}건 / 자동수정 ${고침}건 — ${me.email}`);
+    return send(res, 200, { 검증, 요약, 실패, 검색, 출처: 출처.slice(0, 40) });
   }
 
   // 발행하기 — 승인된 계정이면 누구나(자기 호를 발행한다. 발행인은 목록항목에 실려 있다).
