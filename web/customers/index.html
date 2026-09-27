@@ -692,12 +692,6 @@
         if (h === "localhost" || h === "127.0.0.1") return "http://localhost:8788";
         return "https://api.insurguard.life/branch";
       })();
-      function maskName(n) {
-        if (!n) return "";
-        if (n.length < 2) return n;
-        if (n.length === 2) return n[0] + "*";
-        return n[0] + new Array(n.length - 1).join("*") + n[n.length - 1];
-      }
       function maskPhone(p) {
         var d = String(p || "").replace(/\D/g, "");
         if (d.length < 8) return "";
@@ -709,7 +703,9 @@
         var q;
         try { q = JSON.parse(localStorage.getItem("mg_event_queue") || "{}"); } catch (e) { q = {}; }
         q[key] = { "출처": "myguardian", "출처키": key, "종류": "고객미팅", "고객코드": c.code,
-          "표시명": maskName(o.customerName), "연락처": maskPhone(o.phone),
+          // 이름은 그대로 보낸다 — 코드로는 부지점장이 누구를 만나는지 모른다(2026-09-27 사용자).
+          // 연락처는 가린 채로만 간다(하랑지점은 쓰지 않는다).
+          "표시명": String(o.customerName || "").trim(), "연락처": maskPhone(o.phone),
           "차수": round, "일시": date, "상태": status };
         try { localStorage.setItem("mg_event_queue", JSON.stringify(q)); } catch (e) {}
         branchFlush();
