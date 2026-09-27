@@ -256,6 +256,11 @@ export function suspend(db, targetId) {
   deleteSessionsFor(db, targetId);
 }
 
+// 정지 풀기 — 직급·상위자는 정지 때 그대로 두었으니 상태만 돌린다. 세션은 새로 로그인해 받는다.
+export function resume(db, targetId) {
+  db.prepare("UPDATE accounts SET status = '승인' WHERE id = ? AND status = '정지'").run(targetId);
+}
+
 export function setAdmin(db, targetId, isAdmin) {
   db.prepare("UPDATE accounts SET is_admin = ? WHERE id = ?").run(isAdmin ? 1 : 0, targetId);
 }

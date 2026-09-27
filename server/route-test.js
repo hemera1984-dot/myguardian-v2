@@ -77,6 +77,23 @@ await check("정지는 승인권자만 — 승인권 없는 상위자는 403", a
   // fc2는 승인권이 없다. 자기 하위가 없으니 권한 검사가 먼저 걸려야 한다.
   assert.equal((await call("fc2", "POST", "/admin/suspend", { "대상": fc.id })).status, 403);
 });
+await check("정지 풀기 — 정지한 사람을 되돌린다, 남의 트리·정지 안 된 계정은 안 된다", async () => {
+  assert.equal((await call("lead", "POST", "/admin/suspend", { "대상": fc.id })).status, 200);
+  assert.equal((await call("fc", "GET", "/me")).status, 401, "정지하면 세션이 끊긴다");
+  assert.equal((await call("fc2", "POST", "/admin/resume", { "대상": fc.id })).status, 403, "승인권 없으면 못 푼다");
+  assert.equal((await call("lead", "POST", "/admin/resume", { "대상": fc2.id })).status, 409, "정지 안 된 계정");
+  assert.equal((await call("lead", "POST", "/admin/resume", { "대상": fc.id })).status, 200);
+  const 구성원 = (await (await call("boss", "GET", "/admin/pending")).json())["구성원"];
+  const 그사람 = 구성원.find((m) => m.id === fc.id);
+  assert.equal(그사람.status, "승인");
+  assert.equal(그사람.grade, "FC", "직급은 그대로");
+  assert.equal(그사람.parent_id, lead.id, "상위자도 그대로");
+  // 세션은 정지 때 지웠다 — 이 시험 뒤 fc를 쓰려면 새로 받는다
+  const dd = await import(pathToFileURL(ROOT + "db.js").href);
+  const db2 = dd.openDb(process.env.DB_FILE);
+  T.fc = dd.createSession(db2, fc.id).token;
+  db2.close();
+});
 await check("이름 고치기 — 팀장은 총관리자·남의 트리를 못 고친다", async () => {
   assert.equal((await call("lead", "POST", "/admin/set-name", { "대상": boss.id, "이름": "아무개" })).status, 403);
   assert.equal((await call("lead", "POST", "/admin/set-name", { "대상": fc2.id, "이름": "아무개" })).status, 403);

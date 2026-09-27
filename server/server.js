@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { randomBytes, createCipheriv, createDecipheriv, scryptSync, timingSafeEqual } from "node:crypto";
 import {
   openDb, seedGrades, upsertAccount, createSession, accountForToken, deleteSession,
-  listGrades, listPending, listMembers, getAccount, approve, suspend, setAdmin,
+  listGrades, listPending, listMembers, getAccount, approve, suspend, resume, setAdmin,
   setApprover, isDescendantOf, setDisplayName, getDoc, setDoc,
   listClients, listClientStamps, putClient, deleteClient, clientCounts,
   listReqPosts, getReqPost, addReqPost, editReqPost, answerReqPost, deleteReqPost, toggleReqVote,
@@ -2108,6 +2108,22 @@ async function route(req, res, url) {
     }
     if (target.is_admin && !me.is_admin) return send(res, 403, { error: "권한이 없습니다." });
     suspend(db, target.id);
+    return send(res, 200, { ok: true });
+  }
+
+  // 정지 풀기 — 정지와 같은 권한(승인권자, 총관리자가 아니면 자기 하위 트리만).
+  // 잘못 누른 정지를 DB를 직접 고치지 않고 되돌린다(2026-09-28 사용자).
+  if (req.method === "POST" && path === "/admin/resume") {
+    if (!canApprove(db, me)) return send(res, 403, { error: "승인 권한이 없습니다." });
+    const { 대상 } = await readJson(req);
+    const target = getAccount(db, Number(대상));
+    if (!target) return send(res, 404, { error: "대상 계정을 찾을 수 없습니다." });
+    if (target.status !== "정지") return send(res, 409, { error: "정지된 계정이 아닙니다." });
+    if (!me.is_admin && (target.is_admin || !isDescendantOf(db, target.id, me.id))) {
+      return send(res, 403, { error: "권한 범위 밖의 계정입니다." });
+    }
+    resume(db, target.id);
+    console.log(`정지 풀기: ${target.email} — ${me.email}`);
     return send(res, 200, { ok: true });
   }
 
