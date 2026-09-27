@@ -147,8 +147,11 @@
       function renderDetail(c) {
         recordView(c);
         var links = [];
-        if (c.case_source_url) links.push('<a class="detail-link" href="' + esc(c.case_source_url) + '" target="_blank" rel="noopener">원문 보기</a>');
-        else if (c.source_url) links.push('<a class="detail-link" href="' + esc(c.source_url) + '" target="_blank" rel="noopener">출처 페이지</a>');
+        // 링크는 http(s)만 — javascript: 같은 스킴이 데이터에 섞여도 눌리지 않게 한다
+        var 원문 = /^https?:\/\//i.test(String(c.case_source_url || "")) ? c.case_source_url : "";
+        var 출처 = /^https?:\/\//i.test(String(c.source_url || "")) ? c.source_url : "";
+        if (원문) links.push('<a class="detail-link" href="' + esc(원문) + '" target="_blank" rel="noopener">원문 보기</a>');
+        else if (출처) links.push('<a class="detail-link" href="' + esc(출처) + '" target="_blank" rel="noopener">출처 페이지</a>');
         var badge = c.decision_result && c.decision_result !== "기타"
           ? '<span class="badge-result ' + resultClass(c.decision_result) + '">' + esc(c.decision_result) + "</span>" : "";
         $("detail").innerHTML = '<div class="case-detail-body">'

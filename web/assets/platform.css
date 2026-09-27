@@ -2691,3 +2691,42 @@ body.platform .page-heading .desk-title-row h1 { margin: 0; }
 body.platform .profile-card {
   border: 0; border-radius: 0; background: none; box-shadow: none;
 }
+
+/* 열람 비밀번호 상자 — 고객관리는 platform.css만 싣는다. style.css에만 있던 규칙을 옮겨
+   오버레이로 띄운다(2026-09-27). 에디토리얼 문법: 라운드 없음·그림자 없음·굵은 괘선으로 구획 시작 */
+body.platform .vault-veil {
+  position: fixed; inset: 0; z-index: 900;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; background: rgba(23, 32, 51, 0.55);
+}
+body.platform .vault-box {
+  width: min(420px, 100%); max-height: calc(100vh - 32px); overflow-y: auto;
+  padding: 22px 22px 20px;
+  background: var(--platform-surface); color: var(--platform-ink);
+  border: 1px solid var(--platform-line-strong); border-top: 2px solid var(--platform-ink);
+  border-radius: 0; box-shadow: none;
+}
+body.platform .vault-box h2 { margin: 0 0 8px; font-size: 19px; font-weight: 700; letter-spacing: -0.035em; }
+body.platform .vault-why {
+  margin: 0 0 18px; font-size: 12.5px; line-height: 1.65;
+  color: var(--platform-muted); word-break: keep-all;
+}
+body.platform .vault-box label {
+  display: block; margin: 0 0 5px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--platform-muted);
+}
+body.platform .vault-box input {
+  width: 100%; margin: 0 0 14px; padding: 9px 11px;
+  font: inherit; font-size: 14px;
+  border: 1px solid var(--platform-line-strong); border-radius: 0;
+  background: var(--platform-surface); color: var(--platform-ink);
+}
+body.platform .vault-box input:focus { outline: none; border-color: var(--platform-blue); }
+body.platform .vault-err {
+  margin: 0 0 12px; padding: 7px 10px;
+  border-left: 3px solid var(--platform-blue); background: var(--platform-blue-soft);
+  font-size: 12px; font-weight: 700; color: var(--platform-blue);
+}
+body.platform .vault-err[hidden] { display: none; }
+body.platform .vault-row { display: flex; gap: 8px; }
+body.platform .vault-row .btn { flex: 1; min-height: 40px; }

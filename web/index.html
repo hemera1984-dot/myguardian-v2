@@ -508,6 +508,7 @@
       "use strict";
       var esc = window.mg.esc;
       var KEY = "mg_profile";
+      var 계정이름 = "";   // /me가 오면 채운다 — 저장된 프로필이 없을 때의 기본 이름
       var FIELDS = [
         { k: "이름", label: "이름", ph: "예: 안창민" },
         { k: "직함", label: "직함", ph: "예: FC / 팀장" },
@@ -524,16 +525,16 @@
       function load() {
         try {
           var p = JSON.parse(localStorage.getItem(KEY));
-          if (p && p["이름"]) {
+          if (p && typeof p === "object") {   // 이름이 빈 저장본도 버리지 않는다(사진 등을 지킨다)
             p["사진"] = validPhoto(p["사진"]);
             return p;
           }
         } catch (e) {}
-        // 카톡 서명 설정이 있으면 초기값으로 잇는다
-        var name = "안창민", org = "신한라이프 하랑지점";
+        // 저장된 프로필이 없으면 로그인 계정 이름 → 카톡 서명 순으로 잇는다. 둘 다 없으면 비워 둔다
+        var name = 계정이름, org = "신한라이프 하랑지점";
         try {
           var s = JSON.parse(localStorage.getItem("mg_care_sender"));
-          if (s && s["이름"]) { name = s["이름"].replace(/\s*FC$/, ""); org = s["소속"] || org; }
+          if (s && s["이름"]) { if (!name) name = s["이름"].replace(/\s*FC$/, ""); org = s["소속"] || org; }
         } catch (e) {}
         return { "이름": name, "직함": "FC", "지점": org, "연락처": "", "전문분야": "", "사진": "" };
       }
@@ -549,8 +550,8 @@
           saveNote = "저장 공간이 부족해 사진을 뺐습니다. 더 작은 사진으로 다시 첨부하세요.";
           try { localStorage.setItem(KEY, JSON.stringify(p)); } catch (e2) {}
         }
-        // 케어센터 카톡 서명과 한 몸으로 움직인다
-        localStorage.setItem("mg_care_sender", JSON.stringify({
+        // 케어센터 카톡 서명과 한 몸으로 움직인다 — 이름이 비었으면 「 FC」만 남은 서명을 쓰지 않는다
+        if (p["이름"]) localStorage.setItem("mg_care_sender", JSON.stringify({
           "이름": p["이름"] + (p["직함"] ? " " + p["직함"] : ""),
           "소속": p["지점"]
         }));
@@ -609,7 +610,7 @@
           box.querySelectorAll("input[data-k]").forEach(function (inp) {
             profile[inp.dataset.k] = inp.value.trim();
           });
-          if (!profile["이름"]) profile["이름"] = "안창민";
+          if (!profile["이름"]) profile["이름"] = 계정이름;
           save(profile);
           renderView();
         });
@@ -684,6 +685,17 @@
       }
 
       renderView();
+
+      // 이름이 빈 프로필은 로그인 계정 이름으로 채운다(저장된 이름이 있으면 그것이 우선)
+      if (window.mgAuth) window.mgAuth.me().then(function (info) {
+        var n = info && info["계정"] && info["계정"]["이름"];
+        if (!n) return;
+        계정이름 = n;
+        if (!profile["이름"]) {
+          profile["이름"] = n;
+          if (document.getElementById("p-edit")) renderView();   // 편집 중이면 입력을 덮지 않는다
+        }
+      }).catch(function () {});
     })();
 
     // 자료 현황 — 구 홈 구현 계승: data/stats.json 실데이터 집계만 표시.

@@ -53,6 +53,8 @@
           <button type="button" role="tab" aria-selected="false" data-ch="주간">주간</button>
           <button type="button" role="tab" aria-selected="false" data-ch="월간">월간</button>
         </div>
+        <!-- 편집 화면을 떠난 뒤 끝난 발행의 결과, 목록 화면에서 난 오류가 여기 뜬다 -->
+        <p class="media-msg" id="list-msg" role="status" hidden></p>
 
         <div class="section">
           <h2 class="section-title">새 호 만들기 <span class="sec-sub" id="new-sub"></span></h2>
@@ -122,17 +124,18 @@
             <input class="org" id="sender-org" type="text" aria-label="소속 지점" placeholder="소속">
             <span id="sender-saved" hidden>저장됨</span>
           </div>
-
-          <div class="compose-panel" id="compose" hidden>
-            <h3 id="compose-title">카톡 문구</h3>
-            <textarea id="compose-text" aria-label="카톡 발송 문구"></textarea>
-            <div class="compose-actions">
-              <button class="btn" type="button" id="compose-copy">복사하기</button>
-              <button class="btn" type="button" id="compose-close">닫기</button>
-            </div>
-          </div>
         </div>
       </section>
+
+      <!-- 카톡 문구 — 발행을 마치면 목록으로 돌아가므로 두 화면 어디서나 열리게 바깥에 둔다 -->
+      <div class="compose-panel" id="compose" hidden>
+        <h3 id="compose-title">카톡 문구</h3>
+        <textarea id="compose-text" aria-label="카톡 발송 문구"></textarea>
+        <div class="compose-actions">
+          <button class="btn" type="button" id="compose-copy">복사하기</button>
+          <button class="btn" type="button" id="compose-close">닫기</button>
+        </div>
+      </div>
     </main>
 
     <footer class="platform-footer">마이가디언 v2</footer>
@@ -171,10 +174,18 @@
       var PREFIX = "mg_care_draft_";
 
       // 상태는 하나로 모은다 — 화면은 이 객체를 그리기만 한다
-      var S = { ch: "일간", list: [], draft: null, open: -1 };
+      // loaded: 호 목록을 한 번이라도 받았는가 · 목록장애: 마지막 조회에서 서버가 응답하지 않았는가
+      var S = { ch: "일간", list: [], draft: null, open: -1, loaded: false, 목록장애: false };
 
       function el(id) { return document.getElementById(id); }
       function pad2(n) { return String(n).padStart(2, "0"); }
+      // style 속성의 background-image — 경로 속 따옴표·괄호·역슬래시·공백이 CSS를 끊지 않게 인코딩한다
+      function bgUrl(path) {
+        var u = String(care.mediaSrc(path)).replace(/["'()\\\s]/g, function (c) {
+          return "%" + pad2(c.charCodeAt(0).toString(16).toUpperCase());
+        });
+        return ' style="background-image:url(&quot;' + esc(u) + '&quot;)"';
+      }
 
       // 발행인 — 로그인한 FC. 이 이름으로 제호(『주간 OOO』)와 FC 의견이 나간다.
       // 편집장은 언제나 안창민이며 지면 판권에 함께 실린다(헌법).
@@ -188,7 +199,8 @@
           var n = info && info["계정"] && info["계정"]["이름"];
           if (n) {
             ME.이름 = String(n).trim();
-            if (S.draft && !S.draft["발행인수정"]) { S.draft["발행인"] = ME.이름; saveDraft(S.draft); renderAll(); }
+            // 발행인이 이미 적힌 초안은 건드리지 않는다 — 남의 호를 열어 둔 채 내 이름으로 덮지 않게
+            if (S.draft && !S.draft["발행인"]) { S.draft["발행인"] = ME.이름; saveDraft(S.draft); renderEdit(); }
           }
         }).catch(function () {});
       }
@@ -282,7 +294,8 @@
         var made = makeId(ch, nextNo(ch));
         var draft = {
           id: made.id, "채널": ch, "호수": made.no, "발행일": iso,
-          "주차라벨": weekLabel(ch, d), "발행인": 발행인(),
+          // 로그인 정보가 아직 안 왔으면 비워 둔다 — /me가 도착하면 채우고, 발행 때는 발행인()으로 메운다
+          "주차라벨": weekLabel(ch, d), "발행인": ME.이름,
           "커버이미지": "", "편집장의말": [],
           "기사": catsOf(ch).map(function (_, i) { return blankArticle(ch, i); })
         };
@@ -309,11 +322,13 @@
       // ── 발행 payload — 기존 스키마 그대로. 편집용 필드(방향)는 여기서 떨군다
       function payload(d) {
         var arts = (d["기사"] || []).map(function (a, i) {
-          return {
+          var o = {
             "번호": i + 1, "카테고리": a["카테고리"], "제목": a["제목"], "부제": a["부제"],
             "요약": a["요약"] || [], "한마디": a["한마디"] || [], "본문": a["본문"] || [],
             "이미지": a["이미지"] || ""
           };
+          if (a["이미지캡션"]) o["이미지캡션"] = a["이미지캡션"];   // 데스크에 칸은 없지만 재발행 때 지우지 않는다
+          return o;
         });
         var 목록항목 = {
           id: d.id, "발행인": d["발행인"] || 발행인(), "채널": d["채널"], "호수": d["호수"],
@@ -326,12 +341,26 @@
           "본문파일": "data/care/issues/" + d.id + ".json"
         };
         if (d["커버이미지"]) 목록항목["커버이미지"] = d["커버이미지"];
+        // 호마다 맞춘 카톡 인사·옛 사이트 원문 주소 — 발행된 호를 다시 열었을 때만 실려 있다
+        if (d["인사"]) 목록항목["인사"] = d["인사"];
+        if (d["원문링크"]) 목록항목["원문링크"] = d["원문링크"];
+        // 발행된 호를 다시 연 초안은 제 호를 고쳐 싣는 것이다 — 충돌 확인을 묻지 않는다
+        if (d["원본발행"]) 목록항목["덮어쓰기"] = true;
         return { "목록항목": 목록항목, "본문": { id: d.id, "편집장의말": d["편집장의말"] || [], "기사": arts } };
       }
 
       // ══ 호 목록 화면 ═══════════════════════════════════════════════
       function renderNewForm() {
         var box = el("new-issue");
+        // 서버 목록 없이 번호를 매기면 이미 발행된 호와 번호가 겹친다 — 목록을 받기 전에는 만들지 않는다
+        if (!S.loaded || S.목록장애) {
+          el("new-sub").textContent = "";
+          box.innerHTML = S.loaded
+            ? '<p class="media-msg bad">서버의 호 목록을 불러오지 못했습니다. 지금 만들면 이미 발행된 호와 번호가 겹칠 수 있어 새 호 만들기를 막아 두었습니다.</p>'
+              + '<button class="btn" type="button" id="list-retry">목록 다시 불러오기</button>'
+            : '<p class="new-note">호 목록을 불러오는 중입니다.</p>';
+          return;
+        }
         var no = nextNo(S.ch);
         el("new-sub").textContent = S.ch + " 다음 호는 " + no + "호입니다";
         if (S.ch === "일간") {
@@ -387,7 +416,7 @@
             : (i["제목"] || "제목 미정");
           var cover = r.draft ? i["커버이미지"] : i["커버이미지"];
           return '<div class="issue-row">'
-            + '<span class="row-cover"' + (cover ? ' style="background-image:url(' + esc(care.mediaSrc(cover)) + ')"' : "") + "></span>"
+            + '<span class="row-cover"' + (cover ? bgUrl(cover) : "") + "></span>"
             + '<div class="row-main">'
             + '<p class="row-line"><span class="row-no">' + esc(i["호수"]) + "호</span>"
             + esc(i["주차라벨"] || "") + " · " + esc(i["발행일"] || "") + "</p>"
@@ -405,12 +434,13 @@
       function slotHtml(target, path, label) {
         return '<div class="img-slot">'
           + '<div class="slot-view' + (path ? " has" : "") + '" data-slot="' + esc(target) + '"'
-          + (path ? ' style="background-image:url(' + esc(care.mediaSrc(path)) + ')"' : "")
+          + (path ? bgUrl(path) : "")
           + ' tabindex="0" role="button" aria-label="' + esc(label) + '">' + (path ? "" : "이미지 없음") + "</div>"
           + '<div class="slot-meta">' + (path ? esc(path) : "눌러서 고르거나, 끌어다 놓거나, 복사한 이미지를 붙여넣습니다.") + "</div>"
           + '<div class="slot-acts">'
           + '<button class="btn btn-primary" type="button" data-artwork="' + esc(target) + '">'
           + (path ? "다시 만들기" : (target === "cover" ? "표지 만들기" : "삽화 만들기")) + "</button>"
+          + (target === "cover" ? "" : '<button class="btn" type="button" data-chart="' + esc(target) + '">수치 그림</button>')
           + '<button class="btn" type="button" data-imgai="' + esc(target) + '">프롬프트만</button>'
           + (path ? '<button class="btn" type="button" data-imgdel="' + esc(target) + '">지우기</button>' : "")
           + "</div>"
@@ -562,8 +592,10 @@
           + " · 이미지 " + (a["이미지"] ? "1장" : "없음");
       }
 
+      // 늦게 끝난 요청(검증·발행·/me)이 부를 수 있다 — 편집 화면이 닫혀 있으면 그리지 않는다
       function renderEdit() {
         var d = S.draft;
+        if (!d) return;
         el("edit-mast").innerHTML = esc(d["채널"] + " 안창민 " + d["호수"] + "호")
           + "<span>" + esc(d["주차라벨"] + " · " + d["발행일"] + " 발행 · " + d.id) + "</span>";
         el("preface").value = fromLines(d["편집장의말"]);
@@ -575,6 +607,7 @@
       }
 
       function syncKakao() {
+        if (!S.draft) return;
         var live = S.list.find(function (i) { return i.id === S.draft.id; });
         el("btn-kakao").disabled = !live;
         el("kakao-why").textContent = live
@@ -602,14 +635,24 @@
             id: meta.id, "채널": meta["채널"], "호수": meta["호수"], "발행일": meta["발행일"],
             "주차라벨": meta["주차라벨"], "발행인": meta["발행인"] || 발행인(),
             "커버이미지": meta["커버이미지"] || "", "편집장의말": body["편집장의말"] || [],
+            // 이미 발행된 제 호를 고쳐 싣는다는 표시 — 발행 때 충돌 확인 없이 덮어쓴다
+            "원본발행": true,
             "기사": body["기사"].map(function (a, n) {
-              return {
+              var o = {
                 "번호": n + 1, "카테고리": a["카테고리"] || "", "제목": a["제목"] || "",
                 "부제": a["부제"] || "", "요약": a["요약"] || [], "한마디": a["한마디"] || [],
                 "본문": a["본문"] || [], "이미지": a["이미지"] || "", "방향": ""
               };
+              if (a["이미지캡션"]) o["이미지캡션"] = a["이미지캡션"];
+              return o;
             })
           };
+          // 데스크에 칸이 없는 목록 필드도 옮긴다 — 안 옮기면 재발행 때 사라진다
+          if (meta["인사"]) d2["인사"] = meta["인사"];
+          if (meta["원문링크"]) d2["원문링크"] = meta["원문링크"];
+          // 지난 검증 보고의 "되돌리기"는 지난 판 기준이다. 새로 연 초안에 들이대지 않는다.
+          var 옛보고 = readReport(meta.id);
+          if (옛보고 && 옛보고["이전본문"]) { delete 옛보고["이전본문"]; saveReport(옛보고); }
           saveDraft(d2);
           openDraft(d2);
           return d2;
@@ -617,7 +660,12 @@
       }
 
       function openDraft(d) {
+        el("list-msg").hidden = true;
+        // 발행이 도는 호를 다시 열면 그 발행이 붙잡은 객체를 연다 — 저장소에서 새로 읽으면
+        // 검증이 고친 본문과 지금 고치는 본문이 두 갈래로 갈린다
+        if (발행중[d.id]) d = 발행중[d.id].d;
         S.draft = d;
+        syncPublishBtn();
         S.open = -1;
         el("view-list").hidden = true;
         el("view-edit").hidden = false;
@@ -913,8 +961,10 @@
             "제목들": (S.draft["기사"] || []).map(function (a) { return a["제목"]; }).filter(Boolean) };
         }
         var a = S.draft["기사"][Number(target.slice(4))];
+        // 본문 앞부분까지 넘긴다 — 제목만으로 그리면 글과 겉돈다
+        var 본문 = (a["본문"] || []).map(function (b) { return String(b.x || ""); }).join("\n").slice(0, 4000);
         return { "종류": "칼럼", "채널": chFull(), "제목": a["제목"],
-          "카테고리": a["카테고리"] || "", "요약": fromLines(a["요약"]) || a["부제"] || "" };
+          "카테고리": a["카테고리"] || "", "요약": fromLines(a["요약"]) || a["부제"] || "", "본문": 본문 };
       }
 
       function slotNote(target, text, bad) {
@@ -926,12 +976,37 @@
       }
 
       // draftId를 주면 그 호에 넣는다. 만드는 사이 다른 호로 옮겨도 뒤섞이지 않게.
+      // SVG 원문 → PNG. blob 주소로 그리므로 캔버스가 오염되지 않는다(다른 출처 그림이면 막힌다).
+      function 표지PNG(svg) {
+        return new Promise(function (ok, fail) {
+          var url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+          var img = new Image();
+          img.onload = function () {
+            var cv = document.createElement("canvas");
+            cv.width = img.naturalWidth || 1200; cv.height = img.naturalHeight || 1600;
+            cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+            URL.revokeObjectURL(url);
+            cv.toBlob(function (b) { b ? ok(b) : fail(new Error("PNG 변환 실패")); }, "image/png");
+          };
+          img.onerror = function () { URL.revokeObjectURL(url); fail(new Error("SVG를 읽지 못했습니다")); };
+          img.src = url;
+        });
+      }
+
       function fetchArtwork(target, draftId) {
         if (!window.mgAuth || !window.mgAuth.token()) {
           return Promise.reject(new Error("로그인이 필요합니다. 진입 화면에서 구글 계정으로 로그인하세요."));
         }
         var id = draftId || (S.draft && S.draft.id);
         return window.mgAuth.api("/ai/artwork", { method: "POST", body: artworkBody(target) })
+          .then(function (d) {
+            // 표지는 PNG로 바꿔 다시 올린다 — 카톡 미리보기가 SVG를 못 그려 기본 그림이 나간다.
+            // 바꾸다 실패하면 SVG 그대로 쓴다(지면·서재는 SVG도 그린다).
+            if (target !== "cover" || !d["svg"]) return d;
+            return 표지PNG(d["svg"]).then(function (blob) {
+              return window.mgAuth.api("/media/upload", { method: "POST", body: blob });
+            }).then(function (up) { d["주소"] = up["주소"]; return d; }, function () { return d; });
+          })
           .then(function (d) {
             var ok = setImage(target, d["주소"], id);  // 슬롯이 다시 그려지므로 안내는 그 뒤에 얹는다
             if (S.draft && S.draft.id === id) {
@@ -946,12 +1021,32 @@
         var old = btn.textContent;
         btn.disabled = true;
         btn.textContent = "그리는 중";
-        slotNote(target, "삽화를 그리고 있습니다.");
+        slotNote(target, "삽화를 그리고 있습니다. 1~2분 걸립니다.");
         fetchArtwork(target).catch(function (err) {
           btn.disabled = false;
           btn.textContent = old;
-          slotNote(target, (err && err.data && err.data["error"]) || err.message || "삽화를 만들지 못했습니다.", true);
+          slotNote(target, (err && err.message) || "삽화를 만들지 못했습니다.", true);
         });
+      }
+
+      // 수치 그림 — 기사에 실제로 적힌 숫자로 그래프·흐름도를 그린다. 숫자가 둘 미만이면 안 그린다.
+      function makeChart(target, btn) {
+        var a = S.draft["기사"][Number(target.slice(4))];
+        if (!blocksLen(a["본문"])) { slotNote(target, "본문을 먼저 써 주세요.", true); return; }
+        var id = S.draft.id, old = btn.textContent;
+        btn.disabled = true; btn.textContent = "그리는 중";
+        slotNote(target, "기사 속 수치를 찾아 그리고 있습니다.");
+        window.mgAuth.api("/ai/chart", { method: "POST", body: { "제목": a["제목"], "본문": a["본문"] } })
+          .then(function (d) {
+            if (d["그림없음"]) { slotNote(target, "그릴 수치가 없습니다 — " + (d["사유"] || ""), true); return; }
+            var ok = setImage(target, d["주소"], id);
+            if (S.draft && S.draft.id === id) {
+              slotNote(target, ok === false ? "그림은 만들었지만 저장 공간이 부족해 저장하지 못했습니다."
+                : "수치 그림을 넣었습니다(" + d["종류"] + (d["출처"] ? " · 출처 " + d["출처"] : "") + ").", ok === false);
+            }
+          })
+          .catch(function (err) { slotNote(target, err.message || "수치 그림을 만들지 못했습니다.", true); })
+          .then(function () { btn.disabled = false; btn.textContent = old; });
       }
 
       // 본문을 다 쓰면 삽화까지 이어서 만든다 — 사용자가 할 일은 제목 정하고 누르는 것뿐이다.
@@ -962,7 +1057,7 @@
         function 내화면() { return S.draft && S.draft.id === draftId; }
         var stage = aiBox(i);
         if (stage) { stage.hidden = false; stage.textContent = "본문을 다 썼습니다. 이어서 삽화를 만드는 중입니다."; }
-        slotNote(target, "삽화를 그리고 있습니다.");
+        slotNote(target, "삽화를 그리고 있습니다. 1~2분 걸립니다.");
         return fetchArtwork(target, draftId)
           .catch(function () {
             if (내화면()) slotNote(target, "삽화는 만들지 못했습니다. 다시 만들기를 누르거나 직접 올리세요.", true);
@@ -1018,7 +1113,7 @@
               + '<button class="btn" type="button" data-ipcopy="' + esc(target) + '">프롬프트 복사</button>';
           })
           .catch(function (err) {
-            box.textContent = (err && err.data && err.data["error"]) || "프롬프트를 만들지 못했습니다.";
+            box.textContent = (err && err.message) || "프롬프트를 만들지 못했습니다.";
           })
           .then(function () { btn.disabled = false; btn.textContent = old; });
       }
@@ -1077,8 +1172,11 @@
       });
 
       // ══ 발행 ═══════════════════════════════════════════════════════
+      // 보이는 화면에 쓴다 — 목록 화면에서 난 오류를 숨은 편집 화면에 쓰면 아무도 못 본다
       function publishNote(text, bad) {
-        var p = el("publish-msg");
+        noteTo(el("view-edit").hidden ? el("list-msg") : el("publish-msg"), text, bad);
+      }
+      function noteTo(p, text, bad) {
         p.textContent = text;
         p.hidden = !text;
         p.classList.toggle("bad", !!bad);
@@ -1157,8 +1255,11 @@
         if (srcs.length) {
           h += '<p class="v-head">확인한 자료 ' + srcs.length + "</p><ul class=\"v-src\">";
           srcs.forEach(function (s) {
-            h += '<li><a href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer">'
-              + esc(s["제목"] || s.url) + "</a></li>";
+            // 검증 AI가 돌려준 주소다 — javascript: 같은 것이 섞여도 링크가 되지 않게 http(s)만 건다
+            var u = String(s.url || "");
+            h += /^https?:\/\//i.test(u)
+              ? '<li><a href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' + esc(s["제목"] || u) + "</a></li>"
+              : "<li>" + esc(s["제목"] || u) + "</li>";
           });
           h += "</ul>";
         }
@@ -1231,6 +1332,27 @@
         });
       }
 
+      // 발행이 도는 호(id → { d: 그 초안 객체, 표시: 단추 문구 })와 마지막으로 발행한 호의 목록항목(카톡 문구용)
+      var 발행중 = {};
+      var 마지막발행 = null;
+
+      // 발행 단추는 두 초안이 함께 쓰는 한 개다 — 지금 열린 호가 발행 중일 때만 잠근다
+      function syncPublishBtn() {
+        var p = S.draft && 발행중[S.draft.id];
+        var btn = el("btn-publish");
+        btn.disabled = !!p;
+        btn.textContent = p ? p.표시 : "발행하기";
+      }
+
+      function reloadList() {
+        return care.loadIssueList().then(function (list) {
+          S.list = list;
+          S.loaded = true;
+          S.목록장애 = care.listHadTrouble();
+          return list;
+        });
+      }
+
       function doPublish(btn) {
         var d = S.draft;
         var missing = checklist(d).filter(function (i) { return !i.ok; });
@@ -1246,50 +1368,74 @@
           publishNote("로그인이 필요합니다. 진입 화면에서 구글 계정으로 로그인하세요.", true);
           return;
         }
-        btn.disabled = true;
-        btn.textContent = "사실 확인 중…";
+        // 검증은 몇 분 걸린다. 그사이 목록으로 가거나 다른 호를 열어도 발행은 시작한 호(d)로 끝까지 간다.
+        // 화면은 그 호를 보고 있을 때만 건드리고, 아니면 목록 화면의 안내 줄에 결과를 남긴다.
+        var 이호 = d.id;
+        var 표기 = d["채널"] + " " + d["호수"] + "호";
+        var 보낸 = null;
+        function 이화면() { return S.draft && S.draft.id === 이호; }
+        function note(text, bad) {
+          if (이화면()) noteTo(el("publish-msg"), text, bad);
+          else noteTo(el("list-msg"), 표기 + " — " + text, bad);
+        }
+        발행중[이호] = { d: d, 표시: "사실 확인 중…" };
+        syncPublishBtn();
         el("verify-report").hidden = true;
-        publishNote("사실을 확인하고 있습니다. 웹에서 수치와 인용을 찾아보는 중이라 몇 분 걸릴 수 있습니다.");
+        note("사실을 확인하고 있습니다. 웹에서 수치와 인용을 찾아보는 중이라 몇 분 걸릴 수 있습니다.");
         var tick = 0;
         var timer = setInterval(function () {
           tick += 1;
-          publishNote("사실을 확인하고 있습니다… " + (tick * 10) + "초 경과. 웹 검색 결과를 기다리는 중입니다.");
+          note("사실을 확인하고 있습니다… " + (tick * 10) + "초 경과. 웹 검색 결과를 기다리는 중입니다.");
         }, 10000);
         runVerify(d).then(function (fixedCount) {
           clearInterval(timer);
-          renderReport(d.id);
-          if (fixedCount) renderEdit();
-          btn.textContent = "발행 중…";
-          publishNote(fixedCount ? fixedCount + "곳을 고친 뒤 발행합니다." : "확인을 마쳤습니다. 발행합니다.");
-          return window.mgAuth.api("/care/publish", { method: "POST", body: payload(d) })
+          if (이화면()) {
+            renderReport(이호);
+            if (fixedCount) renderEdit();
+          }
+          발행중[이호].표시 = "발행 중…";
+          syncPublishBtn();
+          note(fixedCount ? fixedCount + "곳을 고친 뒤 발행합니다." : "확인을 마쳤습니다. 발행합니다.");
+          보낸 = payload(d);
+          return window.mgAuth.api("/care/publish", { method: "POST", body: 보낸 })
             .catch(function (err) {
-              // 같은 호를 다른 사람이 이미 발행했다. 말없이 덮어쓰지 않고 확인을 받는다.
+              // 새로 만든 호의 번호가 이미 발행된 호와 겹쳤다(다른 사람이 같은 번호로 먼저 냈다).
+              // 발행된 호를 다시 연 초안은 덮어쓰기를 싣고 가므로 여기 오지 않는다.
               if (err.status !== 409) throw err;
-              if (!window.confirm(err.message
-                + "\n\n덮어쓸까요? 이미 발행된 호가 이 내용으로 바뀝니다.")) {
-                throw new Error("발행을 취소했습니다.");
+              if (!window.confirm("같은 번호의 호가 이미 발행돼 있습니다.\n\n"
+                + String(err.message || "").replace(/\s*덮어쓰려면.*$/, "")
+                + "\n\n이 초안으로 덮어쓸까요? 이미 발행된 호가 사라지고 이 내용으로 바뀝니다.")) {
+                throw new Error("발행을 취소했습니다. 초안은 그대로 남아 있습니다.");
               }
-              var 다시 = payload(d);
-              다시["목록항목"]["덮어쓰기"] = true;
-              return window.mgAuth.api("/care/publish", { method: "POST", body: 다시 });
+              보낸 = payload(d);
+              보낸["목록항목"]["덮어쓰기"] = true;
+              return window.mgAuth.api("/care/publish", { method: "POST", body: 보낸 });
             });
         })
           .then(function (r) {
-            dropDraft(d.id);
-            return care.loadIssueList().then(function (list) {
-              S.list = list;
-              publishNote("");
-              el("publish-msg").hidden = false;
-              el("publish-msg").classList.remove("bad");
-              el("publish-msg").innerHTML = "발행되었습니다. "
-                + '<a href="issue.html?id=' + encodeURIComponent(r.id) + '" target="_blank" rel="noopener">지면 열기</a>';
-              syncKakao();
+            dropDraft(이호);
+            // 발행한 뒤에는 "수정 되돌리기"를 내놓지 않는다 — 되돌릴 초안이 이제 없다
+            var rep = readReport(이호);
+            if (rep && rep["이전본문"]) { delete rep["이전본문"]; saveReport(rep); }
+            // 발행한 호가 열려 있으면 닫는다. 열어 두면 입력 한 번에 지운 초안이 되살아나
+            // 다음 편집이 서버 최신본을 옛 내용으로 덮는다.
+            if (이화면()) showList();
+            마지막발행 = 보낸["목록항목"];
+            return reloadList().catch(function () {}).then(function () {
+              if (!S.draft) renderList();
+              var box = el("list-msg");
+              box.hidden = false;
+              box.classList.remove("bad");
+              box.innerHTML = esc(표기) + " 발행되었습니다. "
+                + '<a href="issue.html?id=' + encodeURIComponent(r.id || 이호) + '" target="_blank" rel="noopener">지면 열기</a> '
+                + '<button class="btn" type="button" id="list-kakao">카톡 문구</button>';
             });
           })
-          .catch(function (err) { publishNote(err.message || "발행에 실패했습니다.", true); })
+          .catch(function (err) { note(err.message || "발행에 실패했습니다.", true); })
           .finally(function () {
-            btn.disabled = false;
-            btn.textContent = "발행하기";
+            clearInterval(timer);
+            delete 발행중[이호];
+            syncPublishBtn();
           });
       }
 
@@ -1309,8 +1455,22 @@
 
       // 목록 — 새 호 만들기 · 편집 · 삭제
       el("view-list").addEventListener("click", function (e) {
+        if (e.target.closest("#list-kakao")) {
+          if (마지막발행) care.openCompose(마지막발행);
+          return;
+        }
+        var retry = e.target.closest("#list-retry");
+        if (retry) {
+          retry.disabled = true;
+          reloadList().catch(function () {}).then(function () {
+            if (!S.draft) renderList();
+            if (S.목록장애) publishNote("아직 서버의 호 목록을 불러오지 못했습니다. 잠시 뒤 다시 눌러 주세요.", true);
+          });
+          return;
+        }
         var go = e.target.closest("#new-go");
         if (go) {
+          if (!S.loaded || S.목록장애) return;
           // 일간·주간은 날짜를 그대로, 월간은 연·월에 1일을 붙인다
           var iso;
           if (S.ch === "일간" || S.ch === "주간") iso = el("new-date").value;
@@ -1386,6 +1546,8 @@
 
         var art = t.closest("button[data-artwork]");
         if (art) { makeArtwork(art.dataset.artwork, art); return; }
+        var chartBtn = t.closest("button[data-chart]");
+        if (chartBtn) { makeChart(chartBtn.dataset.chart, chartBtn); return; }
         var gen = t.closest("button[data-imgai]");
         if (gen) { imgPromptFor(gen.dataset.imgai, gen); return; }
         var cp = t.closest("button[data-ipcopy]");
@@ -1448,6 +1610,12 @@
       }, true);
 
       document.addEventListener("paste", function (e) {
+        // 목록 화면(열린 초안 없음)에서는 이미지를 붙일 호가 없다
+        if (!S.draft || el("view-edit").hidden) return;
+        // 입력칸에 글을 붙여넣는 중이면 가로채지 않는다 — 워드·웹에서 복사한 글은 이미지도 함께 싣고 온다
+        var t = e.target;
+        var 입력칸 = t && t.closest && t.closest("input, textarea, [contenteditable]:not([contenteditable=false])");
+        if (입력칸 && e.clipboardData && e.clipboardData.getData("text/plain")) return;
         var items = (e.clipboardData && e.clipboardData.items) || [];
         var file = null;
         for (var i = 0; i < items.length; i++) {
@@ -1503,13 +1671,19 @@
       });
 
       // ══ 미리보기 ═══════════════════════════════════════════════════
+      // 고객 지면(issue.html)과 같이 기사 넘기기를 켠다. 여닫을 때마다 켜므로 지난번 화살표 키
+      // 듣기를 먼저 걷는다(기사 쪽 듣기는 innerHTML을 갈면서 함께 사라진다).
+      var deckOff = null;
       function openPreview() {
         var p = payload(S.draft);
+        if (deckOff) deckOff();
         el("preview-body").innerHTML = care.issueHtml(p["목록항목"], p["본문"], S.list, null);
         el("preview-back").hidden = false;
         document.body.style.overflow = "hidden";
+        deckOff = care.initDeck(el("preview-body"));
       }
       function closePreview() {
+        if (deckOff) { deckOff(); deckOff = null; }
         el("preview-back").hidden = true;
         document.body.style.overflow = "";
       }
@@ -1545,8 +1719,9 @@
       })();
 
       renderList();
-      care.loadIssueList().then(function (list) {
-        S.list = list;
+      reloadList().then(function (list) {
+        if (S.draft) syncKakao();
+        else renderList();   // 목록을 받았으니 새 호 만들기를 연다(서버 목록이 없으면 경고로 막는다)
         // 서재에서 "데스크에서 편집"으로 넘어온 경우 그 호를 바로 연다
         var wantId = new URLSearchParams(window.location.search).get("id");
         var want = wantId && list.find(function (i) { return i.id === wantId; });
@@ -1556,12 +1731,8 @@
           if (있는초안) { openDraft(있는초안); return; }
           발행분열기(want).catch(function (err) {
             publishNote(err.message || "본문을 불러오지 못해 편집을 열 수 없습니다.", true);
-            renderList();
           });
-          return;
         }
-        if (S.draft) syncKakao();
-        else renderList();
       }).catch(function () {});
     })();
   </script>

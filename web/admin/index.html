@@ -84,10 +84,13 @@
 
       function authState(msg) { $("auth-state").textContent = msg; }
 
+      // 기본값은 가장 낮은 직급 — 직급표는 서버가 rank 오름차순(BM 먼저)으로 주므로 마지막 항목이다.
+      // 첫 항목(BM)이 기본이면 그대로 누르는 순간 지점장이 된다(2026-09-10 실수 사례).
       function gradeSelect(id) {
+        var 끝 = AUTH.grades.length - 1;
         return '<select id="' + id + '" aria-label="직급" style="font:inherit;font-size:12px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:5px 8px">'
-          + AUTH.grades.map(function (g) {
-              return '<option value="' + esc(g["코드"]) + '">' + esc(g["이름"]) + " (" + esc(g["코드"]) + ")</option>";
+          + AUTH.grades.map(function (g, i) {
+              return '<option value="' + esc(g["코드"]) + '"' + (i === 끝 ? " selected" : "") + ">" + esc(g["이름"]) + " (" + esc(g["코드"]) + ")</option>";
             }).join("")
           + "</select>";
       }
@@ -108,6 +111,9 @@
           var pending = data["대기"] || [];
           var members = data["구성원"] || [];
           ACCOUNTS = members;
+          // 다시 그려도(하랑지점 조직도가 늦게 온 때 등) 고르던 직급·상위·자리는 그대로 둔다
+          var 고르던 = {};
+          document.querySelectorAll("#auth-body select[id]").forEach(function (s) { 고르던[s.id] = s.value; });
 
           $("pending-list").innerHTML = pending.length
             ? pending.map(function (p) {
@@ -131,7 +137,7 @@
                   + '<span style="font-size:12px;color:var(--platform-muted)">' + esc(m.email) + "</span>"
                   // 승인된 계정의 직급은 여기서 바로 바꾼다 — 승인 때 잘못 고른 것을 고치는 자리
                   + (m.status === "승인"
-                     ? '<select data-grade-of="' + m.id + '" aria-label="직급" style="font:inherit;font-size:12px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:4px 6px">'
+                     ? '<select data-grade-of="' + m.id + '" data-was="' + esc(m.grade || "") + '" aria-label="직급" style="font:inherit;font-size:12px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:4px 6px">'
                        + AUTH.grades.map(function (g) {
                            return '<option value="' + esc(g["코드"]) + '"' + (g["코드"] === m.grade ? " selected" : "") + ">"
                              + esc(g["이름"]) + " (" + esc(g["코드"]) + ")</option>";
@@ -161,6 +167,11 @@
                   + "</div>";
               }).join("")
             : '<span style="color:var(--platform-faint);font-size:12px">구성원이 없습니다.</span>';
+
+          Object.keys(고르던).forEach(function (id) {
+            var s = $(id);
+            if (s && Array.prototype.some.call(s.options, function (o) { return o.value === 고르던[id]; })) s.value = 고르던[id];
+          });
         });
       }
 
@@ -171,7 +182,11 @@
           sel.disabled = true;
           window.mgAuth.api("/admin/set-grade", { method: "POST", body: { "대상": Number(sel.dataset.gradeOf), "직급": sel.value } })
             .then(loadPending)
-            .catch(function (err) { window.alert(err && err.message ? err.message : "직급을 바꾸지 못했습니다."); sel.disabled = false; });
+            .catch(function (err) {
+              sel.value = sel.dataset.was;     // 실패하면 선택칸을 서버 값으로 되돌린다 — 바뀐 것처럼 보이지 않게
+              sel.disabled = false;
+              window.alert(err && err.message ? err.message : "직급을 바꾸지 못했습니다.");
+            });
         });
         $("auth-body").addEventListener("click", function (e) {
           var btn = e.target.closest("button");
@@ -251,15 +266,19 @@
       // 초대 문구 — 설치 링크는 현재 배포 주소 기준으로 자동 생성
       function inviteText(name) {
         var url = new URL("../install.html", window.location.href).href;
-        var sender = "안창민 FC";
-        try {
-          var s = JSON.parse(localStorage.getItem("mg_care_sender") || "{}");
-          if (s["이름"]) sender = s["이름"];
-        } catch (e) {}
+        // 보내는 사람 — 로그인 계정 이름이 먼저, 없으면 카톡 서명. 둘 다 없으면 이름을 적지 않는다
+        var 계정이름 = AUTH.me && AUTH.me["계정"] && AUTH.me["계정"]["이름"];
+        var sender = 계정이름 ? String(계정이름).replace(/\s*FC$/, "") + " FC" : "";
+        if (!sender) {
+          try {
+            var s = JSON.parse(localStorage.getItem("mg_care_sender") || "{}");
+            if (s && s["이름"]) sender = s["이름"];
+          } catch (e) {}
+        }
         return [
           "[마이가디언 초대]",
           "",
-          name + "님, 안녕하세요. " + sender + "입니다.",
+          name + "님, 안녕하세요." + (sender ? " " + sender + "입니다." : ""),
           "우리 팀 업무 플랫폼 마이가디언에 초대합니다.",
           "",
           "아래 링크를 휴대폰이나 노트북에서 열고",

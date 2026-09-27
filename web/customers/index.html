@@ -29,11 +29,11 @@
       <div class="page-heading">
         <p class="eyebrow">내 고객</p>
         <h1>고객관리</h1>
-        <p>내 고객 저장소를 연결해 등록·진행상태·미팅·메모를 처리합니다. 서버에 올리면 폰·태블릿 어디서든 열리며, 저장은 암호문으로 이루어집니다.</p>
+        <p>내 고객 저장소를 연결해 등록·진행상태·미팅·메모를 처리합니다. 서버에 올리면 폰·태블릿 어디서든 열리며, 서버가 서버 열쇠로 감싸 보관합니다.</p>
       </div>
 
       <section class="section-block" id="connect-block">
-        <div class="section-head"><div><h2>내 고객 저장소</h2><p>내 PC의 고객 저장소(mg-clients)를 한 번 연결하면 기존 고객 전체가 목록에 올라옵니다. 이후 등록·삭제·이관은 이 화면에서 처리합니다. 서버 금고에 올리기 전까지는 이 PC 밖으로 나가지 않고, 올릴 때도 잠긴 채로만 나갑니다.</p></div></div>
+        <div class="section-head"><div><h2>내 고객 저장소</h2><p>내 PC의 고객 저장소(mg-clients)를 한 번 연결하면 기존 고객 전체가 목록에 올라옵니다. 이후 등록·삭제·이관은 이 화면에서 처리합니다. 서버에 올리기 전까지는 이 PC 밖으로 나가지 않습니다. 올리면 서버가 서버 열쇠로 감싸 보관하고, 꺼낼 때 풀어 담당 설계사 본인에게만 보여 줍니다.</p></div></div>
         <div class="surface-card">
           <div class="empty-inline" id="connect-box">
             <div><strong>연결된 저장소 없음</strong><span>저장소 폴더를 선택해 시작합니다. 폴더명(C-YYYY-NNN)이 곧 고객코드이며, 기존 고객은 한 번에 등록됩니다.</span></div>
@@ -44,9 +44,10 @@
           </p>
 
           <div style="margin-top:16px;border-top:2px solid var(--platform-ink);padding-top:14px">
-            <p style="margin:0 0 10px;font-size:12.5px;line-height:1.7;color:var(--platform-sub);word-break:keep-all">
+            <p style="margin:0 0 10px;font-size:12.5px;line-height:1.7;color:var(--platform-muted);word-break:keep-all">
               <b>서버 고객</b> — 폰·태블릿·다른 PC 어디서든 로그인만 하면 내 고객이 열립니다.
-              서버에는 암호문으로 저장되며, 담당 설계사 본인과 총관리자만 볼 수 있습니다.
+              서버가 서버 열쇠로 감싸 저장하고, 담당 설계사는 자기 고객만 받습니다.
+              총관리자는 열람 비밀번호를 넣을 때만 팀원 고객을 봅니다.
             </p>
             <p style="margin:0" id="vault-row">
               <button class="btn btn-primary" type="button" id="btn-vault-get">내 고객 불러오기</button>
@@ -54,12 +55,12 @@
             </p>
             <p id="vault-note" style="margin:10px 0 0;font-size:12px" hidden></p>
             <div id="vault-login" hidden style="margin-top:10px">
-              <p style="margin:0 0 8px;font-size:12.5px;color:var(--platform-sub)">서버 고객을 보려면 먼저 로그인하세요.</p>
+              <p style="margin:0 0 8px;font-size:12.5px;color:var(--platform-muted)">서버 고객을 보려면 먼저 로그인하세요.</p>
               <div id="vault-gbtn"></div>
             </div>
 
             <div id="admin-box" hidden style="margin-top:14px;border-top:1px solid var(--platform-line);padding-top:12px">
-              <p style="margin:0 0 10px;font-size:12.5px;line-height:1.7;color:var(--platform-sub);word-break:keep-all">
+              <p style="margin:0 0 10px;font-size:12.5px;line-height:1.7;color:var(--platform-muted);word-break:keep-all">
                 <b>팀원 고객 보기</b> — 총관리자만 보입니다. 열람 비밀번호를 넣으면 그 사람 고객이 열립니다.
                 퇴사·인수인계·점검이 여기서 끝납니다. 누를 때마다 비밀번호를 묻습니다.
               </p>
@@ -265,7 +266,8 @@
           : "";
         ALL = unique.sort(function (a, b) { return a.code < b.code ? -1 : 1; });
         $("connect-box").innerHTML = "<div><strong>연결됨: " + esc(rootName) + "</strong><span>고객 " + ALL.length + "명을 불러왔습니다. "
-          + (SOURCE === "서버" ? "서버 금고에서 잠긴 채로 받아 이 기기에서 풀었습니다."
+          + (SOURCE === "서버" ? "서버가 서버 열쇠로 풀어 내 고객만 보냈습니다."
+              : SOURCE === "남" ? "총관리자 열람으로 열었습니다. 읽기 전용입니다."
               : "아직 이 PC 안에만 있습니다.")
           + esc(dupNote) + "</span></div>";
         $("work-block").hidden = false;
@@ -347,6 +349,9 @@
             }).join("")
           : "<li>등록된 보유보험 없음</li>";
         var st = custStatus(c);
+        // 같은 고객을 다시 그릴 때(진행상태·미팅 저장 뒤) 저장 안 한 메모를 살린다
+        var 쓰던메모 = $("memo-edit");
+        var 메모초안 = 쓰던메모 && 쓰던메모.dataset.code === c.code ? 쓰던메모.value : null;
         $("detail").innerHTML = '<div class="case-detail-body">'
           + '<div class="detail-badges"><span class="badge-grade">' + esc(CAT[o.category || o["카테고리"]] || "미분류") + "</span>"
           + (st ? '<span class="badge-status ' + ST_CLASS[st] + '">' + esc(st) + "</span>" : "")
@@ -361,12 +366,21 @@
           + memoSection(c, o)
           + mgmtSection(c, o)
           + "</div>";
+        if (메모초안 !== null && $("memo-edit")) $("memo-edit").value = 메모초안;
       }
 
       // 고객 관리 — 이관(사본 생성)·삭제. 쓰기 연결일 때만 노출된다.
       // 이관은 사본 생성·검증까지만 한다. 원본 정리는 반드시 별도의 삭제 절차로 —
       // FSA에는 잠금이 없어 검증과 자동 삭제를 잇는 어떤 구현도 경합 창이 생긴다 (Codex 6차)
       function mgmtSection(c, o) {
+        // 서버 고객은 삭제만 — 이관은 폴더 사본이라 서버 고객에는 해당하지 않는다
+        if (!c.handle && SOURCE === "서버") {
+          return "<h3>관리</h3>"
+            + '<div id="mgmt-box" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
+            + '<button class="btn btn-danger" type="button" id="cust-del" data-code="' + esc(c.code) + '">고객 삭제</button>'
+            + '<span id="mgmt-msg" style="font-size:0.83rem;color:var(--platform-muted)"></span>'
+            + "</div>";
+        }
         if (!c.handle || !c.parent) return "";
         return "<h3>관리</h3>"
           + '<div id="mgmt-box" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
@@ -456,7 +470,8 @@
         var box = $("mgmt-box");
         var o = v1(c);
         box.innerHTML = '<span style="font-size:0.88rem;color:var(--platform-denied);font-weight:600">'
-          + esc(c.code) + " " + esc(o.customerName || "") + " 폴더를 통째로 삭제합니다. 되돌릴 수 없습니다.</span>"
+          + esc(c.code) + " " + esc(o.customerName || "")
+          + (c.handle ? " 폴더를 통째로 삭제합니다." : " 고객을 서버에서 삭제합니다.") + " 되돌릴 수 없습니다.</span>"
           + '<button class="btn btn-danger" type="button" id="cust-del-yes" data-code="' + esc(c.code) + '">삭제 확정</button>'
           + '<button class="btn" type="button" id="cust-del-no" data-code="' + esc(c.code) + '">취소</button>';
       }
@@ -465,11 +480,17 @@
         if (btn.disabled) return;
         btn.disabled = true;
         try {
-          await c.parent.removeEntry(c.code, { recursive: true });
-          removeFromList(c.code, c.code + " 삭제됨.");
+          if (c.handle) await c.parent.removeEntry(c.code, { recursive: true });
+          else await window.mgVaultUI.지우기(c.code);
+          // 지운 고객의 예정 미팅이 하랑지점 달력에 남지 않게 취소로 보낸다
+          meetings(c).forEach(function (mt) {
+            if (mt && mt["상태"] === "예정") branchPush(c, mt["차수"], mt["일자"], "취소");
+          });
+          removeFromList(c.code, c.code + (c.handle ? " 삭제됨." : " 서버에서 삭제됨."));
         } catch (e) {
+          if (!c.handle && e && e.status === 404) return removeFromList(c.code, c.code + " 서버에 이미 없어 목록에서 뺐습니다.");
           btn.disabled = false;
-          btn.textContent = "삭제 실패 - 권한 확인";
+          btn.textContent = c.handle ? "삭제 실패 - 권한 확인" : 저장실패문구(c, e, "삭제 실패");
         }
       }
 
@@ -587,13 +608,13 @@
             var m = it.m;
             h.push('<div class="meeting-row">'
               + '<span class="badge-grade">' + esc(String(m["차수"])) + "차</span>");
-            if (c.handle && m["상태"] === "예정") {
+            if (쓸수있나(c) && m["상태"] === "예정") {
               h.push('<input type="date" class="mt-date" value="' + esc(m["일자"] || "") + '" data-mt-idx="' + it.i + '" data-code="' + esc(c.code) + '" aria-label="' + esc(String(m["차수"])) + '차 미팅 일자 변경">');
             } else {
               h.push("<span>" + esc(m["일자"] || "") + "</span>");
             }
             h.push('<span class="badge-status ' + MT_BADGE[m["상태"]] + '">' + esc(m["상태"]) + "</span>");
-            if (c.handle && m["상태"] === "예정") {
+            if (쓸수있나(c) && m["상태"] === "예정") {
               h.push('<button type="button" class="status-btn st-met" data-mt-act="완료" data-mt-idx="' + it.i + '" data-code="' + esc(c.code) + '">완료</button>'
                 + '<button type="button" class="status-btn st-cancel" data-mt-act="취소" data-mt-idx="' + it.i + '" data-code="' + esc(c.code) + '">취소</button>');
             }
@@ -601,7 +622,7 @@
           });
           h.push("</div>");
         }
-        if (c.handle) {
+        if (쓸수있나(c)) {
           h.push('<div class="meeting-add">'
             + '<span class="badge-grade">' + esc(String(nextRound(c))) + "차</span>"
             + '<input type="date" id="mt-new-date" value="' + localDate() + '" aria-label="새 미팅 일자">'
@@ -643,12 +664,21 @@
             }]);
           }
           c.profile = draft;
-          renderDetail(c);
+          if (state.sel === c.code) renderDetail(c);   // 그 사이 다른 고객을 열었으면 그 화면을 덮지 않는다
           renderList();
-        }).catch(function () {
+          return true;
+        }).catch(function (e) {
           var m = $(msgId);
-          if (m) m.textContent = "저장 실패 - 폴더 쓰기 권한을 확인하세요.";
+          if (m) m.textContent = 저장실패문구(c, e, "저장 실패");
+          return false;
         });
+      }
+
+      // 실패 문구 — 폴더 고객은 권한, 서버 고객은 서버가 준 사유, 세션이 풀렸으면 다시 로그인.
+      function 저장실패문구(c, e, 머리) {
+        if (c.handle) return 머리 + " - 폴더 쓰기 권한을 확인하세요.";
+        if (e && e.status === 401) { 로그인붙이기(); return 머리 + " - 로그인이 풀렸습니다. 위에서 다시 로그인하세요."; }
+        return 머리 + " - " + ((e && e.message) || "서버에 저장하지 못했습니다.");
       }
 
       // ── 하랑지점 일정 연동 (C:\projects\ourbranch\docs\myguardian-schedule-interop.md 계약) ──
@@ -727,7 +757,7 @@
         var memoVal = c.memoText != null ? c.memoText : (o.memo || "");
         if (쓸수있나(c)) {
           return "<h3>메모</h3>"
-            + '<textarea id="memo-edit" aria-label="상담 메모" style="width:100%;min-height:130px;font:inherit;font-size:0.93rem;line-height:1.6;border:1px solid var(--platform-line-strong);border-radius:4px;padding:10px 12px;resize:vertical">' + esc(memoVal) + "</textarea>"
+            + '<textarea id="memo-edit" data-code="' + esc(c.code) + '" aria-label="상담 메모" style="width:100%;min-height:130px;font:inherit;font-size:0.93rem;line-height:1.6;border:1px solid var(--platform-line-strong);border-radius:4px;padding:10px 12px;resize:vertical">' + esc(memoVal) + "</textarea>"
             + '<p style="margin:8px 0 0"><button class="btn" type="button" id="memo-save" data-code="' + esc(c.code) + '">메모 저장</button></p>';
         }
         return memoVal ? "<h3>메모</h3><div class='detail-summary' style='margin:0'>" + esc(memoVal) + "</div>" : "";
@@ -743,16 +773,19 @@
             await w.write(text);
             await w.close();
           } else {
-            await window.mgVaultUI.올리기([{
-              "고객코드": c.code, "profile": c.profile,
-              "policies": c.policies || { policies: [] }, "memoText": text
-            }]);
+            // 서버는 레코드 통째로 덮는다 — 진행상태·미팅 저장과 같은 줄에 세워야 서로의 변경을 지우지 않는다
+            await queueProfileWrite(c.code, function () {
+              return window.mgVaultUI.올리기([{
+                "고객코드": c.code, "profile": c.profile,
+                "policies": c.policies || { policies: [] }, "memoText": text
+              }]).then(function () { c.memoText = text; });
+            });
           }
           c.memoText = text;
           btn.textContent = "저장됨";
           setTimeout(function () { btn.textContent = "메모 저장"; }, 1500);
         } catch (e) {
-          btn.textContent = "저장 실패";
+          btn.textContent = 저장실패문구(c, e, "저장 실패");
         } finally {
           btn.disabled = false;
         }
@@ -767,11 +800,11 @@
           var d = $("mt-new-date").value;
           if (!d) { $("mt-msg").textContent = "일자를 선택하세요."; return; }
           var round = nextRound(c);
+          // 하랑지점 전송은 저장이 성공한 뒤에만 — 저장 안 된 미팅이 팀 캘린더에 뜨지 않게
           mutateMeetings(c, function (draft) {
             if (!draft["미팅"]) draft["미팅"] = [];
             draft["미팅"].push({ "차수": round, "일자": d, "상태": "예정" });
-          }, "미팅 예정");
-          branchPush(c, round, d, "예정");
+          }, "미팅 예정").then(function (ok) { if (ok) branchPush(c, round, d, "예정"); });
         }
         else if (btn.dataset.mtAct && c) {
           var idx = Number(btn.dataset.mtIdx);
@@ -779,8 +812,9 @@
           var mt = meetings(c)[idx];
           mutateMeetings(c, function (draft) {
             if (draft["미팅"] && draft["미팅"][idx]) draft["미팅"][idx]["상태"] = act;
-          }, act === "완료" ? "미팅 완료" : "일정 취소");
-          if (mt) branchPush(c, mt["차수"], mt["일자"], act);
+          }, act === "완료" ? "미팅 완료" : "일정 취소").then(function (ok) {
+            if (ok && mt) branchPush(c, mt["차수"], mt["일자"], act);
+          });
         }
         else if (btn.id === "memo-save" && c) saveMemo(c, $("memo-edit").value, btn);
         else if (btn.id === "cust-del" && c) confirmDelete(c);
@@ -800,8 +834,9 @@
         var mt = meetings(c)[idx];
         mutateMeetings(c, function (draft) {
           if (draft["미팅"] && draft["미팅"][idx]) draft["미팅"][idx]["일자"] = newDate;
-        }, null);
-        if (mt) branchPush(c, mt["차수"], newDate, "예정");
+        }, null).then(function (ok) {
+          if (ok && mt) branchPush(c, mt["차수"], newDate, "예정");
+        });
       });
 
       // 신규 고객 등록 — 폴더 생성이 곧 등록 (폴더명 = 고객코드)
@@ -813,6 +848,30 @@
           if (m) max = Math.max(max, Number(m[1]));
         });
         return "C-" + year + "-" + String(max + 1).padStart(3, "0");
+      }
+      function 다음번호(code) {
+        var m = code.match(/^(C-\d{4}-)(\d{3})$/);
+        return m[1] + String(Number(m[2]) + 1).padStart(3, "0");
+      }
+
+      // 담당 FC — 로그인 계정 이름이 먼저, 없으면 카톡 서명, 둘 다 없으면 비워 둔다(남의 이름으로 채우지 않는다)
+      function 담당FC() {
+        if (내이름) return 내이름.replace(/\s*FC$/, "") + " FC";
+        try {
+          var s = JSON.parse(localStorage.getItem("mg_care_sender") || "{}");
+          if (s && s["이름"]) return String(s["이름"]);
+        } catch (e) {}   // 깨진 값이면 무시한다 — 등록 버튼이 막히지 않게
+        return "";
+      }
+      function 새프로필(code, name) {
+        return {
+          "고객코드": code,
+          "담당FC": 담당FC(),
+          "카테고리": $("new-cat").value,
+          "등록일": localDate(),
+          "customerName": name,
+          "phone": $("new-phone").value.trim() || null
+        };
       }
 
       $("btn-new").addEventListener("click", function () {
@@ -833,31 +892,42 @@
         if (!name) { $("new-msg").textContent = "이름을 입력하세요."; return; }
         // 서버 고객이면 서버에 바로 넣는다 — 폰·태블릿·다른 PC 어디서든 새 고객을 만들 수 있어야
         // 팀 플랫폼이다(2026-09-10 사용자: 「기존 고객 말고 새로 고객 추가해서 관리할 수 있게」).
-        // 코드는 이 화면이 아는 목록 기준 다음 번호다. 서버는 같은 코드면 덮어쓰므로, 목록을
-        // 막 받은 상태에서만 등록한다(목록이 곧 서버 상태다).
+        // 코드는 이 화면이 아는 목록 기준 다음 번호다. 신규로 올리면 서버는 같은 코드를 덮지 않고
+        // 409로 돌려준다 — 그러면 서버 목록을 다시 받아 다음 번호로 한 번 더 시도한다.
+        if (SOURCE === "남") { $("new-msg").textContent = "팀원 고객을 열어 둔 중에는 등록하지 않습니다."; return; }
         if (SOURCE === "서버") {
           saveBtn.disabled = true;
           var 새코드 = nextCode();
-          var 새프로필 = {
-            "고객코드": 새코드,
-            "담당FC": (JSON.parse(localStorage.getItem("mg_care_sender") || "{}")["이름"] || "안창민 FC"),
-            "카테고리": $("new-cat").value,
-            "등록일": localDate(),
-            "customerName": name,
-            "phone": $("new-phone").value.trim() || null
+          var 새레코드 = function (code) {
+            return { "고객코드": code, "profile": 새프로필(code, name), "policies": { policies: [] },
+              "memoText": "# 상담 메모 — " + code + "\n\n" };
           };
-          var 새메모 = "# 상담 메모 — " + 새코드 + "\n\n";
           try {
-            await window.mgVaultUI.올리기([{ "고객코드": 새코드, "profile": 새프로필, "policies": { policies: [] }, "memoText": 새메모 }]);
-            ALL.push({ code: 새코드, profile: 새프로필, policies: { policies: [] }, memoText: 새메모 });
+            var 보낸것 = 새레코드(새코드);
+            try {
+              await window.mgVaultUI.신규올리기(보낸것);
+            } catch (e1) {
+              if (!e1 || e1.status !== 409) throw e1;
+              // 다른 기기에서 같은 번호를 먼저 썼다 — 서버 목록으로 맞추고 다음 번호로 한 번만 더
+              var 최신 = await window.mgVaultUI.내려받기();
+              ALL = 최신.고객.map(받은모양).sort(function (a, b) { return a.code < b.code ? -1 : 1; });
+              var 겹친코드 = 새코드;
+              새코드 = nextCode();
+              if (새코드 <= 겹친코드) 새코드 = 다음번호(겹친코드);   // 못 푼 건이 그 번호를 쥐고 있을 때
+              보낸것 = 새레코드(새코드);
+              await window.mgVaultUI.신규올리기(보낸것);
+            }
+            var 새프로필값 = 보낸것.profile, 새메모 = 보낸것.memoText;
+            ALL.push({ code: 새코드, profile: 새프로필값, policies: { policies: [] }, memoText: 새메모 });
             ALL.sort(function (a, b) { return a.code < b.code ? -1 : 1; });
             $("new-form").hidden = true;
             $("new-name").value = ""; $("new-phone").value = "";
             $("new-msg").textContent = "";
             renderList();
             $("connect-box").querySelector("span").textContent = "고객 " + ALL.length + "명. " + 새코드 + " 서버에 등록됨.";
+            $("vault-note").hidden = true;       // 「올라간 고객이 없습니다」가 남지 않게
           } catch (e) {
-            $("new-msg").textContent = "등록 실패: " + (e && e.message ? e.message : "서버에 저장하지 못했습니다.");
+            $("new-msg").textContent = 저장실패문구({}, e, "등록 실패");
           } finally {
             saveBtn.disabled = false;
           }
@@ -871,19 +941,11 @@
           for (var guard = 0; guard < 999; guard++) {
             try {
               await ROOT_HANDLE.getDirectoryHandle(code); // create 없이 — 존재하면 다음 번호
-              var m = code.match(/^(C-\d{4}-)(\d{3})$/);
-              code = m[1] + String(Number(m[2]) + 1).padStart(3, "0");
+              code = 다음번호(code);
             } catch (e) { break; }
           }
           var dir = await ROOT_HANDLE.getDirectoryHandle(code, { create: true });
-          var profile = {
-            "고객코드": code,
-            "담당FC": (JSON.parse(localStorage.getItem("mg_care_sender") || "{}")["이름"] || "안창민 FC"),
-            "카테고리": $("new-cat").value,
-            "등록일": localDate(),
-            "customerName": name,
-            "phone": $("new-phone").value.trim() || null
-          };
+          var profile = 새프로필(code, name);
           var memoInit = "# 상담 메모 — " + code + "\n\n";
           try {
             var pf = await dir.getFileHandle("profile.json", { create: true });
@@ -950,17 +1012,17 @@
         var box = $("vault-note");
         box.hidden = false;
         box.textContent = m;
-        box.style.color = 나쁨 ? "var(--platform-point)" : "var(--platform-sub)";
+        box.style.color = 나쁨 ? "var(--platform-blue)" : "var(--platform-muted)";
       }
       function 관리알림(m, 나쁨) {
         var box = $("admin-note");
         box.hidden = false;
         box.textContent = m;
-        box.style.color = 나쁨 ? "var(--platform-point)" : "var(--platform-sub)";
+        box.style.color = 나쁨 ? "var(--platform-blue)" : "var(--platform-muted)";
       }
       function 로그인필요(e) {
         var m = String((e && e.message) || "");
-        return m.indexOf("로그인") >= 0 || m.indexOf("401") >= 0;
+        return (e && e.status === 401) || m.indexOf("로그인") >= 0 || m.indexOf("401") >= 0;
       }
       function 로그인붙이기() {
         var box = $("vault-login");
@@ -989,13 +1051,17 @@
         btn.disabled = true;
         금고알림("불러오는 중입니다.");
         UI.내려받기().then(function (r) {
-          if (!r.고객.length) {
-            금고알림("서버에 올라간 고객이 없습니다. 폴더를 연결한 뒤 「지금 목록을 서버에 올리기」로 올리세요.");
+          // 폴더 목록을 보고 있는데 서버가 비었으면 폴더 목록을 두고 올리기를 권한다
+          if (!r.고객.length && SOURCE === "폴더" && ALL.length) {
+            금고알림("서버에 올라간 고객이 없습니다. 「지금 목록을 서버에 올리기」로 올리세요.");
             return;
           }
+          // 0명이어도 서버 모드로 들어간다 — 폰에서 첫 고객을 등록할 수 있어야 한다
           onLoaded(r.고객.map(받은모양), "서버 고객");
-          금고알림("고객 " + r.고객.length + "명을 불러왔습니다."
-            + (r.못푼건수 ? " " + r.못푼건수 + "건은 읽지 못해 건너뛰었습니다." : ""), !!r.못푼건수);
+          var 말 = r.고객.length || r.못푼건수 ? "고객 " + r.고객.length + "명을 불러왔습니다."
+            : "서버에 올라간 고객이 없습니다. 「신규 고객 등록」으로 첫 고객을 넣을 수 있습니다.";
+          if (r.못푼건수) 말 += " " + r.못푼건수 + "건은 읽지 못해 건너뛰었습니다.";
+          금고알림(말, !!r.못푼건수);
         }).catch(function (e) {
           금고알림(e.message || "불러오지 못했습니다.", true);
           if (로그인필요(e)) 로그인붙이기();
@@ -1005,12 +1071,26 @@
       $("btn-vault-put").addEventListener("click", function () {
         var btn = this;
         if (!ALL.length) return 금고알림("올릴 고객이 없습니다.", true);
-        if (!confirm("고객 " + ALL.length + "명을 서버에 올립니다." + String.fromCharCode(10, 10)
-          + "같은 고객코드가 이미 서버에 있으면 이번 것으로 바뀝니다.")) return;
         btn.disabled = true;
-        금고알림("올리는 중입니다.");
-        UI.올리기(ALL.map(보낼모양)).then(function (r) {
-          금고알림("고객 " + (r["건수"] || ALL.length) + "명을 올렸습니다. 이제 다른 기기에서도 열립니다.");
+        금고알림("서버 목록과 겹치는 고객코드를 확인하는 중입니다.");
+        var 보낼것 = ALL.map(보낼모양);
+        // 올리기 전에 서버 목록과 대조한다 — 같은 코드의 서버 고객을 조용히 덮지 않는다
+        UI.내려받기().then(function (r) {
+          var 폴더코드 = {};
+          보낼것.forEach(function (x) { 폴더코드[x["고객코드"]] = true; });
+          var 겹침 = r.고객.map(function (o) { return o["고객코드"]; }).filter(function (k) { return 폴더코드[k]; });
+          var 줄 = String.fromCharCode(10, 10);
+          var 말 = "고객 " + 보낼것.length + "명을 서버에 올립니다.";
+          if (겹침.length) {
+            말 += 줄 + 겹침.length + "건(" + 겹침.slice(0, 10).join(", ") + (겹침.length > 10 ? " 외" : "")
+              + ")이 폴더 판으로 바뀝니다. 서버에서 고친 내용은 사라집니다.";
+          }
+          if (r.못푼건수) 말 += 줄 + "서버에 읽지 못한 고객 " + r.못푼건수 + "건이 있어 그 코드는 대조하지 못했습니다.";
+          if (!confirm(말)) { 금고알림("올리지 않았습니다."); return; }
+          금고알림("올리는 중입니다.");
+          return UI.올리기(보낼것).then(function (res) {
+            금고알림("고객 " + (res["건수"] || 보낼것.length) + "명을 올렸습니다. 이제 다른 기기에서도 열립니다.");
+          });
         }).catch(function (e) {
           금고알림(e.message || "올리지 못했습니다.", true);
           if (로그인필요(e)) 로그인붙이기();
@@ -1019,8 +1099,10 @@
 
       // ── 팀원 고객 보기 (총관리자 전용)
       var 관리자다 = false;
+      var 내이름 = "";   // 신규 고객의 담당FC 기본값 — /me가 오면 채운다
       window.mgAuth.me().then(function (info) {
         var 나 = (info && info["계정"]) || {};
+        내이름 = 나["이름"] || "";
         if (나["상태"] && 나["상태"] !== "승인") {
           금고알림("계정이 아직 승인되지 않았습니다. 총관리자에게 승인을 요청하세요.", true);
         }
@@ -1124,8 +1206,10 @@
       var 원래onLoaded = onLoaded;
       onLoaded = function (list, rootName) {
         SOURCE = rootName === "서버 고객" ? "서버" : (/님 고객$/.test(rootName) ? "남" : "폴더");
-        // 서버 고객은 폴더 없이도 새 고객을 만든다. 남의 고객(총관리자 열람)에는 안 만든다.
-        $("btn-new").hidden = !(CAN_CREATE || SOURCE === "서버");
+        // 서버 고객은 폴더 없이도 새 고객을 만든다. 남의 고객(총관리자 열람)을 열어 둔 중에는
+        // 폴더가 연결돼 있어도 등록을 숨긴다 — 보이는 목록과 저장될 곳이 어긋난다.
+        $("btn-new").hidden = SOURCE === "남" || !(CAN_CREATE || SOURCE === "서버");
+        if ($("btn-new").hidden) $("new-form").hidden = true;
         올리기단추(SOURCE === "폴더" && list.length > 0);
         원래onLoaded(list, rootName);
         $("btn-admin-close").hidden = SOURCE !== "남";

@@ -346,7 +346,7 @@
   }
 
   function tableHtml(headers, rows) {
-    var h = ['<figure class="comparison"><p class="swipe">표는 옆으로 넘겨 보실 수 있습니다</p><div class="table-scroll"><table><thead><tr>'];
+    var h = ['<figure class="comparison"><p class="swipe">표는 옆으로 넘겨 보실 수 있습니다</p><div class="table-scroll" tabindex="0" role="region" aria-label="표 — 옆으로 넘겨 보기"><table><thead><tr>'];
     headers.forEach(function (v) { h.push("<th>" + esc(v) + "</th>"); });
     h.push("</tr></thead><tbody>");
     rows.forEach(function (row) {
@@ -829,6 +829,8 @@
     var x0 = 0, y0 = 0, live = false;
     bh.addEventListener("touchstart", function (e) {
       if (e.touches.length !== 1) { live = false; return; }
+      // 표는 옆으로 밀어 읽는다 — 표 안에서 시작한 밀기는 기사 넘기기가 아니다
+      if (e.target.closest && e.target.closest(".table-scroll")) { live = false; return; }
       x0 = e.touches[0].clientX;
       y0 = e.touches[0].clientY;
       live = true;
@@ -843,14 +845,20 @@
       show(cur + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1);
     }, { passive: true });
 
-    // 노트북·데스크톱은 좌우 화살표로 넘긴다. 글자 입력 중일 때는 넘기지 않는다.
-    document.addEventListener("keydown", function (e) {
+    // 노트북·데스크톱은 좌우 화살표로 넘긴다. 글자 입력 중이거나 표에 포커스가 있으면
+    // (표를 화살표로 옆으로 미는 중) 넘기지 않는다. 지면이 가려져 있을 때(미리보기 닫힘)도 넘기지 않는다.
+    function onKey(e) {
       if (e.altKey || e.ctrlKey || e.metaKey) return;
+      if (!bh.isConnected || !bh.getClientRects().length) return;
       var t = e.target;
       if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      if (t && t.closest && t.closest(".table-scroll")) return;
       if (e.key === "ArrowRight") { e.preventDefault(); show(cur + 1, 1); }
       else if (e.key === "ArrowLeft") { e.preventDefault(); show(cur - 1, -1); }
-    });
+    }
+    document.addEventListener("keydown", onKey);
+    // 같은 화면에서 지면을 여러 번 까는 곳(발행 데스크 미리보기)이 듣기를 걷을 수 있게 돌려준다
+    return function () { document.removeEventListener("keydown", onKey); };
   }
 
   window.care = {
