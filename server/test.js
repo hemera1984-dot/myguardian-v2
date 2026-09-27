@@ -14,7 +14,7 @@ import {
   addReqShot, attachReqShots, looseReqShots, purgeLooseReqShots
 } from "./db.js";
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { artworkSvg } from "./artwork.js";
+import { cleanArt } from "./artwork.js";
 
 const FILE = "./test-auth.db";
 rmSync(FILE, { force: true });
@@ -131,20 +131,24 @@ check("세션 일괄 삭제 — 퇴사·회수 시 접근 차단", () => {
   assert.equal(db.prepare("SELECT COUNT(*) c FROM sessions WHERE account_id = ?").get(boss.id).c, 0);
 });
 
-check("삽화 조립 — 팔레트 밖 색·이상 좌표는 튕겨낸다", () => {
-  const svg = artworkSvg({
-    배경: "javascript:x", 의도: "",
-    도형: [
-      { 형: "원", x: 10, y: 10, w: 40, h: 40, 색: '"><script>', 회전: 0 },
-      { 형: "사각", x: "말도 안 되는 값", y: 9999, w: -50, h: 30, 색: "파랑", 회전: 999 },
-      { 형: "삼각", x: 60, y: 50, w: 30, h: 40, 색: "노랑", 회전: -20 }
-    ]
-  }, "칼럼");
-  assert.ok(!/script|javascript/i.test(svg), "AI 출력이 마크업으로 새면 안 된다");
+check("삽화 — AI가 쓴 SVG는 허용 목록으로 다시 조립한다", () => {
+  const raw = `<svg viewBox="0 0 1600 900" onload="alert(1)"><script>alert(1)</script>
+    <rect width="1600" height="900" fill="#F4F1EA"/><text x="10" y="10">글자</text>
+    <rect x="100" y="100" width="400" height="300" fill="#ff0000" onclick="x()" style="fill:url(http://e)"/>
+    <circle cx="800" cy="450" r="200" fill="url(javascript:x)" stroke="#123" stroke-width="12"/>
+    <g transform="rotate(12 800 450)"><path d="M0 0 L100 100 Z" fill="white"/>
+    <image href="http://evil/x.png"/><use href="#a"/><polygon points="1,2 3,4 5,6" fill="#005bbb"/>
+    <foreignObject><div>x</div></foreignObject>`;
+  const svg = cleanArt(raw, "칼럼");
+  assert.ok(svg, "그릴 것이 있으면 나온다");
+  assert.ok(!/script|onload|onclick|style=|javascript|http|<text|<image|<use|foreignObject|글자/i.test(svg.replace('xmlns="http://www.w3.org/2000/svg"', "")), svg);
+  assert.ok(svg.includes('fill="#E63329"'), "팔레트 밖 빨강은 가장 가까운 빨강으로");
+  assert.ok(svg.includes('fill="#F4F1EA"') && svg.includes('fill="#005BBB"'), "white·소문자 hex도 팔레트로");
+  assert.ok(svg.includes('stroke="#111111"'), "어두운 색은 잉크로");
+  assert.ok(svg.includes("</g></svg>"), "닫히지 않은 g는 서버가 닫는다");
   assert.ok(svg.includes('width="1600" height="900"'), "칼럼은 16:9 판형");
-  assert.ok(svg.includes('fill="#111111"'), "모르는 색은 잉크로 떨어진다");
-  assert.equal((svg.match(/<circle|<rect|<polygon/g) || []).length, 4, "배경 1 + 도형 3");
-  assert.ok(artworkSvg({ 배경: "빨강" }, "표지").includes('width="1200" height="1600"'), "표지는 3:4 판형");
+  assert.ok(cleanArt("<svg><rect/><rect/></svg>", "표지") === null, "그릴 것이 셋 미만이면 없다");
+  assert.ok(cleanArt('<rect/><rect/><rect width="1"/>', "표지").includes('width="1200" height="1600"'), "표지는 3:4 판형");
 });
 
 check("조직도는 서버에 남는다 — 고친 사람만 보이던 localStorage를 대신한다", () => {

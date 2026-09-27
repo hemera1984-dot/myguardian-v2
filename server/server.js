@@ -19,7 +19,7 @@ import {
   listReqPosts, getReqPost, addReqPost, editReqPost, answerReqPost, deleteReqPost, toggleReqVote,
   addReqShot, getReqShot, looseReqShots, attachReqShots, purgeLooseReqShots
 } from "./db.js";
-import { artworkSvg } from "./artwork.js";
+import { cleanArt, artPrompt, ART_SCHEMA } from "./artwork.js";
 import { chartSvg } from "./chart.js";
 
 const PORT = Number(process.env.PORT || 8787);
@@ -329,7 +329,7 @@ function cors(req, res) {
     res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     res.setHeader("Access-Control-Max-Age", "86400");
   }
 }
@@ -369,19 +369,47 @@ function send(res, status, body) {
   res.end(text);
 }
 
+// 사용자에게 그대로 보여 줄 오류 — 최상위 catch가 이 상태 코드로 내보낸다
+function 상태오류(status, message) {
+  const e = new Error(message);
+  e.status = status;
+  return e;
+}
+
+// AI 응답에서 JSON을 꺼낸다. 끝에 이어진 글 블록들을 붙여 읽는다 — 출력 도중 대체 모델로
+// 넘어가면(fallbacks) 앞 모델의 부분 출력과 이어 쓴 조각이 다른 블록으로 온다.
+// 붙인 것이 안 읽히면 마지막 블록 하나로 한 번 더 본다.
+function 응답JSON(content) {
+  const bs = content || [];
+  const tail = [];
+  for (let i = bs.length - 1; i >= 0; i--) {
+    const t = String(bs[i] && bs[i].type || "");
+    if (t === "text") tail.unshift(bs[i].text || "");
+    else if (/fallback/.test(t)) continue;
+    else break;
+  }
+  for (const cand of [tail.join(""), tail[tail.length - 1]]) {
+    if (!cand) continue;
+    try { return JSON.parse(cand); } catch { /* 다음 후보 */ }
+  }
+  return undefined;
+}
+
 function readJson(req, limit = 64 * 1024) {
   return new Promise((resolve, reject) => {
     let size = 0;
     const chunks = [];
     req.on("data", (c) => {
       size += c.length;
-      if (size > limit) { reject(new Error("본문이 너무 큽니다.")); req.destroy(); return; }
+      if (size > limit) { req.removeAllListeners("data"); req.resume(); reject(상태오류(413, "본문이 너무 큽니다.")); return; }
       chunks.push(c);
     });
     req.on("end", () => {
       if (!chunks.length) return resolve({});
-      try { resolve(JSON.parse(Buffer.concat(chunks).toString("utf8"))); }
-      catch { reject(new Error("JSON 형식 오류")); }
+      let v;
+      try { v = JSON.parse(Buffer.concat(chunks).toString("utf8")); }
+      catch { return reject(상태오류(400, "보낸 내용의 형식이 올바르지 않습니다.")); }
+      resolve(v == null ? {} : v);    // 본문이 null이면 구조분해에서 터진다
     });
     req.on("error", reject);
   });
@@ -395,7 +423,7 @@ function readBytes(req, limit) {
     const chunks = [];
     req.on("data", (c) => {
       size += c.length;
-      if (size > limit) { reject(new Error("파일이 너무 큽니다.")); req.destroy(); return; }
+      if (size > limit) { req.removeAllListeners("data"); req.resume(); reject(상태오류(413, "파일이 너무 큽니다.")); return; }
       chunks.push(c);
     });
     req.on("end", () => resolve(Buffer.concat(chunks)));
@@ -509,7 +537,11 @@ async function route(req, res, url) {
   // 케어센터 발행물 읽기 — 공개 경로. 독자는 고객이라 로그인이 없다.
   // 서재·지면이 이 목록을 정적 목록과 병합해 보여준다.
   if (req.method === "GET" && path === "/care/issues") {
-    return send(res, 200, readCareList());
+    return send(res, 200, readCareList().map((i) => {
+      if (!i || typeof i !== "object") return i;
+      const { "올린계정": _뗌, ...rest } = i;
+      return rest;
+    }));
   }
   const careBody = req.method === "GET" && /^\/care\/issues\/([a-z0-9-]{1,64})$/.exec(path);
   if (careBody) {
@@ -534,7 +566,7 @@ async function route(req, res, url) {
       ? `『${호["채널"]} ${호["발행인"] || "안창민"}』 `
           + (호["주차라벨"] ? 호["주차라벨"] + " " : "") + `통권 ${호["호수"]}호`
       : "안창민 케어센터";
-    const 설명 = String(호["요약"] || (호["목차"] || []).map((t) => t && t["제목"]).filter(Boolean).join(" · ")
+    const 설명 = String(호["요약"] || (호["꼭지"] || []).map((t) => t && t["제목"]).filter(Boolean).join(" · ")
       || "보험·경제·상속을 쉽게 풀어 전하는 발행물입니다.").slice(0, 150);
     // 카톡은 SVG를 미리보기로 그리지 않는다 — 삽화 표지인 호는 기본 이미지로 돌린다
     const 커버 = String(호["커버이미지"] || "");
@@ -642,13 +674,16 @@ async function route(req, res, url) {
   function 너무많이틀렸나() {
     const r = 열람실패.get(me.id);
     if (!r) return 0;
-    if (Date.now() > r.until) { 열람실패.delete(me.id); return 0; }
-    return r.n >= 5 ? Math.ceil((r.until - Date.now()) / 1000) : 0;
+    if (Date.now() - r.last > 86400e3) { 열람실패.delete(me.id); return 0; }
+    return r.n >= 5 && Date.now() < r.until ? Math.ceil((r.until - Date.now()) / 1000) : 0;
   }
+  // 다섯 번까지는 그냥 두고, 그 뒤로는 틀릴 때마다 잠금이 두 배로 늘어 15분에서 멈춘다.
+  // 횟수는 마지막으로 틀린 뒤 하루가 지나야 지운다 — 잠금이 풀렸다고 0으로 돌리지 않는다.
   function 틀림() {
-    const r = 열람실패.get(me.id) || { n: 0, until: 0 };
+    const r = 열람실패.get(me.id) || { n: 0, until: 0, last: 0 };
     r.n++;
-    r.until = Date.now() + Math.min(15 * 60000, 1000 * Math.pow(2, r.n));
+    r.last = Date.now();
+    if (r.n >= 5) r.until = r.last + Math.min(15 * 60000, 30000 * Math.pow(2, r.n - 5));
     열람실패.set(me.id, r);
   }
 
@@ -720,8 +755,11 @@ async function route(req, res, url) {
       return send(res, 400, { error: "열람 비밀번호는 8자 이상으로 정하세요." });
     }
     // 이미 있으면 지금 것을 함께 넣어야 바꾼다 — 자리를 비운 사이 바뀌지 않게
-    if (getDoc(db, "열람비번") && !비번맞나(지금것)) {
-      return send(res, 403, { error: "지금 쓰는 열람 비밀번호가 맞지 않습니다." });
+    if (getDoc(db, "열람비번")) {
+      const 남은 = 너무많이틀렸나();
+      if (남은) return send(res, 429, { error: `여러 번 틀렸습니다. ${남은}초 뒤에 다시 시도하세요.` });
+      if (!비번맞나(지금것)) { 틀림(); return send(res, 403, { error: "지금 쓰는 열람 비밀번호가 맞지 않습니다." }); }
+      열람실패.delete(me.id);
     }
     const salt = randomBytes(16).toString("base64");
     // 파라미터를 함께 남긴다 — 나중에 더 올려도 옛 해시를 그대로 검증할 수 있다
@@ -733,6 +771,7 @@ async function route(req, res, url) {
   if (req.method === "PUT" && path === "/clients") {
     const body = await readJson(req, 8 * 1024 * 1024);
     const 배열 = Array.isArray(body) ? body : (body && Array.isArray(body["레코드"]) ? body["레코드"] : [body]);
+    const 신규 = !Array.isArray(body) && body["신규"] === true;
     let 주인 = me.id;
     if (!Array.isArray(body) && body && body["소유"] != null) {
       if (!me.is_admin) return send(res, 403, { error: "다른 사람 몫으로 올리는 것은 총관리자만 할 수 있습니다." });
@@ -757,6 +796,11 @@ async function route(req, res, url) {
       if (!/^[A-Za-z0-9-]{1,40}$/.test(String(r["고객코드"] || ""))) {
         return send(res, 400, { error: "고객코드 형식 오류: 영문·숫자·하이픈 1~40자." });
       }
+    }
+    if (신규) {
+      const 있는것 = new Set(listClientStamps(db, 주인).map((x) => x["고객코드"]));
+      const 겹침 = 배열.map((r) => String(r["고객코드"])).filter((c) => 있는것.has(c));
+      if (겹침.length) return send(res, 409, { error: `이미 있는 고객코드입니다: ${겹침.join(", ")}`, 겹침 });
     }
     for (const r of 배열) {
       const { "갱신시각": _버림, ...알맹이 } = r;
@@ -811,7 +855,7 @@ async function route(req, res, url) {
       body: JSON.stringify({
         model: TITLE_MODEL,
         fallbacks: "default",
-        max_tokens: 2000,
+        max_tokens: 8000,
         output_config: {
           effort: "low",
           format: {
@@ -840,9 +884,9 @@ async function route(req, res, url) {
     if (data.stop_reason === "refusal") {
       return send(res, 422, { error: "이 내용으로는 제목을 만들 수 없습니다." });
     }
-    const textBlock = (data.content || []).find((b) => b.type === "text");
-    let 후보 = [];
-    try { 후보 = JSON.parse(textBlock.text)["후보"] || []; } catch (e) { 후보 = []; }
+    const 읽음 = 응답JSON(data.content);
+    const 후보 = (읽음 && Array.isArray(읽음["후보"])) ? 읽음["후보"] : [];
+    if (!후보.length) console.error("제목 응답을 읽지 못했다 — stop_reason:", data.stop_reason);
     if (!후보.length) return send(res, 502, { error: "결과를 읽지 못했습니다." });
     return send(res, 200, { 후보: 후보.slice(0, 3) });
   }
@@ -851,10 +895,19 @@ async function route(req, res, url) {
   // 공통 호출부. 외부 패키지를 쓰지 않는 서버라 공식 SDK 대신 원시 HTTP를 쓴다.
   // 망이 한 번 끊겼다고 쓰던 것이 날아가면 안 된다. 잠깐 쉬고 한 번 더 걸어 본다.
   // 다시 걸어도 될 실패만 다시 건다 — 거절·형식 오류는 다시 걸어도 같은 결과다.
-  async function 다시걸기(부르기, 횟수 = 2) {
+  async function 다시걸기(부르기, 횟수 = 3) {
     let 마지막;
     for (let i = 0; i < 횟수; i++) {
-      try { return await 부르기(); }
+      try {
+        const r = await 부르기();
+        if (r && [429, 500, 502, 503, 504, 529].includes(r.status) && i < 횟수 - 1) {
+          console.warn(`AI 호출이 ${r.status}로 돌아왔다 — ${i + 1}번째, 다시 건다`);
+          try { await r.body?.cancel(); } catch { /* 버린다 */ }
+          await new Promise((ok) => setTimeout(ok, 2000 * (i + 1)));
+          continue;
+        }
+        return r;
+      }
       catch (e) {
         마지막 = e;
         const 망문제 = e && (e.name === "TypeError" || e.name === "TimeoutError"
@@ -931,7 +984,7 @@ async function route(req, res, url) {
       body: JSON.stringify({
         model: TITLE_MODEL,
         fallbacks: "default",
-        max_tokens: o.maxTokens || 2000,
+        max_tokens: Math.max(o.maxTokens || 0, 8000),
         stream: true,
         output_config: {
           effort: o.effort || "low",
@@ -948,8 +1001,12 @@ async function route(req, res, url) {
     }
     const data = await 흘려받기(upstream);
     if (data.stop_reason === "refusal") return { error: 422 };
-    const textBlock = (data.content || []).filter((b) => b.type === "text").pop();
-    try { return { value: JSON.parse(textBlock.text) }; } catch (e) { return { error: 502 }; }
+    const value = 응답JSON(data.content);
+    if (value === undefined) {
+      console.error("AI 응답을 읽지 못했다 — stop_reason:", data.stop_reason);
+      return { error: 502 };
+    }
+    return { value };
   }
 
   // 칼럼별 필자 페르소나 — 같은 사람이 쓴 듯한 균질한 톤을 피한다.
@@ -1259,7 +1316,7 @@ async function route(req, res, url) {
     }
     const svg = chartSvg(spec);
     if (!svg) return send(res, 200, { "그림없음": true, "사유": "그릴 것이 둘 미만입니다." });
-    const 저장 = saveMedia(Buffer.from(svg, "utf8"), "svg");
+    const 저장 = saveMedia(Buffer.from(svg, "utf8"), ".svg");
     const 개수 = spec["종류"] === "흐름" ? (spec["칸"] || []).length : (spec["항목"] || []).length;
     console.log(`데이터 그림: ${spec["종류"]} ${개수}개 — ${me.email}`);
     return send(res, 200, { ...저장, "종류": spec["종류"], "항목수": 개수, "출처": spec["출처"] });
@@ -1328,77 +1385,37 @@ async function route(req, res, url) {
     return send(res, 200, r.value);
   }
 
-  // 삽화 생성 — 이미지 생성 API 없이 지면 삽화를 만든다.
-  // AI에게 도형 배치(0~100 상대좌표)만 받고 SVG 조립·저장은 서버가 한다.
-  // 만들어진 파일은 업로드한 사진과 똑같이 /media/에 놓이므로 지면·서재·카톡이 그대로 쓴다.
+  // 삽화 생성 — 이미지 생성 API 없이 지면 삽화를 코드로 그린다(2026-09-27 다시 지음).
+  // AI가 기사를 읽고 사물·장면 하나를 정해 SVG를 직접 그린다. 서버는 그 원문을 믿지 않고
+  // 허용 목록으로 다시 조립해 /media/에 둔다 — 업로드한 사진과 똑같이 지면·서재가 쓴다.
   if (req.method === "POST" && path === "/ai/artwork") {
     if (!ANTHROPIC_KEY) return send(res, 503, { error: "AI 기능이 설정되지 않았습니다." });
-    const body = await readJson(req);
+    const body = await readJson(req, 256 * 1024);
     const 종류 = body["종류"] === "표지" ? "표지" : "칼럼";
     const 채널 = String(body["채널"] || "월간 안창민").slice(0, 40);
     const 제목 = String(body["제목"] || "").slice(0, 200);
     const 요약 = String(body["요약"] || "").slice(0, 800);
     const 카테고리 = String(body["카테고리"] || "").slice(0, 40);
+    const 본문 = String(body["본문"] || "").slice(0, 4000);
     const 제목들 = (Array.isArray(body["제목들"]) ? body["제목들"] : []).slice(0, 5)
       .map((t) => String(t).slice(0, 200)).filter(Boolean);
     if (종류 === "표지" ? !제목들.length : !제목) {
       return send(res, 400, { error: 종류 === "표지" ? "칼럼 제목이 먼저 필요합니다." : "제목이 먼저 필요합니다." });
     }
-
-    const prompt = [
-      종류 === "표지"
-        ? `잡지 "${채널}" 표지의 추상 그래픽을 구성한다. 세로 판형(3:4)이다.`
-        : `잡지 "${채널}"에 실릴 칼럼 삽화를 구성한다. 가로 판형(16:9)이다.`,
-      종류 === "표지" ? "이번 호 칼럼:" : `칼럼 제목: ${제목}`,
-      ...(종류 === "표지" ? 제목들.map((t) => "- " + t) : []),
-      종류 !== "표지" && 카테고리 ? `분야: ${카테고리}` : "",
-      종류 !== "표지" && 요약 ? `요약: ${요약}` : "",
-      "",
-      "양식은 바우하우스다. 원·사각·삼각을 삼원색으로 배치한 평면 구성이고,",
-      "글의 주제를 상징적으로 담되 도표나 설명 그림이 아니다.",
-      "",
-      "규칙:",
-      "- 배경 1색, 도형 3~6개.",
-      "- 좌표 x·y는 도형 왼쪽 위 모서리, 크기 w·h는 화면 대비 백분율(0~100)이다.",
-      "- 화면 밖으로 일부 걸쳐 나가는 큰 도형을 하나 두어 시원하게 만든다(음수·100 초과 좌표 허용).",
-      "- 큰 도형 1개, 중간 1~2개, 작은 것 나머지로 크기를 확실히 다르게 한다. 격자처럼 늘어놓지 않는다.",
-      "- 배경과 명도 차이가 큰 색을 골라 도형이 묻히지 않게 한다.",
-      "- 회전은 사각·삼각에만 의미가 있다(원은 무시된다). 쓰지 않으면 0.",
-      "- 의도는 무엇을 어떻게 상징했는지 한국어 한 줄."
-    ].filter(Boolean).join("\n");
-
-    const r = await claude(prompt, {
-      type: "object",
-      properties: {
-        배경: { type: "string", enum: ["종이", "노랑", "파랑", "빨강", "잉크"] },
-        도형: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              형: { type: "string", enum: ["원", "사각", "삼각"] },
-              x: { type: "number" }, y: { type: "number" },
-              w: { type: "number" }, h: { type: "number" },
-              색: { type: "string", enum: ["빨강", "파랑", "노랑", "잉크", "종이"] },
-              회전: { type: "number" }
-            },
-            required: ["형", "x", "y", "w", "h", "색", "회전"],
-            additionalProperties: false
-          }
-        },
-        의도: { type: "string" }
-      },
-      required: ["배경", "도형", "의도"],
-      additionalProperties: false
-    }, { effort: "low", maxTokens: 2000 });
-
-    if (r.error === 422) return send(res, 422, { error: "이 내용으로는 삽화를 만들 수 없습니다." });
-    if (r.error) return send(res, 502, { error: "삽화를 만들지 못했습니다. 잠시 후 다시 시도하세요." });
-    if (!Array.isArray(r.value["도형"]) || !r.value["도형"].length) {
-      return send(res, 502, { error: "삽화 구성이 비어 있습니다. 다시 시도하세요." });
+    const prompt = artPrompt({ 종류, 채널, 제목, 카테고리, 요약, 본문, 제목들 });
+    // 한 번 더 — 드물게 그릴 것이 비거나 마크업이 무너진다
+    for (let 시도 = 0; 시도 < 2; 시도++) {
+      const r = await claude(prompt, ART_SCHEMA, { effort: "medium", maxTokens: 24000, timeout: 240000 });
+      if (r.error === 422) return send(res, 422, { error: "이 내용으로는 삽화를 만들 수 없습니다." });
+      if (r.error) return send(res, 502, { error: "삽화를 만들지 못했습니다. 잠시 후 다시 시도하세요." });
+      const svg = cleanArt(r.value["svg"], 종류);
+      if (!svg) { console.warn(`삽화 비어 다시 그림(${시도 + 1}) — ${me.email}`); continue; }
+      const info = saveMedia(Buffer.from(svg, "utf8"), ".svg");
+      console.log(`삽화: ${채널} ${종류} ${svg.length}자 — ${r.value["장면"]} — ${me.email}`);
+      // 표지는 화면이 PNG로 바꿔 다시 올린다(카톡이 SVG를 못 그린다) — 원문을 같이 준다
+      return send(res, 200, { ...info, 의도: String(r.value["의도"] || r.value["장면"] || ""), ...(종류 === "표지" ? { svg } : {}) });
     }
-    const info = saveMedia(Buffer.from(artworkSvg(r.value, 종류), "utf8"), ".svg");
-    return send(res, 200, { ...info, 의도: String(r.value["의도"] || "") });
+    return send(res, 502, { error: "삽화가 비어 나왔습니다. 다시 시도하세요." });
   }
 
   // 편집장의 말 — 확정된 칼럼 제목들을 보고 서문을 쓴다
@@ -1443,6 +1460,7 @@ async function route(req, res, url) {
   async function claudeWeb(prompt, schema, opts) {
     const o = opts || {};
     let messages = [{ role: "user", content: prompt }];
+    let 이어온 = [];
     // 검색이 실제로 돌았는지 남긴다 — 횟수와 출처를 응답에 실어 보고에 쓴다.
     let 검색횟수 = 0;
     const 출처 = [];
@@ -1494,12 +1512,16 @@ async function route(req, res, url) {
       수확(data.content);
       if (data.stop_reason === "refusal") return { error: 422 };
       if (data.stop_reason === "pause_turn") {
-        messages = [messages[0], { role: "assistant", content: data.content }];
+        이어온 = 이어온.concat(data.content || []);
+        messages = [messages[0], { role: "assistant", content: 이어온 }];
         continue;
       }
-      const texts = (data.content || []).filter((b) => b.type === "text");
-      const last = texts[texts.length - 1];
-      try { return { value: JSON.parse(last.text), 검색횟수, 출처 }; } catch (e) { return { error: 502 }; }
+      const value = 응답JSON(data.content);
+      if (value === undefined) {
+        console.error("검증 응답을 읽지 못했다 — stop_reason:", data.stop_reason);
+        return { error: 502 };
+      }
+      return { value, 검색횟수, 출처 };
     }
     return { error: 504 };
   }
@@ -1615,7 +1637,10 @@ async function route(req, res, url) {
       return { 번호, 결과, 요약: String(r.value["요약"] || ""), 검색횟수: r.검색횟수 || 0, 출처: r.출처 || [] };
     });
 
-    const 결과들 = await Promise.all(jobs);
+    const 결과들 = await Promise.all(jobs.map((j, idx) => j.catch((e) => {
+      console.error("검증 실패(기사 " + (idx + 1) + "):", e && e.message);
+      return { 번호: Number(기사[idx] && 기사[idx]["번호"]) || idx + 1, 오류: true, 결과: [], 요약: "검증하지 못했습니다." };
+    })));
     const 검증 = 결과들.flatMap((x) => x.결과);
     // 검색 도구가 질의문을 돌려주지 않는다 — 횟수와 출처로 센다
     const 검색 = 결과들.reduce((n, x) => n + (x.검색횟수 || 0), 0);
@@ -1658,11 +1683,28 @@ async function route(req, res, url) {
     if (["일간", "주간", "월간"].indexOf(목록항목["채널"]) < 0) {
       return send(res, 400, { error: "채널은 일간·주간·월간 중 하나여야 합니다." });
     }
+    if (!Array.isArray(본문["기사"]) || !본문["기사"].length) return send(res, 400, { error: "기사가 없습니다." });
+    // 이미지는 우리 미디어 창고와 정적 과월호 폴더만 — 외부 사진(통신사 핫링크 포함)을 막는다(헌법)
+    const 우리그림 = (v) => v === undefined || v === "" || (typeof v === "string" && !v.includes("..")
+      && /^[\w.\/:-]{1,300}$/.test(v)
+      && (v.startsWith("/media/") || v.startsWith("data/care/")
+        || (MEDIA_BASE && v.startsWith(MEDIA_BASE.replace(/\/$/, "") + "/"))));
+    if (!우리그림(목록항목["커버이미지"]) || 본문["기사"].some((a) => !a || typeof a !== "object" || !우리그림(a["이미지"]))) {
+      return send(res, 400, { error: "이미지는 이 서버에 올린 것만 쓸 수 있습니다." });
+    }
     const entry = { ...목록항목 };
     delete entry["상태"]; // 발행하기를 눌렀다 = 발행 확정. 발행 목록에 초안 표기를 남기지 않는다.
 
     const list = readCareList();
     const 이미 = list.find((i) => i && i.id === id);
+    const 편집장 = canApprove(db, me);
+    // 남이 올린 호는 승인권자만 덮는다. 옛 호(올린 사람 기록 없음)도 승인권자만.
+    if (이미 && !편집장 && 이미["올린계정"] !== me.id) {
+      return send(res, 403, { error: `${이미["발행인"] || "다른 사람"}의 호입니다. 덮어쓸 수 없습니다.` });
+    }
+    // 발행인 이름은 승인권자가 아니면 본인 이름으로 고정한다 — 남의 이름으로 발행하지 못하게
+    if (!편집장) entry["발행인"] = me.name || entry["발행인"];
+    entry["올린계정"] = 이미 && 이미["올린계정"] != null ? 이미["올린계정"] : me.id;
     // 두 사람이 같은 호수를 각자 만들면 id가 겹친다. 말없이 덮어쓰면 앞사람 호가 사라진다.
     // 덮어쓰려면 "덮어쓰기"를 함께 보내야 한다 — 화면이 사용자에게 확인을 받고 넣는다.
     if (이미 && !목록항목["덮어쓰기"]) {
@@ -1839,7 +1881,8 @@ async function route(req, res, url) {
 
   const briefDel = req.method === "DELETE" && /^\/brief\/library\/(.+)$/.exec(path);
   if (briefDel) {
-    const id = decodeURIComponent(briefDel[1]);
+    let id;
+    try { id = decodeURIComponent(briefDel[1]); } catch { return send(res, 400, { error: "자료 번호 형식 오류입니다." }); }
     const list = readBriefLibrary();
     const gone = list.find((x) => x && String(x.id) === id);
     if (!gone) return send(res, 404, { error: "없는 자료입니다." });
@@ -1866,6 +1909,10 @@ async function route(req, res, url) {
     const type = String(req.headers["content-type"] || "").split(";")[0].trim();
     const ext = IMAGE_TYPES[type];
     if (!ext) return send(res, 400, { error: "지원하지 않는 형식입니다. (JPG·PNG·WebP·GIF)" });
+    if (Number(req.headers["content-length"] || 0) > MAX_IMAGE) {
+      req.resume();
+      return send(res, 413, { error: `사진은 ${Math.round(MAX_IMAGE / 1048576)}MB까지 올릴 수 있습니다.` });
+    }
     const bytes = await readBytes(req, MAX_IMAGE);
     if (!bytes.length) return send(res, 400, { error: "빈 파일입니다." });
     return send(res, 200, saveMedia(bytes, ext));
@@ -2014,6 +2061,14 @@ async function route(req, res, url) {
     return send(res, 200, { 대기: listPending(db), 구성원: listMembers(db) });
   }
 
+  // rank는 작을수록 높다(BM 먼저). 총관리자는 누구에게나 준다.
+  function 직급이높나(code) {
+    if (me.is_admin) return false;
+    const gs = listGrades(db);
+    const g = gs.find((x) => x.code === code), mine = gs.find((x) => x.code === me.grade);
+    return !!g && (!mine || g.rank < mine.rank);
+  }
+
   if (req.method === "POST" && path === "/admin/approve") {
     if (!canApprove(db, me)) return send(res, 403, { error: "승인 권한이 없습니다." });
     const { 대상, 직급, 상위, 자리 } = await readJson(req);
@@ -2030,6 +2085,7 @@ async function route(req, res, url) {
     if (!canAssignUnder(db, me, parentId)) {
       return send(res, 403, { error: "자기 하위 조직으로만 승인할 수 있습니다." });
     }
+    if (직급이높나(직급)) return send(res, 403, { error: "자기보다 높은 직급은 총관리자만 줄 수 있습니다." });
     approve(db, { targetId: target.id, grade: 직급, parentId, approverId: me.id });
     // 하랑지점에도 같은 사람을 넣는다(2026-09-10 사용자: 「어느 쪽으로 초대받아 로그인하든 둘 다 가입」).
     // 승인자의 세션을 그대로 넘긴다 — 하랑지점도 같은 세션을 읽으니 권한은 그쪽 규칙이 가른다.
@@ -2041,6 +2097,7 @@ async function route(req, res, url) {
   }
 
   if (req.method === "POST" && path === "/admin/suspend") {
+    if (!canApprove(db, me)) return send(res, 403, { error: "승인 권한이 없습니다." });
     const { 대상 } = await readJson(req);
     const target = getAccount(db, Number(대상));
     if (!target) return send(res, 404, { error: "대상 계정을 찾을 수 없습니다." });
@@ -2072,6 +2129,9 @@ async function route(req, res, url) {
     const { 대상, 이름 } = await readJson(req);
     const target = getAccount(db, Number(대상));
     if (!target) return send(res, 404, { error: "대상 계정을 찾을 수 없습니다." });
+    if (!me.is_admin && (target.is_admin || (target.id !== me.id && !isDescendantOf(db, target.id, me.id)))) {
+      return send(res, 403, { error: "권한 범위 밖의 계정입니다." });
+    }
     const v = String(이름 || "").trim();
     if (v.length > 40) return send(res, 400, { error: "이름이 너무 깁니다." });
     setDisplayName(db, target.id, v);
@@ -2110,6 +2170,7 @@ async function route(req, res, url) {
     if (!me.is_admin && (target.is_admin || !isDescendantOf(db, target.id, me.id))) {
       return send(res, 403, { error: "권한 범위 밖의 계정입니다." });
     }
+    if (직급이높나(직급)) return send(res, 403, { error: "자기보다 높은 직급은 총관리자만 줄 수 있습니다." });
     db.prepare("UPDATE accounts SET grade = ? WHERE id = ?").run(직급, target.id);
     console.log(`직급 고침: ${target.email} ${target.grade || "-"} → ${직급} — ${me.email}`);
     const auth = req.headers.authorization;
@@ -2142,11 +2203,16 @@ async function route(req, res, url) {
 const server = createServer((req, res) => {
   cors(req, res);
   if (req.method === "OPTIONS") { res.writeHead(204); return res.end(); }
-  const url = new URL(req.url, "http://localhost");
+  let url;
+  try { url = new URL(req.url, "http://localhost"); }
+  catch { return send(res, 400, { error: "주소 형식이 올바르지 않습니다." }); }
   route(req, res, url).catch((err) => {
+    if (res.headersSent) { res.destroy(); return; }
     const msg = err && err.message ? err.message : "처리 중 오류가 발생했습니다.";
-    // 검증 실패는 사용자 입력 문제이므로 400, 나머지는 500
-    if (/토큰|형식|JSON|앱의|발급자|만료|미인증/.test(msg)) return send(res, 400, { error: msg });
+    if (err && err.status) return send(res, err.status, { error: msg });
+    // 구글 토큰 검증 실패는 사용자 쪽 문제이므로 400, 나머지는 500
+    // (「JSON」은 뺐다 — 서버 파일이 깨진 것까지 입력 오류로 보이고 속사정이 화면에 새었다)
+    if (/토큰|형식|앱의|발급자|만료|미인증/.test(msg)) return send(res, 400, { error: msg });
     // 속사정을 그대로 내보내면 사용자는 "fetch failed" 같은 말을 보고 자기 입력을 고치려 든다.
     // 로그에는 원문을 남기고 화면에는 무엇을 하면 되는지만 알린다(2026-09-06).
     console.error("처리 실패:", url.pathname, msg);
