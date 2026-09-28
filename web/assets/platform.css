@@ -2415,8 +2415,14 @@ body.platform {
 body.platform .platform-sidebar {
   width: var(--rail-w);
   padding: 0;
-  overflow: hidden;
+  /* 메뉴가 늘어 노트북 높이(768px 안팎)를 넘는다 — 아래 항목이 잘리지 않게 세로로만 넘긴다 */
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
 }
+body.platform .platform-sidebar > * { flex-shrink: 0; } /* 넘칠 때 항목이 눌려 찌그러지지 않게 */
 body.platform .platform-brand {
   display: grid; place-items: center;
   min-height: 60px; padding: 0;
