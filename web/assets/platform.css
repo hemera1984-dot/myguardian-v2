@@ -2736,3 +2736,22 @@ body.platform .vault-err {
 body.platform .vault-err[hidden] { display: none; }
 body.platform .vault-row { display: flex; gap: 8px; }
 body.platform .vault-row .btn { flex: 1; min-height: 40px; }
+
+/* ══ 터치 기기 (폰·패드, 2026-09-28) ═══════════════════════════════════════════
+   손가락으로 누르는 기기에서만 건다 — 마우스 쓰는 PC의 밀도는 그대로 둔다.
+   1) 단추·선택칸은 최소 36px (관리자 직급 선택칸이 26px이었다)
+   2) 아이폰은 16px보다 작은 입력칸을 누르면 화면을 확대해 버린다 — 입력칸 글자를 16px로 */
+@media (pointer: coarse) {
+  body.platform button,
+  body.platform select,
+  body.platform .install-back,
+  body.platform input:not([type="checkbox"]):not([type="radio"]):not([type="file"]) {
+    min-height: 36px;
+  }
+  body.platform .install-back { display: inline-flex; align-items: center; }
+  body.platform input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  body.platform select,
+  body.platform textarea {
+    font-size: 16px !important;
+  }
+}
