@@ -1237,7 +1237,17 @@
         $("btn-connect").classList.remove("btn-primary");
         $("btn-vault-get").classList.remove("btn-primary");
         if (SOURCE === "남") $("admin-box").open = true;
+        // 홈에서 넘어온 주소 — ?code= 이면 그 고객을 열고, ?new=1 이면 등록 칸을 연다(한 번만)
+        if (!주소처리됨) {
+          주소처리됨 = true;
+          var u = new URLSearchParams(location.search);
+          var 코드 = u.get("code");
+          var 줄 = 코드 && document.querySelector('.case-row[data-code="' + 코드.replace(/[^A-Za-z0-9-]/g, "") + '"]');
+          if (줄) 줄.click();
+          if (u.get("new") === "1" && !$("btn-new").hidden) $("btn-new").click();
+        }
       };
+      var 주소처리됨 = false;
 
       // 폰·아이패드는 PC 폴더를 열 수 없다(showDirectoryPicker 없음) — 폴더 단추를 치우고,
       // 로그인돼 있으면 서버 고객을 바로 연다. 단추를 한 번 더 누르게 하지 않는다(2026-09-28 사용자).

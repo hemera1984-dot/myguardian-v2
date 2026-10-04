@@ -2753,3 +2753,23 @@ body.platform .vault-row .btn { flex: 1; min-height: 40px; }
     font-size: 16px !important;
   }
 }
+
+/* ══ 폰 하단 탭 (2026-10-04) — platform.js buildTabs 가 만든다. 위 2px 잉크 괘선, 그림자 없음 ══ */
+.mobile-tabs { display: none; }
+@media (max-width: 767px) {
+  .mobile-tabs {
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+    padding: 0 env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    background: var(--platform-bg); border-top: 2px solid var(--platform-ink);
+  }
+  .mobile-tabs a, .mobile-tabs button {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    min-height: 58px; padding: 6px 0; border: 0; background: none;
+    font: inherit; font-size: 11px; font-weight: 700; color: var(--platform-muted); cursor: pointer;
+    transition: color .14s;
+  }
+  .mobile-tabs a.on { color: var(--platform-blue); }
+  .mobile-tabs .nav-icon { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  body.has-tabs .platform-footer { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+}

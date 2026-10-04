@@ -223,6 +223,7 @@
     addAdminMenu(sidebar);
     buildRail(sidebar);
     fillTopbar();
+    buildTabs(sidebar);
 
     var status = sidebar.querySelector(".sidebar-status");
     var existing = sidebar.querySelector("#btn-install");
@@ -302,6 +303,40 @@
       a.setAttribute("title", name);
       if (a.classList.contains("active")) a.setAttribute("aria-current", "page");
     });
+  }
+  // 폰 하단 탭 (2026-10-04) — 햄버거에 메뉴를 숨기면 찾는 비율이 절반으로 떨어진다(NN/g).
+  // 레일의 링크를 그대로 가져다 네 칸을 만들고(화면마다 경로가 달라도 맞는다), 다섯째 「더보기」는 기존 메뉴 서랍을 연다.
+  // 탭은 이동만 한다 — 동작 단추는 화면 안에 둔다. 767px 이하에서만 보인다(platform.css).
+  function buildTabs(sidebar) {
+    if (document.querySelector(".mobile-tabs")) return;
+    var links = Array.prototype.slice.call(sidebar.querySelectorAll(".platform-nav a"));
+    var want = ["홈", "고객관리", "브리핑", "케어센터"];
+    var pick = want.map(function (n) {
+      return links.filter(function (a) { return (a.getAttribute("title") || a.textContent).trim() === n; })[0];
+    }).filter(Boolean);
+    if (pick.length < 3) pick = links.filter(function (a) { return a.getAttribute("target") !== "_blank"; }).slice(0, 4);
+    var nav = document.createElement("nav");
+    nav.className = "mobile-tabs";
+    nav.setAttribute("aria-label", "주 메뉴");
+    pick.forEach(function (a) {
+      var t = document.createElement("a");
+      t.href = a.getAttribute("href");
+      var name = (a.getAttribute("title") || a.textContent).trim();
+      var icon = a.querySelector(".nav-icon");
+      if (icon) t.appendChild(icon.cloneNode(true));
+      var label = document.createElement("span");
+      label.textContent = name === "고객관리" ? "고객" : name;
+      t.appendChild(label);
+      if (a.classList.contains("active")) { t.className = "on"; t.setAttribute("aria-current", "page"); }
+      nav.appendChild(t);
+    });
+    var more = document.createElement("button");
+    more.type = "button";
+    more.innerHTML = '<svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14"/></svg><span>더보기</span>';
+    more.addEventListener("click", function () { var m = document.getElementById("mobile-menu"); if (m) m.click(); });
+    nav.appendChild(more);
+    document.body.appendChild(nav);
+    document.body.classList.add("has-tabs");
   }
   // 상단바에 현재 위치와 브랜드를 둔다 — 레일은 탐색만 맡는다 (역할 분리)
   function fillTopbar() {

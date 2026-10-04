@@ -13,240 +13,202 @@
   <script src="assets/platform.js"></script>
   <script src="assets/auth.js"></script>
   <style>
-    /* ── 홈 전용 스타일 — s1 구조 (매거진 표지 문법의 업무 도구) ─────────────
-       토큰은 platform.css :root 변수만 참조한다. 면 구분은 1px 선 중심.
-       타입 계약: 7단 10/11/13/15/18/21/28(모바일 디스플레이 24), 웨이트 400/600/800. */
+    /* ── 홈 = 「오늘」 (2026-10-04 개편) ─────────────────────────────────────
+       조사 4갈래(국내 설계사 앱·해외 CRM·업무 SaaS·현장 영업 앱) + 클로드·코덱스 교차 진단 + 시안 2판 확정.
+       메뉴 목록(레일과 같은 내용)을 걷고, 아침에 열면 오늘 누구를 만나고 누구에게 연락할지가 먼저 보이게 했다.
+       지킨 것: 괘선 두 단계(2px 잉크·1px 헤어라인), 서체 하나, 색은 신호로만. 데이터가 없는 칸은 만들지 않는다.
+       움직임: 색 0.14초, 서랍·알림만 0.2초 transform·opacity. */
+    .platform-main { width: min(1240px, calc(100% - 64px)); padding: 24px 0 72px; }
+    .num { font-variant-numeric: tabular-nums; }
 
-    /* 타입 증명 §4 시공 지침 ① Pretendard Variable 선행 — platform.css 공용 승격 완료 (2026-07-30) */
-
-    /* 콘텐츠 열: max 1120px, 외곽 여백 24~30px (컴포지션 그리드) */
-    .platform-main {
-      width: min(1120px, calc(100% - 60px));
-      padding: 24px 0 60px;
+    .global-search { margin-top: 0; max-width: 560px; }
+    body.platform .global-search input {
+      border: 1px solid var(--platform-line-strong); border-radius: 4px; background: #fff;
+      padding: 10px 14px 10px 36px; font-size: 14px;
     }
-
-    /* 통합검색 — 최상단, 데스크톱 폭 440px (조용한 1행 컨트롤) */
-    .global-search { margin-top: 0; max-width: 440px; }
-    .global-search input { padding-right: 16px; }
+    body.platform .global-search input:focus { border-color: var(--platform-ink); outline: none; }
+    .global-search::before { left: 13px; }
+    .global-search::after { left: 27px; }
     .search-suggest .suggest-empty strong { display: block; font-weight: 600; color: var(--platform-ink); }
-    .search-suggest .suggest-empty span {
-      display: block; margin-top: 4px; color: var(--platform-muted);
-      text-wrap: pretty; /* 타입 증명 §9 시공 지침 ②: 마지막 행 단일 어절 회피 */
-    }
+    .search-suggest .suggest-empty span { display: block; margin-top: 4px; color: var(--platform-muted); text-wrap: pretty; }
 
-    /* ══ 에디토리얼 문법 (2026-08-02 전면 개편) ══════════════════════════════
-       카드-온-캔버스 폐기. 종이 한 장 위에 괘선으로만 구획한다.
-       근거: 회색 캔버스 + 흰 카드 + 테두리·그림자는 어떤 생성기든 내놓는 기본값이라
-       색·서체를 바꿔도 그 인상이 남는다. 선으로만 나누면 케어센터(잡지)와 플랫폼(도구)이
-       같은 편집 문법이 되어 한 브랜드로 묶이고, 같은 높이에 더 많은 실데이터가 들어간다.
-       괘선 2단: 굵은 괘선(2px 잉크) = 구획 시작, 헤어라인(1px) = 항목 사이. */
+    .h-mast { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-top: 22px; padding-bottom: 18px; border-bottom: 2px solid var(--platform-ink); }
+    .h-mast h1 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.04em; line-height: 1.2; }
+    .h-sum { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 8px 0 0; font-size: 14px; color: var(--platform-muted); }
+    .h-sum b { color: var(--platform-ink); font-weight: 700; }
+    .h-sum .due { color: var(--platform-blue); }
+    .h-acts { display: flex; gap: 8px; flex-shrink: 0; }
+    .h-btn {
+      display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 16px;
+      border: 1px solid var(--platform-line-strong); border-radius: 4px; background: #fff; color: var(--platform-ink);
+      font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: background-color .14s, border-color .14s, color .14s;
+    }
+    .h-btn:hover { border-color: var(--platform-ink); }
+    .h-btn.primary { background: var(--platform-blue); border-color: var(--platform-blue); color: #fff; }
+    .h-btn.primary:hover { background: var(--platform-blue-dark); border-color: var(--platform-blue-dark); }
+    .h-btn.sm { min-height: 34px; padding: 0 12px; font-size: 13px; }
 
-    /* ── 제호 행 — eyebrow→제목→설명 3단 헤딩 폐기. 신문 1면 조판 ── */
-    .home-cover {
-      display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
-      margin: 18px 0 0; padding: 0 0 11px;
-      border: 0; border-bottom: 2px solid var(--platform-ink);
-      border-radius: 0; background: none; box-shadow: none;
-      color: var(--platform-ink); overflow: visible;
-    }
-    .home-cover::before { content: none; }
-    .cover-lead { display: contents; }
-    .cover-eyebrow {
-      order: 3; margin-left: auto;
-      font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--platform-faint);
-    }
-    .cover-greet {
-      order: 1; margin: 0;
-      font-size: 19px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.3;
-      font-variant-numeric: tabular-nums; color: var(--platform-ink);
-    }
-    .cover-greet b { font-weight: 800; color: var(--platform-ink); }
+    .h-gate { margin: 20px 0 0; padding: 18px 0; border-bottom: 1px solid var(--platform-line); font-size: 14px; color: var(--platform-muted); }
+    .h-gate a { color: var(--platform-blue); font-weight: 700; }
 
-    .cover-ctas { order: 2; display: flex; gap: 8px; flex-shrink: 0; margin-left: auto; }
-    .cta {
-      display: inline-flex; align-items: center; justify-content: center;
-      height: 34px; padding: 0 15px;
-      border-radius: 0; font-size: 13px; font-weight: 700;
-      border: 1px solid var(--platform-ink);
-      transition: background-color 0.14s ease, color 0.14s ease, border-color 0.14s ease;
-    }
-    a.cta-primary { background: var(--platform-blue); border-color: var(--platform-blue); color: #fff; }
-    a.cta-primary:hover { background: var(--platform-blue-dark); border-color: var(--platform-blue-dark); }
-    a.cta-secondary { background: transparent; border-color: var(--platform-ink); color: var(--platform-ink); }
-    a.cta-secondary:hover { background: var(--platform-ink); color: #fff; }
-    .home-cover .cta-secondary { background: transparent; border-color: var(--platform-ink); color: var(--platform-ink); }
-    .home-cover .cta-secondary:hover { background: var(--platform-ink); border-color: var(--platform-ink); color: #fff; }
+    .h-next { display: grid; grid-template-columns: 150px minmax(0, 1fr) auto; gap: 24px; align-items: center; padding: 20px 0; border-bottom: 1px solid var(--platform-line); }
+    .h-next .lbl { font-size: 12px; font-weight: 700; color: var(--platform-muted); }
+    .h-next .when { margin-top: 4px; font-size: 20px; font-weight: 800; letter-spacing: -0.03em; }
+    .h-next .when.today { color: var(--platform-blue); }
+    .h-next h2 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.03em; }
+    .h-next h2 span { margin-left: 8px; font-size: 14px; font-weight: 600; color: var(--platform-muted); letter-spacing: 0; }
+    .h-next p { margin: 4px 0 0; font-size: 13px; color: var(--platform-muted); }
 
-    /* ── 목차 — 카드 폐기. 2열 표 조판, 행 사이 헤어라인, 자동 번호 ── */
-    .menu-grid {
-      display: grid; grid-template-columns: 1fr 1fr; column-gap: 44px;
-      margin: 4px 0 0; gap: 0 44px; counter-reset: toc;
-    }
-    .menu-card {
-      counter-increment: toc;
-      display: flex; align-items: baseline; gap: 12px;
-      background: none; border: 0; border-bottom: 1px solid var(--platform-line);
-      border-radius: 0; box-shadow: none; padding: 15px 0;
-      transition: color 0.14s ease;
-    }
-    .menu-card::before {
-      content: counter(toc);
-      flex-shrink: 0; width: 17px;
-      font-size: 11px; font-weight: 800; color: var(--platform-faint);
-      font-variant-numeric: tabular-nums;
-    }
-    .menu-card:hover { background: none; color: var(--platform-blue); }
-    .menu-card h2 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
-    .menu-card p {
-      margin: 0 0 0 auto; padding-left: 12px; text-align: right;
-      color: var(--platform-muted); font-size: 12.5px; line-height: 1.5;
-    }
-    [data-card="care"] { grid-column: auto; }
-    .menu-grid > a:nth-child(7):last-child { grid-column: auto; }
-    .menu-card .dday-chip {
-      margin-left: 7px; padding: 1px 6px; border-radius: 0; vertical-align: baseline;
-      font-size: 11px; font-weight: 700;
-      color: var(--platform-blue); background: var(--platform-blue-soft);
-    }
+    .h-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 0 48px; margin-top: 32px; }
+    .h-sec { min-width: 0; }
+    .h-sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--platform-ink); }
+    .h-sec-h h2 { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.035em; }
+    .h-sec-h a { font-size: 13px; font-weight: 700; color: var(--platform-muted); transition: color .14s; }
+    .h-sec-h a:hover { color: var(--platform-blue); }
+    .h-empty { padding: 18px 0; font-size: 14px; color: var(--platform-muted); border-bottom: 1px solid var(--platform-line); }
 
-    /* ── 연재 — 대표 1 + 목록 ── */
-    .home-news {
-      display: block; margin-top: 34px; padding: 0;
-      background: none; border: 0; border-radius: 0; box-shadow: none;
-    }
-    .news-title {
-      display: flex; align-items: baseline; gap: 12px;
-      padding-bottom: 9px; border-bottom: 2px solid var(--platform-ink);
-    }
-    .news-title h2 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: -0.02em; }
-    .news-title a {
-      margin: 0 0 0 auto; display: inline-block;
-      color: var(--platform-blue); font-size: 12px; font-weight: 700;
-      transition: color 0.14s ease;
-    }
-    .news-title a:hover { color: var(--platform-blue-dark); }
-    .news-featured {
-      display: block; border-top: 0; border-bottom: 1px solid var(--platform-line);
-      padding: 17px 0 19px;
-    }
-    .news-featured .news-kicker {
-      display: block; font-size: 11.5px; font-weight: 700; color: var(--platform-muted);
-      font-variant-numeric: tabular-nums; letter-spacing: 0;
-    }
-    .news-featured h3 {
-      margin: 7px 0 6px; max-width: 26em;
-      font-size: 23px; font-weight: 800; letter-spacing: -0.035em; line-height: 1.35;
-      transition: color 0.14s ease;
-    }
-    .news-featured:hover h3 { color: var(--platform-blue); }
-    .news-featured .news-meta { font-size: 12px; color: var(--platform-muted); }
-    .news-rows { list-style: none; margin: 0; padding: 0; }
-    .news-rows a {
-      display: flex; gap: 14px; align-items: baseline;
-      padding: 12px 0; border-bottom: 1px solid var(--platform-line);
-      font-size: 14px; transition: color 0.14s ease;
-    }
-    .news-rows a:hover { background: none; color: var(--platform-blue); }
-    .news-rows .news-no {
-      flex-shrink: 0; width: 68px;
-      font-size: 12px; font-weight: 700; color: var(--platform-faint);
-      font-variant-numeric: tabular-nums;
-    }
-    .news-rows .news-ti { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .news-rows .news-dt { margin-left: auto; padding-left: 12px; font-size: 12px; color: var(--platform-faint); flex-shrink: 0; }
+    .h-day { display: grid; grid-template-columns: 96px minmax(0, 1fr); border-bottom: 1px solid var(--platform-line); }
+    .h-day-h { padding: 14px 0; }
+    .h-day-h b { display: block; font-size: 14px; font-weight: 800; }
+    .h-day-h span { font-size: 12px; color: var(--platform-faint); }
+    .h-day-h.today b, .h-day-h.late b { color: var(--platform-blue); }
+    .h-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 14px; min-height: 56px; padding: 8px 0; border-top: 1px solid var(--platform-line); transition: color .14s; }
+    .h-row:first-child { border-top: 0; }
+    .h-who { min-width: 0; }
+    .h-who a { font-size: 15px; font-weight: 750; transition: color .14s; }
+    .h-who a:hover { color: var(--platform-blue); }
+    .h-who .k { margin-left: 8px; font-size: 13px; color: var(--platform-muted); }
+    .h-who .d { display: block; font-size: 12px; color: var(--platform-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .h-do { display: flex; gap: 6px; }
+    .h-row.done { color: var(--platform-faint); }
+    .h-row.done .h-who a { color: var(--platform-faint); text-decoration: line-through; text-decoration-color: var(--platform-line-strong); }
+    .h-row.done .h-do { visibility: hidden; }
 
-    /* 검색 — 라운드 카드 폐기. 제호 위 한 줄 입력(밑줄 조판) */
-    .global-search input {
-      border: 0; border-bottom: 1px solid var(--platform-line-strong);
-      border-radius: 0; background: none; padding-left: 26px;
-    }
-    .global-search input:focus { border-bottom-color: var(--platform-ink); outline: none; }
-    .global-search::before { left: 2px; }
-    .global-search::after { left: 16px; }
+    .h-contact { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 14px; min-height: 58px; padding: 9px 0; border-bottom: 1px solid var(--platform-line); }
+    .h-contact a.n { font-size: 15px; font-weight: 750; transition: color .14s; }
+    .h-contact a.n:hover { color: var(--platform-blue); }
+    .h-contact .why { display: block; font-size: 12px; color: var(--platform-muted); }
+    .h-contact .why b { font-weight: 700; color: var(--platform-ink); }
+    .h-contact .h-do { grid-row: 1 / 3; grid-column: 2; }
 
-    /* ── 판권 — 명함. 카드 폐기, 굵은 괘선 아래 한 줄 ── */
-    .home-profile { margin-top: 34px; }
-    .home-profile .profile-card {
-      align-items: center; gap: 14px; padding: 16px 0 0;
-      background: none; border: 0; border-top: 2px solid var(--platform-ink);
-      border-radius: 0; box-shadow: none;
+    .h-figs { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 40px; border-top: 2px solid var(--platform-ink); border-bottom: 1px solid var(--platform-line); }
+    .h-fig { padding: 18px 20px 16px; border-left: 1px solid var(--platform-line); }
+    .h-fig:first-child { border-left: 0; padding-left: 0; }
+    .h-fig .k { font-size: 12px; font-weight: 700; color: var(--platform-muted); }
+    .h-fig .v { margin: 6px 0 2px; font-size: 34px; font-weight: 800; letter-spacing: -0.04em; line-height: 1.1; }
+    .h-fig .v small { margin-left: 3px; font-size: 13px; font-weight: 600; color: var(--platform-muted); letter-spacing: 0; }
+    .h-fig .d { font-size: 12px; color: var(--platform-faint); }
+
+    .h-trio { display: grid; grid-template-columns: repeat(var(--cells, 3), minmax(0, 1fr)); margin-top: 40px; border-top: 2px solid var(--platform-ink); }
+    .h-cell { padding: 16px 24px 8px; border-left: 1px solid var(--platform-line); min-width: 0; }
+    .h-cell:first-child { border-left: 0; padding-left: 0; }
+    .h-cell:last-child { padding-right: 0; }
+    .h-cell .eb { font-size: 12px; font-weight: 800; color: var(--platform-muted); }
+    .h-cell h3 { margin: 6px 0 4px; font-size: 18px; font-weight: 800; letter-spacing: -0.035em; }
+    .h-cell p { margin: 0; font-size: 13px; color: var(--platform-muted); }
+    .h-cell .due { color: var(--platform-blue); font-weight: 800; }
+    .h-bar { height: 3px; margin: 12px 0 8px; background: var(--platform-line); }
+    .h-bar i { display: block; height: 100%; background: var(--platform-ink); }
+    .h-cell ul { margin: 8px 0 0; padding: 0; list-style: none; }
+    .h-cell li { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--platform-line); font-size: 13px; }
+    .h-cell li:first-child { border-top: 0; }
+    .h-cell li a { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: color .14s; }
+    .h-cell li a:hover { color: var(--platform-blue); }
+    .h-cell li span { color: var(--platform-faint); white-space: nowrap; }
+    .h-cell .go { display: inline-flex; align-items: center; min-height: 36px; margin-top: 6px; font-size: 13px; font-weight: 800; color: var(--platform-ink); transition: color .14s; }
+    .h-cell .go:hover { color: var(--platform-blue); }
+
+    /* 서랍 — 오른쪽(폰은 아래)에서 0.2초. 그림자·둥근 모서리 없이 2px 괘선 */
+    .h-scrim { position: fixed; inset: 0; z-index: 80; background: rgba(23, 32, 51, .32); }
+    .h-drawer {
+      position: fixed; inset: 0 0 0 auto; z-index: 81; width: min(460px, 100%); display: flex; flex-direction: column;
+      background: var(--platform-bg); border-left: 2px solid var(--platform-ink);
+      transform: translateX(100%); visibility: hidden; transition: transform .2s cubic-bezier(.2,0,0,1), visibility 0s .2s;
     }
+    .h-drawer.open { transform: none; visibility: visible; transition: transform .2s cubic-bezier(.2,0,0,1); }
+    .h-drawer-h { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 2px solid var(--platform-ink); }
+    .h-drawer-h h2 { margin: 0; font-size: 18px; font-weight: 800; }
+    .h-drawer-b { flex: 1; overflow-y: auto; padding: 20px; display: grid; gap: 16px; align-content: start; }
+    .h-field { display: grid; gap: 6px; font-size: 13px; font-weight: 700; }
+    .h-field input, .h-field select, .h-field textarea {
+      font: inherit; font-size: 14px; font-weight: 400; padding: 9px 12px; min-height: 40px;
+      border: 1px solid var(--platform-line-strong); border-radius: 4px; background: #fff;
+    }
+    .h-field textarea { min-height: 110px; resize: vertical; }
+    .h-drawer-f { display: flex; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--platform-line); }
+    .h-err { margin: 0; font-size: 13px; color: var(--platform-blue); }
+
+    /* 되돌리기 알림 */
+    .h-toast {
+      position: fixed; left: calc(50% + 46px); bottom: 24px; z-index: 90; transform: translate(-50%, 12px); opacity: 0; visibility: hidden;
+      display: flex; align-items: center; gap: 18px; min-width: 320px; max-width: calc(100% - 140px); padding: 12px 16px;
+      background: #fff; border: 1px solid var(--platform-line-strong); border-top: 2px solid var(--platform-ink); font-size: 14px;
+      transition: transform .2s cubic-bezier(.2,0,0,1), opacity .2s cubic-bezier(.2,0,0,1), visibility 0s .2s;
+    }
+    .h-toast.show { transform: translate(-50%, 0); opacity: 1; visibility: visible; transition: transform .2s cubic-bezier(.2,0,0,1), opacity .2s cubic-bezier(.2,0,0,1); }
+    .h-toast button { margin-left: auto; border: 0; background: none; font: inherit; font-weight: 800; color: var(--platform-blue); cursor: pointer; padding: 6px 0; }
+
+    /* 맨 아래 — 내 정보·명함, 자료 현황 */
+    .home-profile { margin-top: 48px; }
+    .home-profile .profile-card { align-items: center; gap: 14px; padding: 16px 0 0; background: none; border: 0; border-top: 2px solid var(--platform-ink); border-radius: 0; box-shadow: none; }
     .home-profile .profile-photo { width: 46px; height: 46px; font-size: 17px; }
     .home-profile .profile-main { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
     .home-profile .p-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
-    .home-profile .p-line .p-name { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
-    .home-profile .p-role {
-      border-radius: 0; background: var(--platform-blue-soft); color: var(--platform-blue-dark);
-      padding: 2px 7px; font-size: 11px; font-weight: 700;
-    }
+    .home-profile .p-line .p-name { font-size: 15px; font-weight: 700; }
+    .home-profile .p-role { border-radius: 0; background: var(--platform-blue-soft); color: var(--platform-blue-dark); padding: 2px 7px; font-size: 11px; font-weight: 700; }
     .home-profile .p-org { color: var(--platform-muted); font-size: 13px; }
     .home-profile .profile-actions { margin: 0; }
     .home-profile .profile-edit { width: 100%; }
-
-    /* ── 현황 — 칸막이 격자 폐기. 조판만으로 ── */
     .home-stats { margin-top: 34px; }
-    .home-stats .stat-row {
-      display: flex; flex-wrap: wrap; gap: 20px 56px;
-      margin: 0; padding: 18px 0 0;
-      border: 0; border-radius: 0; background: none; box-shadow: none;
-    }
+    .home-stats .stat-row { display: flex; flex-wrap: wrap; gap: 20px 56px; margin: 0; padding: 18px 0 0; border: 0; background: none; box-shadow: none; }
     .home-stats .stat-tile { border: 0; padding: 0; background: none; }
-    .home-stats .stat-label {
-      display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
-      color: var(--platform-faint);
-    }
-    .home-stats .stat-value {
-      margin-top: 4px; font-size: 34px; font-weight: 800; letter-spacing: -0.05em;
-      line-height: 1; font-variant-numeric: tabular-nums;
-    }
+    .home-stats .stat-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: var(--platform-faint); }
+    .home-stats .stat-value { margin-top: 4px; font-size: 28px; font-weight: 800; letter-spacing: -0.05em; line-height: 1; font-variant-numeric: tabular-nums; }
     .home-stats .stat-sub { display: block; margin-top: 5px; font-size: 11.5px; color: var(--platform-muted); }
-
-    @media (max-width: 1024px) {
-      .menu-grid { column-gap: 28px; gap: 0 28px; }
-    }
-
-    @media (max-width: 767px) {
-      .platform-main { width: auto; padding: 12px 16px 48px; }
-      .global-search { max-width: none; }
-      .home-cover { gap: 8px 12px; padding-bottom: 12px; }
-      .cover-greet { order: 1; width: 100%; font-size: 20px; min-height: 2.6em; }
-      .cover-eyebrow { order: 2; margin-left: 0; }
-      .cover-ctas { order: 3; width: 100%; margin-left: 0; }
-      .cta { flex: 1; height: 44px; }
-      .menu-grid { grid-template-columns: 1fr; }
-      .menu-card { padding: 14px 0; }
-      .menu-card p { font-size: 12px; }
-      .home-news, .home-profile, .home-stats { margin-top: 26px; }
-      .news-featured h3 { font-size: 20px; }
-      .news-title a { padding: 13px 0 13px 12px; } /* 터치 타깃 44px 플로어 */
-      .home-stats .stat-row { gap: 18px 36px; }
-      .home-stats .stat-value { font-size: 30px; }
-    }
-
-    @media (max-width: 480px) {
-      /* 목차 행: 설명을 제목 아래로 내린다 (숨기면 D-day 칩까지 사라진다) */
-      .menu-card { flex-wrap: wrap; row-gap: 3px; }
-      .menu-card h2 { flex: 1; }
-      .menu-card p {
-        width: 100%; margin: 0; padding-left: 29px; text-align: left;
-        font-size: 12px;
-      }
-      .menu-card .dday-chip { margin-left: 6px; }
-    }
-    @media (max-width: 400px) {
-      .news-rows .news-no { width: 58px; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .cta, .menu-card, .news-featured h3, .news-rows a, .news-title a { transition: none; }
-    }
-  
-    /* 보장분석 — 바깥에서 열리는 도구라 돋보기 표식으로 구분한다 (2026-08-03) */
-    .ext-glyph { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2.2;
-      stroke-linecap: round; vertical-align: -0.12em; margin-right: 0.42em; opacity: .85; }
-    .menu-card.card-ext h2 { display: inline-flex; align-items: center; }
+    .ext-glyph { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; vertical-align: -0.12em; margin-right: 0.42em; opacity: .85; }
     .platform-nav a.nav-ext { display: flex; align-items: center; }
-</style>
+
+    @media (max-width: 1180px) {
+      .platform-main { width: calc(100% - 48px); }
+      .h-grid { grid-template-columns: 1fr; gap: 32px; }
+      .h-trio { grid-template-columns: 1fr 1fr; }
+      .h-trio .h-cell:nth-child(2) { padding-right: 0; }
+      .h-trio .h-cell:nth-child(3) { grid-column: 1 / -1; padding-left: 0; border-left: 0; border-top: 1px solid var(--platform-line); }
+      .h-toast { left: 50%; }
+    }
+    @media (max-width: 767px) {
+      .platform-main { width: auto; padding: 14px 16px 96px; }
+      .global-search { max-width: none; }
+      .global-search input { font-size: 16px; }
+      .h-mast { flex-direction: column; align-items: stretch; gap: 14px; }
+      .h-mast h1 { font-size: 24px; }
+      .h-acts .h-btn { flex: 1; min-height: 44px; }
+      .h-next { grid-template-columns: 1fr auto; gap: 8px 16px; }
+      .h-next .lblbox { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; }
+      .h-next .when { margin: 0; font-size: 16px; }
+      .h-day { grid-template-columns: 1fr; }
+      .h-day-h { padding: 14px 0 2px; display: flex; gap: 10px; align-items: baseline; }
+      .h-row { grid-template-columns: 1fr; gap: 8px; padding: 10px 0; }
+      .h-btn.sm { min-height: 40px; }
+      .h-figs { grid-template-columns: 1fr 1fr; }
+      .h-fig:nth-child(3) { border-left: 0; padding-left: 0; }
+      .h-fig:nth-child(n+3) { border-top: 1px solid var(--platform-line); }
+      .h-fig .v { font-size: 30px; }
+      .h-trio { grid-template-columns: 1fr; }
+      .h-cell, .h-trio .h-cell:nth-child(3) { padding: 16px 0 8px; border-left: 0; border-top: 1px solid var(--platform-line); }
+      .h-cell:first-child { border-top: 0; }
+      .h-cell .go { min-height: 44px; }
+      .h-drawer { inset: auto 0 0 0; width: 100%; max-height: 92dvh; border-left: 0; border-top: 2px solid var(--platform-ink); transform: translateY(100%); }
+      .h-drawer.open { transform: none; }
+      .h-drawer-f { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+      .h-drawer-f .h-btn { flex: 1; min-height: 44px; }
+      .h-toast { bottom: calc(76px + env(safe-area-inset-bottom)); min-width: 0; width: calc(100% - 32px); max-width: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .h-drawer, .h-drawer.open, .h-toast, .h-toast.show { transition: none; }
+    }
+  </style>
 </head>
 <body class="platform">
   <div class="app-splash" id="app-splash" hidden>
@@ -288,82 +250,47 @@
     </header>
 
     <main class="platform-main">
-      <!-- 통합검색 — 최빈 locate 행동, 헌법 위치(홈 최상단) -->
+      <!-- 통합검색 — 고객(로그인 시)·용어·질병, 엔터는 사례·판례 -->
       <div class="global-search" data-search="global">
-        <input type="search" id="global-q" aria-label="통합 검색" placeholder="사례·용어·질병 검색" autocomplete="off">
+        <input type="search" id="global-q" aria-label="통합 검색" placeholder="고객 이름·번호 뒤 4자리, 사례·용어·질병 검색" autocomplete="off">
         <div class="search-suggest" id="suggest" hidden></div>
       </div>
 
-      <!-- 표지 밴드 — 오늘의 호(號) 오리엔테이션 + 최빈 목적지 2개 단축 -->
-      <section class="home-cover" data-region="home-hero" aria-label="오늘의 표지">
-        <div class="cover-lead">
-          <span class="cover-eyebrow">신한라이프 하랑지점</span>
-          <h1 class="cover-greet" id="hero-greet">오늘은 <b id="greet-date"></b>입니다.</h1>
+      <!-- 오늘 — 날짜와 오늘의 요약 한 줄 -->
+      <section class="h-mast" aria-labelledby="h-date">
+        <div>
+          <h1 id="h-date"></h1>
+          <p class="h-sum" id="h-sum"></p>
         </div>
-        <div class="cover-ctas">
-          <a class="cta cta-primary" href="care/shelf.html">케어센터 열기</a>
-          <a class="cta cta-secondary" href="brief/">브리핑 열기</a>
+        <div class="h-acts">
+          <a class="h-btn" href="customers/?new=1">고객 등록</a>
+          <button class="h-btn primary" type="button" id="h-add-meeting" hidden>미팅 잡기</button>
         </div>
       </section>
-      <script>
-        // 날짜는 런타임 계산 — 첫 페인트 전에 채운다 (프로필 확인 전 중립 인사)
-        window.mgToday = (function () {
-          var d = new Date();
-          return d.getMonth() + 1 + "월 " + d.getDate() + "일 " + "일월화수목금토".charAt(d.getDay()) + "요일";
-        })();
-        document.getElementById("greet-date").textContent = window.mgToday;
-      </script>
+      <p class="h-gate" id="h-gate" hidden></p>
 
-      <!-- 기능 카드 그리드 — 지배 앵커 = 오늘의 목차. 카드 1클릭 진입 -->
-      <nav class="menu-grid" data-region="menu-grid" aria-label="기능 화면">
-        <a class="menu-card" href="care/shelf.html" data-card="care" aria-label="케어센터">
-          <h2>케어센터</h2>
-          <p>주간 13호 · 월간 4호 발행<span class="dday-chip" id="care-dday" hidden></span></p>
-        </a>
-        <a class="menu-card" href="brief/" aria-label="브리핑">
-          <h2>브리핑</h2>
-          <p>발표 준비와 진행</p>
-        </a>
-        <a class="menu-card card-ext" href="https://desk.insurguard.life/" target="_blank" rel="noopener" data-card="bojang" aria-label="보장분석">
-          <h2><svg class="ext-glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4 20 20"/></svg>보장분석</h2>
-          <p>문서를 올리면 리포트가 자동으로 만들어집니다</p>
-        </a>
-        <a class="menu-card" href="customers/" aria-label="고객관리">
-          <h2>고객관리</h2>
-          <p>고객 정보 등록·수정</p>
-        </a>
-        <a class="menu-card" href="claims/" aria-label="청구·지급">
-          <h2>청구·지급</h2>
-          <p>사유별 청구 서류와 분쟁사례 자료실</p>
-        </a>
-        <a class="menu-card" href="cases/" aria-label="사례·판례">
-          <h2>사례·판례</h2>
-          <p>분쟁사례·판례 조건별 조회</p>
-        </a>
-        <a class="menu-card" href="learn/" aria-label="학습">
-          <h2>학습</h2>
-          <p>보험 용어 사전과 질병 사전</p>
-        </a>
-        <a class="menu-card" href="card/" aria-label="카톡카드">
-          <h2>카톡카드</h2>
-          <p>고객에게 보내는 안내 카드</p>
-        </a>
-      </nav>
+      <section class="h-next" id="h-next" aria-label="다음 미팅" hidden></section>
 
-      <!-- 새소식 — 연재 리스트 (실데이터 issues.json만, 0건이면 구획 자체 제거) -->
-      <section class="home-news" data-region="news" aria-label="새소식" hidden>
-        <div class="news-title">
-          <h2>새소식</h2>
-          <a href="care/shelf.html">케어센터 서재</a>
-        </div>
-        <div class="news-list" id="news-list"></div>
-      </section>
+      <div class="h-grid" id="h-grid" hidden>
+        <section class="h-sec" aria-labelledby="h-week-t">
+          <div class="h-sec-h"><h2 id="h-week-t">오늘과 이번 주</h2><a href="customers/">고객관리</a></div>
+          <div id="h-week"></div>
+        </section>
+        <section class="h-sec" aria-labelledby="h-call-t">
+          <div class="h-sec-h"><h2 id="h-call-t">연락할 고객</h2><a href="customers/" id="h-call-all">전체</a></div>
+          <div id="h-call"></div>
+        </section>
+      </div>
+
+      <section class="h-figs" id="h-figs" aria-label="활동" hidden></section>
+
+      <section class="h-trio" id="h-trio" aria-label="발행·요청·브리핑" hidden></section>
 
       <!-- 내 프로필 — 구 홈 구획 기능 계승 (라운드 6, 사용자 지시). 매거진 판권면 자리: 새소식과 자료 현황 사이.
            명함은 카톡카드·발행에 쓰이는 실무 도구 — 직급·지점 설정이 메인에 있어야 한다 -->
       <section class="section-block home-profile" aria-labelledby="profile-title">
         <div class="section-head">
-          <div><h2 id="profile-title">내 프로필</h2><p>명함에 들어갈 정보입니다. 지점 이동이나 연락처 변경 시 직접 수정하세요.</p></div>
+          <div><h2 id="profile-title">내 정보·명함</h2><p>카톡카드·명함에 들어갑니다.</p></div>
         </div>
         <div class="profile-card" id="profile-card"></div>
         <div class="namecard-stage" aria-hidden="true">
@@ -386,6 +313,14 @@
     </main>
     <footer class="platform-footer">마이가디언 v2</footer>
   </div>
+
+  <div class="h-scrim" id="h-scrim" hidden></div>
+  <section class="h-drawer" id="h-drawer" role="dialog" aria-modal="true" aria-labelledby="h-drawer-t" inert>
+    <div class="h-drawer-h"><h2 id="h-drawer-t"></h2><button class="h-btn sm" type="button" id="h-drawer-close">닫기</button></div>
+    <div class="h-drawer-b" id="h-drawer-b"></div>
+    <div class="h-drawer-f"><button class="h-btn primary" type="button" id="h-drawer-save">저장</button></div>
+  </section>
+  <div class="h-toast" id="h-toast" role="status" aria-live="polite"><span id="h-toast-msg"></span><button type="button" id="h-undo">되돌리기</button></div>
 
   <script>
     // 시작 스플래시 — 세션당 1회, 1.5초 이내 (헌법 모션 예외 조항, 2026-07-20)
@@ -417,88 +352,358 @@
       window.addEventListener("appinstalled", function () { installBtn.hidden = true; });
     })();
 
-    // 인사 개인화 — /me 응답 전 중립 인사, 도착 시 이름 포함형으로 교체 (같은 행 높이, 시프트 0).
-    // 홈은 리다이렉트 게이트가 아니다: 진입 게이트는 intro.html, 진짜 차단은 서버가 한다 (auth.js 원칙).
-    (function () {
-      if (!window.mgAuth) return;
-      window.mgAuth.me().then(function (info) {
-        if (!info || !info["계정"] || info["계정"]["상태"] !== "승인") return;
-        var name = info["계정"]["이름"];
-        if (!name) return;
-        document.getElementById("hero-greet").innerHTML =
-          "<b>" + window.mg.esc(name) + " FC님</b>, 오늘은 <b>" + window.mg.esc(window.mgToday) + "</b>입니다.";
-      }).catch(function () {});
-    })();
-
-    // 케어센터 카드 D-day 칩 — 다음 주간 발행일(매주 월요일) 런타임 계산 (F-006·F-013)
-    (function () {
-      var add = (8 - new Date().getDay()) % 7; // 오늘부터 다음 월요일까지 일수 (월요일이면 0)
-      var chip = document.getElementById("care-dday");
-      chip.textContent = add === 0 ? "오늘 발행" : "발행 D-" + add;
-      chip.hidden = false;
-    })();
-
-    // 관리자 카드 — 승인권한자에게만 DOM 생성 (비권한자는 카드 자체를 만들지 않는다).
-    // 화면을 가리는 것일 뿐 차단이 아니다. 주소를 직접 열어도 서버가 데이터를 주지 않는다.
-    (function () {
-      var isAdmin = false;
-      try { isAdmin = localStorage.getItem("mg_is_admin") === "1"; } catch (e) {}
-      if (!isAdmin) return;
-      var a = document.createElement("a");
-      a.className = "menu-card";
-      a.href = "admin/";
-      a.setAttribute("aria-label", "관리자");
-      a.innerHTML = "<h2>관리자</h2><p>팀원 승인과 직급 부여</p>";
-      document.querySelector('[data-region="menu-grid"]').appendChild(a);
-    })();
-
-    // 새소식 — data/care/issues.json 실데이터만. 발행일 내림차순, 대표 1 + 소형 행.
-    // 0건(또는 로드 실패)이면 구획 자체를 제거한다 (빈 상태 UI를 만들지 않는다 — 헌법).
-    (function () {
+    // ══ 오늘 (2026-10-04) ═══════════════════════════════════════════════════
+    // 실데이터만: 서버 고객(미팅·진행상태·다음 연락일), 발행 목록, 수정 요청, 브리핑 자료.
+    // 한 칸의 데이터를 못 받으면 그 칸만 만들지 않는다(헌법 — 가짜 수치·빈 상자 금지).
+    // 「완료」「내일로」「미팅 잡기」「기록」은 고객관리와 같은 방식으로 레코드 전체를 PUT /clients 로 저장하고,
+    // 미팅은 하랑지점 달력에도 보낸다(customers/index.html branchPush 와 같은 모양·같은 대기열 mg_event_queue).
+    window.mgHome = (function () {
+      "use strict";
       var esc = window.mg.esc;
-      var section = document.querySelector('[data-region="news"]');
+      var $ = function (id) { return document.getElementById(id); };
+      var DAYS = "일월화수목금토";
+      var now = new Date();
+      function ymd(d) { return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+      var TODAY = ymd(now);
+      function addDays(iso, n) { var d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + n); return ymd(d); }
+      function diff(iso) { return Math.round((new Date(String(iso).slice(0, 10) + "T00:00:00") - new Date(TODAY + "T00:00:00")) / 864e5); }
+      function md(iso) { var d = new Date(String(iso).slice(0, 10) + "T00:00:00"); return (d.getMonth() + 1) + "." + d.getDate() + " " + DAYS.charAt(d.getDay()); }
 
-      function md(iso) { // "2026-07-27" -> "7월 27일"
-        var m = /^\d{4}-(\d{2})-(\d{2})/.exec(String(iso || ""));
-        return m ? parseInt(m[1], 10) + "월 " + parseInt(m[2], 10) + "일" : "";
+      $("h-date").textContent = (now.getMonth() + 1) + "월 " + now.getDate() + "일 " + DAYS.charAt(now.getDay()) + "요일";
+
+      var CLIENTS = [];
+      function v1(c) { return (c.profile && c.profile["v1원본"]) || c.profile || {}; }
+      function nameOf(c) { return String(v1(c).customerName || c["고객코드"]).trim(); }
+      function meetings(c) { return (c.profile && c.profile["미팅"]) || []; }
+      function custHref(c) { return "customers/?code=" + encodeURIComponent(c["고객코드"]); }
+      function maskPhone(p) { var d = String(p || "").replace(/\D/g, ""); return d.length < 8 ? "" : d.slice(0, 3) + "-****-" + d.slice(-4); }
+
+      // ── 저장 — 레코드 전체를 보낸다(서버가 통째로 바꾼다). 실패하면 화면을 되돌린다
+      function save(c) {
+        var rec = { "고객코드": c["고객코드"], profile: c.profile, policies: c.policies, memoText: c.memoText };
+        return window.mgAuth.api("/clients", { method: "PUT", body: [rec] });
       }
-      // 호 표기: 주간지는 "주간 안창민 N호"(F-005), 월간은 고유 명칭 미확인이라 "월간 N호"까지만
-      function kicker(i) {
-        var no = (i["채널"] === "주간" ? "주간 안창민 " : i["채널"] + " ") + i["호수"] + "호";
-        return no + (i["주차라벨"] ? " · " + i["주차라벨"] : "");
+      var BRANCH_API = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "http://localhost:8788" : "https://api.insurguard.life/branch";
+      function branchPush(c, round, date, status) {
+        var key = "mg:" + c["고객코드"] + ":" + round, q;
+        try { q = JSON.parse(localStorage.getItem("mg_event_queue") || "{}"); } catch (e) { q = {}; }
+        q[key] = { "출처": "myguardian", "출처키": key, "종류": "고객미팅", "고객코드": c["고객코드"],
+          "표시명": nameOf(c), "연락처": maskPhone(v1(c).phone), "차수": round, "일시": date, "상태": status };
+        try { localStorage.setItem("mg_event_queue", JSON.stringify(q)); } catch (e) {}
+        var token = window.mgAuth.token();
+        Object.keys(q).forEach(function (k) {
+          fetch(BRANCH_API + "/events/upsert", { method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token }, body: JSON.stringify(q[k]) })
+            .then(function (r) {
+              if (!r.ok) return;
+              var cur; try { cur = JSON.parse(localStorage.getItem("mg_event_queue") || "{}"); } catch (e) { return; }
+              delete cur[k];
+              try { localStorage.setItem("mg_event_queue", JSON.stringify(cur)); } catch (e) {}
+            }).catch(function () {});
+        });
       }
 
-      fetch("../data/care/issues.json")
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          var list = (Array.isArray(data) ? data : (data.data || []))
-            .filter(function (i) { return i["상태"] !== "초안"; }); // 작성 중인 호는 홈에 노출하지 않는다
-          if (!list.length) { section.remove(); return; }
-          list.sort(function (a, b) { return (a["발행일"] || "") < (b["발행일"] || "") ? 1 : -1; });
+      // ── 되돌리기 알림 — 여러 번 누르면 거꾸로 하나씩 되돌린다. 마우스를 올리면 시계가 멈춘다
+      var undoStack = [], toastTimer = null;
+      function toast(text, undo) {
+        var t = $("h-toast");
+        $("h-toast-msg").textContent = text;
+        if (undo) undoStack.push(undo);
+        $("h-undo").hidden = !undoStack.length;
+        t.classList.add("show");
+        clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, 7000);
+      }
+      function hideToast() { $("h-toast").classList.remove("show"); undoStack = []; }
 
-          var f = list[0];
-          var issueHref = function (i) { return "care/issue.html?id=" + encodeURIComponent(i.id); };
-          var html =
-            '<a class="news-featured" data-issue="' + esc(f.id) + '" href="' + issueHref(f) + '">'
-            + '<span class="news-kicker">' + esc(kicker(f)) + "</span>"
-            + "<h3>" + esc(f["제목"]) + "</h3>"
-            + '<span class="news-meta">' + esc(md(f["발행일"])) + " 발행 · " + esc(f["발행인"] || "안창민") + "</span>"
-            + "</a>";
+      // ── 미팅 바꾸기(완료·미루기·추가) — 화면 먼저, 서버 뒤. 실패하면 되돌리고 알린다
+      function mutate(c, apply, revert, msg, push) {
+        apply();
+        render();
+        return save(c).then(function () {
+          push && push();
+          toast(msg, function () {
+            revert(); render();
+            save(c).then(function () { push && push(true); }).catch(function (e) { toast("되돌리지 못했습니다 — " + e.message); });
+          });
+        }).catch(function (e) {
+          revert(); render();
+          toast(e.status === 401 ? "로그인이 풀렸습니다. 다시 로그인해 주세요." : "저장하지 못했습니다 — " + e.message);
+        });
+      }
+      function done(c, i) {
+        var m = meetings(c)[i], prev = { st: m["상태"], cs: c.profile["진행상태"] };
+        mutate(c, function () { m["상태"] = "완료"; c.profile["진행상태"] = "미팅 완료"; },
+          function () { m["상태"] = prev.st; c.profile["진행상태"] = prev.cs; },
+          nameOf(c) + " 님 " + m["차수"] + "차 미팅을 완료로 바꿨습니다.",
+          function (back) { branchPush(c, m["차수"], m["일자"], back ? prev.st : "완료"); });
+      }
+      function later(c, i) {
+        var m = meetings(c)[i], prev = m["일자"], next = addDays(m["일자"] < TODAY ? TODAY : m["일자"], 1);
+        mutate(c, function () { m["일자"] = next; }, function () { m["일자"] = prev; },
+          nameOf(c) + " 님 미팅을 " + md(next) + "요일로 옮겼습니다.",
+          function (back) { branchPush(c, m["차수"], back ? prev : next, "예정"); });
+      }
 
-          // 소형 행은 최근 6건 — 전체 연재는 케어센터 서재에서 (스캔 속도 우선)
-          var rows = list.slice(1, 7).map(function (i) {
-            return '<li><a data-issue="' + esc(i.id) + '" href="' + issueHref(i) + '">'
-              + '<span class="news-no">' + esc(i["채널"] + " " + i["호수"] + "호") + "</span>"
-              + '<span class="news-ti">' + esc(i["제목"]) + "</span>"
-              + '<span class="news-dt">' + esc(md(i["발행일"])) + "</span>"
-              + "</a></li>";
-          }).join("");
+      // ── 그리기
+      function upcoming() {
+        var out = [];
+        CLIENTS.forEach(function (c) {
+          meetings(c).forEach(function (m, i) {
+            if (!m || m["상태"] !== "예정" || !m["일자"]) return;
+            var n = diff(m["일자"]);
+            if (n <= 6) out.push({ c: c, i: i, m: m, n: n });
+          });
+        });
+        return out.sort(function (a, b) { return a.m["일자"] < b.m["일자"] ? -1 : a.m["일자"] > b.m["일자"] ? 1 : nameOf(a.c) < nameOf(b.c) ? -1 : 1; });
+      }
+      function lastDone(c) {
+        var best = null;
+        meetings(c).forEach(function (m) { if (m && m["상태"] === "완료" && m["일자"] && (!best || m["일자"] > best)) best = m["일자"]; });
+        return best;
+      }
+      function contacts() {
+        var seen = {}, out = [];
+        function add(c, kind, text) { if (seen[c["고객코드"]]) return; seen[c["고객코드"]] = 1; out.push({ c: c, kind: kind, text: text }); }
+        CLIENTS.forEach(function (c) {
+          if (c.profile && c.profile["진행상태"] === "다시 전화") {
+            var nc = v1(c).nextContactDate;
+            add(c, "다시 전화", nc ? "다음 연락 " + md(nc) : "다시 연락하기로 함");
+          }
+        });
+        CLIENTS.forEach(function (c) {
+          var nc = v1(c).nextContactDate;
+          if (nc && diff(nc) <= 0) add(c, "연락일", (diff(nc) === 0 ? "오늘" : -diff(nc) + "일 지남") + " · " + md(nc));
+        });
+        CLIENTS.forEach(function (c) {
+          var st = c.profile && c.profile["진행상태"];
+          if (st === "거절" || st === "보류") return;
+          var ld = lastDone(c);
+          if (!ld) return;
+          var ago = -diff(ld);
+          var future = meetings(c).some(function (m) { return m && m["상태"] === "예정"; });
+          if (ago >= 3 && ago <= 14 && !future) add(c, "후속 연락", "미팅 끝난 지 " + ago + "일");
+        });
+        return out;
+      }
 
-          document.getElementById("news-list").innerHTML =
-            html + (rows ? '<ul class="news-rows">' + rows + "</ul>" : "");
-          section.hidden = false;
-        })
-        .catch(function () { section.remove(); });
+      function rowHtml(x, kindLabel) {
+        var c = x.c, m = x.m, label = x.n <= 0 ? "내일로" : "하루 미루기";
+        var memo = String(c.memoText || "").split("\n").map(function (l) { return l.replace(/^#+\s*/, "").trim(); })
+          .filter(function (l) { return l && !/^상담 메모/.test(l); })[0] || "";
+        return '<div class="h-row" data-code="' + esc(c["고객코드"]) + '" data-i="' + x.i + '">'
+          + '<div class="h-who"><a href="' + custHref(c) + '">' + esc(nameOf(c)) + "</a>"
+          + '<span class="k">' + esc((m["차수"] || "") + "차 미팅") + (kindLabel ? " · " + esc(kindLabel) : "") + "</span>"
+          + (memo ? '<span class="d">' + esc(memo) + "</span>" : "") + "</div>"
+          + '<div class="h-do"><button class="h-btn sm" type="button" data-act="done">완료</button>'
+          + '<button class="h-btn sm" type="button" data-act="later">' + label + "</button></div></div>";
+      }
+
+      function render() {
+        var up = upcoming();
+        var late = up.filter(function (x) { return x.n < 0; });
+        var today = up.filter(function (x) { return x.n === 0; });
+        var tmr = up.filter(function (x) { return x.n === 1; });
+        var week = up.filter(function (x) { return x.n > 1; });
+        var calls = contacts();
+
+        // 요약 한 줄
+        var sum = ['<span>오늘 미팅 <b class="num">' + today.length + "건</b></span>",
+          '<span>연락할 고객 <b class="num">' + calls.length + "명</b></span>"];
+        if (late.length) sum.push('<span>정리 안 한 미팅 <b class="num due">' + late.length + "건</b></span>");
+        if (window.mgHomeCare) sum.push(window.mgHomeCare);
+        $("h-sum").innerHTML = sum.join("");
+
+        // 다음 미팅
+        var nx = today[0] || tmr[0] || week[0];
+        var next = $("h-next");
+        if (nx) {
+          var when = nx.n === 0 ? "오늘" : nx.n === 1 ? "내일" : nx.n + "일 뒤";
+          next.innerHTML = '<div class="lblbox"><div class="lbl">다음 미팅</div><div class="when' + (nx.n === 0 ? " today" : "") + '">' + when + "</div></div>"
+            + "<div><h2>" + esc(nameOf(nx.c)) + "<span>" + esc(nx.m["차수"] + "차 미팅 · " + md(nx.m["일자"])) + "</span></h2>"
+            + (v1(nx.c).category ? "<p>" + esc({ referral: "지인", transfer: "이관", valueup: "밸류업", contract: "계약" }[v1(nx.c).category] || v1(nx.c).category)
+              + (nx.c.policies && nx.c.policies.policies && nx.c.policies.policies.length ? " · 보유보험 " + nx.c.policies.policies.length + "건" : "") + "</p>" : "")
+            + '</div><a class="h-btn" href="' + custHref(nx.c) + '">고객 열기</a>';
+          next.hidden = false;
+        } else next.hidden = true;
+
+        // 오늘과 이번 주
+        function day(cls, title, sub, list) {
+          if (!list.length) return "";
+          return '<div class="h-day"><div class="h-day-h ' + cls + '"><b>' + title + '</b><span class="num">' + sub + '</span></div><div class="rows">'
+            + list.map(function (x) { return rowHtml(x, cls === "late" ? md(x.m["일자"]) : x.n > 1 ? md(x.m["일자"]) : ""); }).join("") + "</div></div>";
+        }
+        var weekHtml = day("late", "정리 안 함", "지난 날짜", late)
+          + day("today", "오늘", md(TODAY), today) + day("", "내일", md(addDays(TODAY, 1)), tmr)
+          + day("", "이번 주", md(addDays(TODAY, 6)) + "까지", week);
+        $("h-week").innerHTML = weekHtml || '<p class="h-empty">이번 주 잡힌 미팅이 없습니다. 고객을 열어 다음 미팅을 잡으세요.</p>';
+
+        // 연락할 고객
+        $("h-call").innerHTML = calls.length ? calls.slice(0, 6).map(function (x) {
+          var p = String(v1(x.c).phone || "").replace(/[^\d+]/g, "");
+          return '<div class="h-contact" data-code="' + esc(x.c["고객코드"]) + '"><div><a class="n" href="' + custHref(x.c) + '">' + esc(nameOf(x.c)) + "</a>"
+            + '<span class="why"><b>' + esc(x.kind) + "</b> — " + esc(x.text) + "</span></div>"
+            + '<div class="h-do">' + (p ? '<a class="h-btn sm" href="tel:' + esc(p) + '">전화</a>' : "")
+            + '<button class="h-btn sm" type="button" data-act="note">기록</button></div></div>';
+        }).join("") : '<p class="h-empty">지금 연락할 고객이 없습니다.</p>';
+        $("h-call-all").textContent = calls.length > 6 ? "전체 " + calls.length + "명" : "고객관리";
+
+        // 활동 수치 — 금액이 아니라 활동
+        var active = CLIENTS.filter(function (c) { var s = c.profile && c.profile["진행상태"]; return s === "미팅 예정" || s === "미팅 완료"; }).length;
+        var recall = CLIENTS.filter(function (c) { return c.profile && c.profile["진행상태"] === "다시 전화"; }).length;
+        $("h-figs").innerHTML =
+          fig("이번 주 미팅", up.filter(function (x) { return x.n >= 0; }).length, "건", "오늘부터 7일")
+          + fig("다시 전화", recall, "명", "진행상태 기준")
+          + fig("진행 중 고객", active, "명", "미팅 예정·완료")
+          + fig("전체 고객", CLIENTS.length, "명", "서버 고객");
+        $("h-figs").hidden = false;
+      }
+      function fig(k, v, unit, d) {
+        return '<div class="h-fig"><div class="k">' + k + '</div><div class="v num">' + v + "<small>" + unit + '</small></div><div class="d">' + d + "</div></div>";
+      }
+
+      // ── 서랍 — 미팅 잡기·연락 기록
+      var drawerSave = null, lastFocus = null;
+      function openDrawer(title, body, onSave) {
+        lastFocus = document.activeElement;
+        $("h-drawer-t").textContent = title;
+        $("h-drawer-b").innerHTML = body;
+        drawerSave = onSave;
+        $("h-scrim").hidden = false;
+        $("h-drawer").classList.add("open");
+        $("h-drawer").removeAttribute("inert");
+        var f = $("h-drawer-b").querySelector("input,select,textarea"); if (f) f.focus();
+      }
+      function closeDrawer() {
+        $("h-drawer").classList.remove("open");
+        $("h-drawer").setAttribute("inert", "");
+        $("h-scrim").hidden = true; drawerSave = null;
+        if (lastFocus && lastFocus.focus) lastFocus.focus();
+      }
+      function meetingDrawer(preset) {
+        var opts = CLIENTS.slice().sort(function (a, b) { return nameOf(a) < nameOf(b) ? -1 : 1; }).map(function (c) {
+          return '<option value="' + esc(c["고객코드"]) + '"' + (preset === c["고객코드"] ? " selected" : "") + ">" + esc(nameOf(c) + " · " + c["고객코드"]) + "</option>";
+        }).join("");
+        openDrawer("미팅 잡기",
+          '<label class="h-field">고객<select id="hd-cust">' + opts + "</select></label>"
+          + '<label class="h-field">날짜<input type="date" id="hd-date" value="' + TODAY + '" min="' + TODAY + '"></label>'
+          + '<p class="h-err" id="hd-err" hidden></p>',
+          function () {
+            var c = CLIENTS.find(function (x) { return x["고객코드"] === $("hd-cust").value; });
+            var date = $("hd-date").value;
+            if (!c || !date) { $("hd-err").hidden = false; $("hd-err").textContent = "고객과 날짜를 골라 주세요."; return; }
+            if (!c.profile["미팅"]) c.profile["미팅"] = [];
+            var list = c.profile["미팅"], round = list.reduce(function (n, m) { return Math.max(n, Number(m && m["차수"]) || 0); }, 0) + 1;
+            var prevSt = c.profile["진행상태"];
+            closeDrawer();
+            mutate(c, function () { list.push({ "차수": round, "일자": date, "상태": "예정" }); c.profile["진행상태"] = "미팅 예정"; },
+              function () { list.pop(); c.profile["진행상태"] = prevSt; },
+              nameOf(c) + " 님 " + round + "차 미팅을 " + md(date) + "요일로 잡았습니다.",
+              function (back) { branchPush(c, round, date, back ? "취소" : "예정"); });
+          });
+      }
+      function noteDrawer(c) {
+        openDrawer(nameOf(c) + " 님 연락 기록",
+          '<label class="h-field">무슨 이야기를 했나요<textarea id="hd-note" placeholder="예: 통화 — 다음 주 수요일 저녁 가능, 자녀 보험 비교안 요청"></textarea></label>'
+          + '<label class="h-field">진행상태<select id="hd-st"><option value="">그대로 (' + esc(c.profile["진행상태"] || "미분류") + ')</option>'
+          + ["다시 전화", "미팅 예정", "보류", "거절"].map(function (s) { return "<option>" + s + "</option>"; }).join("") + "</select></label>"
+          + '<p class="h-err" id="hd-err" hidden></p>',
+          function () {
+            var note = $("hd-note").value.trim(), st = $("hd-st").value;
+            if (!note && !st) { $("hd-err").hidden = false; $("hd-err").textContent = "기록이나 진행상태 중 하나는 적어 주세요."; return; }
+            var prevMemo = c.memoText || "", prevSt = c.profile["진행상태"];
+            var line = "- " + (now.getMonth() + 1) + "/" + now.getDate() + " " + note;
+            closeDrawer();
+            mutate(c, function () {
+              if (note) c.memoText = (prevMemo ? prevMemo.replace(/\s+$/, "") + "\n" : "") + line;
+              if (st) c.profile["진행상태"] = st;
+            }, function () { c.memoText = prevMemo; c.profile["진행상태"] = prevSt; },
+            nameOf(c) + " 님 연락 기록을 남겼습니다.");
+          });
+      }
+
+      // ── 이벤트
+      document.addEventListener("click", function (e) {
+        var b = e.target.closest("[data-act]");
+        if (b) {
+          var holder = b.closest("[data-code]");
+          var c = holder && CLIENTS.find(function (x) { return x["고객코드"] === holder.dataset.code; });
+          if (!c) return;
+          if (b.dataset.act === "done") done(c, Number(holder.dataset.i));
+          else if (b.dataset.act === "later") later(c, Number(holder.dataset.i));
+          else if (b.dataset.act === "note") noteDrawer(c);
+          return;
+        }
+      });
+      $("h-add-meeting").addEventListener("click", function () { meetingDrawer(); });
+      $("h-drawer-save").addEventListener("click", function () { if (drawerSave) drawerSave(); });
+      $("h-drawer-close").addEventListener("click", closeDrawer);
+      $("h-scrim").addEventListener("click", closeDrawer);
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && $("h-drawer").classList.contains("open")) closeDrawer(); });
+      $("h-undo").addEventListener("click", function () { var u = undoStack.pop(); if (u) u(); if (!undoStack.length) hideToast(); });
+      $("h-toast").addEventListener("mouseenter", function () { clearTimeout(toastTimer); });
+      $("h-toast").addEventListener("mouseleave", function () { toastTimer = setTimeout(hideToast, 3000); });
+
+      // ── 세 칸 — 발행·요청·브리핑(각자 받아 오고, 못 받으면 그 칸만 뺀다)
+      function trio(api) {
+        var cells = [];
+        var nextMon = (8 - now.getDay()) % 7; // 주간 발행은 월요일
+        var care = (api.issues || []).filter(function (i) { return i && i["채널"] === "주간"; })
+          .sort(function (a, b) { return (Number(b["호수"]) || 0) - (Number(a["호수"]) || 0); });
+        if (api.issues) {
+          var no = (Number(care[0] && care[0]["호수"]) || 0) + 1;
+          var draft = null; try { draft = JSON.parse(localStorage.getItem("mg_care_draft_weekly-" + no) || "null"); } catch (e) {}
+          var arts = draft && Array.isArray(draft["기사"]) ? draft["기사"] : [];
+          var written = arts.filter(function (a) { return (a["본문"] || []).length; }).length;
+          var dueTxt = nextMon === 0 ? "오늘" : nextMon === 1 ? "내일" : "D-" + nextMon;
+          window.mgHomeCare = '<span>주간 ' + no + '호 발행 <b class="due">' + dueTxt + "</b></span>";
+          cells.push('<div class="h-cell"><div class="eb">케어센터</div><h3>주간 ' + no + "호</h3>"
+            + '<p>발행 <span class="due">' + dueTxt + "</span>" + (arts.length ? " · 칼럼 " + arts.length + "개 중 " + written + "개 작성" : " · 아직 초안 없음") + "</p>"
+            + (arts.length ? '<div class="h-bar" aria-hidden="true"><i style="width:' + Math.round(written / arts.length * 100) + '%"></i></div>' : "")
+            + (care[0] ? '<ul><li><a href="care/issue.html?id=' + encodeURIComponent(care[0].id) + '">' + esc(care[0]["제목"] || "") + '</a><span class="num">' + esc(String(care[0]["호수"])) + "호</span></li></ul>" : "")
+            + '<a class="go" href="care/desk.html">발행 데스크</a></div>');
+        }
+        if (api.requests) {
+          var mine = api.requests.filter(function (r) { return r.mine; });
+          var list = (mine.length ? mine : api.requests).slice(0, 2);
+          var answered = mine.filter(function (r) { return r.answer; }).length;
+          cells.push('<div class="h-cell"><div class="eb">수정 요청</div><h3>' + (mine.length ? "내 요청 " + mine.length + "건" : "요청 " + api.requests.length + "건") + "</h3>"
+            + (mine.length ? "<p>답변 " + answered + "건</p>" : "")
+            + (list.length ? "<ul>" + list.map(function (r) { return '<li><a href="requests/">' + esc(r.title) + "</a><span>" + esc(r.status) + "</span></li>"; }).join("") + "</ul>" : "")
+            + '<a class="go" href="requests/">요청 게시판</a></div>');
+        }
+        if (api.library && api.library.length) {
+          var lib = api.library.slice().sort(function (a, b) { return String(b["등록일"] || "") < String(a["등록일"] || "") ? -1 : 1; }).slice(0, 2);
+          cells.push('<div class="h-cell"><div class="eb">브리핑</div><h3>최근 자료</h3><ul>'
+            + lib.map(function (d) { return '<li><a href="brief/present.html?doc=' + encodeURIComponent(d.id) + '">' + esc(d["제목"] || "") + '</a><span class="num">'
+              + esc(String(d["등록일"] || "").slice(5, 10).replace("-", ".")) + "</span></li>"; }).join("")
+            + '</ul><a class="go" href="brief/">브리핑</a></div>');
+        }
+        if (cells.length) { $("h-trio").innerHTML = cells.join(""); $("h-trio").style.setProperty("--cells", cells.length); $("h-trio").hidden = false; }
+      }
+
+      function start() {
+        if (!window.mgAuth || !window.mgAuth.token()) {
+          $("h-gate").innerHTML = '로그인하면 오늘 미팅과 연락할 고객이 여기 보입니다. <a href="intro.html">로그인</a>';
+          $("h-gate").hidden = false;
+          return;
+        }
+        var api = window.mgAuth.api;
+        var soft = function (p) { return p.then(function (v) { return v; }, function () { return null; }); };
+        Promise.all([api("/clients"), soft(api("/care/issues")), soft(api("/requests")), soft(api("/brief/library"))])
+          .then(function (r) {
+            CLIENTS = (r[0] && r[0]["고객"]) || [];
+            trio({ issues: r[1], requests: r[2], library: r[3] });
+            $("h-grid").hidden = false;
+            $("h-add-meeting").hidden = !CLIENTS.length;
+            render();
+          })
+          .catch(function (e) {
+            $("h-gate").textContent = e && e.status === 401 ? "로그인이 풀렸습니다. 다시 로그인하면 오늘 일정이 보입니다." : "오늘 일정을 불러오지 못했습니다 — " + (e && e.message || "");
+            $("h-gate").hidden = false;
+          });
+      }
+      start();
+      return { clients: function () { return CLIENTS; } };
     })();
 
     // 내 프로필·자동 명함 — 구 홈 구현 계승 (라운드 6): 기기 프로필(localStorage mg_profile) 로딩,
@@ -757,6 +962,25 @@
           return (d.name || "").indexOf(q) >= 0 || (d.searchTags || "").indexOf(q) >= 0;
         }).slice(0, 5);
         var html = [];
+        var custs = [];
+        if (window.mgHome) {
+          var digits = q.replace(/\D/g, "");
+          custs = window.mgHome.clients().filter(function (c) {
+            var o = (c.profile && c.profile["v1원본"]) || c.profile || {};
+            var ph = String(o.phone || "").replace(/\D/g, "");
+            return String(o.customerName || "").indexOf(q) >= 0 || String(c["고객코드"]).indexOf(q) >= 0
+              || (digits.length >= 4 && ph.slice(-4) === digits.slice(-4));
+          }).slice(0, 5);
+        }
+        if (custs.length) {
+          html.push('<p class="suggest-label">내 고객</p>');
+          custs.forEach(function (c) {
+            var o = (c.profile && c.profile["v1원본"]) || c.profile || {};
+            html.push('<a class="suggest-item" href="customers/?code=' + encodeURIComponent(c["고객코드"]) + '">'
+              + '<span class="t">' + esc(o.customerName || c["고객코드"]) + "</span>"
+              + '<span class="d">' + esc(c["고객코드"] + (c.profile && c.profile["진행상태"] ? " · " + c.profile["진행상태"] : "")) + "</span></a>");
+          });
+        }
         if (terms.length) {
           html.push('<p class="suggest-label">보험 용어</p>');
           terms.forEach(function (t, i) {
@@ -775,7 +999,7 @@
               + '<span class="full" hidden>' + esc(d.currentTreatment || "") + "</span></button>");
           });
         }
-        if (!terms.length && !diseases.length) {
+        if (!terms.length && !diseases.length && !custs.length) {
           // 결과 없음 — 입력값 원문 에코 + 다음 경로 안내 (카피덱 T2 recovery). 입력값은 보존된다.
           html.push('<p class="suggest-empty">'
             + (dictsFailed
