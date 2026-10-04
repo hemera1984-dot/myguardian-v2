@@ -17,8 +17,153 @@
     #connect-block.is-connected .vault-explain { display: none; }
     #connect-block.is-connected .vault-area { margin-top: 12px !important; padding-top: 10px !important; border-top: 1px solid var(--platform-line) !important; }
     #connect-block.is-connected #connect-box span { display: none; } /* 아래 안내 줄과 같은 말이다 */
+    /* 연결된 뒤에는 「연결됨 + 단추」 한 줄로 — 고객 목록이 PC에서 490px 아래로 밀려 있었다(2026-10-04) */
+    body.platform #connect-block.is-connected { margin-top: 18px; }
+    body.platform #work-block { margin-top: 18px; }
+    #connect-block.is-connected .surface-card { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding-top: 0; }
+    #connect-block.is-connected #connect-box { margin: 0; padding: 0; border: 0; }
+    #connect-block.is-connected .surface-card > p { margin: 0 !important; }
+    #connect-block.is-connected .vault-area, #connect-block.is-connected #new-form { flex-basis: 100%; }
+    #connect-block.is-connected .vault-area { margin-top: 0 !important; padding-top: 0 !important; border-top: 0 !important; }
     #admin-box > summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--platform-muted); padding: 4px 0; }
     #admin-box[open] > summary { margin-bottom: 8px; }
+
+    /* 고객관리 개편 (2026-10-04) — 국내 설계사 앱 30여 개·해외 CRM 고객 화면 조사.
+       필터 두 줄 → 보기 단추 한 줄 · 목록 한 줄에 「다음 미팅 / 마지막 연락」 · 상세 머리 띠 ·
+       꼭 알 것 고정 · 메모 한 칸 → 쌓이는 기록 · 단계 보기. 금액·보장 갭 계산은 넣지 않는다. */
+    .cu-views { display: flex; margin-top: 2px; border-bottom: 1px solid var(--platform-line); overflow-x: auto; scrollbar-width: none; }
+    .cu-views button { flex-shrink: 0; display: flex; align-items: baseline; gap: 6px; padding: 12px 14px 10px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; font: inherit; font-size: 14px; font-weight: 650; color: var(--platform-muted); cursor: pointer; transition: color .14s, border-color .14s; }
+    .cu-views button:first-child { padding-left: 0; }
+    .cu-views button b { font-size: 13px; font-weight: 800; color: var(--platform-faint); font-variant-numeric: tabular-nums; }
+    .cu-views button.on { color: var(--platform-ink); border-bottom-color: var(--platform-blue); }
+    .cu-views button.on b, .cu-views button.alert b { color: var(--platform-blue); }
+    .cu-tools { display: flex; align-items: center; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--platform-ink); }
+    .cu-tools input[type=search] { flex: 1; max-width: 420px; min-width: 0; height: 38px; padding: 0 12px; border: 1px solid var(--platform-line-strong); background: var(--platform-surface); font: inherit; font-size: 14px; color: inherit; }
+    .cu-tools input[type=search]:focus { outline: none; border-color: var(--platform-ink); }
+    .cu-tools select, .cu-sel { height: 38px; padding: 0 10px; border: 1px solid var(--platform-line-strong); background: var(--platform-surface); font: inherit; font-size: 13px; color: inherit; }
+    .cu-tools .cu-count { font-size: 12.5px; color: var(--platform-faint); white-space: nowrap; }
+    .cu-seg { display: inline-flex; margin-left: auto; border: 1px solid var(--platform-line-strong); }
+    .cu-seg button { min-height: 36px; padding: 0 12px; border: 0; background: var(--platform-surface); font: inherit; font-size: 13px; font-weight: 650; color: var(--platform-muted); cursor: pointer; transition: background-color .14s, color .14s; }
+    .cu-seg button.on { background: var(--platform-ink); color: var(--platform-surface); }
+
+    body.platform #work-grid { grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); }
+    body.platform #work-grid .workspace-list { padding-top: 0; padding-right: 0; }
+    body.platform #work-grid .case-rows { max-height: calc(100vh - 260px); min-height: 360px; }
+    body.platform #rows .case-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 12px; padding: 12px 16px 12px 14px; box-shadow: inset 3px 0 0 transparent; transition: background-color .14s, box-shadow .14s; }
+    body.platform #rows .case-row:hover { background: #f3f1ed; color: inherit; }
+    body.platform #rows .case-row.active { background: var(--platform-blue-soft); box-shadow: inset 3px 0 0 var(--platform-blue); }
+    #rows .cu-n { font-size: 15px; font-weight: 750; }
+    #rows .cu-n small { margin-left: 6px; font-size: 12px; font-weight: 600; color: var(--platform-faint); }
+    #rows .cu-st { font-size: 12px; font-weight: 700; color: var(--platform-muted); white-space: nowrap; text-align: right; }
+    #rows .cu-st.call { color: var(--platform-blue); }
+    #rows .cu-sub { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12px; color: var(--platform-faint); }
+    .cu-late { color: var(--platform-partial) !important; font-weight: 700; }
+    .cu-next { color: var(--platform-ink); font-weight: 700; }
+    .cu-due { color: var(--platform-blue) !important; font-weight: 700; }
+    .cu-fact .v small { display: block; font-size: 12px; font-weight: 600; color: var(--platform-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    body.platform #detail { padding-top: 0; display: block; }
+    .cu-back { display: none; }
+    .cu-head { padding: 18px 0 14px; border-bottom: 1px solid var(--platform-line); }
+    .cu-head-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .cu-head h2 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -.04em; }
+    .cu-head h2 small { margin-left: 8px; font-size: 13px; font-weight: 600; color: var(--platform-muted); letter-spacing: 0; }
+    .cu-meta { margin-top: 4px; font-size: 13px; color: var(--platform-muted); }
+    .cu-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 14px; border-top: 1px solid var(--platform-line); }
+    .cu-fact { padding: 10px 14px 2px; border-left: 1px solid var(--platform-line); }
+    .cu-fact:first-child { padding-left: 0; border-left: 0; }
+    .cu-fact .k { font-size: 11px; font-weight: 700; color: var(--platform-faint); }
+    .cu-fact .v { margin-top: 2px; font-size: 15px; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .cu-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .cu-acts svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+    .cu-pins-h { display: flex; justify-content: space-between; align-items: center; padding: 12px 0 2px; font-size: 12px; font-weight: 800; color: var(--platform-muted); }
+    .cu-link { border: 0; background: none; padding: 4px 0; font: inherit; font-size: 12px; font-weight: 700; color: var(--platform-muted); cursor: pointer; }
+    .cu-link:hover { color: var(--platform-ink); }
+    .cu-pins { border-bottom: 1px solid var(--platform-line); }
+    .cu-pin { display: flex; gap: 10px; align-items: baseline; padding: 9px 0; border-top: 1px solid var(--platform-line); font-size: 13.5px; }
+    .cu-pin:first-child { border-top: 0; }
+    .cu-pin b { flex-shrink: 0; width: 76px; font-size: 12px; color: var(--platform-muted); }
+    .cu-pin span { flex: 1; }
+    .cu-pin-add { display: flex; gap: 6px; padding: 8px 0; flex-wrap: wrap; }
+    .cu-pin-add input { flex: 1; min-width: 160px; height: 34px; padding: 0 10px; border: 1px solid var(--platform-line-strong); font: inherit; font-size: 13px; }
+    .cu-pin-add select { height: 34px; }
+
+    .cu-tabs { display: flex; margin-top: 18px; border-bottom: 1px solid var(--platform-ink); overflow-x: auto; scrollbar-width: none; }
+    .cu-tabs button { flex-shrink: 0; padding: 10px 14px 9px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; font: inherit; font-size: 14px; font-weight: 700; color: var(--platform-muted); cursor: pointer; transition: color .14s, border-color .14s; }
+    .cu-tabs button:first-child { padding-left: 0; }
+    .cu-tabs button b { margin-left: 4px; font-size: 12px; color: var(--platform-faint); }
+    .cu-tabs button.on { color: var(--platform-ink); border-bottom-color: var(--platform-ink); }
+
+    .cu-composer { display: grid; gap: 8px; padding: 14px 0; border-bottom: 1px solid var(--platform-line); }
+    .cu-ways { display: flex; gap: 6px; }
+    .cu-ways button { min-height: 30px; padding: 0 10px; border: 1px solid var(--platform-line-strong); background: var(--platform-surface); font: inherit; font-size: 12px; font-weight: 700; color: var(--platform-muted); cursor: pointer; transition: border-color .14s, color .14s; }
+    .cu-ways button.on { border-color: var(--platform-ink); color: var(--platform-ink); }
+    .cu-composer textarea { min-height: 64px; padding: 10px 12px; border: 1px solid var(--platform-line-strong); background: var(--platform-surface); font: inherit; font-size: 14px; line-height: 1.6; resize: vertical; color: inherit; }
+    .cu-composer textarea:focus { outline: none; border-color: var(--platform-ink); }
+    .cu-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--platform-muted); }
+    .cu-foot input { height: 32px; padding: 0 8px; border: 1px solid var(--platform-line-strong); font: inherit; font-size: 13px; }
+    .cu-foot .btn { margin-left: auto; }
+    .cu-filter { display: flex; gap: 12px; padding: 10px 0 0; font-size: 12px; }
+    .cu-filter button { border: 0; background: none; padding: 2px 0; font: inherit; font-size: 12px; font-weight: 700; color: var(--platform-faint); cursor: pointer; }
+    .cu-filter button.on { color: var(--platform-ink); text-decoration: underline; text-underline-offset: 4px; }
+    .cu-tl { list-style: none; margin: 0; padding: 0; }
+    .cu-tl li { display: grid; grid-template-columns: 86px minmax(0, 1fr) auto; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--platform-line); }
+    .cu-tl time { font-size: 12px; font-weight: 700; color: var(--platform-muted); font-variant-numeric: tabular-nums; }
+    .cu-tl time small { display: block; font-weight: 600; color: var(--platform-faint); }
+    .cu-tl .what { font-size: 14px; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }
+    .cu-tl .tag { display: inline-block; margin-right: 6px; font-size: 11px; font-weight: 800; color: var(--platform-muted); }
+    .cu-tl .tag.meet { color: var(--platform-ink); }
+    .cu-tl li.void .what { color: var(--platform-faint); text-decoration: line-through; }
+    .cu-tl .cu-link { align-self: start; font-weight: 600; color: var(--platform-faint); }
+    .cu-empty { padding: 14px 0; font-size: 13.5px; color: var(--platform-faint); }
+    .cu-old { margin-top: 16px; }
+    .cu-old > summary { cursor: pointer; font-size: 12.5px; font-weight: 700; color: var(--platform-muted); padding: 6px 0; }
+
+    .cu-pol { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 12px 0; border-bottom: 1px solid var(--platform-line); }
+    .cu-pol b { font-size: 14px; }
+    .cu-pol span { font-size: 12px; color: var(--platform-muted); }
+    .cu-info { display: grid; grid-template-columns: 110px minmax(0, 1fr); margin: 0; }
+    .cu-info dt, .cu-info dd { margin: 0; padding: 10px 0; border-bottom: 1px solid var(--platform-line); font-size: 14px; }
+    .cu-info dt { font-size: 12px; font-weight: 700; color: var(--platform-muted); }
+    .cu-info dd input, .cu-info dd select { height: 32px; padding: 0 8px; border: 1px solid var(--platform-line-strong); font: inherit; font-size: 13px; }
+    .cu-sec { margin: 22px 0 6px; font-size: 12px; font-weight: 800; color: var(--platform-muted); }
+    .cu-msg { font-size: 12.5px; color: var(--platform-muted); }
+
+    .cu-board { display: grid; grid-template-columns: repeat(7, minmax(170px, 1fr)); overflow-x: auto; }
+    .cu-col { border-left: 1px solid var(--platform-line); min-height: 420px; }
+    .cu-col:first-child { border-left: 0; }
+    .cu-col h3 { margin: 0; padding: 12px 14px 10px; display: flex; justify-content: space-between; font-size: 13px; font-weight: 800; border-bottom: 1px solid var(--platform-line); }
+    .cu-col h3 b { color: var(--platform-faint); font-variant-numeric: tabular-nums; }
+    body.platform .cu-card { display: block; width: 100%; padding: 10px 14px; border: 0; border-bottom: 1px solid var(--platform-line); background: none; text-align: left; font: inherit; font-size: 12px; color: var(--platform-faint); cursor: pointer; transition: background-color .14s; }
+    .cu-card:hover { background: #f3f1ed; }
+    body.platform .cu-card b { display: block; font-size: 14px; color: var(--platform-ink); }
+
+    @media (max-width: 1180px) {
+      body.platform #work-grid { grid-template-columns: 300px minmax(0, 1fr); column-gap: 20px; }
+      .cu-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .cu-fact:nth-child(3) { padding-left: 0; border-left: 0; }
+      .cu-fact:nth-child(n+3) { border-top: 1px solid var(--platform-line); }
+    }
+    /* 폰·좁은 패드 — 목록 → 누르면 상세로 넘어가고 「고객 목록」으로 돌아온다 */
+    @media (max-width: 900px) {
+      body.platform #work-grid { grid-template-columns: 1fr; }
+      body.platform #work-grid .workspace-list { border-bottom: 0; padding: 0; }
+      body.platform #work-grid .case-rows { max-height: none; min-height: 0; }
+      #work-grid.show-detail .workspace-list { display: none; }
+      #work-grid:not(.show-detail) #detail { display: none; }
+      .cu-back { display: inline-flex; margin-top: 12px; }
+      .cu-tools select, .cu-tools .cu-count { display: none; }
+      .cu-tools .cu-seg button { min-height: 40px; }
+      .cu-tools input[type=search] { max-width: none; }
+    }
+    @media (max-width: 767px) {
+      .cu-acts .btn { flex: 1 1 calc(50% - 4px); min-height: 44px; }
+      .cu-tl li { grid-template-columns: 1fr auto; gap: 2px 12px; }
+      .cu-tl li time { grid-column: 1 / -1; }
+      .cu-tools input[type=search], .cu-composer textarea, .cu-pin-add input, .cu-foot input, .cu-info dd input { font-size: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .cu-views button, .cu-tabs button, #rows .case-row, .cu-card { transition: none; } }
   </style>
 </head>
 <body class="platform">
@@ -101,30 +246,19 @@
       </section>
 
       <section class="section-block" id="work-block" hidden>
-        <div class="global-search"><input type="search" id="q" aria-label="고객 검색" placeholder="이름, 고객코드, 메모를 검색하세요"><span class="search-state" id="result-count">-</span></div>
-
-        <div class="filter-bar" aria-label="카테고리 필터">
-          <button class="filter-chip active" type="button" data-cat="">전체</button>
-          <button class="filter-chip" type="button" data-cat="transfer">이관</button>
-          <button class="filter-chip" type="button" data-cat="valueup">밸류업</button>
-          <button class="filter-chip" type="button" data-cat="contract">계약</button>
-          <button class="filter-chip" type="button" data-cat="referral">지인</button>
+        <!-- 보기 단추 — 필터 두 줄(카테고리 5 + 상태 8)을 대신한다. 진행상태별로 보려면 「단계」 -->
+        <nav class="cu-views" id="views" aria-label="보기"></nav>
+        <div class="cu-tools">
+          <input type="search" id="q" aria-label="고객 검색" placeholder="이름·초성·번호 뒤 4자리·기록">
+          <select id="f-cat" aria-label="카테고리"><option value="">카테고리 전체</option><option value="referral">지인</option><option value="transfer">이관</option><option value="valueup">밸류업</option><option value="contract">계약</option></select>
+          <select id="f-sort" aria-label="정렬"><option value="meet">다음 미팅 순</option><option value="quiet">마지막 연락 오래된 순</option><option value="name">이름 순</option><option value="code">고객코드 순</option></select>
+          <span class="cu-count" id="result-count">-</span>
+          <div class="cu-seg" role="group" aria-label="보기 방식"><button class="on" type="button" data-mode="list">목록</button><button type="button" data-mode="board">단계</button></div>
         </div>
 
-        <div class="filter-bar" aria-label="진행상태 필터" id="status-bar" style="margin-top:8px">
-          <button class="filter-chip active" type="button" data-st="">전체 상태</button>
-          <button class="filter-chip" type="button" data-st="다시 전화">다시 전화</button>
-          <button class="filter-chip" type="button" data-st="미팅 예정">미팅 예정</button>
-          <button class="filter-chip" type="button" data-st="미팅 완료">미팅 완료</button>
-          <button class="filter-chip" type="button" data-st="보류">보류</button>
-          <button class="filter-chip" type="button" data-st="거절">거절</button>
-          <button class="filter-chip" type="button" data-st="일정 취소">일정 취소</button>
-          <button class="filter-chip" type="button" data-st="__none">미분류</button>
-        </div>
-
-        <div class="workspace-grid">
+        <div class="cu-board" id="board" hidden></div>
+        <div class="workspace-grid" id="work-grid">
           <div class="workspace-list">
-            <div class="workspace-label"><h2>고객</h2><span class="workspace-count" id="list-count">0명</span></div>
             <div class="case-rows" id="rows"></div>
           </div>
           <div class="workspace-detail" id="detail" style="scroll-margin-top:72px">
@@ -161,7 +295,7 @@
       var ALL = [];
       // 지금 목록이 어디서 왔는가 — "폴더" 또는 "서버". 저장 경로와 편집 가능 여부가 갈린다.
       var SOURCE = "폴더";
-      var state = { q: "", cat: "", st: "", sel: null };
+      var state = { q: "", cat: "", view: "all", sort: "meet", sel: null };
       var $ = function (id) { return document.getElementById(id); };
 
       var esc = window.mg.esc;
@@ -284,98 +418,268 @@
       }
 
       function v1(c) { return c.profile["v1원본"] || c.profile; }
+      function nameOf(c) { return v1(c).customerName || "이름 미기재"; }
+      function catOf(c) { var o = v1(c); return o.category || o["카테고리"] || ""; }
 
+      // ── 날짜 — 오늘 기준 며칠 (+ 앞으로, - 지남)
+      var DAYS = "일월화수목금토";
+      function dayDiff(iso) {
+        var t = new Date(localDate() + "T00:00:00");
+        return Math.round((new Date(String(iso).slice(0, 10) + "T00:00:00") - t) / 864e5);
+      }
+      function md(iso) { var x = new Date(String(iso).slice(0, 10) + "T00:00:00"); return (x.getMonth() + 1) + "." + x.getDate() + " " + DAYS.charAt(x.getDay()); }
+
+      // ── 기록 — profile.기록 = [{일자, 방법, 내용, 무효?}]. 지우지 않고 무효로 긋는다(해외 CRM 공통).
+      // 메모 한 칸(memoText)은 「이전 메모」로 남겨 둔다 — 옛 고객의 상담 내용이 사라지지 않게
+      function records(c) { return c.profile["기록"] || []; }
+      function pins(c) { return c.profile["고정메모"] || []; }
+      // 다음 할 일 — 날짜는 v1원본.nextContactDate(홈이 읽는 자리), 내용은 profile.다음할일. 끝낼 때까지 남는다
+      function todoText(c) { return c.profile["다음할일"] || ""; }
+      function cycleOf(c) { return Number(c.profile["연락주기"]) || 60; }
+      function upMeeting(c) {
+        return meetings(c).filter(function (m) { return m && m["상태"] === "예정" && m["일자"]; })
+          .sort(function (a, b) { return a["일자"] < b["일자"] ? -1 : 1; })[0] || null;
+      }
+      function lastDone(c) {
+        var best = null;
+        meetings(c).forEach(function (m) { if (m && m["상태"] === "완료" && m["일자"] && (!best || m["일자"] > best)) best = m["일자"]; });
+        return best;
+      }
+      // 마지막 연락 — 무효가 아닌 기록과 완료한 미팅 중 가장 늦은 날
+      function lastContact(c) {
+        var best = lastDone(c);
+        records(c).forEach(function (r) { if (r && !r["무효"] && r["일자"] && (!best || r["일자"] > best)) best = r["일자"]; });
+        return best;
+      }
+      function agoText(a) { return a === null ? "연락 기록 없음" : a <= 0 ? "오늘 연락" : "마지막 연락 " + a + "일 전"; }
+      // 연락할 고객 — 홈 「오늘」의 연락 줄과 같은 규칙(web/index.html contacts). 한쪽을 고치면 같이 고친다
+      function callReason(c) {
+        var st = custStatus(c), nc = v1(c).nextContactDate;
+        if (st === "다시 전화") return nc ? "다음 연락 " + md(nc) : "다시 연락하기로 함";
+        if (nc && dayDiff(nc) <= 0) return dayDiff(nc) === 0 ? "오늘 연락일" : "연락일 " + -dayDiff(nc) + "일 지남";
+        if (st === "거절" || st === "보류") return "";
+        var ld = lastDone(c);
+        if (!ld || upMeeting(c)) return "";
+        var ago = -dayDiff(ld);
+        return ago >= 3 && ago <= 14 ? "미팅 끝난 지 " + ago + "일" : "";
+      }
+      function isQuiet(c) {
+        if (custStatus(c) === "거절") return false;
+        var l = lastContact(c);
+        return l !== null && -dayDiff(l) > cycleOf(c);
+      }
+
+      // ── 보기 단추 — 숫자는 지금 목록 기준
+      var VIEWS = [
+        ["all", "전체", function () { return true; }],
+        ["call", "연락할 고객", function (c) { return !!callReason(c); }],
+        ["week", "이번 주 미팅", function (c) { var m = upMeeting(c); return m && dayDiff(m["일자"]) >= 0 && dayDiff(m["일자"]) <= 6; }],
+        ["late", "정리 안 한 미팅", function (c) { var m = upMeeting(c); return m && dayDiff(m["일자"]) < 0; }],
+        ["quiet", "연락 끊김", isQuiet],
+        ["none", "미분류", function (c) { return !custStatus(c); }]
+      ];
+      function renderViews() {
+        $("views").innerHTML = VIEWS.map(function (v) {
+          var n = ALL.filter(v[2]).length;
+          return '<button type="button" data-view="' + v[0] + '" class="' + (state.view === v[0] ? "on" : "") + (v[0] !== "all" && v[0] !== "none" && n ? " alert" : "") + '">'
+            + esc(v[1]) + ' <b>' + n + "</b></button>";
+        }).join("");
+      }
+
+      // 초성 검색 — 「ㄱㅁㅅ」로 김민수를 찾는다(국내 설계사 앱 공통)
+      var CHO = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
+      function choseong(s) {
+        return String(s).replace(/[가-힣]/g, function (ch) { return CHO.charAt(Math.floor((ch.charCodeAt(0) - 0xac00) / 588)); });
+      }
       function filtered() {
-        var q = state.q.toLowerCase();
-        return ALL.filter(function (c) {
+        var q = state.q.toLowerCase().replace(/\s+/g, "");
+        var view = (VIEWS.find(function (v) { return v[0] === state.view; }) || VIEWS[0])[2];
+        var list = ALL.filter(function (c) {
           var o = v1(c);
-          if (state.cat && (o.category || o["카테고리"]) !== state.cat) return false;
-          var st = custStatus(c);
-          if (state.st === "__none" && st) return false;
-          if (state.st && state.st !== "__none" && st !== state.st) return false;
+          if (state.cat && catOf(c) !== state.cat) return false;
+          if (!view(c)) return false;
           if (q) {
-            var hay = (c.code + " " + (o.customerName || "") + " " + (o.memo || "")).toLowerCase();
+            var name = String(o.customerName || "").replace(/\s+/g, "");
+            var hay = (c.code + " " + name + " " + choseong(name) + " " + String(o.phone || "").replace(/\D/g, "") + " "
+              + (o.memo || "") + " " + records(c).map(function (r) { return r["내용"]; }).join(" ")).toLowerCase();
             if (hay.indexOf(q) < 0) return false;
           }
           return true;
         });
+        var by = {
+          meet: function (c) { var m = upMeeting(c); return m ? "0" + m["일자"] : "1" + nameOf(c); },
+          quiet: function (c) { return lastContact(c) || "0000"; },
+          name: nameOf,
+          code: function (c) { return c.code; }
+        }[state.sort] || nameOf;
+        return list.sort(function (a, b) { var x = by(a), y = by(b); return x < y ? -1 : x > y ? 1 : (a.code < b.code ? -1 : 1); });
       }
 
-      var DETAIL_EMPTY = '<div><img class="empty-illust" src="../assets/img/empty-folder.png" alt=""><strong>고객을 선택하세요</strong><p>목록에서 고객을 선택하면 프로필, 메모, 보유보험을 확인할 수 있습니다.</p></div>';
+      var DETAIL_EMPTY = '<div style="padding:26px 0"><img class="empty-illust" src="../assets/img/empty-folder.png" alt=""><strong>고객을 선택하세요</strong><p>목록에서 고객을 누르면 기록·미팅·보유보험이 열립니다.</p></div>';
+
+      function rowHtml(c) {
+        var st = custStatus(c), m = upMeeting(c), why = callReason(c), l = lastContact(c);
+        var sub = [];
+        if (m) sub.push('<span class="' + (dayDiff(m["일자"]) < 0 ? "cu-late" : "cu-next") + '">' + (dayDiff(m["일자"]) < 0 ? "정리 안 함 · " : "") + esc(String(m["차수"])) + "차 " + md(m["일자"]) + "</span>");
+        var nc = v1(c).nextContactDate;
+        if (nc) sub.push('<span class="' + (dayDiff(nc) <= 0 ? "cu-due" : "cu-next") + '">' + md(nc) + " · " + esc(todoText(c) || "다음 연락") + "</span>");
+        else if (why) sub.push("<span>" + esc(why) + "</span>");
+        sub.push('<span class="' + (isQuiet(c) ? "cu-late" : "") + '">' + agoText(l === null ? null : -dayDiff(l)) + "</span>");
+        return '<div class="case-row' + (c.code === state.sel ? " active" : "") + '" tabindex="0" role="button" data-code="' + esc(c.code) + '">'
+          + '<div class="cu-n">' + esc(nameOf(c)) + "<small>" + esc(CAT[catOf(c)] || catOf(c) || "미분류") + "</small></div>"
+          + '<div class="cu-st' + (st === "다시 전화" ? " call" : "") + '">' + esc(st || "미분류") + "</div>"
+          + '<div class="cu-sub">' + sub.join("") + "</div></div>";
+      }
 
       function renderList() {
+        renderViews();
         var list = filtered();
-        $("list-count").textContent = list.length + "명";
-        $("result-count").textContent = "결과 " + list.length + "명";
+        $("result-count").textContent = list.length + "명";
         // 선택 고객이 현재 결과에 없으면 상세도 함께 비운다 (목록-상세 상태 일치)
         if (state.sel && !list.some(function (c) { return c.code === state.sel; })) {
           state.sel = null;
           $("detail").innerHTML = DETAIL_EMPTY;
+          $("work-grid").classList.remove("show-detail");
         }
-        var rows = $("rows");
-        if (!list.length) {
-          rows.innerHTML = '<div class="list-empty">조건에 맞는 고객이 없습니다.</div>';
-          return;
-        }
-        rows.innerHTML = list.map(function (c) {
-          var o = v1(c);
-          var n = (c.policies.policies || []).length;
-          var st = custStatus(c);
-          // 다가오는 예정 미팅 — 가장 이른 예정 건을 목록에서 바로 보여준다
-          var up = meetings(c).filter(function (m) { return m["상태"] === "예정"; })
-            .sort(function (a, b) { return (a["일자"] || "") < (b["일자"] || "") ? -1 : 1; })[0];
-          return '<div class="case-row' + (c.code === state.sel ? " active" : "") + '" tabindex="0" role="button" data-code="' + esc(c.code) + '">'
-            + "<h3>" + esc(o.customerName || "이름 미기재") + "</h3>"
-            + '<div class="case-meta"><span>' + esc(c.code) + "</span>"
-            + '<span class="badge-result">' + esc(CAT[o.category || o["카테고리"]] || o.category || o["카테고리"] || "미분류") + "</span>"
-            + (st ? '<span class="badge-status ' + ST_CLASS[st] + '">' + esc(st) + "</span>" : "")
-            + (up ? '<span class="badge-status st-meet">' + esc(String(up["차수"])) + "차 " + esc((up["일자"] || "").slice(5)) + "</span>" : "")
-            + (n ? "<span>보유보험 " + n + "건</span>" : "")
-            + "</div></div>";
+        $("rows").innerHTML = list.length ? list.map(rowHtml).join("") : '<div class="list-empty">이 보기에 해당하는 고객이 없습니다.</div>';
+        if (!$("board").hidden) renderBoard();
+      }
+
+      // 단계 보기 — 진행상태 칸반. 옮기기는 상세의 진행상태로 한다(끌어 놓기는 폰에서 손이 많이 간다)
+      function renderBoard() {
+        var list = filtered();
+        $("board").innerHTML = STATUS.concat([""]).map(function (s) {
+          var cs = list.filter(function (c) { return custStatus(c) === s; });
+          return '<div class="cu-col"><h3>' + esc(s || "미분류") + "<b>" + cs.length + "</b></h3>"
+            + cs.map(function (c) {
+                var m = upMeeting(c);
+                return '<button type="button" class="cu-card" data-code="' + esc(c.code) + '"><b>' + esc(nameOf(c)) + "</b>"
+                  + esc(m ? m["차수"] + "차 " + md(m["일자"]) : callReason(c) || CAT[catOf(c)] || "") + "</button>";
+              }).join("") + "</div>";
         }).join("");
       }
 
+      var ICON = {
+        tel: '<svg viewBox="0 0 24 24"><path d="M6.5 4h3l1.5 4-2 1.5a11 11 0 0 0 5.5 5.5l1.5-2 4 1.5v3a2 2 0 0 1-2 2A15 15 0 0 1 4.5 6a2 2 0 0 1 2-2z"/></svg>',
+        sms: '<svg viewBox="0 0 24 24"><path d="M5 5h14v11h-8l-4 3.5V16H5z"/></svg>',
+        cal: '<svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="1"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>'
+      };
+      var PIN_KEYS = ["호칭", "연락 시간", "주의", "소개", "관심사", "기타"];
+      var WAYS = ["전화", "문자", "대면", "기타"];
+      var ui = { tab: "log", way: "전화", kind: "", pinOpen: false };
+
       function renderDetail(c) {
-        var o = v1(c);
+        var o = v1(c), w = 쓸수있나(c), cd = esc(c.code);
         var pols = c.policies.policies || [];
+        var st = custStatus(c), m = upMeeting(c), l = lastContact(c), nc = o.nextContactDate;
+        // 같은 고객을 다시 그릴 때(저장 뒤) 쓰던 글을 살린다
+        var 초안 = {};
+        ["memo-edit", "rec-note", "rec-todo", "pin-val"].forEach(function (id) { var el = $(id); if (el && el.dataset.code === c.code) 초안[id] = el.value; });
+        var gender = o.gender === "male" ? "남" : o.gender === "female" ? "여" : o.gender;
+
+        var head = '<button class="btn cu-back" type="button" id="cu-back">← 고객 목록</button>'
+          + '<div class="cu-head"><div class="cu-head-top"><div><h2>' + esc(nameOf(c)) + "<small>" + cd + "</small></h2>"
+          + '<div class="cu-meta">' + esc([CAT[catOf(c)] || catOf(c), o.age ? o.age + "세" : "", gender, o.address].filter(Boolean).join(" · ")) + "</div></div>"
+          + (w ? '<select class="cu-sel" id="st-sel" data-code="' + cd + '" aria-label="진행상태"><option value="">미분류</option>'
+                + STATUS.map(function (s) { return "<option" + (s === st ? " selected" : "") + ">" + esc(s) + "</option>"; }).join("") + "</select>"
+              : '<span class="cu-meta">' + esc(st || "미분류") + "</span>")
+          + "</div>"
+          + '<div class="cu-facts">'
+          + '<div class="cu-fact"><div class="k">다음 미팅</div><div class="v' + (m && dayDiff(m["일자"]) < 0 ? " cu-late" : "") + '">' + (m ? (dayDiff(m["일자"]) < 0 ? "정리 안 함 · " : "") + esc(String(m["차수"])) + "차 " + md(m["일자"]) : "없음") + "</div></div>"
+          + '<div class="cu-fact"><div class="k">마지막 연락</div><div class="v' + (isQuiet(c) ? " cu-late" : "") + '">' + (l === null ? "기록 없음" : -dayDiff(l) <= 0 ? "오늘" : -dayDiff(l) + "일 전") + "</div></div>"
+          + '<div class="cu-fact"><div class="k">다음 할 일' + (w && (nc || todoText(c)) ? ' <button class="cu-link" type="button" id="todo-done" style="padding:0 0 0 6px;font-size:11px">끝냄</button>' : "") + '</div><div class="v' + (nc && dayDiff(nc) <= 0 ? " cu-due" : "") + '">' + (nc ? md(nc) : todoText(c) ? "날짜 없음" : "없음") + (todoText(c) ? "<small>" + esc(todoText(c)) + "</small>" : "") + "</div></div>"
+          + '<div class="cu-fact"><div class="k">보유보험</div><div class="v">' + pols.length + "건</div></div></div>"
+          + '<div class="cu-acts">'
+          + (o.phone ? '<a class="btn" href="tel:' + esc(String(o.phone).replace(/\D/g, "")) + '">' + ICON.tel + "전화</a>"
+              + '<a class="btn" href="sms:' + esc(String(o.phone).replace(/\D/g, "")) + '">' + ICON.sms + "문자</a>" : "")
+          + (w ? '<button class="btn" type="button" data-go="meet">' + ICON.cal + "미팅 잡기</button>"
+              + '<button class="btn btn-primary" type="button" data-go="log">기록 남기기</button>' : "")
+          + '<span class="cu-msg" id="status-msg"></span></div></div>';
+
+        var ps = pins(c);
+        var pinHtml = '<div class="cu-pins-h"><span>꼭 알 것</span>' + (w ? '<button class="cu-link" type="button" id="pin-toggle">' + (ui.pinOpen ? "닫기" : "+ 추가") + "</button>" : "") + "</div>"
+          + '<div class="cu-pins">'
+          + (ps.length ? ps.map(function (p, i) {
+                return '<div class="cu-pin"><b>' + esc(p["항목"]) + "</b><span>" + esc(p["내용"]) + "</span>"
+                  + (w ? '<button class="cu-link" type="button" data-pin-del="' + i + '" aria-label="' + esc(p["항목"]) + ' 지우기">지우기</button>' : "") + "</div>";
+              }).join("")
+            : '<div class="cu-pin"><span style="color:var(--platform-faint)">호칭·연락 가능한 시간·주의할 점을 적어 두면 여기 늘 보입니다.</span></div>')
+          + (w && ui.pinOpen ? '<div class="cu-pin-add"><select class="cu-sel" id="pin-key" aria-label="항목">' + PIN_KEYS.map(function (k) { return "<option>" + k + "</option>"; }).join("") + "</select>"
+              + '<input id="pin-val" data-code="' + cd + '" placeholder="예: 평일 저녁 7시 이후" aria-label="내용"><button class="btn" type="button" id="pin-add">추가</button></div>' : "")
+          + '<span class="cu-msg" id="pin-msg"></span></div>';
+
+        var recs = records(c);
+        var tabs = [["log", "기록", recs.filter(function (r) { return !r["무효"]; }).length], ["meet", "미팅", meetings(c).length], ["pol", "보유보험", pols.length], ["info", "정보·관리", ""]];
+        var tabHtml = '<div class="cu-tabs" role="tablist">' + tabs.map(function (t) {
+          return '<button type="button" role="tab" aria-selected="' + (ui.tab === t[0]) + '" data-tab="' + t[0] + '" class="' + (ui.tab === t[0] ? "on" : "") + '">' + t[1] + (t[2] !== "" ? "<b>" + t[2] + "</b>" : "") + "</button>";
+        }).join("") + "</div>";
+
+        var body = "";
+        if (ui.tab === "log") body = logTab(c, w);
+        else if (ui.tab === "meet") body = meetingSection(c).replace("<h3>미팅 일정</h3>", "");
+        else if (ui.tab === "pol") body = pols.length ? pols.map(function (p) {
+            var name = p.productName || p.insuranceProduct || "상품명 미기재", kw = caseKeyword(name);
+            return '<div class="cu-pol"><div><b>' + esc(name) + "</b><br><span>"
+              + esc([p.monthlyPremium ? "월 " + Number(p.monthlyPremium).toLocaleString() + "원" : "", p.contractDate ? String(p.contractDate).slice(0, 10) + " 계약" : ""].filter(Boolean).join(" · ") || "세부 미기재")
+              + "</span></div>" + (kw ? '<a class="cu-link" href="../cases/?q=' + encodeURIComponent(kw) + '">관련 사례</a>' : "<span></span>") + "</div>";
+          }).join("") : '<p class="cu-empty">등록된 보유보험이 없습니다.</p>';
+        else body = infoTab(c, o, w, gender);
+
+        $("detail").innerHTML = '<div class="case-detail-body">' + head + pinHtml + tabHtml + body + "</div>";
+        Object.keys(초안).forEach(function (id) { if ($(id)) $(id).value = 초안[id]; });
+      }
+
+      function logTab(c, w) {
+        var cd = esc(c.code);
+        var items = records(c).map(function (r, i) { return { at: r["일자"] || "", way: r["방법"] || "기타", text: r["내용"] || "", void: !!r["무효"], i: i }; });
+        meetings(c).forEach(function (m) {
+          if (m && m["일자"] && m["상태"] !== "예정") items.push({ at: m["일자"], way: "미팅", text: m["차수"] + "차 미팅 " + m["상태"], meet: true });
+        });
+        items.sort(function (a, b) { return a.at < b.at ? 1 : a.at > b.at ? -1 : 0; });
+        var shown = items.filter(function (it) { return !ui.kind || it.way === ui.kind; });
+        var h = "";
+        if (w) {
+          h += '<div class="cu-composer"><div class="cu-ways" role="group" aria-label="연락 방법">' + WAYS.map(function (x) {
+              return '<button type="button" data-way="' + x + '" class="' + (ui.way === x ? "on" : "") + '" aria-pressed="' + (ui.way === x) + '">' + x + "</button>";
+            }).join("") + "</div>"
+            + '<textarea id="rec-note" data-code="' + cd + '" aria-label="기록 내용" placeholder="무슨 이야기를 했나요 — 예: 다음 주 수요일 저녁 가능, 자녀 보험 비교안 요청"></textarea>'
+            + '<div class="cu-foot"><span>다음 할 일</span><input id="rec-todo" data-code="' + cd + '" style="flex:1;min-width:150px" placeholder="예: 자녀 보험 비교안 전달" aria-label="다음 할 일"><input type="date" id="rec-next" aria-label="다음 할 일 날짜">'
+            + '<span class="cu-msg" id="rec-msg"></span><button class="btn btn-primary" type="button" id="rec-save" data-code="' + cd + '">기록</button></div></div>';
+        }
+        if (items.length) {
+          h += '<div class="cu-filter" role="group" aria-label="기록 종류">' + [["", "전부"]].concat(WAYS.concat(["미팅"]).map(function (x) { return [x, x]; })).map(function (k) {
+            return '<button type="button" data-kind="' + k[0] + '" class="' + (ui.kind === k[0] ? "on" : "") + '">' + k[1] + "</button>";
+          }).join("") + "</div>";
+        }
+        h += '<ul class="cu-tl">' + shown.map(function (it) {
+          var ago = -dayDiff(it.at);
+          return '<li class="' + (it.void ? "void" : "") + '"><time>' + (it.at ? md(it.at) : "") + "<small>" + (it.at ? (ago <= 0 ? "오늘" : ago + "일 전") : "") + "</small></time>"
+            + '<div class="what"><span class="tag' + (it.meet || it.way === "대면" ? " meet" : "") + '">' + esc(it.way) + "</span>" + esc(it.text) + (it.void ? " (무효)" : "") + "</div>"
+            + (w && it.i !== undefined ? '<button type="button" class="cu-link" data-rec-void="' + it.i + '">' + (it.void ? "되살리기" : "무효") + "</button>" : "<span></span>") + "</li>";
+        }).join("") + "</ul>";
+        if (!shown.length) h += '<p class="cu-empty">' + (items.length ? "이 종류의 기록이 없습니다." : "아직 기록이 없습니다. 통화나 미팅이 끝나면 한 줄 남기세요.") + "</p>";
+        // 예전 메모 한 칸 — 기록이 생기기 전 상담 내용. 지우지 않고 접어 둔다
+        var memo = memoSection(c, v1(c));
+        if (memo) h += '<details class="cu-old"' + (records(c).length ? "" : " open") + "><summary>이전 메모</summary>" + memo.replace("<h3>메모</h3>", "") + "</details>";
+        return h;
+      }
+
+      function infoTab(c, o, w, gender) {
+        var cd = esc(c.code);
         var fields = [
           ["고객코드", c.code],
-          ["카테고리", CAT[o.category || o["카테고리"]] || o.category || o["카테고리"] || "미분류"],
+          ["카테고리", CAT[catOf(c)] || catOf(c) || "미분류"],
           ["연락처", o.phone],
-          ["나이·성별", [o.age, o.gender === "male" ? "남" : o.gender === "female" ? "여" : o.gender].filter(Boolean).join(" · ")],
-          ["주소", o.address],
-          ["다음 연락", o.nextContactDate]
+          ["나이·성별", [o.age, gender].filter(Boolean).join(" · ")],
+          ["주소", o.address]
         ].filter(function (f) { return f[1]; });
-        var polHtml = pols.length
-          ? pols.map(function (p) {
-              var name = p.productName || p.insuranceProduct || "상품명 미기재";
-              var kw = caseKeyword(name);
-              return "<li>" + esc(name)
-                + (p.monthlyPremium ? " — 월 " + Number(p.monthlyPremium).toLocaleString() + "원" : "")
-                + (p.contractDate ? " (" + esc(String(p.contractDate).slice(0, 10)) + ")" : "")
-                + (kw ? ' <a href="../cases/?q=' + encodeURIComponent(kw) + '" style="color:var(--platform-blue);font-size:0.85em;font-weight:600">관련 사례</a>' : "")
-                + "</li>";
-            }).join("")
-          : "<li>등록된 보유보험 없음</li>";
-        var st = custStatus(c);
-        // 같은 고객을 다시 그릴 때(진행상태·미팅 저장 뒤) 저장 안 한 메모를 살린다
-        var 쓰던메모 = $("memo-edit");
-        var 메모초안 = 쓰던메모 && 쓰던메모.dataset.code === c.code ? 쓰던메모.value : null;
-        $("detail").innerHTML = '<div class="case-detail-body">'
-          + '<div class="detail-badges"><span class="badge-grade">' + esc(CAT[o.category || o["카테고리"]] || "미분류") + "</span>"
-          + (st ? '<span class="badge-status ' + ST_CLASS[st] + '">' + esc(st) + "</span>" : "")
-          + "</div>"
-          + "<h2>" + esc(o.customerName || "이름 미기재") + "</h2>"
-          + statusSection(c)
-          + meetingSection(c)
-          + '<dl class="detail-fields">' + fields.map(function (f) {
-              return "<dt>" + esc(f[0]) + "</dt><dd>" + esc(f[1]) + "</dd>";
-            }).join("") + "</dl>"
-          + "<h3>보유보험 " + pols.length + "건</h3><ul style='margin:0;padding-left:20px'>" + polHtml + "</ul>"
-          + memoSection(c, o)
-          + mgmtSection(c, o)
-          + "</div>";
-        if (메모초안 !== null && $("memo-edit")) $("memo-edit").value = 메모초안;
+        var cyc = cycleOf(c);
+        return '<dl class="cu-info">' + fields.map(function (f) { return "<dt>" + esc(f[0]) + "</dt><dd>" + esc(f[1]) + "</dd>"; }).join("")
+          + "<dt>다음 할 일</dt><dd>" + (w ? '<input id="nc-todo" style="width:min(100%,260px)" value="' + esc(todoText(c)) + '" placeholder="내용" aria-label="다음 할 일 내용"> <input type="date" id="nc-date" value="' + esc(o.nextContactDate || "") + '" aria-label="다음 할 일 날짜">' : esc([o.nextContactDate, todoText(c)].filter(Boolean).join(" · ") || "없음")) + "</dd>"
+          + "<dt>연락 주기</dt><dd>" + (w ? '<select id="cycle-sel" data-code="' + cd + '" aria-label="연락 주기">' + [30, 60, 90, 180].map(function (n) { return '<option value="' + n + '"' + (n === cyc ? " selected" : "") + ">" + n + "일마다</option>"; }).join("") + "</select>"
+              + ' <span class="cu-msg">넘기면 「연락 끊김」에 뜹니다</span>' : cyc + "일마다") + "</dd></dl>"
+          + '<p class="cu-msg" id="info-msg"></p>'
+          + mgmtSection(c, o).replace("<h3>관리</h3>", '<h3 class="cu-sec">관리</h3>');
       }
 
       // 고객 관리 — 이관(사본 생성)·삭제. 쓰기 연결일 때만 노출된다.
@@ -574,20 +878,6 @@
       // 둘 다 아니면 읽기 전용 연결(디렉터리 입력)이라 편집을 열지 않는다.
       function 쓸수있나(c) { return !!c.handle || SOURCE === "서버"; }   // 남의 것은 SOURCE가 "남"이라 잠긴다
 
-      function statusSection(c) {
-        var st = custStatus(c);
-        if (!쓸수있나(c)) return "";
-        return '<div class="status-picker" role="group" aria-label="진행상태 선택">'
-          + STATUS.map(function (s) {
-              var on = s === st;
-              return '<button type="button" class="status-btn ' + ST_CLASS[s] + (on ? " on" : "") + '"'
-                + ' data-status="' + esc(s) + '" data-code="' + esc(c.code) + '" aria-pressed="' + on + '">'
-                + esc(s) + "</button>";
-            }).join("")
-          + '<span id="status-msg" style="font-size:0.8rem;color:var(--platform-muted)"></span>'
-          + "</div>";
-      }
-
       // 미팅 차수 일정 — 빠른 일정 잡기 (2026-07-20 사용자 요구).
       // 차수 자동 제안: 취소가 아닌 미팅의 최대 차수 + 1 (1차가 취소면 다시 1차를 제안).
       // 등록/완료/취소가 진행상태를 함께 갱신한다 (미팅 예정/미팅 완료/일정 취소).
@@ -749,12 +1039,16 @@
         }, "mt-msg");
       }
 
-      function saveStatus(c, value, btn) {
-        var next = custStatus(c) === value ? null : value; // 재클릭 = 해제
+      function saveStatus(c, value) {
         return commitProfile(c, function (draft) {
-          if (next) draft["진행상태"] = next;
+          if (value) draft["진행상태"] = value;
           else delete draft["진행상태"];
         }, "status-msg");
+      }
+      // 다음 연락일은 v1원본 안에 산다(홈 「오늘」이 같은 자리를 읽는다)
+      function setNext(draft, d) {
+        var t = draft["v1원본"] || draft;
+        if (d) t.nextContactDate = d; else delete t.nextContactDate;
       }
 
       // 메모: 쓰기 연결(FSA)이면 편집·저장, 아니면 읽기 전용 표시. 저장 대상은 memo.md
@@ -800,7 +1094,67 @@
         var btn = e.target.closest("button");
         if (!btn) return;
         var c = ALL.find(function (x) { return x.code === btn.dataset.code; });
-        if (btn.dataset.status && c) saveStatus(c, btn.dataset.status, btn);
+        var cur = ALL.find(function (x) { return x.code === state.sel; });
+        if (btn.id === "cu-back") {
+          $("work-grid").classList.remove("show-detail");
+          var row = document.querySelector('#rows .case-row[data-code="' + state.sel + '"]');
+          if (row) row.scrollIntoView({ block: "center" });
+          return;
+        }
+        if (!cur) return;
+        if (btn.dataset.tab || btn.dataset.go) {
+          ui.tab = btn.dataset.tab || btn.dataset.go;
+          renderDetail(cur);
+          if (btn.dataset.go) { var f = $(ui.tab === "log" ? "rec-note" : "mt-new-date"); if (f) f.focus(); }
+        }
+        else if (btn.dataset.way) {
+          ui.way = btn.dataset.way;
+          btn.parentNode.querySelectorAll("button").forEach(function (b) { b.classList.toggle("on", b === btn); b.setAttribute("aria-pressed", b === btn); });
+        }
+        else if (btn.dataset.kind !== undefined) { ui.kind = btn.dataset.kind; renderDetail(cur); }
+        else if (btn.id === "pin-toggle") { ui.pinOpen = !ui.pinOpen; renderDetail(cur); if (ui.pinOpen && $("pin-val")) $("pin-val").focus(); }
+        else if (btn.id === "pin-add") {
+          var key = $("pin-key").value, val = $("pin-val").value.trim();
+          if (!val) { $("pin-val").focus(); return; }
+          $("pin-val").value = "";
+          commitProfile(cur, function (draft) {
+            draft["고정메모"] = (draft["고정메모"] || []).concat([{ "항목": key, "내용": val }]);
+          }, "pin-msg").then(function (ok) {
+            if (!ok) { if ($("pin-val")) $("pin-val").value = val; return; }
+            ui.pinOpen = false;
+            if (state.sel === cur.code) renderDetail(cur);
+          });
+        }
+        else if (btn.dataset.pinDel !== undefined) {
+          var pi = Number(btn.dataset.pinDel);
+          commitProfile(cur, function (draft) { (draft["고정메모"] || []).splice(pi, 1); }, "pin-msg");
+        }
+        else if (btn.id === "rec-save") {
+          var note = $("rec-note").value.trim(), next = $("rec-next").value, todo = $("rec-todo").value.trim();
+          if (!note) { $("rec-note").focus(); $("rec-msg").textContent = "무슨 이야기를 했는지 적어 주세요."; return; }
+          $("rec-note").value = ""; $("rec-todo").value = "";   // 다시 그릴 때 초안으로 되살아나지 않게 먼저 비운다
+          var way = ui.way;
+          commitProfile(cur, function (draft) {
+            draft["기록"] = [{ "일자": localDate(), "방법": way, "내용": note }].concat(draft["기록"] || []);
+            // 새 할 일을 적으면 앞의 할 일을 갈아 끼운다 — 할 일은 한 고객에 하나
+            if (next || todo) { setNext(draft, next); if (todo) draft["다음할일"] = todo; else delete draft["다음할일"]; }
+          }, "rec-msg").then(function (ok) { if (!ok && $("rec-note")) { $("rec-note").value = note; $("rec-todo").value = todo; } });
+        }
+        else if (btn.id === "todo-done") {
+          var doneText = todoText(cur);
+          commitProfile(cur, function (draft) {
+            setNext(draft, null); delete draft["다음할일"];
+            if (doneText) draft["기록"] = [{ "일자": localDate(), "방법": "기타", "내용": "할 일 끝냄 — " + doneText }].concat(draft["기록"] || []);
+          }, "status-msg");
+        }
+        else if (btn.dataset.recVoid !== undefined) {
+          var ri = Number(btn.dataset.recVoid);
+          commitProfile(cur, function (draft) {
+            var r = (draft["기록"] || [])[ri];
+            if (!r) return;
+            if (r["무효"]) delete r["무효"]; else r["무효"] = true;
+          }, "rec-msg");
+        }
         else if (btn.id === "mt-add" && c) {
           var d = $("mt-new-date").value;
           if (!d) { $("mt-msg").textContent = "일자를 선택하세요."; return; }
@@ -830,6 +1184,11 @@
 
       // 예정 미팅의 일자 변경 — 날짜 입력을 바꾸면 즉시 저장 (일정 변경)
       $("detail").addEventListener("change", function (e) {
+        var cur = ALL.find(function (x) { return x.code === state.sel; });
+        if (cur && e.target.id === "st-sel") { saveStatus(cur, e.target.value); return; }
+        if (cur && e.target.id === "nc-date") { var nd = e.target.value; commitProfile(cur, function (draft) { setNext(draft, nd); }, "info-msg"); return; }
+        if (cur && e.target.id === "nc-todo") { var tv = e.target.value.trim(); commitProfile(cur, function (draft) { if (tv) draft["다음할일"] = tv; else delete draft["다음할일"]; }, "info-msg"); return; }
+        if (cur && e.target.id === "cycle-sel") { var cy = Number(e.target.value); commitProfile(cur, function (draft) { draft["연락주기"] = cy; }, "info-msg"); return; }
         var input = e.target.closest("input.mt-date");
         if (!input || !input.value) return;
         var c = ALL.find(function (x) { return x.code === input.dataset.code; });
@@ -988,31 +1347,47 @@
       });
 
       $("q").addEventListener("input", function (e) { state.q = e.target.value.trim(); renderList(); });
-      // 필터 칩 — 카테고리·진행상태 두 줄이 독립 동작한다 (active 표시는 자기 줄 안에서만)
-      document.querySelectorAll(".filter-chip").forEach(function (chip) {
-        chip.addEventListener("click", function () {
-          chip.parentElement.querySelectorAll(".filter-chip").forEach(function (b) { b.classList.toggle("active", b === chip); });
-          if (chip.dataset.st !== undefined) state.st = chip.dataset.st;
-          else state.cat = chip.dataset.cat;
-          renderList();
-        });
+      $("f-cat").addEventListener("change", function (e) { state.cat = e.target.value; renderList(); });
+      $("f-sort").addEventListener("change", function (e) { state.sort = e.target.value; renderList(); });
+      $("views").addEventListener("click", function (e) {
+        var b = e.target.closest("[data-view]");
+        if (b) { state.view = b.dataset.view; renderList(); }
+      });
+      // 목록 / 단계 — 단계에서 고객을 누르면 목록으로 돌아와 그 고객을 연다
+      document.querySelectorAll(".cu-seg button").forEach(function (b) {
+        b.addEventListener("click", function () { setMode(b.dataset.mode); });
+      });
+      function setMode(mode) {
+        document.querySelectorAll(".cu-seg button").forEach(function (x) { x.classList.toggle("on", x.dataset.mode === mode); });
+        $("board").hidden = mode !== "board";
+        $("work-grid").hidden = mode === "board";
+        if (mode === "board") renderBoard();
+      }
+      function openCustomer(code) {
+        var c = ALL.find(function (x) { return x.code === code; });
+        if (!c) return;
+        if (state.sel !== code) { ui.tab = "log"; ui.kind = ""; ui.pinOpen = false; }
+        state.sel = code;
+        document.querySelectorAll("#rows .case-row").forEach(function (r) { r.classList.toggle("active", r.dataset.code === code); });
+        renderDetail(c);
+        // 좁은 화면은 목록 대신 상세가 뜬다 — 맨 위로 올려 머리부터 보이게
+        $("work-grid").classList.add("show-detail");
+        var d = $("detail");
+        if (d.getBoundingClientRect().top < 0 || d.getBoundingClientRect().top > window.innerHeight * 0.6) {
+          d.scrollIntoView({ block: "start", behavior: "auto" });
+        }
+      }
+      $("board").addEventListener("click", function (e) {
+        var b = e.target.closest(".cu-card");
+        if (!b) return;
+        setMode("list");
+        if (!ALL.some(function (c) { return c.code === b.dataset.code; })) return;
+        if (!filtered().some(function (c) { return c.code === b.dataset.code; })) { state.view = "all"; renderList(); }
+        openCustomer(b.dataset.code);
       });
       $("rows").addEventListener("click", function (e) {
         var row = e.target.closest(".case-row");
-        if (!row) return;
-        document.querySelectorAll(".case-row.active").forEach(function (r) { r.classList.remove("active"); });
-        row.classList.add("active");
-        var c = ALL.find(function (x) { return x.code === row.dataset.code; });
-        if (c) {
-          state.sel = c.code;
-          renderDetail(c);
-          // 좁은 화면은 상세가 목록 아래에 쌓인다 — 눌러도 아무 일 없는 것처럼 보이지 않게 상세로 내려간다
-          var d = $("detail");
-          if (d.getBoundingClientRect().top > window.innerHeight * 0.6) {
-            d.scrollIntoView({ block: "start",
-              behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-          }
-        }
+        if (row) openCustomer(row.dataset.code);
       });
 
       // ── 서버 고객 (2026-08-31 — 잠금문구 폐지)

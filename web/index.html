@@ -488,7 +488,8 @@
 
       function rowHtml(x, kindLabel) {
         var c = x.c, m = x.m, label = x.n <= 0 ? "내일로" : "하루 미루기";
-        var memo = String(c.memoText || "").split("\n").map(function (l) { return l.replace(/^#+\s*/, "").trim(); })
+        var rec = ((c.profile && c.profile["기록"]) || []).filter(function (r) { return r && !r["무효"]; })[0];
+        var memo = rec ? rec["내용"] : String(c.memoText || "").split("\n").map(function (l) { return l.replace(/^#+\s*/, "").trim(); })
           .filter(function (l) { return l && !/^상담 메모/.test(l); })[0] || "";
         return '<div class="h-row" data-code="' + esc(c["고객코드"]) + '" data-i="' + x.i + '">'
           + '<div class="h-who"><a href="' + custHref(c) + '">' + esc(nameOf(c)) + "</a>"
@@ -610,13 +611,13 @@
           function () {
             var note = $("hd-note").value.trim(), st = $("hd-st").value;
             if (!note && !st) { $("hd-err").hidden = false; $("hd-err").textContent = "기록이나 진행상태 중 하나는 적어 주세요."; return; }
-            var prevMemo = c.memoText || "", prevSt = c.profile["진행상태"];
-            var line = "- " + (now.getMonth() + 1) + "/" + now.getDate() + " " + note;
+            // 고객관리의 쌓이는 기록(profile.기록)과 같은 칸에 넣는다 — 메모 한 칸은 이전 메모로만 남는다
+            var prevRec = c.profile["기록"], prevSt = c.profile["진행상태"];
             closeDrawer();
             mutate(c, function () {
-              if (note) c.memoText = (prevMemo ? prevMemo.replace(/\s+$/, "") + "\n" : "") + line;
+              if (note) c.profile["기록"] = [{ "일자": TODAY, "방법": "전화", "내용": note }].concat(prevRec || []);
               if (st) c.profile["진행상태"] = st;
-            }, function () { c.memoText = prevMemo; c.profile["진행상태"] = prevSt; },
+            }, function () { if (prevRec) c.profile["기록"] = prevRec; else delete c.profile["기록"]; c.profile["진행상태"] = prevSt; },
             nameOf(c) + " 님 연락 기록을 남겼습니다.");
           });
       }
