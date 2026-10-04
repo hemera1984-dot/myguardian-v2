@@ -722,10 +722,8 @@ body.platform {
 }
 
 @media (max-width: 1100px) {
-  :root {
-    --platform-sidebar: 224px;
-  }
-
+  /* 옛 240px 사이드바 시절의 --platform-sidebar: 224px 를 지웠다(2026-10-04) —
+     레일은 폭과 상관없이 92px인데 본문만 224px 밀려 패드에서 왼쪽이 160px 비었다 */
   .platform-main {
     width: calc(100% - 48px);
     padding-top: 44px;

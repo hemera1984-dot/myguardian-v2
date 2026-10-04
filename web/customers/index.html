@@ -11,6 +11,15 @@
   <script src="../assets/platform.js"></script>
   <script src="../assets/auth.js"></script>
   <script src="../assets/vault-ui.js"></script>
+  <style>
+    /* 고객 목록이 열린 뒤에는 저장소 설명을 접는다(2026-10-04 진단 — 목록이 PC에서 730px 아래, 폰에서 750px 아래였다) */
+    #connect-block.is-connected > .section-head,
+    #connect-block.is-connected .vault-explain { display: none; }
+    #connect-block.is-connected .vault-area { margin-top: 12px !important; padding-top: 10px !important; border-top: 1px solid var(--platform-line) !important; }
+    #connect-block.is-connected #connect-box span { display: none; } /* 아래 안내 줄과 같은 말이다 */
+    #admin-box > summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--platform-muted); padding: 4px 0; }
+    #admin-box[open] > summary { margin-bottom: 8px; }
+  </style>
 </head>
 <body class="platform">
   <aside class="platform-sidebar" id="platform-sidebar">
@@ -29,7 +38,7 @@
       <div class="page-heading">
         <p class="eyebrow">내 고객</p>
         <h1>고객관리</h1>
-        <p>내 고객 저장소를 연결해 등록·진행상태·미팅·메모를 처리합니다. 서버에 올리면 폰·태블릿 어디서든 열리며, 서버가 서버 열쇠로 감싸 보관합니다.</p>
+        <p>등록·진행상태·미팅·메모를 처리합니다. 폰·태블릿 어디서든 같은 고객이 열립니다.</p>
       </div>
 
       <section class="section-block" id="connect-block">
@@ -43,8 +52,8 @@
             <button class="btn" type="button" id="btn-new" hidden>신규 고객 등록</button>
           </p>
 
-          <div style="margin-top:16px;border-top:2px solid var(--platform-ink);padding-top:14px">
-            <p style="margin:0 0 10px;font-size:12.5px;line-height:1.7;color:var(--platform-muted);word-break:keep-all">
+          <div class="vault-area" style="margin-top:16px;border-top:2px solid var(--platform-ink);padding-top:14px">
+            <p class="vault-explain" style="margin:0 0 10px;font-size:12.5px;line-height:1.7;color:var(--platform-muted);word-break:keep-all">
               <b>서버 고객</b> — 폰·태블릿·다른 PC 어디서든 로그인만 하면 내 고객이 열립니다.
               서버가 서버 열쇠로 감싸 저장하고, 담당 설계사는 자기 고객만 받습니다.
               총관리자는 열람 비밀번호를 넣을 때만 팀원 고객을 봅니다.
@@ -59,10 +68,10 @@
               <div id="vault-gbtn"></div>
             </div>
 
-            <div id="admin-box" hidden style="margin-top:14px;border-top:1px solid var(--platform-line);padding-top:12px">
+            <details id="admin-box" hidden style="margin-top:14px;border-top:1px solid var(--platform-line);padding-top:10px">
+              <summary>팀원 고객 보기 (총관리자)</summary>
               <p style="margin:0 0 10px;font-size:12.5px;line-height:1.7;color:var(--platform-muted);word-break:keep-all">
-                <b>팀원 고객 보기</b> — 총관리자만 보입니다. 열람 비밀번호를 넣으면 그 사람 고객이 열립니다.
-                퇴사·인수인계·점검이 여기서 끝납니다. 누를 때마다 비밀번호를 묻습니다.
+                열람 비밀번호를 넣으면 그 사람 고객이 열립니다. 퇴사·인수인계·점검이 여기서 끝납니다. 누를 때마다 비밀번호를 묻습니다.
               </p>
               <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
                 <select id="admin-who" aria-label="누구 고객" style="font:inherit;font-size:13px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:7px 10px"></select>
@@ -72,7 +81,7 @@
               </div>
               <p id="admin-note" style="margin:10px 0 0;font-size:12px" hidden></p>
               <p style="margin:8px 0 0"><button class="btn" type="button" id="btn-admin-close" hidden>열어 둔 팀원 고객 닫기</button></p>
-            </div>
+            </details>
           </div>
           <div id="new-form" hidden style="margin-top:14px;flex-wrap:wrap;gap:8px;align-items:center;display:flex">
             <input type="text" id="new-name" placeholder="고객 이름" aria-label="고객 이름" style="font:inherit;font-size:0.9rem;border:1px solid var(--platform-line-strong);border-radius:4px;padding:8px 12px">
@@ -1198,6 +1207,8 @@
         ALL = [];
         SOURCE = "폴더";
         $("work-block").hidden = true;
+        $("connect-block").classList.remove("is-connected");
+        $("btn-vault-get").textContent = "내 고객 불러오기";
         $("connect-box").innerHTML = "<div><strong>연결된 저장소 없음</strong><span>팀원 고객을 닫았습니다.</span></div>";
         $("btn-admin-close").hidden = true;
         관리알림(말 || "팀원 고객을 닫았습니다.");
@@ -1215,6 +1226,17 @@
         올리기단추(SOURCE === "폴더" && list.length > 0);
         원래onLoaded(list, rootName);
         $("btn-admin-close").hidden = SOURCE !== "남";
+        // 목록이 열리면 저장소 설명을 접는다. 팀원 고객을 열어 둔 동안은 닫기 단추가 보이게 그 칸을 편다.
+        $("connect-block").classList.add("is-connected");
+        $("btn-vault-get").textContent = "다시 불러오기";
+        // 단추를 한 줄로 모은다 — 목록이 열린 뒤 가장 자주 누르는 것은 신규 등록이다
+        var 단추줄 = $("btn-connect").parentNode;
+        단추줄.insertBefore($("btn-new"), 단추줄.firstChild);
+        단추줄.appendChild($("btn-vault-get"));
+        $("btn-new").classList.add("btn-primary");
+        $("btn-connect").classList.remove("btn-primary");
+        $("btn-vault-get").classList.remove("btn-primary");
+        if (SOURCE === "남") $("admin-box").open = true;
       };
 
       // 폰·아이패드는 PC 폴더를 열 수 없다(showDirectoryPicker 없음) — 폴더 단추를 치우고,
