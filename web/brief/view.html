@@ -236,17 +236,10 @@
       }
 
       // 전체화면: F 키 또는 더블클릭
-      function toggleFullscreen() {
-        if (document.fullscreenElement) {
-          document.exitFullscreen();
-        } else {
-          document.documentElement.requestFullscreen().catch(function () {});
-        }
-      }
       document.addEventListener("keydown", function (e) {
-        if (e.key === "f" || e.key === "F") toggleFullscreen();
+        if (B.isFullscreenKey(e)) B.toggleFullscreen();
       });
-      document.addEventListener("dblclick", toggleFullscreen);
+      document.addEventListener("dblclick", B.toggleFullscreen);
 
       window.addEventListener("resize", function () { B.scaleStage(stageWrap, stage); });
     })();

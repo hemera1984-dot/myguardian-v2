@@ -385,9 +385,11 @@
     // 전체화면(F)은 여기서 직접 처리한다. 위로 올려보내면 상위 창의 처리기는 사용자
     // 조작으로 인정받지 못해 requestFullscreen이 거부된다 — 진짜 키를 받은 이 문서만 할 수 있다.
     + "window.addEventListener('keydown',function(e){"
-    + "if(e.key!=='f'&&e.key!=='F')return;e.preventDefault();"
-    + "try{if(document.fullscreenElement)document.exitFullscreen();"
-    + "else document.documentElement.requestFullscreen();}catch(x){}"
+    + "if(e.code!=='KeyF'&&e.key!=='f'&&e.key!=='F'&&e.key!=='ㄹ')return;e.preventDefault();"
+    + "try{var d=document,el=d.documentElement,p;"
+    + "if(d.fullscreenElement||d.webkitFullscreenElement)p=(d.exitFullscreen||d.webkitExitFullscreen).call(d);"
+    + "else p=(el.requestFullscreen||el.webkitRequestFullscreen).call(el);"
+    + "if(p&&p.catch)p.catch(function(){});}catch(x){}"
     + "try{parent.postMessage({mgb:'key',key:'f'},'*');}catch(x){}});\n"
     // 장 넘김 키는 청중 화면도 같이 받아야 한다. 자료가 장 목록을 자기 안에 감추면
     // 몇 쪽인지 셀 수 없어(장 -1/0) 쪽 번호로는 못 맞춘다 — 키를 그대로 흘려보낸다.
@@ -990,6 +992,8 @@
             // 발표자는 스크립트 쪽을 클릭하고 화살표로 넘기므로 자료 문서는 늘 안 건드린 상태다.
             // 허락을 넘기면 앱 화면에서의 조작이 자료에도 인정된다(2026-09-19 인트로 소리).
             frame.setAttribute("allow", "fullscreen; autoplay");
+            frame.setAttribute("allowfullscreen", "");   // 사파리는 allow="fullscreen"만으로는 안 내려줄 때가 있다
+            frame.setAttribute("webkitallowfullscreen", "");
             return 틀에담기(frame, 본문, stageEl);
           },
           scriptFor: function () { return scriptAt(1); }
@@ -1000,7 +1004,21 @@
     return Promise.reject(new Error("지원하지 않는 자료 형식입니다."));
   }
 
+  // 전체화면 F — 맥(2026-10-07): 한글 입력 상태면 e.key가 「ㄹ」로 와서 F를 못 알아들었다.
+  // 자판 자리(e.code)로 본다. 사파리 옛 판은 webkit 이름만 있다.
+  function isFullscreenKey(e) {
+    return e.code === "KeyF" || e.key === "f" || e.key === "F" || e.key === "ㄹ";
+  }
+  function toggleFullscreen() {
+    var d = document, el = d.documentElement, p;
+    if (d.fullscreenElement || d.webkitFullscreenElement) p = (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else if (el.requestFullscreen || el.webkitRequestFullscreen) p = (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+    if (p && p.catch) p.catch(function () {});
+  }
+
   window.mgBrief = {
+    isFullscreenKey: isFullscreenKey,
+    toggleFullscreen: toggleFullscreen,
     CANVAS_W: CANVAS_W,
     CANVAS_H: CANVAS_H,
     loadDocById: loadDocById,
