@@ -2432,7 +2432,7 @@ body.platform .platform-brand > span:last-child { display: none; } /* 브랜드 
 body.platform .platform-nav { padding: 10px 8px; }
 body.platform .nav-group-label {
   margin: 12px 0 6px; text-align: center;
-  font-size: 9px; letter-spacing: 0.1em; color: rgba(255, 255, 255, 0.42);
+  font-size: 11px; letter-spacing: 0.06em; color: rgba(255, 255, 255, 0.62); /* 9px·42%는 안 읽혔다(2026-10-07 점검 — 기능 글자 11px 하한) */
 }
 body.platform .platform-nav a {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -2450,7 +2450,7 @@ body.platform .nav-icon {
   stroke-linecap: round; stroke-linejoin: round;
 }
 body.platform .nav-label {
-  font-size: 10px; font-weight: 650; letter-spacing: -0.02em;
+  font-size: 11px; font-weight: 650; letter-spacing: -0.03em;
   white-space: nowrap; overflow: hidden; max-width: 100%;
 }
 body.platform .sidebar-status { display: none; } /* 레일에는 설명문을 두지 않는다 */
@@ -2459,7 +2459,7 @@ body.platform .sidebar-status { display: none; } /* 레일에는 설명문을 �
 body.platform .install-btn {
   width: calc(100% - 16px); margin: 6px 8px 0;
   min-height: 38px; padding: 8px 4px;
-  font-size: 10px; font-weight: 700;
+  font-size: 11px; font-weight: 700;
 }
 body.platform .install-btn:last-of-type { margin-bottom: 12px; }
 
@@ -2485,7 +2485,7 @@ body.platform .topbar-brand + .topbar-context {
     gap: 12px; min-height: 46px; padding: 0 14px; text-align: left;
   }
   body.platform .nav-label { font-size: 14px; font-weight: 600; }
-  body.platform .nav-group-label { text-align: left; margin-left: 14px; font-size: 10px; }
+  body.platform .nav-group-label { text-align: left; margin-left: 14px; font-size: 11px; }
   body.platform .install-btn { font-size: 12px; min-height: 44px; }
   body.platform .topbar-brand { display: none; } /* 모바일 상단바는 기존 mobile-brand 사용 */
 }
