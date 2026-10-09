@@ -11,6 +11,13 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css">
   <link rel="stylesheet" href="assets/platform.css">
   <script src="assets/platform.js"></script>
+  <style>
+    /* 새 팀원 소개 15초(모션보드 작업 20261010-072315) — 무음·자동재생·반복. 2026-10-10 사용자 승인 예외(헌법 모션 조항) */
+    .install-intro { margin: 0 0 6px; max-width: 880px; border-bottom: 1px solid var(--platform-line); background: #faf9f7; }
+    .install-intro video, .install-intro img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+    .install-intro img { display: none; }
+    @media (prefers-reduced-motion: reduce) { .install-intro video { display: none; } .install-intro img { display: block; } }
+  </style>
 </head>
 <body class="platform">
   <div class="install-shell">
@@ -26,6 +33,13 @@
         <p>홈 화면에 바로가기를 설치하면 브라우저 주소 입력 없이 한 번에 열립니다.
           새 계정이나 별도 데이터가 생기지 않습니다 — 같은 마이가디언을 앱 모양으로 여는 것입니다.</p>
       </div>
+
+      <figure class="install-intro" aria-label="마이가디언 소개: 오늘, 고객관리, 케어센터">
+        <video autoplay muted loop playsinline preload="metadata" poster="assets/install-intro-poster.jpg" aria-hidden="true">
+          <source src="assets/install-intro.mp4" type="video/mp4">
+        </video>
+        <img src="assets/install-intro-poster.jpg" alt="">
+      </figure>
 
       <div class="install-status-row">
         <span class="install-state" id="install-state">설치 가능 여부 확인 중</span>

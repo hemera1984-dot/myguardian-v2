@@ -27,17 +27,17 @@
 
     /* 배경 — 순색 네이비 + 방패 워터마크(우측, white 0.05) + 그레인(알파 0.05 소부) */
     /* 배경 영상 (헌법 2026-08-02 예외 조항: 인트로 한정·무음·심리스 루프·5MB 이하·자체 호스팅)
-       힉스필드 생성 실크 웨이브 1920x1080 8s 0.7MB. 중앙·상단이 전 구간 어두워 타이포 대비 유지.
+       모션보드 작업 20261010-072313 — 딥버건디 바탕 + 종이색 괘선, 1920x1080 10s 0.18MB 반복(2026-10-10, 옛 남색 실크 웨이브 교체). 중앙·상단이 전 구간 어두워 타이포 대비 유지.
        영상 실패·미로드 시 poster가 같은 장면의 정지 프레임이라 시각 연속. */
     .bg-video { position: fixed; inset: 0; z-index: 0; width: 100%; height: 100%; object-fit: cover; }
     .bg { position: fixed; inset: 0; z-index: 1;
       /* 영상 위 대비 보증 오버레이(네이비 틴트) + 방패 워터마크 유지. 그레인은 영상 질감과 겹쳐 제거 */
-      background: rgba(16, 42, 78, 0.38);
+      background: rgba(51, 16, 22, 0.18);
     }
     /* reduced-motion: 영상 대신 포스터 정지 프레임 (헌법 조항) */
     @media (prefers-reduced-motion: reduce) {
       .bg-video { display: none; }
-      body { background: #0a1626 url("assets/intro-bg-poster.jpg") center / cover no-repeat; }
+      body { background: #331016 url("assets/intro-bg-v2-poster.jpg") center / cover no-repeat; }
     }
 
     .top { position: absolute; top: 26px; left:0; right:0; z-index:3;
@@ -84,8 +84,8 @@
 </head>
 <body>
   <video class="bg-video" autoplay muted loop playsinline preload="auto"
-    poster="assets/intro-bg-poster.jpg" aria-hidden="true">
-    <source src="assets/intro-bg.mp4" type="video/mp4">
+    poster="assets/intro-bg-v2-poster.jpg" aria-hidden="true">
+    <source src="assets/intro-bg-v2.mp4" type="video/mp4">
   </video>
   <div class="bg" aria-hidden="true"></div>
   <div class="top"><img src="assets/logo.svg" alt=""><span>마이가디언</span></div>
