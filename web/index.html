@@ -12,6 +12,7 @@
   <meta name="theme-color" content="#481820">
   <script src="assets/platform.js"></script>
   <script src="assets/auth.js"></script>
+  <script src="assets/mg-today.js"></script>
   <style>
     /* ── 홈 = 「오늘」 (2026-10-04 개편) ─────────────────────────────────────
        조사 4갈래(국내 설계사 앱·해외 CRM·업무 SaaS·현장 영업 앱) + 클로드·코덱스 교차 진단 + 시안 2판 확정.
@@ -379,9 +380,25 @@
       function maskPhone(p) { var d = String(p || "").replace(/\D/g, ""); return d.length < 8 ? "" : d.slice(0, 3) + "-****-" + d.slice(-4); }
 
       // ── 저장 — 레코드 전체를 보낸다(서버가 통째로 바꾼다). 실패하면 화면을 되돌린다
+      // 기준시각 = 불러올 때 받은 갱신시각. 다른 기기가 먼저 고쳤으면 서버가 409와 최신본을 준다(2026-10-10)
       function save(c) {
         var rec = { "고객코드": c["고객코드"], profile: c.profile, policies: c.policies, memoText: c.memoText };
-        return window.mgAuth.api("/clients", { method: "PUT", body: [rec] });
+        if (c["갱신시각"]) rec["기준시각"] = c["갱신시각"];
+        return window.mgAuth.api("/clients", { method: "PUT", body: [rec] }).then(function (r) {
+          var t = r && r["시각"] && r["시각"][c["고객코드"]];
+          if (t) c["갱신시각"] = t;
+          return r;
+        });
+      }
+      // 409면 화면의 그 고객을 서버 최신본으로 바꾼다 — 되돌리기 대신(최신본 위에서 다시 누르게)
+      function 최신으로(c, e) {
+        var 최신 = e && e.status === 409 && e.data && e.data["충돌"] && e.data["충돌"][0];
+        if (!최신 || !최신["레코드"]) return false;
+        c.profile = 최신["레코드"].profile || {};
+        c.policies = 최신["레코드"].policies;
+        c.memoText = 최신["레코드"].memoText;
+        c["갱신시각"] = 최신["갱신시각"];
+        return true;
       }
       var BRANCH_API = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? "http://localhost:8788" : "https://api.insurguard.life/branch";
       function branchPush(c, round, date, status) {
@@ -426,6 +443,7 @@
             save(c).then(function () { push && push(true); }).catch(function (e) { toast("되돌리지 못했습니다 — " + e.message); });
           });
         }).catch(function (e) {
+          if (최신으로(c, e)) { render(); toast("다른 기기에서 먼저 고쳤습니다. 최신 내용으로 바꿨으니 다시 눌러 주세요."); return; }
           revert(); render();
           toast(e.status === 401 ? "로그인이 풀렸습니다. 다시 로그인해 주세요." : "저장하지 못했습니다 — " + e.message);
         });
@@ -456,34 +474,12 @@
         });
         return out.sort(function (a, b) { return a.m["일자"] < b.m["일자"] ? -1 : a.m["일자"] > b.m["일자"] ? 1 : nameOf(a.c) < nameOf(b.c) ? -1 : 1; });
       }
-      function lastDone(c) {
-        var best = null;
-        meetings(c).forEach(function (m) { if (m && m["상태"] === "완료" && m["일자"] && (!best || m["일자"] > best)) best = m["일자"]; });
-        return best;
-      }
+      // 규칙은 assets/mg-today.js 한 곳 — 고객관리 「연락할 고객」 보기와 같다
       function contacts() {
-        var seen = {}, out = [];
-        function add(c, kind, text) { if (seen[c["고객코드"]]) return; seen[c["고객코드"]] = 1; out.push({ c: c, kind: kind, text: text }); }
-        CLIENTS.forEach(function (c) {
-          if (c.profile && c.profile["진행상태"] === "다시 전화") {
-            var nc = v1(c).nextContactDate;
-            add(c, "다시 전화", nc ? "다음 연락 " + md(nc) : "다시 연락하기로 함");
-          }
-        });
-        CLIENTS.forEach(function (c) {
-          var nc = v1(c).nextContactDate;
-          if (nc && diff(nc) <= 0) add(c, "연락일", (diff(nc) === 0 ? "오늘" : -diff(nc) + "일 지남") + " · " + md(nc));
-        });
-        CLIENTS.forEach(function (c) {
-          var st = c.profile && c.profile["진행상태"];
-          if (st === "거절" || st === "보류") return;
-          var ld = lastDone(c);
-          if (!ld) return;
-          var ago = -diff(ld);
-          var future = meetings(c).some(function (m) { return m && m["상태"] === "예정"; });
-          if (ago >= 3 && ago <= 14 && !future) add(c, "후속 연락", "미팅 끝난 지 " + ago + "일");
-        });
-        return out;
+        return CLIENTS.map(function (c) {
+          var r = window.mgToday.callReason(c.profile);
+          return r && { c: c, kind: r.kind, text: r.text };
+        }).filter(Boolean).sort(function (a, b) { return window.mgToday.order[a.kind] - window.mgToday.order[b.kind]; });
       }
 
       function rowHtml(x, kindLabel) {

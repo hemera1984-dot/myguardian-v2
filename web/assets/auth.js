@@ -53,6 +53,7 @@
         if (!r.ok) {
           var err = new Error(data.error || "요청이 실패했습니다.");
           err.status = r.status;
+          err.data = data;   // 409 충돌의 최신본 등 — 받은 쪽이 다시 맞추는 데 쓴다
           throw err;
         }
         return data;

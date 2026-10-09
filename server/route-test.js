@@ -66,6 +66,21 @@ await check("신규 고객 — 같은 코드면 409와 겹친 코드", async () 
   assert.deepEqual((await r.json())["겹침"], ["C-2026-001"]);
   assert.equal((await call("fc", "PUT", "/clients", [{ "고객코드": "C-2026-001", profile: {} }])).status, 200, "고치기는 그대로 덮는다");
 });
+await check("두 기기 동시 저장 — 기준시각이 낡으면 409와 최신본, 맞으면 덮고 새 시각", async () => {
+  const 목록 = async () => (await (await call("fc", "GET", "/clients")).json())["고객"];
+  const a = (await 목록()).find((x) => x["고객코드"] === "C-2026-001")["갱신시각"];
+  const r1 = await call("fc", "PUT", "/clients", [{ "고객코드": "C-2026-001", profile: { "기록": ["폰"] }, "기준시각": a }]);
+  assert.equal(r1.status, 200);
+  const b = (await r1.json())["시각"]["C-2026-001"];
+  assert.ok(b && b !== a, "새 시각을 돌려준다");
+  const r2 = await call("fc", "PUT", "/clients", [{ "고객코드": "C-2026-001", profile: { "기록": ["PC"] }, "기준시각": a }]);
+  assert.equal(r2.status, 409, "낡은 기준시각은 덮지 않는다");
+  const c = (await r2.json())["충돌"][0];
+  assert.deepEqual(c["레코드"].profile["기록"], ["폰"], "최신본을 같이 준다");
+  assert.equal(c["갱신시각"], b);
+  assert.deepEqual((await 목록()).find((x) => x["고객코드"] === "C-2026-001").profile["기록"], ["폰"], "먼저 쓴 기록이 남는다");
+  assert.equal((await call("fc", "PUT", "/clients", [{ "고객코드": "C-2026-001", profile: {} }])).status, 200, "기준시각 없는 옛 경로는 그대로 덮는다");
+});
 await check("열람 비밀번호 — 쉬어 가며 틀려도 다섯 번째부터 잠긴다", async () => {
   assert.equal((await call("boss", "PUT", "/admin/viewpw", { "비밀번호": "진짜비번12345" })).status, 200);
   const codes = [];

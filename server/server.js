@@ -802,16 +802,37 @@ async function route(req, res, url) {
       const 겹침 = 배열.map((r) => String(r["고객코드"])).filter((c) => 있는것.has(c));
       if (겹침.length) return send(res, 409, { error: `이미 있는 고객코드입니다: ${겹침.join(", ")}`, 겹침 });
     }
+    // 두 기기 동시 저장 막기(2026-10-10) — 레코드에 「기준시각」(불러올 때 받은 갱신시각)이 있으면
+    // 지금 서버 것과 맞을 때만 덮는다. 다르면 아무것도 쓰지 않고 409 + 최신본을 돌려준다.
+    // 기준시각이 없는 옛 경로(폴더 일괄 올리기·신규)는 예전처럼 덮는다.
+    const 기준있음 = 배열.filter((r) => typeof r["기준시각"] === "string");
+    if (기준있음.length) {
+      const 지금 = new Map(listClients(db, 주인).map((x) => [x.고객코드, x]));
+      const 충돌 = [];
+      for (const r of 기준있음) {
+        const 행 = 지금.get(String(r["고객코드"]));
+        if (!행 || 행.갱신시각 !== r["기준시각"]) {
+          let 레코드 = null;
+          if (행) { try { 레코드 = { ...레코드풀기(행.암호문), "고객코드": 행.고객코드, "갱신시각": 행.갱신시각 }; } catch { 레코드 = null; } }
+          충돌.push({ "고객코드": String(r["고객코드"]), "갱신시각": 행 ? 행.갱신시각 : null, 레코드 });
+        }
+      }
+      if (충돌.length) {
+        console.log(`고객 저장 충돌: ${충돌.map((x) => x.고객코드).join(", ")} — ${me.email}`);
+        return send(res, 409, { error: "다른 기기에서 먼저 고쳤습니다. 최신 내용을 다시 불러왔습니다.", 충돌 });
+      }
+    }
+    const 시각 = {};
     for (const r of 배열) {
-      const { "갱신시각": _버림, ...알맹이 } = r;
-      putClient(db, 주인, {
+      const { "갱신시각": _버림, "기준시각": _기준, ...알맹이 } = r;
+      시각[r["고객코드"]] = putClient(db, 주인, {
         "고객코드": r["고객코드"], "암호문": 레코드감싸기(알맹이),
         "열쇠_fc": "", "열쇠_비상": "", "비상키지문": ""
       });
     }
     console.log(`고객 저장: ${배열.length}건 — ${me.email}`
       + (주인 === me.id ? "" : ` (대신 올림 → 계정 ${주인})`));
-    return send(res, 200, { ok: true, 건수: 배열.length, 소유: 주인 });
+    return send(res, 200, { ok: true, 건수: 배열.length, 소유: 주인, 시각 });
   }
 
   const 고객삭제 = req.method === "DELETE" && /^\/clients\/([A-Za-z0-9-]{1,40})$/.exec(path);

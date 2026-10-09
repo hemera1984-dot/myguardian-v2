@@ -295,7 +295,9 @@ export function listClientStamps(db, ownerId) {
   ).all(ownerId);
 }
 
+// 갱신시각이 곧 판 번호다 — 화면은 받은 시각을 「기준시각」으로 돌려보내고, 서버는 다르면 덮지 않는다(server.js PUT /clients)
 export function putClient(db, ownerId, rec) {
+  rec = { ...rec, 갱신시각: rec.갱신시각 || new Date().toISOString() };
   db.prepare(
     "INSERT INTO clients (고객코드, 소유계정, 암호문, 열쇠_fc, 열쇠_비상, 비상키지문, 갱신시각)"
     + " VALUES (?, ?, ?, ?, ?, ?, ?)"
@@ -304,7 +306,8 @@ export function putClient(db, ownerId, rec) {
     + " 열쇠_비상 = excluded.열쇠_비상, 비상키지문 = excluded.비상키지문,"
     + " 갱신시각 = excluded.갱신시각"
   ).run(rec.고객코드, ownerId, rec.암호문, rec.열쇠_fc, rec.열쇠_비상,
-        rec.비상키지문 || "", new Date().toISOString());
+        rec.비상키지문 || "", rec.갱신시각);
+  return rec.갱신시각;
 }
 
 export function deleteClient(db, ownerId, code) {
