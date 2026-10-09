@@ -13,6 +13,19 @@
   <script src="../assets/platform.js"></script>
   <script src="../assets/auth.js"></script>
   <script src="../assets/care.js"></script>
+  <style>
+    /* 마감 — 고른 탭은 제목 옆에 크게, 다른 주기는 작게 (2026-10-10). 면·둥근 모서리 없이 글자 위계로만 */
+    .desk-title-row .pub-chip {
+      display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px;
+      padding: 0; background: none;
+    }
+    .pub-chip .dday-main { font-size: 1.1rem; font-weight: 700; color: var(--accent-dark); letter-spacing: -0.02em; }
+    .pub-chip .dday-sub { font-size: 0.78rem; font-weight: 500; color: var(--ink-sub); }
+    /* 터치 기기 — 날짜 입력·만들기 단추 44px (pointer:coarse 공통 36px 규칙보다 앞서게 id로) */
+    @media (pointer: coarse) {
+      #new-issue input, #new-issue .btn { min-height: 44px; }
+    }
+  </style>
 </head>
 <body class="platform">
   <aside class="platform-sidebar" id="platform-sidebar">
@@ -1450,6 +1463,7 @@
           x.classList.toggle("active", on);
           x.setAttribute("aria-selected", String(on));
         });
+        renderDday();
         renderList();
       });
 
@@ -1696,8 +1710,9 @@
       care.bindSenderRow();
       care.bindCompose();
 
-      // 발행 예정일 — 주간은 다음 월요일, 월간은 다음 첫째 월요일
-      (function () {
+      // 발행 예정일 — 일간은 오늘(주말이면 다음 월요일), 주간은 다음 월요일, 월간은 다음 첫째 월요일.
+      // 고른 탭의 마감을 크게, 나머지 둘은 작게 (2026-10-10)
+      function renderDday() {
         var now = new Date();
         var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         var weekly = new Date(today);
@@ -1711,12 +1726,20 @@
         }
         var monthly = firstMonday(today.getFullYear(), today.getMonth());
         if (monthly < today) monthly = firstMonday(today.getFullYear(), today.getMonth() + 1);
+        var daily = new Date(today);
+        if (daily.getDay() === 6) daily.setDate(daily.getDate() + 2);
+        else if (daily.getDay() === 0) daily.setDate(daily.getDate() + 1);
         function label(name, d) {
           var diff = Math.round((d - today) / 86400000);
           return name + " " + (d.getMonth() + 1) + "월 " + d.getDate() + "일 " + (diff === 0 ? "오늘 발행" : "D-" + diff);
         }
-        el("pub-dday").textContent = label("주간", weekly) + " · " + label("월간", monthly);
-      })();
+        var dates = { "일간": daily, "주간": weekly, "월간": monthly };
+        var others = ["일간", "주간", "월간"].filter(function (c) { return c !== S.ch; })
+          .map(function (c) { return label(c, dates[c]); });
+        el("pub-dday").innerHTML = '<strong class="dday-main">' + esc(label(S.ch, dates[S.ch])) + "</strong>"
+          + '<span class="dday-sub">' + esc(others.join(" · ")) + "</span>";
+      }
+      renderDday();
 
       renderList();
       reloadList().then(function (list) {

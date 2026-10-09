@@ -11,6 +11,20 @@
   <link rel="stylesheet" href="../assets/platform.css">
   <script src="../assets/platform.js"></script>
   <script src="../assets/auth.js"></script>
+  <style>
+    /* 구성원 줄 — 1행 이름·직급, 2행 이메일, 3행 권한·행동. 위험 행동(계정 정지)은 줄 끝에 떼어 둔다 */
+    .ac-row { border-bottom: 1px solid var(--platform-line); padding: 11px 0; }
+    .ac-row:first-child { border-top: 1px solid var(--platform-line); }
+    .ac-name { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+    .ac-name strong { font-size: 14px; word-break: keep-all; }
+    .ac-name select { font: inherit; font-size: 12px; border: 1px solid var(--platform-line-strong); border-radius: 4px; padding: 4px 6px; max-width: 100%; }
+    .ac-sub { font-size: 11px; color: var(--platform-faint); }
+    .ac-mail { font-size: 12px; color: var(--platform-muted); margin-top: 3px; overflow-wrap: anywhere; }
+    .ac-acts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+    .ac-acts select { font: inherit; font-size: 12px; border: 1px solid var(--platform-line-strong); border-radius: 4px; padding: 5px 8px; max-width: 100%; }
+    .ac-danger { margin-left: auto; padding-left: 12px; }
+    .platform .status-btn.ac-stop { color: var(--platform-denied); border-color: currentColor; }
+  </style>
 </head>
 <body class="platform">
   <div class="install-shell">
@@ -129,21 +143,26 @@
           $("member-list").innerHTML = members.length
             ? members.map(function (m) {
                 var isMe = m.id === AUTH.me["계정"].id;
-                return '<div class="org-node" style="flex-wrap:wrap">'
-                  + '<span class="badge-status ' + (m.status === "승인" ? "st-meet" : "st-hold") + '">' + esc(m.status) + "</span>"
-                  + '<strong style="font-size:13px">' + esc(m.name || m.email) + "</strong>"
-                  + (m.display_name && m.google_name && m.display_name !== m.google_name
-                     ? '<span style="font-size:11px;color:var(--platform-faint)">구글: ' + esc(m.google_name) + "</span>" : "")
-                  + '<span style="font-size:12px;color:var(--platform-muted)">' + esc(m.email) + "</span>"
-                  // 승인된 계정의 직급은 여기서 바로 바꾼다 — 승인 때 잘못 고른 것을 고치는 자리
+                // 1행 이름·직급 — 승인된 계정의 직급은 여기서 바로 바꾼다(승인 때 잘못 고른 것을 고치는 자리)
+                return '<div class="ac-row"><div class="ac-name">'
+                  + "<strong>" + esc(m.name || m.email) + "</strong>"
                   + (m.status === "승인"
-                     ? '<select data-grade-of="' + m.id + '" data-was="' + esc(m.grade || "") + '" aria-label="직급" style="font:inherit;font-size:12px;border:1px solid var(--platform-line-strong);border-radius:4px;padding:4px 6px">'
+                     ? '<select data-grade-of="' + m.id + '" data-was="' + esc(m.grade || "") + '" aria-label="직급">'
                        + AUTH.grades.map(function (g) {
                            return '<option value="' + esc(g["코드"]) + '"' + (g["코드"] === m.grade ? " selected" : "") + ">"
                              + esc(g["이름"]) + " (" + esc(g["코드"]) + ")</option>";
                          }).join("")
                        + "</select>"
                      : (m.grade ? '<span class="badge-grade">' + esc(m.grade) + "</span>" : ""))
+                  + (m.status !== "승인" ? '<span class="badge-status st-hold">' + esc(m.status) + "</span>" : "")
+                  + (isMe ? '<span class="ac-sub">본인</span>' : "")
+                  + (m.display_name && m.google_name && m.display_name !== m.google_name
+                     ? '<span class="ac-sub">구글: ' + esc(m.google_name) + "</span>" : "")
+                  + "</div>"
+                  // 2행 이메일
+                  + '<div class="ac-mail">' + esc(m.email) + "</div>"
+                  // 3행 권한·행동
+                  + '<div class="ac-acts">'
                   + (m.is_admin ? '<span class="badge-grade">총관리자</span>' : "")
                   + (m.can_approve && !m.is_admin ? '<span class="badge-status st-meet">승인권한</span>' : "")
                   // 하랑지점 명단에 없으면 여기서 바로 넣는다 — 자리(이름만 적힌 칸)가 있으면 이어받고, 없으면 상위자 팀에 새로
@@ -151,21 +170,22 @@
                      ? '<span class="badge-status st-hold">하랑지점 미배치</span>' + seatSelect("bs-" + m.id, m)
                        + '<button type="button" class="status-btn st-met" data-branch-join="' + m.id + '">하랑지점에 넣기</button>'
                      : "")
-                  + (isMe ? '<span style="font-size:12px;color:var(--platform-faint)">본인</span>'
-                     : (m.status === "승인" ? '<button type="button" class="status-btn st-reject" data-suspend="' + m.id + '">정지</button>'
-                       : m.status === "정지" ? '<button type="button" class="status-btn st-met" data-resume="' + m.id + '">정지 풀기</button>' : ""))
                   + (!isMe && AUTH.me["계정"]["총관리자"] && m.status === "승인" && !m.is_admin
                      ? '<button type="button" class="status-btn" data-approver="' + m.id + '" data-on="' + (m.can_approve ? "0" : "1") + '">'
                        + (m.can_approve ? "승인권한 회수" : "승인권한 부여") + "</button>"
                      : "")
                   + (!isMe && AUTH.me["계정"]["총관리자"]
                      ? '<button type="button" class="status-btn" data-admin="' + m.id + '" data-on="' + (m.is_admin ? "0" : "1") + '">'
-                       + (m.is_admin ? "관리자 회수" : "관리자 임명") + "</button>"
+                       + (m.is_admin ? "총관리자 회수" : "총관리자 임명") + "</button>"
                      : "")
                   // 구글 계정 이름이 실제 이름과 다른 사람이 있다 — 여기서 고쳐 넣는다
                   + '<button type="button" class="status-btn" data-rename="' + m.id
                     + '" data-name="' + esc(m.name || "") + '">이름 고치기</button>'
-                  + "</div>";
+                  // 위험 행동은 줄 끝에 떼어 둔다
+                  + (isMe ? ""
+                     : m.status === "승인" ? '<span class="ac-danger"><button type="button" class="status-btn ac-stop" data-suspend="' + m.id + '">계정 정지</button></span>'
+                     : m.status === "정지" ? '<span class="ac-danger"><button type="button" class="status-btn st-met" data-resume="' + m.id + '">정지 풀기</button></span>' : "")
+                  + "</div></div>";
               }).join("")
             : '<span style="color:var(--platform-faint);font-size:12px">구성원이 없습니다.</span>';
 

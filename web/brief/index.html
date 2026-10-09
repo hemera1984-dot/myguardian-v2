@@ -13,20 +13,36 @@
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
   <script src="brief.js?v=20260927a"></script>
   <style>
+    /* 모드 카드 — 에디토리얼 괘선 문법(테두리·그림자 없음), 선택은 좌측 3px 인셋 막대 */
     .mode-grid button.action-card {
       width: 100%;
       text-align: left;
-      border: 1px solid var(--platform-line);
       cursor: pointer;
       font: inherit;
+      color: inherit;
+      padding-left: 14px;
     }
-    .mode-grid button.action-card.selected {
-      border-color: var(--platform-blue);
-      box-shadow: 0 0 0 3px rgba(188, 0, 58, 0.10);
+    .mode-grid button.action-card + .action-card { padding-left: 28px; }
+    .mode-grid button.action-card.selected { box-shadow: inset 3px 0 0 var(--platform-blue); }
+    .mode-go { display: inline-block; margin-top: 10px; font-size: 13px; font-weight: 700; color: var(--platform-blue); }
+    .mode-grid button.action-card:hover .mode-go { text-decoration: underline; }
+    /* 패드(1180px 이하)에서는 세 칸이 눌려 글이 잘린다 — 세로 한 줄로 쌓는다 */
+    @media (max-width: 1180px) {
+      .mode-grid { grid-template-columns: 1fr; }
+      .mode-grid button.action-card,
+      .mode-grid button.action-card + .action-card { border-left: 0; padding-left: 14px; }
     }
+    /* 최근 자료 바로가기 — 라이브러리 목차(팀 + 이 브라우저)의 최신 두 건 */
+    .recent-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; border-top: 1px solid var(--platform-line); padding: 12px 0 0 14px; }
+    .recent-label { font-size: 12px; font-weight: 700; color: var(--platform-faint); }
+    .recent-list { display: flex; flex-wrap: wrap; gap: 4px 22px; min-width: 0; }
+    .recent-item { font: inherit; font-size: 13.5px; font-weight: 700; color: var(--platform-ink); background: none; border: 0; padding: 4px 0; cursor: pointer; text-align: left; min-height: 32px; }
+    .recent-item:hover { color: var(--platform-blue); }
+    .recent-item .r-meta { margin-left: 8px; font-weight: 500; font-size: 12.5px; color: var(--platform-faint); font-variant-numeric: tabular-nums; }
+    .recent-line .local-error { width: 100%; margin: 0; }
     .mode-tag {
       display: inline-block;
-      border-radius: 7px;
+      border-radius: 3px;
       background: var(--platform-blue-soft);
       color: var(--platform-blue);
       font-size: 12px;
@@ -101,9 +117,14 @@
       <section class="section-block" aria-labelledby="mode-title">
         <div class="section-head"><div><h2 id="mode-title">모드 선택</h2><p>기기 구성만 다를 뿐 화면과 조작은 같습니다.</p></div></div>
         <div class="action-grid mode-grid">
-          <button class="action-card" type="button" data-mode="상담"><span class="mode-tag">상담</span><h3>고객 상담</h3><p>내 노트북 + 고객 태블릿. 보장분석 문서를 내 컴퓨터에서 열어 진행합니다. 고객 문서는 저장소에 올라가지 않습니다.</p></button>
-          <button class="action-card" type="button" data-mode="교육"><span class="mode-tag">교육</span><h3>팀 교육</h3><p>내 노트북 + 빔프로젝터. 공개 교육 자료로 진행하고 수강생 화면이 발표자를 따라옵니다.</p></button>
-          <button class="action-card" type="button" data-mode="강의"><span class="mode-tag">강의</span><h3>외부 강의</h3><p>내 노트북 + 빔프로젝터. 당근모임 등 외부 강의용 자료를 청중 화면에 띄웁니다.</p></button>
+          <button class="action-card" type="button" data-mode="상담"><span class="mode-tag">상담</span><h3>고객 상담</h3><p>내 노트북 + 고객 태블릿. 보장분석 문서를 내 컴퓨터에서 열어 진행합니다. 고객 문서는 저장소에 올라가지 않습니다.</p><span class="mode-go">상담 자료 선택</span></button>
+          <button class="action-card" type="button" data-mode="교육"><span class="mode-tag">교육</span><h3>팀 교육</h3><p>내 노트북 + 빔프로젝터. 공개 교육 자료로 진행하고 수강생 화면이 발표자를 따라옵니다.</p><span class="mode-go">교육 자료 선택</span></button>
+          <button class="action-card" type="button" data-mode="강의"><span class="mode-tag">강의</span><h3>외부 강의</h3><p>내 노트북 + 빔프로젝터. 당근모임 등 외부 강의용 자료를 청중 화면에 띄웁니다.</p><span class="mode-go">강의 자료 선택</span></button>
+        </div>
+        <div class="recent-line" id="recent" hidden>
+          <span class="recent-label">최근 자료</span>
+          <div class="recent-list" id="recent-list"></div>
+          <p class="local-error" id="recent-msg" hidden></p>
         </div>
       </section>
 
@@ -191,11 +212,13 @@
 
       // 탑재 자료를 발표 슬롯에 싣고 발표자 화면으로 이동.
       // 팀 목차 항목은 파일이 서버에 있으므로 먼저 내려받아 레코드로 되돌린다.
-      function presentRecord(record) {
+      // say: 안내를 띄울 자리(최근 자료 줄은 자료 구획이 숨어 있으므로 자기 자리에 띄운다)
+      function presentRecord(record, say) {
+        say = say || showLocalError;
         var 준비 = record.__팀
           ? window.mgBrief.serverRecordToMaterial(record)
           : Promise.resolve(record);
-        if (record.__팀) showLocalError("자료를 내려받는 중입니다.");
+        if (record.__팀) say("자료를 내려받는 중입니다.");
         준비
           .then(function (rec) {
             // 저장 단계 실패는 내려받기 실패와 원인이 전혀 다르다 — 구분해서 알린다
@@ -207,17 +230,16 @@
           })
           .then(function () { window.location.href = "present.html?local=1"; })
           .catch(function (err) {
-            showLocalError("발표 자료를 여는 데 실패했습니다: " + err.message);
+            say("발표 자료를 여는 데 실패했습니다: " + err.message);
           });
       }
 
-      function renderLibrary() {
-        var box = document.getElementById("library-list");
-        // 팀 목차(서버)를 앞에 두고, 이 브라우저에만 있던 옛 자료를 뒤에 붙인다.
-        // 같은 id면 서버 것이 이긴다 — 팀이 함께 보는 쪽이 기준이다.
-        // 서버가 안 되면 그 사실을 알린다 — 빈 목록으로 삼키면 "자료 없음"으로 보인다
+      // 팀 목차(서버)를 앞에 두고, 이 브라우저에만 있던 옛 자료를 뒤에 붙인다.
+      // 같은 id면 서버 것이 이긴다 — 팀이 함께 보는 쪽이 기준이다.
+      // 서버가 안 되면 그 사실을 알린다 — 빈 목록으로 삼키면 "자료 없음"으로 보인다
+      function loadLibrary() {
         var 장애 = null;
-        Promise.all([
+        return Promise.all([
           window.mgBrief.serverLibraryList().catch(function (err) {
             장애 = err && err.message ? err.message : "팀 목록을 불러오지 못했습니다.";
             return [];
@@ -229,9 +251,36 @@
             var items = [];
             res[0].forEach(function (it) { if (it && it.id && !seen[it.id]) { seen[it.id] = 1; it.__팀 = true; items.push(it); } });
             res[1].forEach(function (it) { if (it && it.id && !seen[it.id]) { seen[it.id] = 1; items.push(it); } });
-            return items;
-          })
-          .then(function (items) {
+            items.sort(function (a, b) { return String(b["등록일"] || "").localeCompare(String(a["등록일"] || "")); });
+            return { items: items, 장애: 장애 };
+          });
+      }
+
+      // 모드 카드 아래 최근 자료 두 건 — 목차가 비면 줄 자체를 두지 않는다
+      function renderRecent(lib) {
+        var line = document.getElementById("recent");
+        var box = document.getElementById("recent-list");
+        var msg = document.getElementById("recent-msg");
+        function say(t) { msg.textContent = t; msg.hidden = !t; }
+        var rows = lib.items.filter(function (it) { return it["모드"] && it["모드"] !== "상담"; }).slice(0, 2);
+        box.textContent = "";
+        line.hidden = !rows.length;
+        rows.forEach(function (it) {
+          var b = el("button", "recent-item", it["제목"] || it["이름"] || "제목 없음");
+          b.type = "button";
+          b.appendChild(el("span", "r-meta", it["모드"] + " · " + String(it["등록일"] || "").slice(5, 10)));
+          b.addEventListener("click", function () { presentRecord(it, say); });
+          box.appendChild(b);
+        });
+      }
+
+      function renderLibrary() {
+        var box = document.getElementById("library-list");
+        loadLibrary()
+          .then(function (lib) {
+          renderRecent(lib); // 탑재·삭제 뒤에도 최근 줄이 같이 바뀐다
+          var items = lib.items;
+          var 장애 = lib.장애;
           box.textContent = "";
           if (장애) {
             var warn = el("div", "empty-inline");
@@ -242,7 +291,6 @@
             box.appendChild(warn);
           }
           var rows = items.filter(function (it) { return it["모드"] === mode; });
-          rows.sort(function (a, b) { return String(b["등록일"] || "").localeCompare(String(a["등록일"] || "")); });
           if (!rows.length) {
             var empty = el("div", "empty-inline");
             var inner = el("div");
@@ -330,6 +378,8 @@
       document.querySelectorAll(".mode-grid .action-card").forEach(function (c) {
         c.addEventListener("click", function () { selectMode(c.dataset.mode); });
       });
+
+      loadLibrary().then(renderRecent).catch(function () {});
 
       fetch("../../data/brief/index.json")
         .then(function (r) { return r.json(); })
