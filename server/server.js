@@ -572,7 +572,7 @@ async function route(req, res, url) {
     const 커버 = String(호["커버이미지"] || "");
     const 그림 = (커버 && !/\.svg$/i.test(커버))
       ? (/^https?:/i.test(커버) ? 커버 : SITE + "/" + 커버.replace(/^\//, ""))
-      : SITE + "/web/assets/img/hero-care.jpg";
+      : SITE + "/web/assets/img/share-care.png";
     const 지면 = SITE + "/web/care/issue.html?id=" + encodeURIComponent(호.id);
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=300" });
     return res.end('<!DOCTYPE html>\n<html lang="ko">\n<head>\n<meta charset="UTF-8">\n'
