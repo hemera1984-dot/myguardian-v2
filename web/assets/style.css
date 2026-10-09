@@ -1,8 +1,8 @@
 /* 마이가디언 v2 공용 스타일
    금융권 최상위 업무 플랫폼의 절제된 UI — 무채색 바탕, 색은 신호로만.
    기준 기기: ① 태블릿(1024~1366px) ② 데스크톱(1920px) ③ 모바일(390px 지원).
-   예외: care/·card/는 모바일 퍼스트(고객이 카톡으로 유입).
-   골드 #c9a14a는 카톡카드·인쇄물 템플릿 전용 — 플랫폼 UI 사용 금지. */
+   예외: care/는 모바일 퍼스트(고객이 카톡으로 유입).
+   골드 #c9a14a는 케어 지면·명함·인쇄물 전용 — 플랫폼 UI 사용 금지. */
 
 :root {
   /* 디자인 개정 10차(2026-07-20) 팔레트 정합 — platform.css와 동일 토큰 */
@@ -24,7 +24,7 @@
   --radius: 6px;
   --shadow: 0 1px 3px rgba(23, 24, 31, 0.06);
   --sidebar-w: 240px;
-  --gold-print: #c9a14a;  /* 카톡카드·인쇄물 템플릿 전용 */
+  --gold-print: #c9a14a;  /* 케어 지면·명함·인쇄물 전용 */
 }
 
 /* 다크모드 — 구조만 마련, 정식 지원은 후순위 */
@@ -66,7 +66,7 @@ h1, h2, h3 {
   letter-spacing: -0.02em;
 }
 
-/* 세리프는 케어센터 아티클·카톡카드·인쇄물 전용 */
+/* 세리프는 케어센터 아티클·명함·인쇄물 전용 */
 .serif {
   font-family: "Noto Serif KR", serif;
 }
@@ -206,7 +206,7 @@ a {
 }
 
 /* ==============================
-   단순 헤더 — care/·card/·r/·admin/ (사이드바 없는 화면)
+   단순 헤더 — care/·r/·admin/ (사이드바 없는 화면)
    ============================== */
 
 .site-header {
@@ -1300,184 +1300,6 @@ body.magazine :focus-visible {
 :root {
   --mag-weekly: #16223c;
   --mag-monthly: #4a1f2e;
-}
-
-/* ==============================
-   카톡카드 생성기 — 딥네이비+골드 전용 구역 (인쇄물·카드 문법)
-   ============================== */
-
-.kcard-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-/* 데스크톱: 단일 값 입력 폼이 960px 전폭으로 늘어지던 결함 — 읽기 폭으로 제한 (2026-07-31 정돈) */
-@media (min-width: 768px) {
-  .kcard-form {
-    max-width: 560px;
-  }
-}
-
-.kcard-form label {
-  font-size: 0.87rem;
-  font-weight: 600;
-  color: var(--ink-sub);
-}
-
-.kcard-form input,
-.kcard-form select,
-.kcard-form textarea {
-  width: 100%;
-  font: inherit;
-  font-size: 0.97rem;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 4px; /* 헌법: 입력창 4px (구 8px 정합, 2026-07-31 잔여 화면 정돈) */
-  padding: 10px 14px;
-  outline: none;
-}
-
-.kcard-form input:focus,
-.kcard-form select:focus,
-.kcard-form textarea:focus {
-  border-color: var(--accent);
-}
-
-.kcard-form textarea {
-  min-height: 96px;
-  resize: vertical;
-  line-height: 1.6;
-}
-
-/* 카드 실물 — 이미지로 변환되는 영역 */
-.kcard {
-  width: 420px;
-  max-width: 100%;
-  margin: 0 auto;
-  background: #16223c;
-  color: #f4efe4;
-  border-radius: 18px;
-  padding: 36px 32px 28px;
-  font-family: "Pretendard", sans-serif;
-}
-
-/* 카드 배경 — 단색 / 골드 프레임 / 축하 색종이 */
-.kcard.bg-frame {
-  background: #16223c url("img/card-bg-navy.jpg") center / cover no-repeat;
-  padding: 44px 40px 36px;
-}
-
-.kcard.bg-celebrate {
-  background: #16223c url("img/card-bg-celebrate.jpg") center / cover no-repeat;
-}
-
-.kcard .k-kicker {
-  font-size: 12px;
-  letter-spacing: 0.3em;
-  color: #c9a14a;
-  margin: 0 0 6px;
-}
-
-.kcard .k-rule {
-  height: 1px;
-  background: rgba(201, 161, 74, 0.45);
-  margin: 14px 0 18px;
-}
-
-.kcard .k-name {
-  font-family: "Noto Serif KR", serif;
-  font-size: 30px;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0;
-  line-height: 1.3;
-}
-
-.kcard .k-sub {
-  font-size: 13px;
-  color: rgba(244, 239, 228, 0.65);
-  margin: 4px 0 0;
-}
-
-.kcard .k-section {
-  font-size: 12px;
-  letter-spacing: 0.18em;
-  color: #c9a14a;
-  margin: 18px 0 10px;
-}
-
-.kcard ul.k-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.kcard ul.k-list li {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 15px;
-  padding: 7px 0;
-  border-bottom: 1px solid rgba(244, 239, 228, 0.12);
-}
-
-.kcard ul.k-list li .p {
-  color: #e8d9b0;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-
-.kcard .k-total {
-  display: flex;
-  justify-content: space-between;
-  font-size: 16px;
-  font-weight: 700;
-  padding: 12px 0 0;
-  color: #ffffff;
-}
-
-.kcard .k-total .p {
-  color: #c9a14a;
-  font-variant-numeric: tabular-nums;
-}
-
-.kcard .k-note {
-  font-size: 13px;
-  line-height: 1.7;
-  color: rgba(244, 239, 228, 0.85);
-  margin: 18px 0 0;
-  white-space: pre-wrap;
-}
-
-.kcard .k-sign {
-  margin-top: 22px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(201, 161, 74, 0.45);
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
-
-.kcard .k-sign .who {
-  font-family: "Noto Serif KR", serif;
-  font-size: 16px;
-  font-weight: 600;
-  color: #ffffff;
-}
-
-.kcard .k-sign .org {
-  font-size: 12px;
-  color: rgba(244, 239, 228, 0.65);
-}
-
-.kcard-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin: 20px 0 8px;
 }
 
 /* 카톡 문구 작성함 */
