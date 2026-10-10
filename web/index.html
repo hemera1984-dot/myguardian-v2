@@ -8,9 +8,10 @@
   <title>마이가디언</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;600&display=swap">
   <link rel="stylesheet" href="assets/platform.css">
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#481820">
+  <meta name="theme-color" content="#14161f">
   <script src="assets/platform.js"></script>
   <script src="assets/auth.js"></script>
   <script src="assets/mg-today.js"></script>
@@ -49,20 +50,43 @@
     .h-btn:hover { border-color: var(--platform-ink); }
     .h-btn.primary { background: var(--platform-blue); border-color: var(--platform-blue); color: #fff; }
     .h-btn.primary:hover { background: var(--platform-blue-dark); border-color: var(--platform-blue-dark); }
+    .h-mast .h-btn.primary { background: var(--platform-navy); border-color: var(--platform-navy); }
+    .h-mast .h-btn.primary:hover { background: var(--platform-g800); border-color: var(--platform-g800); }
     .h-btn.sm { min-height: 34px; padding: 0 12px; font-size: 13px; }
 
     .h-gate { margin: 20px 0 0; padding: 18px 0; border-bottom: 1px solid var(--platform-line); font-size: 14px; color: var(--platform-muted); }
     .h-gate a { color: var(--platform-blue); font-weight: 700; }
 
-    .h-next { display: grid; grid-template-columns: 150px minmax(0, 1fr) auto; gap: 24px; align-items: center; padding: 20px 0; border-bottom: 1px solid var(--platform-line); }
-    .h-next .lbl { font-size: 12px; font-weight: 700; color: var(--platform-muted); }
-    .h-next .when { margin-top: 4px; font-size: 20px; font-weight: 800; letter-spacing: -0.03em; }
-    .h-next .when.today { color: var(--platform-blue); }
-    .h-next h2 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.03em; }
-    .h-next h2 span { margin-left: 8px; font-size: 14px; font-weight: 600; color: var(--platform-muted); letter-spacing: 0; }
-    .h-next p { margin: 4px 0 0; font-size: 13px; color: var(--platform-muted); }
-
-    .h-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 0 48px; margin-top: 32px; }
+    /* 11차(2026-10-10): 잉크와 종이 — 다음 미팅은 잉크 판, 큰 숫자만 명조, 버건디는 「완료」 한 곳 */
+    .h-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 36px 40px; margin-top: 28px; align-items: start; }
+    .h-weeks { grid-column: 1 / -1; }
+    .h-next[hidden] + .h-calls { grid-column: 1 / -1; }
+    .h-next { background: var(--platform-navy); color: #f4f1ea; border-radius: 16px; padding: 26px 28px 22px; }
+    .nx-top { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 32px; align-items: end; }
+    .nx-when .lbl { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: #cbc6ba; }
+    .nx-when .lbl::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--platform-gold); }
+    .nx-when .big { margin-top: 6px; font-family: "Noto Serif KR", serif; font-size: 56px; font-weight: 500; line-height: 1; letter-spacing: -0.03em; white-space: nowrap; color: #f4f1ea; }
+    .nx-when .big b { font-size: 76px; font-weight: 500; }
+    .nx-when .big b.w { font-size: 60px; }
+    .nx-when .big small { margin-left: 8px; font-family: "Pretendard Variable", Pretendard, sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 0; color: #cbc6ba; }
+    .nx-who { padding-bottom: 8px; min-width: 0; }
+    .nx-who a { display: block; font-size: 22px; font-weight: 750; letter-spacing: -0.03em; color: #f4f1ea; }
+    .nx-who a:hover { text-decoration: underline; text-underline-offset: 4px; }
+    .nx-who span { display: block; margin-top: 4px; font-size: 14px; color: #cbc6ba; }
+    .nx-acts { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: 8px; margin-top: 22px; }
+    .nx-acts a, .nx-acts button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 52px; border: 1px solid rgba(251, 250, 247, 0.18); border-radius: 10px;
+      background: rgba(251, 250, 247, 0.04); color: #f4f1ea; font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; transition: background-color .14s, border-color .14s; }
+    .nx-acts a:hover, .nx-acts button:hover { background: rgba(251, 250, 247, 0.09); border-color: rgba(251, 250, 247, 0.32); }
+    .nx-acts .go { background: var(--platform-blue); border-color: var(--platform-blue); }
+    .nx-acts .go:hover { background: var(--platform-blue-dark); border-color: var(--platform-blue-dark); }
+    .nx-acts svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+    .nx-prep { margin-top: 22px; padding-top: 18px; border-top: 1px solid rgba(251, 250, 247, 0.14); }
+    .nx-prep .h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+    .nx-prep .h b { font-size: 13px; font-weight: 750; color: #f4f1ea; }
+    .nx-prep .h span { font-size: 12px; color: #9a958a; }
+    .nx-prep .r { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; padding: 5px 0; font-size: 14px; }
+    .nx-prep .r span { color: #9a958a; font-size: 13px; }
+    .nx-prep .r p { margin: 0; color: #e7e3da; overflow-wrap: anywhere; }
     .h-sec { min-width: 0; }
     .h-sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--platform-ink); }
     .h-sec-h h2 { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.035em; }
@@ -122,7 +146,7 @@
     .h-cell .go:hover { color: var(--platform-blue); }
 
     /* 서랍 — 오른쪽(폰은 아래)에서 0.2초. 그림자·둥근 모서리 없이 2px 괘선 */
-    .h-scrim { position: fixed; inset: 0; z-index: 80; background: rgba(23, 32, 51, .32); }
+    .h-scrim { position: fixed; inset: 0; z-index: 80; background: rgba(20, 22, 31, .32); }
     .h-drawer {
       position: fixed; inset: 0 0 0 auto; z-index: 81; width: min(460px, 100%); display: flex; flex-direction: column;
       background: var(--platform-bg); border-left: 2px solid var(--platform-ink);
@@ -173,7 +197,8 @@
 
     @media (max-width: 1180px) {
       .platform-main { width: calc(100% - 48px); }
-      .h-grid { grid-template-columns: 1fr; gap: 32px; }
+      .h-grid { grid-template-columns: 1fr; gap: 28px; }
+      .h-next[hidden] + .h-calls, .h-weeks { grid-column: auto; }
       .h-trio { grid-template-columns: 1fr 1fr; }
       .h-trio .h-cell:nth-child(2) { padding-right: 0; }
       .h-trio .h-cell:nth-child(3) { grid-column: 1 / -1; padding-left: 0; border-left: 0; border-top: 1px solid var(--platform-line); }
@@ -186,9 +211,13 @@
       .h-mast { flex-direction: column; align-items: stretch; gap: 14px; }
       .h-mast h1 { font-size: 24px; }
       .h-acts .h-btn { flex: 1; min-height: 44px; }
-      .h-next { grid-template-columns: 1fr auto; gap: 8px 16px; }
-      .h-next .lblbox { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; }
-      .h-next .when { margin: 0; font-size: 16px; }
+      .h-next { padding: 20px 18px 16px; border-radius: 14px; }
+      .nx-top { grid-template-columns: 1fr; gap: 10px; }
+      .nx-when .big { font-size: 44px; }
+      .nx-when .big b { font-size: 60px; }
+      .nx-when .big b.w { font-size: 46px; }
+      .nx-acts { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
+      .nx-prep .r { grid-template-columns: 60px minmax(0, 1fr); }
       .h-day { grid-template-columns: 1fr; }
       .h-day-h { padding: 14px 0 2px; display: flex; gap: 10px; align-items: baseline; }
       .h-row { grid-template-columns: 1fr; gap: 8px; padding: 10px 0; }
@@ -270,16 +299,15 @@
       </section>
       <p class="h-gate" id="h-gate" hidden></p>
 
-      <section class="h-next" id="h-next" aria-label="다음 미팅" hidden></section>
-
       <div class="h-grid" id="h-grid" hidden>
-        <section class="h-sec" aria-labelledby="h-week-t">
-          <div class="h-sec-h"><h2 id="h-week-t">오늘과 이번 주</h2><a href="customers/">고객관리</a></div>
-          <div id="h-week"></div>
-        </section>
-        <section class="h-sec" aria-labelledby="h-call-t">
+        <section class="h-next" id="h-next" aria-label="다음 미팅" hidden></section>
+        <section class="h-sec h-calls" aria-labelledby="h-call-t">
           <div class="h-sec-h"><h2 id="h-call-t">연락할 고객</h2><a href="customers/" id="h-call-all">전체</a></div>
           <div id="h-call"></div>
+        </section>
+        <section class="h-sec h-weeks" aria-labelledby="h-week-t">
+          <div class="h-sec-h"><h2 id="h-week-t">오늘과 이번 주</h2><a href="customers/">고객관리</a></div>
+          <div id="h-week"></div>
         </section>
       </div>
 
@@ -514,12 +542,26 @@
         var nx = today[0] || tmr[0] || week[0];
         var next = $("h-next");
         if (nx) {
-          var when = nx.n === 0 ? "오늘" : nx.n === 1 ? "내일" : nx.n + "일 뒤";
-          next.innerHTML = '<div class="lblbox"><div class="lbl">다음 미팅</div><div class="when' + (nx.n === 0 ? " today" : "") + '">' + when + "</div></div>"
-            + "<div><h2>" + esc(nameOf(nx.c)) + "<span>" + esc(nx.m["차수"] + "차 미팅 · " + md(nx.m["일자"])) + "</span></h2>"
-            + (v1(nx.c).category ? "<p>" + esc({ referral: "지인", transfer: "이관", valueup: "밸류업", contract: "계약" }[v1(nx.c).category] || v1(nx.c).category)
-              + (nx.c.policies && nx.c.policies.policies && nx.c.policies.policies.length ? " · 보유보험 " + nx.c.policies.policies.length + "건" : "") + "</p>" : "")
-            + '</div><a class="h-btn" href="' + custHref(nx.c) + '">고객 열기</a>';
+          var o = v1(nx.c), recs = ((nx.c.profile && nx.c.profile["기록"]) || []).filter(function (r) { return r && !r["무효"]; });
+          var pols = (nx.c.policies && nx.c.policies.policies) || [], pins = (nx.c.profile && nx.c.profile["고정메모"]) || [];
+          var tel = String(o.phone || "").replace(/[^\d+]/g, "");
+          var big = nx.n === 0 ? '<b class="w">오늘</b>' : nx.n === 1 ? '<b class="w">내일</b>' : '<b>' + nx.n + "</b><small>일 뒤</small>";
+          var prep = [
+            ["지난 기록", recs[0] ? recs[0]["내용"] : "아직 없음"],
+            ["보유", pols.length ? pols.slice(0, 2).map(function (p) { return p.productName || p.insuranceProduct || "상품명 미기재"; }).join(" · ") + (pols.length > 2 ? " 외 " + (pols.length - 2) + "건" : "") : "등록된 계약 없음"],
+            ["챙길 것", (nx.c.profile && nx.c.profile["다음할일"]) || (pins[0] && pins[0]["항목"] + " — " + pins[0]["내용"]) || "꼭 알 것 없음"]
+          ];
+          // 실데이터에서 뽑은 준비 메모(AI 생성 아님) — 출처를 같이 적는다
+          next.dataset.code = nx.c["고객코드"]; next.dataset.i = nx.i;
+          next.innerHTML = '<div class="nx-top"><div class="nx-when"><span class="lbl">다음 미팅</span><div class="big">' + big + "</div></div>"
+            + '<div class="nx-who"><a href="' + custHref(nx.c) + '">' + esc(nameOf(nx.c)) + "</a><span>" + esc(nx.m["차수"] + "차 미팅 · " + md(nx.m["일자"])) + "</span></div></div>"
+            + '<div class="nx-acts">'
+            + (tel ? '<a href="tel:' + esc(tel) + '"><svg viewBox="0 0 24 24"><path d="M6.5 4h3l1.5 4-2 1.5a11 11 0 0 0 5.5 5.5l1.5-2 4 1.5v3a2 2 0 0 1-2 2A15 15 0 0 1 4.5 6a2 2 0 0 1 2-2z"/></svg>전화</a>'
+                + '<a href="sms:' + esc(tel) + '"><svg viewBox="0 0 24 24"><path d="M5 5h14v11h-8l-4 3.5V16H5z"/></svg>문자</a>' : "")
+            + '<button type="button" data-act="note"><svg viewBox="0 0 24 24"><path d="M6 4h9l3 3v13H6z M9 10h6 M9 14h6"/></svg>기록</button>'
+            + (nx.n <= 0 ? '<button type="button" class="go" data-act="done"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>완료</button>' : "")
+            + '</div><div class="nx-prep"><div class="h"><b>미팅 준비</b><span>기록 ' + recs.length + "건 · 보유 " + pols.length + "건 기준</span></div>"
+            + prep.map(function (r) { return "<div class=\"r\"><span>" + r[0] + "</span><p>" + esc(r[1]) + "</p></div>"; }).join("") + "</div>";
           next.hidden = false;
         } else next.hidden = true;
 

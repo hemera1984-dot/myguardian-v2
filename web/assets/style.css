@@ -6,15 +6,15 @@
 
 :root {
   /* 디자인 개정 10차(2026-07-20) 팔레트 정합 — platform.css와 동일 토큰 */
-  --bg: #faf9f7; /* 종이색 — 에디토리얼 전환 (2026-08-02) */
+  --bg: #fbfaf7; /* 종이색 — 에디토리얼 전환 (2026-08-02) */
   --surface: #ffffff;
-  --ink: #172033;
-  --ink-sub: #596579;
-  --ink-faint: #647082; /* 구값 #717d8f는 흰 바탕 실측 4.17:1로 AA 미달 — platform.css --platform-faint 교정(2026-07-29)과 동일 값으로 정합 (2026-07-31) */
-  --accent: #bc003a;      /* 버튼·활성상태·링크 전용 */
-  --accent-dark: #980130;
-  --accent-bg: #ffeff0;
-  --navy: #481820;        /* 다크 사이드바 */
+  --ink: #1d1c19;
+  --ink-sub: #4f4c45;
+  --ink-faint: #6d6960; /* 구값 #717d8f는 흰 바탕 실측 4.17:1로 AA 미달 — platform.css --platform-faint 교정(2026-07-29)과 동일 값으로 정합 (2026-07-31) */
+  --accent: #9e1b32;      /* 버튼·활성상태·링크 전용 */
+  --accent-dark: #7f1528;
+  --accent-bg: #f6ebed;
+  --navy: #14161f;        /* 다크 사이드바 */
   --cyan: #e05c72;        /* 사이드바 상단 라인 */
   --paid: #16a34a;        /* 상태색: 지급 */
   --denied: #dc2626;      /* 상태색: 부지급 */
@@ -34,7 +34,7 @@
   --ink: #e7eaf0;
   --ink-sub: #9aa3b2;
   --ink-faint: #6b7280;
-  --accent-bg: rgba(188, 0, 58, 0.16);
+  --accent-bg: rgba(158, 27, 50, 0.16);
   --line: #2a3242;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
@@ -146,7 +146,7 @@ a {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(26, 39, 68, 0.4);
+  background: rgba(20, 22, 31, 0.4);
   z-index: 20;
 }
 
@@ -349,7 +349,7 @@ body.simple .container {
 .menu-card:active,
 .menu-card:hover {
   border-color: var(--accent);
-  box-shadow: 0 4px 14px rgba(26, 39, 68, 0.08);
+  box-shadow: 0 4px 14px rgba(20, 22, 31, 0.08);
 }
 
 .menu-card .name {
@@ -637,7 +637,7 @@ body.magazine {
   --paper: #faf8f4;
   --gold: #c9a14a;
   --gold-ink: #8a6620;
-  --hairline: rgba(23, 32, 51, 0.14);
+  --hairline: rgba(20, 22, 31, 0.14);
   --body-ink: #232c40;
   background: var(--paper);
   color: var(--ink);
@@ -1407,7 +1407,7 @@ body.magazine :focus-visible {
 
   .sidebar.open {
     transform: translateX(0);
-    box-shadow: 0 0 24px rgba(26, 39, 68, 0.18);
+    box-shadow: 0 0 24px rgba(20, 22, 31, 0.18);
   }
 
   .main-area {
@@ -1535,9 +1535,9 @@ body.magazine :focus-visible {
   transition: color 0.14s, border-color 0.14s, background 0.14s;
 }
 .cat-pick.on {
-  border-color: var(--point, #bc003a);
-  background: var(--point-soft, #ffeff0);
-  color: var(--point, #bc003a);
+  border-color: var(--point, #9e1b32);
+  background: var(--point-soft, #f6ebed);
+  color: var(--point, #9e1b32);
 }
 
 /* 제목을 다 정해 놓고 본문은 한 번에 (2026-08-05). 한 편씩 기다리면 월간은 15분이 넘는다. */
@@ -1982,7 +1982,7 @@ body.magazine :focus-visible {
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(23, 32, 51, 0.55);
+  background: rgba(20, 22, 31, 0.55);
   display: flex;
   flex-direction: column;
 }
@@ -2005,7 +2005,7 @@ body.magazine :focus-visible {
   --paper: #faf8f4;
   --gold: #c9a14a;
   --gold-ink: #8a6620;
-  --hairline: rgba(23, 32, 51, 0.14);
+  --hairline: rgba(20, 22, 31, 0.14);
   --body-ink: #232c40;
   flex: 1;
   overflow-y: auto;
@@ -2030,7 +2030,7 @@ body.magazine :focus-visible {
   overflow: hidden;
   border-radius: var(--radius);
   margin-bottom: 26px;
-  box-shadow: 0 10px 26px rgba(26, 39, 68, 0.2);
+  box-shadow: 0 10px 26px rgba(20, 22, 31, 0.2);
 }
 
 .photo-hero > img {
@@ -2044,7 +2044,7 @@ body.magazine :focus-visible {
   position: absolute;
   inset: auto 0 0 0;
   padding: 18px 24px 20px;
-  background: rgba(13, 20, 36, 0.72);
+  background: rgba(20, 22, 31, 0.72);
   color: #fff;
 }
 
@@ -2124,7 +2124,7 @@ a.latest-card {
   gap: 4px;
   min-height: 148px;
   padding: 16px 18px;
-  background: rgba(13, 20, 36, 0.55);
+  background: rgba(20, 22, 31, 0.55);
 }
 
 .latest-card .latest-ch {
@@ -3058,11 +3058,11 @@ body.shelf-body { background: #f4f1ea; }
 .r-warn {
   margin: 8px 0 0;
   padding: 7px 11px;
-  border-left: 3px solid var(--point, #bc003a);
-  background: var(--point-soft, #ffeff0);
+  border-left: 3px solid var(--point, #9e1b32);
+  background: var(--point-soft, #f6ebed);
   font-size: 12px;
   font-weight: 700;
-  color: var(--point, #bc003a);
+  color: var(--point, #9e1b32);
   word-break: keep-all;
 }
 
@@ -3070,36 +3070,36 @@ body.shelf-body { background: #f4f1ea; }
 .vault-veil {
   position: fixed; inset: 0; z-index: 900;
   display: flex; align-items: center; justify-content: center;
-  padding: 24px; background: rgba(23, 32, 51, 0.55);
+  padding: 24px; background: rgba(20, 22, 31, 0.55);
 }
 .vault-box {
   width: min(420px, 100%);
   padding: 26px 24px 22px;
   background: var(--surface, #fff);
-  border: 2px solid var(--ink, #172033);
+  border: 2px solid var(--ink, #1d1c19);
   border-radius: 6px;
 }
 .vault-box h2 { margin: 0 0 8px; font-size: 19px; font-weight: 700; letter-spacing: -0.035em; }
 .vault-why {
   margin: 0 0 18px; font-size: 12.5px; line-height: 1.65;
-  color: var(--ink-sub, #596579); word-break: keep-all;
+  color: var(--ink-sub, #4f4c45); word-break: keep-all;
 }
-.vault-why b { color: var(--point, #bc003a); }
+.vault-why b { color: var(--point, #9e1b32); }
 .vault-box label {
   display: block; margin: 0 0 5px;
-  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--ink-sub, #596579);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--ink-sub, #4f4c45);
 }
 .vault-box input {
   width: 100%; margin: 0 0 14px; padding: 9px 11px;
   font: inherit; font-size: 14px;
   border: 1px solid var(--line-strong, #cbd3de); border-radius: 4px;
-  background: var(--surface, #fff); color: var(--ink, #172033);
+  background: var(--surface, #fff); color: var(--ink, #1d1c19);
 }
-.vault-box input:focus { outline: none; border-color: var(--point, #bc003a); }
+.vault-box input:focus { outline: none; border-color: var(--point, #9e1b32); }
 .vault-err {
   margin: 0 0 12px; padding: 7px 10px;
-  border-left: 3px solid var(--point, #bc003a); background: var(--point-soft, #ffeff0);
-  font-size: 12px; font-weight: 700; color: var(--point, #bc003a);
+  border-left: 3px solid var(--point, #9e1b32); background: var(--point-soft, #f6ebed);
+  font-size: 12px; font-weight: 700; color: var(--point, #9e1b32);
 }
 .vault-row { display: flex; gap: 8px; }
 .vault-row .btn { flex: 1; min-height: 40px; }

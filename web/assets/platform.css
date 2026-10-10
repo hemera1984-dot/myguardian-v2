@@ -1,15 +1,20 @@
 :root {
-  /* 디자인 개정 10차 (2026-07-20): 스레드 인텔리전스 언어 — 선 중심, 2-톤, 촘촘한 밀도 */
-  --platform-bg: #faf9f7; /* 종이색 — 에디토리얼 전환 (2026-08-02). 차가운 회색 #f5f7fa 폐기 */
+  /* 디자인 개정 11차 (2026-10-10 사용자 「4번으로, 서체는 Pretendard」): 잉크와 종이.
+     메뉴 레일은 버건디 → 잉크 남색, 버건디는 강조 한 점으로. 글씨는 검정 대신 따뜻한 회색 다섯 단계
+     (토스식 위계를 종이 바탕에 맞춤 — g900 제목 · g800 이름 · g700 본문 · g600 보조 · g500 흐린 설명). */
+  --platform-bg: #fbfaf7; /* 종이 */
   --platform-surface: #ffffff;
-  --platform-ink: #172033;
-  --platform-muted: #596579;
-  --platform-faint: #647082; /* 흰 바탕 5.0:1 · 캔버스(#f5f7fa) 4.7:1 — 구값 #717d8f는 실측 4.17로 AA 미달이었다 (2026-07-29 교정) */
-  --platform-blue: #bc003a;
-  --platform-blue-dark: #980130;
-  --platform-blue-soft: #ffeff0;
-  --platform-navy: #481820;
-  --platform-navy-deep: #331016;
+  --platform-ink: #1d1c19;   /* g900 제목 */
+  --platform-g800: #35332e;  /* 이름·진한 본문 */
+  --platform-muted: #4f4c45; /* g700 본문 */
+  --platform-faint: #6d6960; /* g600 보조 — 종이 위 5.2:1 */
+  --platform-g500: #8c877d;  /* 흐린 설명·시각 — 큰 글씨·장식만 */
+  --platform-blue: #9e1b32;      /* 버건디 — 주행동·선택·급함 한 점 */
+  --platform-blue-dark: #7f1528;
+  --platform-blue-soft: #f6ebed;
+  --platform-navy: #14161f;      /* 잉크 남색 — 레일·큰 판 */
+  --platform-navy-deep: #0d0e14;
+  --platform-gold: #b8955a;      /* 가는 선·작은 표식에만 */
   --platform-cyan: #e05c72;
   --platform-line: #e2ddd6; /* 종이 위 괘선 — 따뜻한 회색 */
   --platform-line-strong: #c9c2b8;
@@ -22,15 +27,15 @@
 }
 
 [data-theme="dark"] {
-  --platform-bg: #101722;
-  --platform-surface: #182230;
-  --platform-ink: #f1f5f9;
-  --platform-muted: #a6b0c1;
-  --platform-faint: #7b8798;
+  --platform-bg: #0d0e14;
+  --platform-surface: #14161f;
+  --platform-ink: #f4f1ea;
+  --platform-muted: #cbc6ba;
+  --platform-faint: #9a958a;
   --platform-blue: #f4849a;
-  --platform-blue-soft: rgba(188, 0, 58, 0.16);
-  --platform-line: #2a3545;
-  --platform-line-strong: #3a4657;
+  --platform-blue-soft: rgba(158, 27, 50, 0.22);
+  --platform-line: #2a2b33;
+  --platform-line-strong: #3b3d47;
   --platform-shadow: none;
 }
 
@@ -49,7 +54,8 @@ body.platform {
   background: var(--platform-bg);
   color: var(--platform-ink);
   /* 가변 폰트 우선 — 타입 증명 §4: Pretendard Variable 선행 (2026-07-30 공용 승격, 종전 홈·인트로 한정) */
-  font-family: "Paperlogy", "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+  font-family: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+  font-variant-numeric: tabular-nums;
   line-height: 1.6;
   letter-spacing: -0.02em;
   word-break: keep-all;
@@ -226,7 +232,7 @@ body.platform {
 }
 
 [data-theme="dark"] .platform-topbar {
-  background: rgba(24, 34, 48, 0.94);
+  background: rgba(20, 22, 31, 0.94);
 }
 
 .topbar-context {
@@ -329,7 +335,7 @@ body.platform {
 
 .global-search input:focus {
   border-color: var(--platform-blue);
-  box-shadow: 0 0 0 2px rgba(188, 0, 58, 0.10);
+  box-shadow: 0 0 0 2px rgba(158, 27, 50, 0.10);
 }
 
 .search-state {
@@ -776,7 +782,7 @@ body.platform {
     inset: 0;
     z-index: 30;
     display: block;
-    background: rgba(26, 39, 68, 0.42);
+    background: rgba(20, 22, 31, 0.42);
   }
 
   .platform-shell {
@@ -1127,9 +1133,9 @@ body.platform {
 }
 
 .st-recall { color: #8a4c07; background: #f7ead6; }
-.st-meet { color: #980130; background: #ffeff0; }
+.st-meet { color: #7f1528; background: #f6ebed; }
 .st-met { color: #087a55; background: #e1f2eb; }
-.st-hold { color: #596579; background: #eef1f5; }
+.st-hold { color: #4f4c45; background: #efede7; }
 .st-reject { color: #b3261e; background: #f8dfd9; }
 .st-cancel { color: #8e3b30; background: #f3e3e0; }
 
@@ -1158,9 +1164,9 @@ body.platform {
 }
 
 .status-btn.on.st-recall { color: #8a4c07; background: #f7ead6; border-color: #e5cfa4; }
-.status-btn.on.st-meet { color: #980130; background: #ffeff0; border-color: #b9d4f8; }
+.status-btn.on.st-meet { color: #7f1528; background: #f6ebed; border-color: #e3c4ca; }
 .status-btn.on.st-met { color: #087a55; background: #e1f2eb; border-color: #b2ddcb; }
-.status-btn.on.st-hold { color: #435066; background: #eef1f5; border-color: #cbd3de; }
+.status-btn.on.st-hold { color: #35332e; background: #efede7; border-color: #cfc9be; }
 .status-btn.on.st-reject { color: #b3261e; background: #f8dfd9; border-color: #edbcb3; }
 .status-btn.on.st-cancel { color: #8e3b30; background: #f3e3e0; border-color: #dfc0ba; }
 
@@ -1692,7 +1698,7 @@ body.platform {
 
 /* 텍스트 선택 색 */
 .platform ::selection {
-  background: rgba(188, 0, 58, 0.14);
+  background: rgba(158, 27, 50, 0.14);
 }
 
 /* 상단바 고정 + 블러 */
@@ -1705,7 +1711,7 @@ body.platform {
 }
 
 [data-theme="dark"] .platform-topbar {
-  background: rgba(24, 34, 48, 0.97);
+  background: rgba(20, 22, 31, 0.97);
 }
 
 /* 모바일 62px 네이비 슬림 상단바 — 홈 구현의 공용 승격 (2026-07-30 통일 패스).
@@ -1749,7 +1755,7 @@ body.platform {
 
 .action-card:hover,
 .stat-tile:hover {
-  background: #fafbfd;
+  background: #fbfaf7;
   border-color: var(--platform-line-strong);
 }
 
@@ -1873,7 +1879,7 @@ body.platform {
 
 /* 목록 스크롤 신호: 하단 안쪽 그림자 (subtle) */
 .case-rows {
-  box-shadow: inset 0 -14px 12px -14px rgba(26, 39, 68, 0.28);
+  box-shadow: inset 0 -14px 12px -14px rgba(20, 22, 31, 0.28);
 }
 
 /* 빈 상세의 사각형 마크는 깨진 이미지처럼 읽혀 제거 */
@@ -2051,7 +2057,7 @@ body.platform {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(16, 42, 78, 0.45);
+  background: rgba(20, 22, 31, 0.45);
 }
 
 .install-modal-back[hidden] { display: none; }
@@ -2441,8 +2447,8 @@ body.platform .platform-nav a {
 }
 body.platform .platform-nav a::before { content: none; } /* 좌측 인셋 막대 → 면 강조로 교체 */
 body.platform .platform-nav a.active {
-  color: var(--platform-navy-deep);
-  background: var(--platform-blue-soft);
+  color: #f4f1ea;
+  background: rgba(251, 250, 247, 0.10); /* 잉크 레일 위 현재 위치 — 밝은 면 대신 한 단계 밝은 잉크(11차) */
 }
 body.platform .nav-icon {
   width: 21px; height: 21px; flex-shrink: 0;
@@ -2701,7 +2707,7 @@ body.platform .profile-card {
 body.platform .vault-veil {
   position: fixed; inset: 0; z-index: 900;
   display: flex; align-items: center; justify-content: center;
-  padding: 16px; background: rgba(23, 32, 51, 0.55);
+  padding: 16px; background: rgba(20, 22, 31, 0.55);
 }
 body.platform .vault-box {
   width: min(420px, 100%); max-height: calc(100vh - 32px); overflow-y: auto;

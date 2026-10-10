@@ -4,23 +4,23 @@
    - 페이지 캔버스(.stage)는 1280×800 고정 설계 후 배율 축소 — 두 창의 좌표 비율이 항상 일치 */
 
 :root {
-  --brief-bg: #10151d;
-  --brief-panel: #182130;
-  --brief-line: #2a3545;
-  --brief-line-strong: #3a4657;
-  --brief-ink: #f1f5f9;
-  --brief-muted: #a6b0c1;
-  --brief-faint: #7b8798;
+  --brief-bg: #0d0e14;
+  --brief-panel: #14161f;
+  --brief-line: #2a2b33;
+  --brief-line-strong: #3b3d47;
+  --brief-ink: #f4f1ea;
+  --brief-muted: #cbc6ba;
+  --brief-faint: #9a958a;
   --brief-blue: #f4849a;
-  --brief-blue-deep: #bc003a;
+  --brief-blue-deep: #9e1b32;
   --brief-radius: 12px;
 
   /* 지면(캔버스) — 청중이 보는 종이. 라이트 고정 */
   --page-paper: #ffffff;
-  --page-ink: #1a2744;
-  --page-muted: #667085;
-  --page-line: #e4e7ec;
-  --page-blue: #bc003a;
+  --page-ink: #1d1c19;
+  --page-muted: #6d6960;
+  --page-line: #e2ddd6;
+  --page-blue: #9e1b32;
 }
 
 * { box-sizing: border-box; }
@@ -35,7 +35,7 @@ html, body {
 body.brief-present,
 body.brief-view {
   margin: 0;
-  font-family: "Paperlogy", "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+  font-family: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
   line-height: 1.55;
   letter-spacing: -0.012em;
   word-break: keep-all;
@@ -97,12 +97,12 @@ body.brief-view {
 .pg-cover-head {
   position: relative;
   padding: 200px 88px 72px;
-  background: linear-gradient(180deg, rgba(16, 21, 29, 0) 0%, rgba(16, 21, 29, 0.86) 46%, rgba(16, 21, 29, 0.94) 100%);
+  background: linear-gradient(180deg, rgba(13, 14, 20, 0) 0%, rgba(13, 14, 20, 0.86) 46%, rgba(13, 14, 20, 0.94) 100%);
   color: #ffffff;
 }
 
 .pg-cover .pg-kicker {
-  color: #93c5fd;
+  color: #e8b4bd;
 }
 
 .pg-cover-title {
@@ -116,7 +116,7 @@ body.brief-view {
 
 .pg-cover-sub {
   margin: 18px 0 0;
-  color: rgba(241, 245, 249, 0.82);
+  color: rgba(244, 241, 234, 0.82);
   font-size: 20px;
 }
 
@@ -224,7 +224,7 @@ body.brief-view {
   min-height: 0;
   width: 100%;
   object-fit: contain;
-  background: #0b0f15;
+  background: #0d0e14;
 }
 
 .pg-caption {
@@ -244,7 +244,7 @@ body.brief-view {
   background: var(--page-blue);
   /* 레이저 포인터처럼 잘 보이게 — 흰 테두리로 어떤 슬라이드에서도 대비 확보 + 넓은 광채 */
   border: 2px solid #ffffff;
-  box-shadow: 0 0 0 5px rgba(188, 0, 58, 0.35), 0 0 26px 10px rgba(188, 0, 58, 0.55);
+  box-shadow: 0 0 0 5px rgba(158, 27, 50, 0.35), 0 0 26px 10px rgba(158, 27, 50, 0.55);
   pointer-events: none;
   opacity: 0;
   transition: left 0.09s linear, top 0.09s linear, opacity 0.15s ease;
@@ -364,7 +364,7 @@ body.brief-present {
 }
 
 .pr-button[aria-pressed="true"] {
-  background: rgba(188, 0, 58, 0.2);
+  background: rgba(158, 27, 50, 0.2);
   border-color: var(--brief-blue);
   color: var(--brief-blue);
 }
@@ -391,7 +391,7 @@ body.brief-present {
   min-height: 0;
   border: 1px solid var(--brief-line);
   border-radius: var(--brief-radius);
-  background: #0b0f15;
+  background: #0d0e14;
   cursor: pointer;
 }
 
@@ -474,7 +474,7 @@ body.brief-present {
   font-size: 22px;
   line-height: 2;
   letter-spacing: -0.01em;
-  color: #eef2f7;
+  color: #f4f1ea;
   white-space: pre-wrap;
   scrollbar-width: thin;
   scrollbar-color: var(--brief-line-strong) transparent;
@@ -516,7 +516,7 @@ body.brief-present {
   width: 190px;      /* 참고용 — 조그맣게 */
   flex: 0 0 auto;
   border-radius: 6px;
-  background: #0b0f15;
+  background: #0d0e14;
   pointer-events: none;
 }
 
@@ -568,7 +568,7 @@ body.brief-present {
 .pr-page-btn:hover { border-color: var(--brief-line-strong); color: var(--brief-ink); }
 
 .pr-page-btn.active {
-  background: rgba(188, 0, 58, 0.2);
+  background: rgba(158, 27, 50, 0.2);
   border-color: var(--brief-blue);
   color: var(--brief-blue);
 }
@@ -634,7 +634,7 @@ body.brief-present {
 
 body.brief-view {
   background: #000000;
-  color: #f1f5f9;
+  color: #f4f1ea;
   cursor: none;
   overflow: hidden;
 }
@@ -654,13 +654,13 @@ body.brief-view {
   display: grid;
   place-items: center;
   text-align: center;
-  color: #7b8798;
+  color: #9a958a;
   font-size: 15px;
 }
 
 .vw-wait strong {
   display: block;
-  color: #f1f5f9;
+  color: #f4f1ea;
   font-size: 18px;
   margin-bottom: 6px;
 }
