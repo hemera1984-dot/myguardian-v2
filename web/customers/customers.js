@@ -233,7 +233,7 @@
         return list.sort(function (a, b) { var x = by(a), y = by(b); return x < y ? -1 : x > y ? 1 : (a.code < b.code ? -1 : 1); });
       }
 
-      var DETAIL_EMPTY = '<div style="padding:26px 0"><img class="empty-illust" src="../assets/img/empty-folder.png" alt=""><strong>고객을 선택하세요</strong><p>목록에서 고객을 누르면 기록·미팅·보유보험이 열립니다.</p></div>';
+      var DETAIL_EMPTY = '<div style="padding:26px 0"><img class="empty-illust" src="../assets/img/empty-client.svg" alt=""><strong>고객을 선택하세요</strong><p>목록에서 고객을 누르면 기록·미팅·보유보험이 열립니다.</p></div>';
 
       function rowHtml(c) {
         var st = custStatus(c), m = upMeeting(c), why = callReason(c), l = lastContact(c);
