@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>서재 - 안창민 케어센터</title>
-  <meta name="theme-color" content="#F4F1EA">
+  <meta name="theme-color" content="#fbfaf6">
   <meta name="description" content="보험·경제·상속을 쉽게 풀어 전하는 발행물을 모아 둔 서재입니다.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="안창민 케어센터">
@@ -14,38 +14,179 @@
   <meta property="og:url" content="https://app.insurguard.life/web/care/">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css">
-  <link rel="stylesheet" href="../assets/style.css">
   <script src="../assets/care.js"></script>
+  <!-- 서재 첫 화면 겉모습 — 모션보드 시안 3번(_ui/20261010-안창민-케어센터-서재/ui-3.html, 2026-10-10).
+       발행물은 독립 브랜드라 플랫폼 style.css를 싣지 않는다. -->
+  <style>
+    :root {
+      --bg: #fbfaf6; --face: #ffffff; --title: #14181f; --text: #2a2e36; --sub: #6f6a5e;
+      --accent: #bc003a; --accent-deep: #8a1c2b; --navy: #2c3a55; --gold: #c9a14a; --line: #e7e3d8;
+      --dots: radial-gradient(circle, rgba(20,24,31,.055) 1px, transparent 1.4px);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: "Pretendard Variable", Pretendard, -apple-system, sans-serif;
+      background-color: var(--bg); background-image: var(--dots); background-size: 16px 16px;
+      color: var(--text); -webkit-font-smoothing: antialiased; min-height: 100vh;
+      word-break: keep-all;
+    }
+    a { text-decoration: none; color: inherit; }
+    button { font-family: inherit; cursor: pointer; }
+
+    .stage { max-width: 1280px; margin: 0 auto; padding: 28px 16px 60px; display: flex; justify-content: center; gap: 28px; }
+    .rail {
+      display: none; flex: 0 0 150px; writing-mode: vertical-rl; color: rgba(44,58,85,.15);
+      font-weight: 800; font-size: 28px; letter-spacing: .3em; padding-top: 40px; user-select: none;
+    }
+    .page {
+      width: 100%; max-width: 480px; min-width: 0; background: var(--face); border: 1px solid var(--line);
+      box-shadow: 0 2px 2px rgba(20,24,31,.03), 0 18px 40px -20px rgba(20,24,31,.18);
+      border-radius: 2px; overflow: hidden;
+    }
+
+    /* 1. 제호 */
+    .masthead { text-align: center; padding: 34px 24px 26px; background: radial-gradient(circle at 50% 0%, rgba(201,161,74,.10), transparent 60%); }
+    .dotfig { position: relative; width: 168px; height: 168px; margin: 0 auto 18px; }
+    .dotfig::before {
+      content: ""; position: absolute; inset: 0; border-radius: 50%;
+      background-color: #f4f1e8; background-image: radial-gradient(circle, rgba(44,58,85,.13) 1px, transparent 1.5px);
+      background-size: 8px 8px; border: 1px solid var(--line);
+    }
+    /* 인물은 원에 가두지 않는다 — 책 더미가 원 아래로 살짝 걸친다 */
+    .dotfig img {
+      position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%);
+      width: 112px; height: auto; image-rendering: pixelated; image-rendering: crisp-edges;
+    }
+    .kicker { margin: 0 0 10px; font-size: 11px; font-weight: 600; letter-spacing: .28em; color: var(--accent-deep); }
+    .masthead h1 { margin: 0; font-size: 30px; font-weight: 800; color: var(--title); letter-spacing: -.01em; }
+    .sub-line { margin: 8px 0 0; font-size: 13px; font-weight: 500; color: var(--navy); letter-spacing: .04em; }
+    .gold-rule { width: 56px; height: 3px; background: var(--gold); margin: 16px auto 0; }
+
+    /* 2. 최신호 */
+    .hero {
+      margin: 0 18px 28px; background: linear-gradient(165deg, var(--navy) 0%, #1c2638 100%);
+      border-radius: 4px; padding: 26px 22px 24px; position: relative; overflow: hidden; color: #fbfaf6;
+    }
+    .hero::after {
+      content: ""; position: absolute; right: -30px; top: -30px; width: 140px; height: 140px;
+      border-radius: 50%; background: rgba(201,161,74,.12); pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-block; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700;
+      letter-spacing: .14em; padding: 5px 10px; border-radius: 2px; margin-bottom: 14px;
+    }
+    .hero-meta { margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: .08em; color: var(--gold); }
+    .hero h2 { margin: 0 0 16px; font-size: 22px; line-height: 1.4; font-weight: 800; color: #fbfaf6; }
+    .hero-note { margin: 0; font-size: 14px; line-height: 1.6; color: rgba(251,250,246,.78); }
+    .topics { list-style: none; margin: 0 0 20px; padding: 14px 0 0; border-top: 1px solid rgba(251,250,246,.16); }
+    .topics li { font-size: 13.5px; color: rgba(251,250,246,.82); line-height: 1.6; padding-left: 14px; position: relative; margin-bottom: 7px; }
+    .topics li::before { content: "·"; position: absolute; left: 0; top: 0; color: var(--gold); font-weight: 800; }
+    .read-btn {
+      display: inline-flex; align-items: center; gap: 6px; background: var(--gold); color: #20160a;
+      font-size: 14px; font-weight: 700; padding: 11px 20px; border-radius: 2px;
+    }
+
+    /* 공통 구획 머리 */
+    .section-head { margin-bottom: 14px; }
+    .section-head h3 { margin: 0; font-size: 16px; font-weight: 800; color: var(--title); }
+
+    /* 3. 채널 고르기 */
+    .channels { padding: 0 22px 30px; }
+    .chan-row { display: flex; gap: 8px; }
+    .chan-row + .chan-row { margin-top: 8px; }
+    .chan-pill {
+      flex: 1; min-width: 0; text-align: center; padding: 11px 6px; border-radius: 999px; border: 1px solid var(--line);
+      background: var(--bg); font-size: 13.5px; font-weight: 700; color: var(--navy); transition: background-color .15s, color .15s, border-color .15s;
+    }
+    .chan-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .chan-pill:focus-visible, .read-btn:focus-visible, .archive-row:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+    /* 4. 지난 호 */
+    .archive { padding: 0 22px 8px; }
+    .archive-list { border-top: 1px solid var(--line); }
+    .archive-row { display: flex; align-items: flex-start; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+    .archive-row .no {
+      flex: 0 0 auto; font-size: 11.5px; font-weight: 700; color: var(--accent-deep); background: rgba(188,0,58,.07);
+      padding: 3px 8px; border-radius: 2px; white-space: nowrap; margin-top: 1px; font-variant-numeric: tabular-nums; min-width: 66px; text-align: center;
+    }
+    .archive-row .mid { flex: 1; min-width: 0; }
+    .archive-row .t, .archive-row .d { display: block; }
+    .archive-row .t { font-size: 14px; font-weight: 600; color: var(--title); line-height: 1.45; }
+    .archive-row .d { font-size: 11.5px; color: var(--sub); margin-top: 4px; }
+    .archive-row .chan-tag { flex: 0 0 auto; font-size: 11px; font-weight: 600; color: var(--navy); white-space: nowrap; }
+    .archive-empty { padding: 22px 0; border-bottom: 1px solid var(--line); font-size: 13px; line-height: 1.6; color: var(--sub); text-align: center; }
+    .archive-more summary {
+      list-style: none; cursor: pointer; padding: 14px 0; border-bottom: 1px solid var(--line);
+      font-size: 13px; font-weight: 700; color: var(--navy); text-align: center;
+    }
+    .archive-more summary::-webkit-details-marker { display: none; }
+    .archive-more[open] summary { display: none; }
+
+    /* 5. 꼬리 */
+    footer { padding: 26px 22px 30px; text-align: center; }
+    footer .gold-rule { width: 40px; height: 2px; margin: 0 auto 16px; }
+    .editor { margin: 0 0 8px; font-size: 13px; font-weight: 700; color: var(--navy); }
+    .disclaimer { margin: 0 auto; max-width: 300px; font-size: 11.5px; color: var(--sub); line-height: 1.6; }
+
+    @media (min-width: 900px) {
+      .stage { padding: 60px 40px 90px; }
+      .rail { display: flex; }
+      .page { max-width: 460px; }
+      .masthead { padding: 46px 30px 34px; }
+      .dotfig { width: 190px; height: 190px; }
+      .dotfig img { width: 126px; }
+      .masthead h1 { font-size: 34px; }
+      .hero { padding: 32px 28px 28px; }
+      .hero h2 { font-size: 24px; }
+      .channels, .archive { padding-left: 30px; padding-right: 30px; }
+      footer { padding: 32px 30px 36px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .chan-pill { transition: none; } }
+  </style>
 </head>
 <!-- 고객 전용 서재. 플랫폼 셸(사이드바·상단바·계정)을 쓰지 않는다 —
      고객은 잡지만 알고 플랫폼을 모른다. 발행 도구는 shelf.html(FC용)에 있다. -->
-<body class="shelf-body">
-  <main class="shelf-main">
-    <div class="shelf-page">
-      <header class="shelf-hero">
-        <div class="shelf-hero__band" aria-hidden="true"></div>
-        <div class="shelf-hero__main">
-          <p class="shelf-hero__kicker">케어센터</p>
-          <h1 class="shelf-hero__title">서재</h1>
-          <p class="shelf-hero__deck">지난 호를 모두 모아 두었습니다. 표지를 누르면 그 호가 열립니다.</p>
-          <div class="shelf-hero__circle" aria-hidden="true"></div>
-          <div class="shelf-hero__triangle" aria-hidden="true"></div>
-        </div>
+<body>
+  <div class="stage">
+    <div class="rail" aria-hidden="true">안창민 케어센터</div>
+
+    <main class="page">
+      <header class="masthead">
+        <div class="dotfig"><img src="../assets/img/care-dot-figure.png" width="336" height="432" alt=""></div>
+        <p class="kicker">안창민 케어센터 서재</p>
+        <h1>안창민 케어센터</h1>
+        <p class="sub-line" id="sub-line">주간 · 월간 · 일간 안창민</p>
+        <div class="gold-rule" aria-hidden="true"></div>
       </header>
 
-      <div class="pill-tabs shelf-tabs" role="tablist" aria-label="채널">
-        <button type="button" class="active" data-ch="">전체</button>
-        <button type="button" data-ch="일간">일간 안창민</button>
-        <button type="button" data-ch="주간">주간 안창민</button>
-        <button type="button" data-ch="월간">월간 안창민</button>
-      </div>
+      <section class="hero" id="hero" aria-label="최신호">
+        <p class="hero-note">발행물을 불러오는 중입니다.</p>
+      </section>
 
-      <div id="issue-list">
-        <div class="placeholder-panel">발행물을 불러오는 중입니다.</div>
-      </div>
-    </div>
-  </main>
+      <section class="channels">
+        <div class="section-head"><h3>채널 고르기</h3></div>
+        <div class="chan-row" id="chan-row" role="tablist" aria-label="채널">
+          <button type="button" class="chan-pill" data-ch="주간">주간 안창민</button>
+          <button type="button" class="chan-pill" data-ch="월간">월간 안창민</button>
+          <button type="button" class="chan-pill" data-ch="일간">일간 안창민</button>
+        </div>
+      </section>
+
+      <section class="archive">
+        <div class="section-head"><h3>지난 호</h3></div>
+        <div class="archive-list" id="issue-list"></div>
+      </section>
+
+      <footer>
+        <div class="gold-rule" aria-hidden="true"></div>
+        <p class="editor" id="editor">편집장 안창민</p>
+        <p class="disclaimer">본 발행물은 일반 정보 제공 목적이며 개별 상품 권유가 아닙니다.</p>
+      </footer>
+    </main>
+
+    <div class="rail" aria-hidden="true">서재</div>
+  </div>
 
   <script>
     (function () {
@@ -53,12 +194,17 @@
       var care = window.care;
       var esc = care.esc;
       var ALL = [];
+      var latest = null;
       var channel = "";
       var publisher = "";
+      var MORE_AFTER = 10;
       // 공유 발행 에디션 — ?fc=코드로 열면 이 서재 전체가 그 FC의 제호로 보인다.
       // 고객은 로그인하지 않으므로 발행인 표기는 링크가 실어 나른다 (결정 2026-07-20).
       var fcCode = new URLSearchParams(window.location.search).get("fc");
       var edition = null;
+      var hero = document.getElementById("hero");
+      var box = document.getElementById("issue-list");
+      var channelTabs = document.getElementById("chan-row");
 
       // 에디션이면 발행인 표기를 그 FC로 바꾼다. 내용·편집장(안창민)은 그대로다.
       function pubName(issue) {
@@ -76,51 +222,64 @@
         return m ? m[1] + "년 " + Number(m[2]) + "월 " + Number(m[3]) + "일" : String(iso || "");
       }
 
-      // 표지 카드 한 장 — 표지가 없는 호는 care.coverHtml이 바우하우스 표지를 만든다
-      function coverCard(i, latest) {
-        return '<article class="shelf__item' + (latest ? " is-latest" : "") + '">'
-          + '<a class="shelf__link" href="' + issueHref(i.id) + '">'
-          + '<span class="shelf__cover">' + care.coverHtml(i, pubName(i))
-          + (latest ? '<span class="shelf__badge">최신호</span>' : "") + "</span>"
-          + '<span class="shelf__no">' + esc(i["호수"]) + "호</span>"
-          + '<span class="shelf__name">' + esc(i["제목"]) + "</span>"
-          + '<span class="shelf__date">' + esc(i["주차라벨"] || dateText(i["발행일"])) + "</span></a>"
-          + "</article>";
+      function heroNote(text) {
+        hero.innerHTML = '<p class="hero-note">' + esc(text) + "</p>";
       }
 
-      // 서가 — 채널별로 한 칸씩. 최신호는 앞줄에 크게 세운다.
+      // 최신호 판 — 채널과 무관하게 가장 최근 발행된 호 하나. 꼭지 중 표제와 같은 것은 뺀다.
+      function renderHero() {
+        if (!latest) { heroNote("아직 발행물이 없습니다. 첫 호가 준비되는 대로 서재에 꽂힙니다."); return; }
+        var topics = (latest["꼭지"] || [])
+          .map(function (t) { return t && t["제목"]; })
+          .filter(function (t) { return t && t !== latest["제목"]; })
+          .slice(0, 4);
+        hero.innerHTML = '<span class="hero-badge">최신호</span>'
+          + '<p class="hero-meta">' + esc(latest["채널"]) + " " + esc(pubName(latest))
+          + " · 통권 " + esc(latest["호수"]) + "호</p>"
+          + "<h2>" + esc(latest["제목"]) + "</h2>"
+          + (topics.length
+              ? '<ul class="topics">' + topics.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>"
+              : "")
+          + '<a class="read-btn" href="' + issueHref(latest.id) + '">읽기</a>';
+      }
+
+      function row(i) {
+        return '<a class="archive-row" href="' + issueHref(i.id) + '">'
+          + '<span class="no">통권 ' + esc(i["호수"]) + "호</span>"
+          + '<span class="mid"><span class="t">' + esc(i["제목"]) + "</span>"
+          + '<span class="d">' + esc(i["주차라벨"] || dateText(i["발행일"])) + "</span></span>"
+          + '<span class="chan-tag">' + esc(i["채널"]) + "</span></a>";
+      }
+
+      // 지난 호 — 고른 채널의 호를 최신순으로. 최신호 판에 올린 호는 다시 싣지 않는다.
       function render() {
-        var box = document.getElementById("issue-list");
         var list = care.sortByDate(care.published(ALL).filter(function (i) {
+          if (latest && i.id === latest.id) return false;
           if (channel && i["채널"] !== channel) return false;
           if (publisher && (i["발행인"] || "안창민") !== publisher) return false;
           return true;
         }));
         if (!list.length) {
-          box.innerHTML = '<div class="placeholder-panel">아직 발행물이 없습니다. 첫 호가 준비되는 대로 서재에 꽂힙니다.</div>';
+          box.innerHTML = '<p class="archive-empty">' + (latest
+            ? "이 채널의 지난 호는 아직 없습니다."
+            : "첫 호가 나오면 이곳에 차례로 꽂힙니다.") + "</p>";
           return;
         }
-        var order = ["월간", "주간", "일간"];
-        list.forEach(function (i) { if (order.indexOf(i["채널"]) < 0) order.push(i["채널"]); });
-        box.className = "shelf-wrap";
-        box.innerHTML = order.map(function (ch, n) {
-          var rows = list.filter(function (i) { return i["채널"] === ch; });
-          if (!rows.length) return "";
-          return '<section class="shelf shelf--' + (n % 3 + 1) + '">'
-            + '<div class="shelf__head"><h2 class="shelf__title">' + esc(ch) + " " + esc(pubName(rows[0])) + "</h2>"
-            + '<span class="shelf__count">' + rows.length + "권</span></div>"
-            + '<div class="shelf__grid">'
-            + rows.slice(0, ch === "일간" ? 10 : rows.length)
-                .map(function (i, idx) { return coverCard(i, idx === 0); }).join("")
-            + "</div>"
-            + (ch === "일간" && rows.length > 10
-                ? '<details class="shelf__more"><summary>지난 일간 ' + (rows.length - 10) + "권 더 보기</summary>"
-                  + '<div class="shelf__grid">'
-                  + rows.slice(10).map(function (i) { return coverCard(i, false); }).join("")
-                  + "</div></details>"
-                : "")
-            + "</section>";
-        }).join("");
+        box.innerHTML = list.slice(0, MORE_AFTER).map(row).join("")
+          + (list.length > MORE_AFTER
+              ? '<details class="archive-more"><summary>지난 호 ' + (list.length - MORE_AFTER) + "권 더 보기</summary>"
+                + list.slice(MORE_AFTER).map(row).join("") + "</details>"
+              : "");
+      }
+
+      function selectChannel(ch) {
+        channel = ch;
+        channelTabs.querySelectorAll("button").forEach(function (b) {
+          var on = b.dataset.ch === ch;
+          b.classList.toggle("active", on);
+          b.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        render();
       }
 
       // 명단에 없는 코드는 무시하고 원본 발행인으로 표시한다 (issue.html과 같은 규칙)
@@ -131,13 +290,20 @@
         });
       }
 
-      // 에디션 서재는 그 FC 한 사람의 제호로 보여준다 — 채널 탭·발행인 필터를 그에 맞춘다
+      // 에디션 서재는 그 FC 한 사람의 제호로 보여준다 — 채널 단추·부제·판권을 그에 맞춘다
       function applyEditionLabels() {
         if (!edition) return;
+        var name = edition["이름"];
         channelTabs.querySelectorAll("button[data-ch]").forEach(function (b) {
-          if (b.dataset.ch) b.textContent = b.dataset.ch + " " + edition["이름"];
+          b.textContent = b.dataset.ch + " " + name;
         });
+        document.getElementById("sub-line").textContent = "주간 · 월간 · 일간 " + name;
+        document.getElementById("editor").textContent = "편집장 안창민 · 발행 " + name + " FC";
       }
+
+      channelTabs.querySelectorAll("button").forEach(function (btn) {
+        btn.addEventListener("click", function () { selectChannel(btn.dataset.ch); });
+      });
 
       Promise.all([
         care.loadIssueList(),
@@ -146,25 +312,17 @@
         .then(function (res) {
           edition = res[1];
           ALL = res[0];
+          latest = care.sortByDate(care.published(ALL))[0] || null;
           applyEditionLabels();
           if (!edition) buildPublisherTabs(); // 개인 에디션 서재에는 발행인 필터를 두지 않는다
-          render();
+          renderHero();
+          // 처음 고른 채널은 최신호의 채널 — 시안 3번처럼 단추 하나가 늘 켜져 있다
+          selectChannel(latest && channelTabs.querySelector('[data-ch="' + latest["채널"] + '"]') ? latest["채널"] : "주간");
         })
         .catch(function () {
-          document.getElementById("issue-list").innerHTML =
-            '<div class="placeholder-panel">발행물을 불러오지 못했습니다.</div>';
+          heroNote("발행물을 불러오지 못했습니다. 잠시 뒤 다시 열어 주세요.");
+          box.innerHTML = "";
         });
-
-      var channelTabs = document.querySelector(".pill-tabs.shelf-tabs");
-      channelTabs.querySelectorAll("button").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-          channelTabs.querySelectorAll("button").forEach(function (b) {
-            b.classList.toggle("active", b === btn);
-          });
-          channel = btn.dataset.ch;
-          render();
-        });
-      });
 
       // 발행인이 2명 이상일 때만 발행인 필터를 노출한다
       function buildPublisherTabs() {
@@ -175,13 +333,13 @@
         });
         if (pubs.length < 2) return;
         var row = document.createElement("div");
-        row.className = "pill-tabs shelf-tabs";
+        row.className = "chan-row";
         row.setAttribute("aria-label", "발행인");
-        row.innerHTML = '<button type="button" class="active" data-pub="">전체 발행인</button>'
+        row.innerHTML = '<button type="button" class="chan-pill active" data-pub="">전체 발행인</button>'
           + pubs.map(function (p) {
-              return '<button type="button" data-pub="' + esc(p) + '">' + esc(p) + " FC</button>";
+              return '<button type="button" class="chan-pill" data-pub="' + esc(p) + '">' + esc(p) + " FC</button>";
             }).join("");
-        channelTabs.parentNode.insertBefore(row, channelTabs.nextSibling);
+        channelTabs.parentNode.appendChild(row);
         row.querySelectorAll("button").forEach(function (btn) {
           btn.addEventListener("click", function () {
             row.querySelectorAll("button").forEach(function (b) {
