@@ -81,6 +81,14 @@ await check("두 기기 동시 저장 — 기준시각이 낡으면 409와 최�
   assert.deepEqual((await 목록()).find((x) => x["고객코드"] === "C-2026-001").profile["기록"], ["폰"], "먼저 쓴 기록이 남는다");
   assert.equal((await call("fc", "PUT", "/clients", [{ "고객코드": "C-2026-001", profile: {} }])).status, 200, "기준시각 없는 옛 경로는 그대로 덮는다");
 });
+await check("내 표시 이름 — 본인 것만 바뀌고, 40자 넘으면 400, 빈 값이면 구글 이름", async () => {
+  const r = await call("fc", "POST", "/me/name", { "이름": "박경희" });
+  assert.equal(r.status, 200);
+  assert.equal((await r.json())["이름"], "박경희");
+  assert.equal((await call("fc", "POST", "/me/name", { "이름": "가".repeat(41) })).status, 400);
+  const back = await call("fc", "POST", "/me/name", { "이름": "" });
+  assert.equal((await back.json())["이름"], "팀원", "구글 이름으로 되돌림");
+});
 await check("열람 비밀번호 — 쉬어 가며 틀려도 다섯 번째부터 잠긴다", async () => {
   assert.equal((await call("boss", "PUT", "/admin/viewpw", { "비밀번호": "진짜비번12345" })).status, 200);
   const codes = [];

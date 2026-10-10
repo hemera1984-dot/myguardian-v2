@@ -656,6 +656,18 @@ async function route(req, res, url) {
   // 승인 대기 상태에서는 여기까지만 — 데이터 경로는 열지 않는다
   if (me.status !== "승인") return send(res, 403, { error: "승인 대기 중입니다." });
 
+  // 내 표시 이름 — 본인 것만(2026-10-10 하랑지점 「내 정보」 저장이 같은 세션으로 부른다. 구글 이름이 그대로 보이던 것).
+  // 정지·대기는 위에서 이미 막힌다. 빈 값이면 구글 이름으로 되돌린다. 남의 이름은 /admin/set-name(승인권자).
+  if (req.method === "POST" && path === "/me/name") {
+    const { 이름 } = await readJson(req);
+    const v = String(이름 || "").trim();
+    if (v.length > 40) return send(res, 400, { error: "이름이 너무 깁니다." });
+    setDisplayName(db, me.id, v);
+    console.log(`내 이름 고침: ${me.email} → ${v || "(구글 이름으로 되돌림)"}`);
+    const 지금 = getAccount(db, me.id);
+    return send(res, 200, { ok: true, "이름": (지금 && (지금.display_name || 지금.name)) || v });
+  }
+
   // ── 고객 레코드 ────────────────────────────────────────────────────────────
   // 감싸고 푸는 일은 서버가 한다(2026-08-31 잠금문구 폐지). 설계사는 아무것도 넣지 않는다.
   // FC는 자기 것만 본다. 남의 것은 총관리자가 열람 비밀번호를 넣을 때만 열린다.
