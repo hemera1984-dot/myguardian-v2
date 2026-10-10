@@ -22,3 +22,4 @@ mg-clients/
 mg-clients-*/
 mg-clients-*.zip
 *고객대장*
+.impeccable/hook.cache.json
