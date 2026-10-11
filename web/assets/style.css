@@ -29,13 +29,13 @@
 
 /* 다크모드 — 구조만 마련, 정식 지원은 후순위 */
 [data-theme="dark"] {
-  --bg: #10151f;
-  --surface: #1a2130;
-  --ink: #e7eaf0;
-  --ink-sub: #9aa3b2;
-  --ink-faint: #6b7280;
-  --accent-bg: rgba(158, 27, 50, 0.16);
-  --line: #2a3242;
+  --bg: #0d0e14;
+  --surface: #14161f;
+  --ink: #f4f1ea;
+  --ink-sub: #cbc6ba;
+  --ink-faint: #9a958a;
+  --accent-bg: rgba(158, 27, 50, 0.22);
+  --line: #2a2b33;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 

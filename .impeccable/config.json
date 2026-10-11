@@ -10,6 +10,14 @@
           "web/brief/{view,present}.html"
         ],
         "createdAt": "2026-10-10T23:39:43.213Z"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "web/care/index.html"
+        ],
+        "createdAt": "2026-10-11T06:39:59.416Z"
       }
     ]
   }

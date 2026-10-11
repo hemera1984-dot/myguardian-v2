@@ -30,8 +30,10 @@
   --platform-bg: #0d0e14;
   --platform-surface: #14161f;
   --platform-ink: #f4f1ea;
+  --platform-g800: #e7e3da;
   --platform-muted: #cbc6ba;
   --platform-faint: #9a958a;
+  --platform-g500: #8c877d;
   --platform-blue: #f4849a;
   --platform-blue-soft: rgba(158, 27, 50, 0.22);
   --platform-line: #2a2b33;
@@ -1728,6 +1730,12 @@ body.platform {
 
   .mobile-brand {
     color: #ffffff;
+  }
+
+  /* 휴대폰에서는 숨지만(display:none), 남색 바탕 위 회색으로 남지 않게 색도 맞춘다 */
+  .topbar-context,
+  .topbar-note {
+    color: rgba(244, 241, 234, 0.72);
   }
 
   .mobile-menu {
