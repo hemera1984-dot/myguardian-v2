@@ -2742,7 +2742,7 @@ body.platform .vault-box input {
 body.platform .vault-box input:focus { outline: none; border-color: var(--platform-blue); }
 body.platform .vault-err {
   margin: 0 0 12px; padding: 7px 10px;
-  border-left: 3px solid var(--platform-blue); background: var(--platform-blue-soft);
+  background: var(--platform-blue-soft);
   font-size: 12px; font-weight: 700; color: var(--platform-blue);
 }
 body.platform .vault-err[hidden] { display: none; }
