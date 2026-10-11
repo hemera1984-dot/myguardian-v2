@@ -3,29 +3,150 @@
  "title": "보험사 청구 안내 감시 명단 (data/claims/insurers.json)",
  "description": "cron 변경 감시(B층) 대상. 청구 서류 자체가 아니라 각 회사 청구 안내 페이지의 변경만 감시한다.",
  "type": "object",
- "required": ["안내", "조사일", "회사"],
+ "required": [
+  "안내",
+  "조사일",
+  "회사"
+ ],
  "properties": {
-  "안내": { "type": "string" },
-  "조사일": { "type": "string", "format": "date" },
+  "안내": {
+   "type": "string"
+  },
+  "조사일": {
+   "type": "string",
+   "format": "date"
+  },
   "회사": {
    "type": "array",
    "items": {
     "type": "object",
-    "required": ["코드", "구분", "이름", "홈페이지", "청구안내URL", "감시"],
+    "required": [
+     "코드",
+     "구분",
+     "이름",
+     "홈페이지",
+     "청구안내URL",
+     "감시"
+    ],
     "additionalProperties": false,
     "properties": {
-     "코드": { "type": "string", "pattern": "^[LP][0-9]{2}$", "description": "L=생보, P=손보 + 순번" },
-     "구분": { "type": "string", "enum": ["생보", "손보"] },
-     "이름": { "type": "string", "minLength": 1 },
-     "홈페이지": { "type": "string", "format": "uri" },
-     "청구안내URL": { "type": ["string", "null"], "description": "청구 안내 페이지. null이면 공개 URL 미확인" },
+     "코드": {
+      "type": "string",
+      "pattern": "^[LP][0-9]{2}$",
+      "description": "L=생보, P=손보 + 순번"
+     },
+     "구분": {
+      "type": "string",
+      "enum": [
+       "생보",
+       "손보"
+      ]
+     },
+     "이름": {
+      "type": "string",
+      "minLength": 1
+     },
+     "홈페이지": {
+      "type": "string",
+      "format": "uri"
+     },
+     "청구안내URL": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "description": "청구 안내 페이지. null이면 공개 URL 미확인"
+     },
      "감시": {
       "type": "string",
-      "enum": ["자동", "수동", "제외"],
+      "enum": [
+       "자동",
+       "수동",
+       "제외"
+      ],
       "description": "자동=공개 페이지 headless 렌더링 감지 / 수동=로그인·PDF·앱전용·URL미확인 / 제외=개인 청구 대상 아님"
      },
-     "검증필요": { "type": "boolean", "description": "cron 첫 실행 시 URL 응답·내용을 검증할 대상 (SPA·모바일 도메인 등)" },
-     "메모": { "type": "string" }
+     "검증필요": {
+      "type": "boolean",
+      "description": "cron 첫 실행 시 URL 응답·내용을 검증할 대상 (SPA·모바일 도메인 등)"
+     },
+     "메모": {
+      "type": "string"
+     },
+     "청구방법": {
+      "type": "array",
+      "description": "접수 창구(모바일앱·홈페이지·팩스·우편·방문·설계사·실손24 등)와 한 줄 안내",
+      "items": {
+       "type": "object",
+       "required": [
+        "방법"
+       ],
+       "additionalProperties": false,
+       "properties": {
+        "방법": {
+         "type": "string"
+        },
+        "안내": {
+         "type": "string"
+        }
+       }
+      }
+     },
+     "콜센터": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "청구팩스": {
+      "type": "array",
+      "description": "공식 페이지에 청구 접수용으로 공개된 번호만. 종류별로 다르면 구분에 적는다",
+      "items": {
+       "type": "object",
+       "required": [
+        "번호"
+       ],
+       "additionalProperties": false,
+       "properties": {
+        "구분": {
+         "type": "string"
+        },
+        "번호": {
+         "type": "string"
+        }
+       }
+      }
+     },
+     "사본기준": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "description": "원본·사본 인정 기준(금액 한도 등)"
+     },
+     "양식URL": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "description": "공식 보험금 청구서 양식 내려받기"
+     },
+     "출처": {
+      "type": "array",
+      "items": {
+       "type": "string",
+       "format": "uri"
+      },
+      "description": "위 값을 읽은 공식 페이지. 매달 점검 대상"
+     },
+     "확인일": {
+      "type": "string",
+      "format": "date"
+     },
+     "조사메모": {
+      "type": "string",
+      "description": "접수 창구 조사 근거·비운 이유(화면에 안 보임)"
+     }
     }
    }
   }

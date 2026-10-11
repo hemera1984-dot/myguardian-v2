@@ -7,81 +7,533 @@
   "안내": "병원·약국이 청구 서류를 보험사로 직접 전자 전송하는 서비스입니다. 전자 전송은 진료비 계산서·영수증, 진료비 세부산정내역서, 처방전 3종에 한정됩니다.",
   "주의": "진단서·입퇴원확인서·수술확인서 등 질병 상세 서류는 전자 전송이 안 되어 여전히 사진/종이로 별도 제출해야 합니다. 따라서 입원·수술·고액·비급여 청구는 실손24만으로 끝나지 않습니다. 또한 참여 병·의원(특히 의원급)이 아직 제한적이므로, 방문 전 해당 병원이 실손24 참여기관인지 확인하세요. 안 되는 병원은 보험사 앱 사진청구 등 기존 방식과 병행합니다."
  },
- "공통서류": ["보험금 청구서 (보험사 양식)", "수익자(청구인) 신분증", "수익자 통장 사본"],
+ "공통서류": [
+  "보험금청구서(계좌번호 기재)",
+  "개인(신용)정보처리동의서(보험금 청구를 위한 상세동의서)",
+  "청구인(수익자) 신분증 사본",
+  "수익자 통장 사본(회사마다 생략 조건 다름)",
+  "(가족관계 확인 필요 시: 배우자·자녀 보장, 미성년 수익자 등) 가족관계증명서·혼인관계증명서·기본증명서 등 가족관계 확인서류",
+  "(대리인 청구 시) 위임장, 보험금 청구권자의 인감증명서(또는 본인서명사실확인서)"
+ ],
  "유형": [
   {
    "id": "outpatient",
    "이름": "실손 통원 (외래·처방)",
-   "서류": ["진료비 계산서·영수증", "진료비 세부내역서 (비급여 포함 시)", "처방전 또는 약제비 영수증 (약값 청구 시)"],
+   "서류": [
+    "진료비 계산서·영수증",
+    "진료비 세부내역서 (비급여 포함 시)",
+    "처방전 또는 약제비 영수증 (약값 청구 시)"
+   ],
    "유의": "통원은 소액이라도 진료비 세부내역서를 함께 받으면 심사 지연을 줄일 수 있습니다. 위 3종(영수증·세부내역서·처방전)은 실손24 전자청구로 병원·약국이 직접 전송할 수 있으나, 참여 병의원(특히 의원급)이 제한적이므로 방문 전 참여 여부를 확인하세요.",
    "실손24": true
   },
   {
    "id": "hospitalization",
    "이름": "실손 입원",
-   "서류": ["진료비 계산서·영수증", "진료비 세부내역서", "입퇴원 확인서", "진단명이 기재된 서류 (진단서 또는 소견서 등)"],
+   "서류": [
+    "진료비 계산서·영수증",
+    "진료비 세부내역서",
+    "입퇴원 확인서",
+    "진단명이 기재된 서류 (진단서 또는 소견서 등)"
+   ],
    "유의": "입원 청구는 금액이 커 원본 서류를 요구하는 경우가 많습니다. 실손24로는 영수증·세부내역서만 전자 전송되고 입퇴원확인서·진단서는 전송되지 않으므로, 이 서류들은 사진/종이로 별도 제출해야 합니다. 입원은 실손24만으로 끝나지 않는 대표 사례입니다.",
    "실손24": true
   },
   {
-   "id": "diagnosis",
-   "이름": "진단비 (암·뇌·심장 등)",
-   "서류": ["진단서 (질병분류코드 기재)", "조직검사 결과지 (암)", "관련 검사 결과지 (영상·혈액 등)"],
-   "유의": "진단비는 약관상 진단 확정 방법(조직검사 등)이 정해져 있어 결과지가 핵심 서류입니다."
+   "id": "dx-cancer",
+   "이름": "암 진단비",
+   "서류": [
+    "진단서(진단명, 질병분류코드 기재)",
+    "조직검사결과지(병리조직검사결과지)",
+    "(백혈병 등 혈액암) 골수검사결과지 및 혈액검사결과지",
+    "(간암·폐암·췌장암 등 조직검사를 못 한 경우) CT·MRI 등 방사선 판독결과지",
+    "(간암, 조직검사를 못 한 경우) 방사선 판독결과지 및 혈액검사 결과지"
+   ],
+   "회사에따라": [
+    {
+     "서류": "초진차트",
+     "회사": [
+      "KB손해보험"
+     ]
+    },
+    {
+     "서류": "(간암) AFP검사결과지",
+     "회사": [
+      "한화생명"
+     ]
+    },
+    {
+     "서류": "(암 수술 시) 수술기록지",
+     "회사": [
+      "메리츠화재"
+     ]
+    },
+    {
+     "서류": "(병기에 따라 지급액이 다른 담보) 단계별/중증암진단비(사고증명서)(당사양식)",
+     "회사": [
+      "KB손해보험"
+     ]
+    },
+    {
+     "서류": "(암병기에 따른 보장상품) 사고증명서(회사양식)",
+     "회사": [
+      "흥국생명"
+     ]
+    },
+    {
+     "서류": "(유방암·Stage CI 진단, 22.4.1 이후 가입상품) 암 병기 명시된 서류(진단서/소견서) 또는 회사양식의 암 병기 확인서",
+     "회사": [
+      "삼성생명"
+     ]
+    }
+   ],
+   "유의": "제자리암·경계성종양도 같은 서류를 내며, 진단명이 '의증'이면 해당되지 않는다(한화생명).",
+   "출처": [
+    "https://www.hanwhalife.com/static/main/customerCenter/documents/CU_RD00000_T1T100.jsp",
+    "https://www.shinhanlife.co.kr/hp/cdhf0020t02.do",
+    "https://www.kyobo.com/dgt/web/dti/insurance/accInq/findAccIsamInq",
+    "https://www.samsunglife.com/dcms/upload/2025/03/07/%EB%B3%B4%ED%97%98%EA%B8%88%20%EC%B2%AD%EA%B5%AC%EC%84%9C%EB%A5%98%20%EC%95%88%EB%82%B4_20250307.pdf",
+    "https://www.idbins.com/pc/bizxpress/ct/dc/FWCUSV1301.shtm",
+    "https://www.kbinsure.co.kr/CG205020003.ec",
+    "https://www.hi.co.kr/FileActionServlet/preview/1/data/202410/9608b1a71abff22f95582bd8974314b0.pdf/%EB%B3%B4%ED%97%98%EA%B8%88%EC%B2%AD%EA%B5%AC%EC%84%9C(%EA%B8%B0%EB%B3%B8)_%EC%A7%80%EA%B8%89%EC%95%88%EB%82%B4%EB%AC%B8%EC%88%98%EC%A0%95ver.pdf",
+    "https://www.meritzfire.com/compensation/longterm-insurance/request-document.do",
+    "https://m.nhlife.co.kr/mo/cm/30/21/MOCM3021P00",
+    "https://abllife.co.kr/cms//adm/attach/attach03/attach032/attach0322/attach03223/%EC%82%AC%EA%B3%A0%EC%9C%A0%ED%98%95%EB%B3%84%EA%B5%AC%EB%B9%84%EC%84%9C%EB%A5%9820250908.pdf",
+    "https://www.heungkuklife.co.kr/cyber/accident/Accident_File_Info.do"
+   ]
+  },
+  {
+   "id": "dx-stroke",
+   "이름": "뇌혈관질환 진단비",
+   "서류": [
+    "진단서(진단명, 질병분류코드 기재)",
+    "CT·MRI 등 방사선 판독결과지",
+    "(뇌혈관질환 등) MRA 판독결과지·뇌혈관조영술 결과지"
+   ],
+   "회사에따라": [
+    {
+     "서류": "(뇌혈관질환) CT/MRI/MRA검사 판독결과지 + 뇌혈관조영술기록지 + 진료기록부",
+     "회사": [
+      "신한라이프"
+     ]
+    },
+    {
+     "서류": "초진차트 또는 응급실기록지",
+     "회사": [
+      "KB손해보험"
+     ]
+    },
+    {
+     "서류": "진단을 위해 시행한 정밀검사 판독결과지 전체(CT, MRI, MRA, 뇌혈관조영술 등)",
+     "회사": [
+      "KB손해보험"
+     ]
+    },
+    {
+     "서류": "영상CD(MRI, CT, 뇌혈관조영술)",
+     "회사": [
+      "메리츠화재"
+     ]
+    },
+    {
+     "서류": "(혈전용해치료 시) 의무기록지(혈전용해 치료일자와 내용 포함)",
+     "회사": [
+      "흥국생명"
+     ]
+    }
+   ],
+   "출처": [
+    "https://www.hanwhalife.com/static/main/customerCenter/documents/CU_RD00000_T1T100.jsp",
+    "https://www.shinhanlife.co.kr/hp/cdhf0020t02.do",
+    "https://www.kyobo.com/dgt/web/dti/insurance/accInq/findAccIsamInq",
+    "https://www.samsunglife.com/dcms/upload/2025/03/07/%EB%B3%B4%ED%97%98%EA%B8%88%20%EC%B2%AD%EA%B5%AC%EC%84%9C%EB%A5%98%20%EC%95%88%EB%82%B4_20250307.pdf",
+    "https://www.idbins.com/pc/bizxpress/ct/dc/FWCUSV1301.shtm",
+    "https://www.kbinsure.co.kr/CG205020003.ec",
+    "https://www.hi.co.kr/FileActionServlet/preview/1/data/202410/9608b1a71abff22f95582bd8974314b0.pdf/%EB%B3%B4%ED%97%98%EA%B8%88%EC%B2%AD%EA%B5%AC%EC%84%9C(%EA%B8%B0%EB%B3%B8)_%EC%A7%80%EA%B8%89%EC%95%88%EB%82%B4%EB%AC%B8%EC%88%98%EC%A0%95ver.pdf",
+    "https://www.meritzfire.com/compensation/longterm-insurance/request-document.do",
+    "https://m.nhlife.co.kr/mo/cm/30/21/MOCM3021P00",
+    "https://abllife.co.kr/cms//adm/attach/attach03/attach032/attach0322/attach03223/%EC%82%AC%EA%B3%A0%EC%9C%A0%ED%98%95%EB%B3%84%EA%B5%AC%EB%B9%84%EC%84%9C%EB%A5%9820250908.pdf",
+    "https://www.heungkuklife.co.kr/cyber/accident/Accident_File_Info.do"
+   ]
+  },
+  {
+   "id": "dx-heart",
+   "이름": "심장질환 진단비",
+   "서류": [
+    "진단서(진단명, 질병분류코드 기재)",
+    "심전도 검사결과지",
+    "심장효소(혈액)검사 결과지",
+    "관상동맥조영술(심혈관조영술) 결과지",
+    "(허혈심장질환 등) 심초음파 검사결과지",
+    "초진차트(초진기록부·응급실기록지)"
+   ],
+   "회사에따라": [
+    {
+     "서류": "운동부하검사결과지",
+     "회사": [
+      "KB손해보험"
+     ]
+    },
+    {
+     "서류": "(혈전용해치료 시) 의무기록지(혈전용해 치료일자와 내용 포함)",
+     "회사": [
+      "흥국생명"
+     ]
+    }
+   ],
+   "유의": "허혈심장질환은 급성심근경색 서류에 심초음파 검사결과지를 더한다(신한라이프).",
+   "출처": [
+    "https://www.hanwhalife.com/static/main/customerCenter/documents/CU_RD00000_T1T100.jsp",
+    "https://www.shinhanlife.co.kr/hp/cdhf0020t02.do",
+    "https://www.kyobo.com/dgt/web/dti/insurance/accInq/findAccIsamInq",
+    "https://www.samsunglife.com/dcms/upload/2025/03/07/%EB%B3%B4%ED%97%98%EA%B8%88%20%EC%B2%AD%EA%B5%AC%EC%84%9C%EB%A5%98%20%EC%95%88%EB%82%B4_20250307.pdf",
+    "https://www.idbins.com/pc/bizxpress/ct/dc/FWCUSV1301.shtm",
+    "https://www.kbinsure.co.kr/CG205020003.ec",
+    "https://www.hi.co.kr/FileActionServlet/preview/1/data/202410/9608b1a71abff22f95582bd8974314b0.pdf/%EB%B3%B4%ED%97%98%EA%B8%88%EC%B2%AD%EA%B5%AC%EC%84%9C(%EA%B8%B0%EB%B3%B8)_%EC%A7%80%EA%B8%89%EC%95%88%EB%82%B4%EB%AC%B8%EC%88%98%EC%A0%95ver.pdf",
+    "https://www.meritzfire.com/compensation/longterm-insurance/request-document.do",
+    "https://m.nhlife.co.kr/mo/cm/30/21/MOCM3021P00",
+    "https://abllife.co.kr/cms//adm/attach/attach03/attach032/attach0322/attach03223/%EC%82%AC%EA%B3%A0%EC%9C%A0%ED%98%95%EB%B3%84%EA%B5%AC%EB%B9%84%EC%84%9C%EB%A5%9820250908.pdf",
+    "https://www.heungkuklife.co.kr/cyber/accident/Accident_File_Info.do"
+   ]
+  },
+  {
+   "id": "dx-dementia",
+   "이름": "치매 진단비",
+   "서류": [
+    "진단서(신경과 또는 정신건강의학과 전문의 진단)",
+    "CDR(임상치매척도) 검사결과지",
+    "치매상태 90일 경과(호전불가) 확인 서류(진단서 기재 또는 경과기록지 등 진료기록)",
+    "뇌영상검사결과지(CT, MRI 등)",
+    "MMSE-K 검사결과지"
+   ],
+   "회사에따라": [
+    {
+     "서류": "90일 이후 CDR검사결과지 또는 호전불가상태 진단서",
+     "회사": [
+      "NH농협생명"
+     ]
+    },
+    {
+     "서류": "정밀검사결과지(CT, MRI, 뇌파검사, 뇌척수액검사) - 해당 검사를 시행한 경우",
+     "회사": [
+      "흥국생명"
+     ]
+    },
+    {
+     "서류": "(경도인지장애·최경증이상치매보장특약[돌봄로봇제공형]) 보험 보장 유형 선택 확인서(회사양식)",
+     "회사": [
+      "삼성생명"
+     ]
+    }
+   ],
+   "출처": [
+    "https://www.shinhanlife.co.kr/hp/cdhf0020t02.do",
+    "https://www.meritzfire.com/compensation/longterm-insurance/request-document.do",
+    "https://m.nhlife.co.kr/mo/cm/30/21/MOCM3021P00",
+    "https://abllife.co.kr/cms//adm/attach/attach03/attach032/attach0322/attach03223/%EC%82%AC%EA%B3%A0%EC%9C%A0%ED%98%95%EB%B3%84%EA%B5%AC%EB%B9%84%EC%84%9C%EB%A5%9820250908.pdf",
+    "https://www.heungkuklife.co.kr/cyber/accident/Accident_File_Info.do",
+    "https://www.samsunglife.com/dcms/upload/2025/03/07/%EB%B3%B4%ED%97%98%EA%B8%88%20%EC%B2%AD%EA%B5%AC%EC%84%9C%EB%A5%98%20%EC%95%88%EB%82%B4_20250307.pdf"
+   ]
+  },
+  {
+   "id": "dx-ltc",
+   "이름": "장기요양 진단비·급여",
+   "서류": [
+    "장기요양인정서(국민건강보험공단 발급, 등급확인서)",
+    "(재가·시설급여 담보) 장기요양급여비용 명세서",
+    "(재가·시설급여 담보) 장기요양급여 제공기록지"
+   ],
+   "회사에따라": [
+    {
+     "서류": "장기요양 신청일 및 판정 통보일 증빙(노인장기요양보험 홈페이지 또는 The건강보험 앱 화면 저장)",
+     "회사": [
+      "신한라이프"
+     ]
+    },
+    {
+     "서류": "의사소견서: 장기요양등급 신청시 제출한 의사소견서(병원 재발급)",
+     "회사": [
+      "신한라이프"
+     ]
+    },
+    {
+     "서류": "병명이 기재된 진단서, 진료기록부(검사기록지포함)",
+     "회사": [
+      "ABL생명"
+     ]
+    },
+    {
+     "서류": "재가서비스이용내역서, 복지용구급여확인서 등",
+     "회사": [
+      "흥국생명"
+     ]
+    }
+   ],
+   "출처": [
+    "https://www.shinhanlife.co.kr/hp/cdhf0020t02.do",
+    "https://www.heungkuklife.co.kr/cyber/accident/Accident_File_Info.do",
+    "https://abllife.co.kr/cms//adm/attach/attach03/attach032/attach0322/attach03223/%EC%82%AC%EA%B3%A0%EC%9C%A0%ED%98%95%EB%B3%84%EA%B5%AC%EB%B9%84%EC%84%9C%EB%A5%9820250908.pdf"
+   ]
   },
   {
    "id": "surgery",
    "이름": "수술비",
-   "서류": ["수술 확인서 또는 수술명·수술일이 기재된 진단서", "입퇴원 확인서 (입원 동반 시)"],
+   "서류": [
+    "수술 확인서 또는 수술명·수술일이 기재된 진단서",
+    "입퇴원 확인서 (입원 동반 시)"
+   ],
    "유의": "약관상 수술의 정의(절단·절제 등)에 해당하는지가 자주 다투어집니다. 수술명이 정확히 기재되어야 합니다."
   },
   {
    "id": "daily",
    "이름": "입원일당",
-   "서류": ["입퇴원 확인서", "진단명이 기재된 서류"],
+   "서류": [
+    "입퇴원 확인서",
+    "진단명이 기재된 서류"
+   ],
    "유의": "입원 일수와 진단명이 서류에서 일치해야 합니다."
   },
   {
    "id": "disability",
    "이름": "후유장해",
-   "서류": ["후유장해 진단서 (장해분류표 기준)", "관련 검사 결과지"],
+   "서류": [
+    "후유장해 진단서 (장해분류표 기준)",
+    "관련 검사 결과지"
+   ],
    "유의": "장해율 판정은 약관의 장해분류표를 기준으로 하며, 판정 시기(치료 종결 후)가 중요합니다."
   },
   {
-   "id": "death",
-   "이름": "사망",
-   "서류": ["사망진단서 (또는 시체검안서)", "피보험자 기본증명서·가족관계증명서", "수익자 확인 서류"],
-   "유의": "수익자가 지정되지 않은 경우 법정상속인 전원의 서류가 필요할 수 있습니다."
+   "id": "death-named",
+   "이름": "사망 — 수익자 지정",
+   "서류": [
+    "사망진단서(사체검안서) 원본",
+    "(사본 제출 시) 원본대조필 사본 + 기본증명서(사망사실 기재)",
+    "(종피보험자 사망 시) 주피보험자와의 가족관계 확인서류(가족관계증명서·혼인관계증명서 등)",
+    "(사망수익자가 미성년자인 경우) 미성년자 기준 기본증명서(상세)·가족관계증명서",
+    "(재해·상해 사망: 교통사고) 사고사실확인서(공공기관·손해보험사·공제조합 발급) 또는 자동차보험처리내역서",
+    "(재해·상해 사망: 산업재해) 산업재해처리내역서·산재요양신청서 또는 보험급여지급확인서",
+    "(재해·상해 사망: 군인 재해) 공무상병인증서",
+    "(재해·상해 사망: 의료사고 등 법원분쟁) 법원판결문",
+    "(재해·상해 사망: 기타 사고) 공공기관(경찰서, 소방서 등) 사고사실확인서",
+    "(재해 확인서류 발급불가 시) 병원 초진차트 등 사고 증명서류 + 보험금청구서에 사고내용 기재",
+    "(자살의 경우) 경찰서 발행 변사사실확인원"
+   ],
+   "회사에따라": [
+    {
+     "서류": "(사체검안서인 경우) 사고내용이 확인되는 사고사실확인원 또는 변사사실확인원(경찰서 발행)",
+     "회사": [
+      "신한라이프"
+     ]
+    },
+    {
+     "서류": "(암사망 시) 진단서 및 진단사실 확인서류: 조직검사결과지 또는 CT/MRI 판독지, 골수검사지(백혈병)",
+     "회사": [
+      "교보생명"
+     ]
+    },
+    {
+     "서류": "(책임준비금 500만원 이하 등으로 사망진단서 생략 시) 고객센터장(지점장) 작성 사망사실확인서",
+     "회사": [
+      "한화생명"
+     ]
+    },
+    {
+     "서류": "(지정사망수익자가 외국인 또는 해외납세가 있는 내국인) FATCA및CRS본인확인서",
+     "회사": [
+      "신한라이프"
+     ]
+    }
+   ],
+   "유의": "사망진단서 사본을 내면 사망사실이 기재된 기본증명서를 함께 내야 한다.",
+   "출처": [
+    "https://www.hanwhalife.com/static/main/customerCenter/documents/CU_RD00000_T1T100.jsp",
+    "https://www.shinhanlife.co.kr/hp/cdhf0020t02.do",
+    "https://www.kyobo.com/dgt/web/dti/insurance/accInq/findAccIsamInq",
+    "https://www.samsunglife.com/dcms/upload/2025/03/07/%EB%B3%B4%ED%97%98%EA%B8%88%20%EC%B2%AD%EA%B5%AC%EC%84%9C%EB%A5%98%20%EC%95%88%EB%82%B4_20250307.pdf",
+    "https://www.idbins.com/pc/bizxpress/ct/dc/FWCUSV1301.shtm",
+    "https://www.idbins.com/pc/bizxpress/ct/dc/FWCUSV1300.shtm",
+    "https://www.kbinsure.co.kr/CG205020003.ec",
+    "https://www.kbinsure.co.kr/CG205020001.ec",
+    "https://www.hi.co.kr/FileActionServlet/preview/1/data/202410/9608b1a71abff22f95582bd8974314b0.pdf/%EB%B3%B4%ED%97%98%EA%B8%88%EC%B2%AD%EA%B5%AC%EC%84%9C(%EA%B8%B0%EB%B3%B8)_%EC%A7%80%EA%B8%89%EC%95%88%EB%82%B4%EB%AC%B8%EC%88%98%EC%A0%95ver.pdf",
+    "https://www.meritzfire.com/compensation/longterm-insurance/request-document.do",
+    "https://m.nhlife.co.kr/mo/cm/30/21/MOCM3021P00",
+    "https://abllife.co.kr/cms//adm/attach/attach03/attach032/attach0322/attach03223/%EC%82%AC%EA%B3%A0%EC%9C%A0%ED%98%95%EB%B3%84%EA%B5%AC%EB%B9%84%EC%84%9C%EB%A5%9820250908.pdf",
+    "https://www.heungkuklife.co.kr/cyber/accident/Accident_File_Info.do"
+   ]
+  },
+  {
+   "id": "death-heirs",
+   "이름": "사망 — 수익자 미지정(법정상속인)",
+   "서류": [
+    "사망진단서(사체검안서) 원본",
+    "(사본 제출 시) 원본대조필 사본 + 기본증명서(사망사실 기재)",
+    "상속관계 확인서류: 사망자(피보험자) 기준 가족관계증명서(상세)",
+    "상속관계 확인서류: 사망자 기준 혼인관계증명서(상세)",
+    "상속관계 확인서류: 제적등본",
+    "(상속인이 여럿이고 1인이 대표 수령 시) 상속인 각각의 위임장(인감도장 날인 또는 본인서명)",
+    "(상속인이 여럿이고 1인이 대표 수령 시) 상속인 각각의 인감증명서(또는 본인서명사실확인서)",
+    "(상속인이 여럿인 경우) 상속인 각각의 개인(신용)정보처리동의서(보험금 청구를 위한 상세동의서)",
+    "(미성년자가 상속인인 경우) 미성년 상속인 기준 기본증명서·가족관계증명서(상세)",
+    "(재해·상해 사망 시) 재해 입증서류 — 수익자 지정 사망과 같음(교통사고 사실확인서, 산재처리내역서, 공무상병인증서, 법원판결문, 공공기관 사고사실확인서 등)"
+   ],
+   "회사에따라": [
+    {
+     "서류": "(상속인 다수) 대표수익자 지정 및 계약변경 동의서(수익자 전원 인감날인) + 수익자 전원의 인감증명서",
+     "회사": [
+      "신한라이프"
+     ]
+    },
+    {
+     "서류": "(상속인 다수) 대표수익자 지정합의서(회사양식), 상속인 전원의 인감증명서(또는 본인서명사실확인서)",
+     "회사": [
+      "흥국생명"
+     ]
+    },
+    {
+     "서류": "피상속인의 (폐쇄) 기본증명서(일반)",
+     "회사": [
+      "교보생명"
+     ]
+    },
+    {
+     "서류": "내방한 상속인의 실명확인증표",
+     "회사": [
+      "교보생명"
+     ]
+    },
+    {
+     "서류": "(청구인이 3·4순위 상속인이거나 대습상속인 경우) 피상속인의 제적등본",
+     "회사": [
+      "교보생명"
+     ]
+    },
+    {
+     "서류": "(피성년후견인 등 상속인) 후견등기사항전부증명서 등, 법정대리인의 실명확인증표",
+     "회사": [
+      "교보생명"
+     ]
+    },
+    {
+     "서류": "(해외거주자 상속인) 위임장(영사 확인 등)",
+     "회사": [
+      "교보생명"
+     ]
+    },
+    {
+     "서류": "위임장(교도소재소자, 군복무자, 해외거주자 用)",
+     "회사": [
+      "한화생명"
+     ]
+    },
+    {
+     "서류": "(상속포기·한정승인 시) 법원의 상속포기 또는 한정승인 결정문",
+     "회사": [
+      "교보생명"
+     ]
+    }
+   ],
+   "유의": "폐쇄 가족관계증명서는 2007.12.31 이전 사망이면 제적등본으로 대체한다(교보생명).",
+   "출처": [
+    "https://www.hanwhalife.com/static/main/customerCenter/documents/CU_RD00000_T1T100.jsp",
+    "https://www.shinhanlife.co.kr/hp/cdhf0020t02.do",
+    "https://www.kyobo.com/dgt/web/dti/insurance/accInq/findAccIsamInq",
+    "https://www.kyobo.com/dgt/web/customer/support/need-papers/list",
+    "https://www.samsunglife.com/dcms/upload/2025/03/07/%EB%B3%B4%ED%97%98%EA%B8%88%20%EC%B2%AD%EA%B5%AC%EC%84%9C%EB%A5%98%20%EC%95%88%EB%82%B4_20250307.pdf",
+    "https://www.idbins.com/pc/bizxpress/ct/dc/FWCUSV1301.shtm",
+    "https://www.kbinsure.co.kr/CG205020003.ec",
+    "https://www.hi.co.kr/FileActionServlet/preview/1/data/202410/9608b1a71abff22f95582bd8974314b0.pdf/%EB%B3%B4%ED%97%98%EA%B8%88%EC%B2%AD%EA%B5%AC%EC%84%9C(%EA%B8%B0%EB%B3%B8)_%EC%A7%80%EA%B8%89%EC%95%88%EB%82%B4%EB%AC%B8%EC%88%98%EC%A0%95ver.pdf",
+    "https://www.meritzfire.com/compensation/longterm-insurance/request-document.do",
+    "https://m.nhlife.co.kr/mo/cm/30/21/MOCM3021P00",
+    "https://abllife.co.kr/cms//adm/attach/attach03/attach032/attach0322/attach03223/%EC%82%AC%EA%B3%A0%EC%9C%A0%ED%98%95%EB%B3%84%EA%B5%AC%EB%B9%84%EC%84%9C%EB%A5%9820250908.pdf",
+    "https://www.heungkuklife.co.kr/cyber/accident/Accident_File_Info.do"
+   ]
   },
   {
    "id": "auto",
    "이름": "자동차보험 (대인·대물·자차)",
-   "서류": ["사고 접수 (보험사 사고팀)", "교통사고사실확인원 (경찰 신고 시)", "대인: 상대방 진단서·치료비 영수증·(합의 시) 합의서", "대물: 수리견적서·수리비 영수증", "자차: 내 차 수리견적서·영수증"],
+   "서류": [
+    "사고 접수 (보험사 사고팀)",
+    "교통사고사실확인원 (경찰 신고 시)",
+    "대인: 상대방 진단서·치료비 영수증·(합의 시) 합의서",
+    "대물: 수리견적서·수리비 영수증",
+    "자차: 내 차 수리견적서·영수증"
+   ],
    "유의": "자동차보험 청구는 통상 보험사 사고팀이 상대방과 직접 처리합니다. 담보(대인/대물/자차)별로 서류가 갈리며, 상대가 있는 사고는 경찰 신고(사고사실확인원)가 기준 서류가 됩니다."
   },
   {
    "id": "driver",
    "이름": "운전자보험 (형사·행정 비용)",
-   "서류": ["교통사고사실확인원", "교통사고처리지원금: 형사 합의서 또는 공탁서·상대방 진단서", "벌금: 벌금 납입고지서(영수증)·판결문 또는 약식명령서", "변호사선임비용: 변호사 선임계약서·세금계산서"],
+   "서류": [
+    "교통사고사실확인원",
+    "교통사고처리지원금: 형사 합의서 또는 공탁서·상대방 진단서",
+    "벌금: 벌금 납입고지서(영수증)·판결문 또는 약식명령서",
+    "변호사선임비용: 변호사 선임계약서·세금계산서"
+   ],
    "유의": "운전자보험은 형사·행정 비용(합의·벌금·변호사) 담보입니다. 담보별로 근거 서류가 완전히 다르므로, 어떤 담보를 청구하는지 먼저 확인하십시오. 12대 중과실·음주 등은 면책일 수 있습니다."
   },
   {
    "id": "dental",
    "이름": "치아 (치과)",
-   "서류": ["진료비 영수증·세부내역서", "진단서 또는 소견서 (치아 상태·처치 내용·치식 번호)", "방사선 사진 (보철·임플란트 시 파노라마 등)"],
+   "서류": [
+    "진료비 영수증·세부내역서",
+    "진단서 또는 소견서 (치아 상태·처치 내용·치식 번호)",
+    "방사선 사진 (보철·임플란트 시 파노라마 등)"
+   ],
    "유의": "보존치료(충전·신경)와 보철치료(크라운·임플란트)의 보장·한도가 다릅니다. 치아 부위(치식 번호)와 처치 내용이 서류에 명시되어야 합니다."
   },
   {
    "id": "liability",
    "이름": "배상책임 (일상생활배상책임 등)",
-   "서류": ["사고 경위서", "피해자 대인: 진단서·치료비 영수증 / 대물: 수리비 영수증·견적서", "(합의 시) 합의서·피해자 인적사항·피해자 통장 사본"],
+   "서류": [
+    "사고 경위서",
+    "피해자 대인: 진단서·치료비 영수증 / 대물: 수리비 영수증·견적서",
+    "(합의 시) 합의서·피해자 인적사항·피해자 통장 사본"
+   ],
    "유의": "피보험자의 배상책임이 성립해야 보상됩니다. 고의·업무 중 사고·가족 간 사고 등은 면책일 수 있습니다. 보험금이 피해자에게 지급되므로 피해자 정보가 필요합니다."
   },
   {
    "id": "pet",
    "이름": "펫 (반려동물)",
-   "서류": ["동물병원 진료비 영수증·진료 명세서", "진단서 또는 소견서", "피보험 반려동물 확인 정보 (등록번호·비문·마이크로칩 등)"],
+   "서류": [
+    "동물병원 진료비 영수증·진료 명세서",
+    "진단서 또는 소견서",
+    "피보험 반려동물 확인 정보 (등록번호·비문·마이크로칩 등)"
+   ],
    "유의": "가입 시 등록한 개체와 청구 대상이 같은지(개체 식별)가 확인됩니다. 예방접종·미용·번식 관련은 보상 대상이 아닙니다."
   }
- ]
+ ],
+ "공통유의": "관공서 발급 서류는 발급일로부터 3개월 이내만 받는다(한화생명·신한라이프·교보생명).",
+ "공통회사에따라": [
+  {
+   "서류": "보험증권(본인 청구 시)",
+   "회사": [
+    "교보생명"
+   ]
+  },
+  {
+   "서류": "(대리인 청구 시) 보험금 청구권자의 개인(신용)정보처리동의서",
+   "회사": [
+    "DB손해보험",
+    "KB손해보험",
+    "메리츠화재",
+    "현대해상",
+    "ABL생명",
+    "흥국생명"
+   ]
+  }
+ ],
+ "공통출처": [
+  "https://www.hanwhalife.com/static/main/customerCenter/documents/CU_RD00000_T1T100.jsp",
+  "https://www.shinhanlife.co.kr/hp/cdhf0020t02.do",
+  "https://www.kyobo.com/dgt/web/customer/support/need-papers/list",
+  "https://www.kyobo.com/dgt/web/dti/insurance/accInq/findAccIsamInq",
+  "https://www.idbins.com/pc/bizxpress/ct/dc/FWCUSV1301.shtm",
+  "https://www.kbinsure.co.kr/CG205020003.ec",
+  "https://www.meritzfire.com/compensation/longterm-insurance/request-document.do",
+  "https://www.hi.co.kr/FileActionServlet/preview/1/data/202410/9608b1a71abff22f95582bd8974314b0.pdf/%EB%B3%B4%ED%97%98%EA%B8%88%EC%B2%AD%EA%B5%AC%EC%84%9C(%EA%B8%B0%EB%B3%B8)_%EC%A7%80%EA%B8%89%EC%95%88%EB%82%B4%EB%AC%B8%EC%88%98%EC%A0%95ver.pdf",
+  "https://www.samsunglife.com/dcms/upload/2025/03/07/%EB%B3%B4%ED%97%98%EA%B8%88%20%EC%B2%AD%EA%B5%AC%EC%84%9C%EB%A5%98%20%EC%95%88%EB%82%B4_20250307.pdf",
+  "https://abllife.co.kr/cms//adm/attach/attach03/attach032/attach0322/attach03223/%EC%82%AC%EA%B3%A0%EC%9C%A0%ED%98%95%EB%B3%84%EA%B5%AC%EB%B9%84%EC%84%9C%EB%A5%9820250908.pdf",
+  "https://www.heungkuklife.co.kr/cyber/accident/Accident_File_Info.do"
+ ],
+ "조사일": "2026-10-11"
 }

@@ -1,357 +1,982 @@
 {
- "갱신일": "2026-07-24",
+ "갱신일": "2026-10-11",
  "요약": {
   "변경": 0,
-  "신규": 0,
-  "접속실패": 0,
-  "정상": 37,
-  "수동확인": 3
+  "신규": 64,
+  "접속실패": 6,
+  "정상": 35,
+  "수동확인": 2
  },
  "항목": [
   {
    "코드": "L01",
    "이름": "삼성생명",
    "url": "https://direct.samsunglife.com/customerSupport/insuranceClaimInformation/CustomerSupportInsuranceClaimInformationView",
-   "확인일": "2026-07-24",
+   "확인일": "2026-10-11",
    "해시": "9f720038db2a07b502b229e4d8251f859c41ae19ddb935ee39a78c370960abbf",
    "길이": 430,
    "상태": "정상"
   },
   {
+   "코드": "L01-1",
+   "이름": "삼성생명 (접수 창구 출처 1)",
+   "url": "https://www.samsunglife.com/individual/cs/guide/MDP-CURDO010100M",
+   "확인일": "2026-10-11",
+   "해시": "1206340998ca51d409574e521512ebe3d4b98f42a2cde6bc7ae8f93c642d538c",
+   "길이": 2564,
+   "상태": "신규"
+  },
+  {
+   "코드": "L01-2",
+   "이름": "삼성생명 (접수 창구 출처 2)",
+   "url": "https://www.samsunglife.com/individual/cs/guide/MDP-CURDO010110M/0",
+   "확인일": "2026-10-11",
+   "해시": "b197b3991e3d662377ab4cc541b9c9cfe4e4c9aac442ccfe8abff26b0752686b",
+   "길이": 2842,
+   "상태": "신규"
+  },
+  {
    "코드": "L02",
    "이름": "한화생명",
    "url": "https://www.hanwhalife.com/static/main/customerCenter/documents/CU_RD00000_T1T100.jsp",
-   "확인일": "2026-07-24",
+   "확인일": "2026-10-11",
    "해시": "1bed2828ae256d7607e39a9f1844701a2777b0aa495b18dd89d9249bef31fde3",
    "길이": 2775,
    "상태": "정상"
   },
   {
+   "코드": "L02-1",
+   "이름": "한화생명 (접수 창구 출처 1)",
+   "url": "https://www.hanwhalife.com/main/myPage/insurance/accident/MY_INAP000_P10000.do",
+   "확인일": "2026-10-11",
+   "해시": "e65672cedd5056e4f92d774e45a295dad2e8de994ef62cdd46e01aed78f66ef7",
+   "길이": 2119,
+   "상태": "신규"
+  },
+  {
    "코드": "L03",
    "이름": "교보생명",
    "url": "https://www.kyobo.com/dgt/web/customer/support/need-papers/list",
-   "확인일": "2026-07-24",
-   "해시": "b968cd7eebea5fe6d7bd3d12ba60cb46873d1d5116f2b1a8a9b6c418594ae752",
-   "길이": 1922,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "2d9dba2f4c7f00b77440ed2c9961db174bb8a260f5875ff8770be192f9a174e5",
+   "길이": 1932,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "L03-1",
+   "이름": "교보생명 (접수 창구 출처 1)",
+   "url": "https://www.kyobo.com/dgt/web/dti/insurance/accInq/findAccIsamInq",
+   "확인일": "2026-10-11",
+   "해시": "7996c6a02537a46b4b93bd1bc78ab6a324a666d5cb03a7adb82276b651d7f86c",
+   "길이": 2476,
+   "상태": "신규"
+  },
+  {
+   "코드": "L03-2",
+   "이름": "교보생명 (접수 창구 출처 2)",
+   "url": "https://www.kyobo.com/dgt/web/dti/insurance/accInq/intro",
+   "확인일": "2026-10-11",
+   "해시": "c736582723422364c65a2ec34f0807bd30b1a2920cb723020100cc40a53ae358",
+   "길이": 834,
+   "상태": "신규"
   },
   {
    "코드": "L04",
    "이름": "신한라이프",
    "url": "https://www.shinhanlife.co.kr/hp/cdhf0020t02.do",
-   "확인일": "2026-07-24",
-   "해시": "b028e30027893240bb093d9204dea04c015565ce82036600b4173ae6d630f174",
-   "길이": 6372,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "6758923f1f493570c28a59375e1d65bf387596b8fe65125d6bea3e49326fb142",
+   "길이": 6782,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "L04-1",
+   "이름": "신한라이프 (접수 창구 출처 1)",
+   "url": "https://www.shinhanlife.co.kr/hp/cdhf0020t01.do",
+   "확인일": "2026-10-11",
+   "해시": "06601d40500774e713ed7e5ff3f6e94f75d41052c0b20940bb9fc94ee34c8a52",
+   "길이": 823,
+   "상태": "신규"
   },
   {
    "코드": "L05",
    "이름": "NH농협생명",
+   "url": "https://www.nhlife.co.kr/ho/cc/HOCC0042M00.nhl",
+   "확인일": "2026-10-11",
+   "해시": "6b578de64555ad6c9737e18a1df93889a744d1604f72adde1ba2126ada25e37e",
+   "길이": 2626,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "L05-1",
+   "이름": "NH농협생명 (접수 창구 출처 1)",
    "url": "https://www.nhlife.co.kr/ho/cc/HOCC0017M00.nhl",
-   "확인일": "2026-07-24",
-   "해시": "45f30913b11d1a9eebe341505926b734b6e4832cf300f5cfb112df452191ff4b",
-   "길이": 1522,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "a408912d5a41742652b795e9a820cee9163146e1f96b8dd69b4dfed4ebd05b7e",
+   "길이": 1513,
+   "상태": "신규"
   },
   {
    "코드": "L06",
    "이름": "미래에셋생명",
    "url": "https://life.miraeasset.com/Cmmn/lifePage.do?cp=MNT-CC-012",
-   "확인일": "2026-07-24",
+   "확인일": "2026-10-11",
    "해시": "4e64be3c975e8998a9b65d968e0963864fe7ff566ec77e4848bdb88bf98faef2",
    "길이": 658,
    "상태": "정상"
   },
   {
+   "코드": "L06-1",
+   "이름": "미래에셋생명 (접수 창구 출처 1)",
+   "url": "https://life.miraeasset.com/home/index.do#MO-HO-030501-010000",
+   "확인일": "2026-10-11",
+   "해시": "043f1ff9f9214f9c76b74359d3a37c41ec2bd1163b1157132751215eae61539e",
+   "길이": 4059,
+   "상태": "신규"
+  },
+  {
+   "코드": "L06-2",
+   "이름": "미래에셋생명 (접수 창구 출처 2)",
+   "url": "https://life.miraeasset.com/mobile/userManual/manual.html",
+   "확인일": "2026-10-11",
+   "해시": "60de9a4fe5ddac87b3480fe1509429e8af492558995710739d3ab28968eda525",
+   "길이": 162,
+   "상태": "신규"
+  },
+  {
+   "코드": "L07",
+   "이름": "동양생명",
+   "url": "https://www.myangel.co.kr/indvins/acctClapdClmNtc",
+   "확인일": "2026-10-11",
+   "해시": "7a8f28d96c94d619597179e764a201524a5f43a956ab1fafa87add2d755338a3",
+   "길이": 1510,
+   "상태": "신규"
+  },
+  {
+   "코드": "L07-1",
+   "이름": "동양생명 (접수 창구 출처 1)",
+   "url": "https://www.myangel.co.kr/cscntr/csDocLst",
+   "확인일": "2026-10-11",
+   "해시": "ae751a0328705c3f84cc6ad4b80592460bd866d2bd38ab1b67a0728a6d9782b8",
+   "길이": 2095,
+   "상태": "신규"
+  },
+  {
    "코드": "L08",
    "이름": "흥국생명",
    "url": "https://www.heungkuklife.co.kr/cyber/accident/Accident_File_Info.do",
-   "확인일": "2026-07-24",
-   "해시": "f28452ac3037e5a6f4b90907b7ba43639134cd476913cdcb083e9532c6112fff",
-   "길이": 3227,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "f8c1bea74e0abfc0d9ef856ac6d7581bf4b4162799955e5d8035dd164da9af5f",
+   "길이": 730,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "L08-1",
+   "이름": "흥국생명 (접수 창구 출처 1)",
+   "url": "https://www.heungkuklife.co.kr/cyber/accident/Accident_Accept_Info.do",
+   "확인일": "2026-10-11",
+   "해시": "442785be2928bbc546271a53e3aa8ea8dbc5cf1a2d45c2889fb654a6ebaaf7ca",
+   "길이": 6949,
+   "상태": "신규"
   },
   {
    "코드": "L09",
    "이름": "KDB생명",
    "url": "https://www.kdblife.com/ajax.do?scrId=HCSCT002M14M",
-   "확인일": "2026-07-24",
+   "확인일": "2026-10-11",
    "해시": "119cecf65878b6150c5d2d62a039cf6cc19bd1935d18aafb12ea2c3955a006b3",
    "길이": 1949,
    "상태": "정상"
   },
   {
+   "코드": "L09-1",
+   "이름": "KDB생명 (접수 창구 출처 1)",
+   "url": "https://www.kdblife.com/scrId/IISAI005M01P.do",
+   "확인일": "2026-10-11",
+   "해시": "2a93ebf8b204a4a339858e326ff4eb4879f39f16e8c3f2a3dc67b489e14e86a7",
+   "길이": 822,
+   "상태": "신규"
+  },
+  {
+   "코드": "L09-2",
+   "이름": "KDB생명 (접수 창구 출처 2)",
+   "url": "https://www.kdblife.com/ajax.do?scrId=HCSCT002M10M",
+   "확인일": "2026-10-11",
+   "해시": "b8a0c5d39ead88aa4fbaab22ac471e2ec731a3e1f34f6e2be0174fd14ced9b29",
+   "길이": 4066,
+   "상태": "신규"
+  },
+  {
    "코드": "L10",
    "이름": "DB생명",
    "url": "https://www.idblife.com/support/guide/acbf_clm_doc",
-   "확인일": "2026-07-24",
-   "해시": "e313ad98787cfad20dbad666e9e500bc8192f30ee09a2e58d0dd8c769506a295",
+   "확인일": "2026-10-11",
+   "해시": "d2fe000bd349173f5d4125486f5a045751955e6c149051dc007bc5ca5763a9b9",
    "길이": 2182,
-   "상태": "정상"
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "L10-1",
+   "이름": "DB생명 (접수 창구 출처 1)",
+   "url": "https://www.idblife.com/support/guide/acbf_clm",
+   "확인일": "2026-10-11",
+   "해시": "ee43dbb2be6616c3625f1c120f91552ad1fa4ba6f13cbafaca4f52a34f2ce516",
+   "길이": 2299,
+   "상태": "신규"
+  },
+  {
+   "코드": "L10-2",
+   "이름": "DB생명 (접수 창구 출처 2)",
+   "url": "https://www.idblife.com/support/guide/acbf_clm_info",
+   "확인일": "2026-10-11",
+   "해시": "336c57e7d2e3bd059b46e7f5ae5ccdcd7afb5e8735ab4c19512ff92b24cf29de",
+   "길이": 3197,
+   "상태": "신규"
   },
   {
    "코드": "L11",
    "이름": "처브라이프생명",
    "url": "https://www.chubblife.co.kr/front/ctmcenter/insurance/listDocu.do",
-   "확인일": "2026-07-24",
+   "확인일": "2026-10-11",
    "해시": "551b05539e2ce689b5ade651a32a90064f5b9d4b66cd1b8fd0ff84343fb24101",
    "길이": 900,
    "상태": "정상"
   },
   {
+   "코드": "L11-1",
+   "이름": "처브라이프생명 (접수 창구 출처 1)",
+   "url": "https://www.chubblife.co.kr/front/ctmcenter/insurance/list.do",
+   "확인일": "2026-10-11",
+   "해시": "00a348bd5ea14eb57300eb9ff1c7fc4cace47a37995e349154159232190bfdea",
+   "길이": 1155,
+   "상태": "신규"
+  },
+  {
    "코드": "L12",
    "이름": "AIA생명",
    "url": "https://www.aia.co.kr/ko/customer-support/customer-guide/forms/claims.html",
-   "확인일": "2026-07-24",
-   "해시": "e55d77e5ba8281df28ce7b09b2470d50398dc288ba970a2dceb2533e69d6bb07",
-   "길이": 1160,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "ada9655fe5c43fa34969f51cc24d2f5f826e93d8d2f341de98caa74d1fd9134d",
+   "길이": 1164,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "L12-1",
+   "이름": "AIA생명 (접수 창구 출처 1)",
+   "url": "https://www.aia.co.kr/ko/customer-support/customer-guide/insurance-guide/personal-insurance.html",
+   "확인일": "2026-10-11",
+   "해시": "173c4bd2ac5ab53a06d7f60392b8cab269f3d1fad88e1d9ab7bb0477e3db2025",
+   "길이": 3621,
+   "상태": "신규"
+  },
+  {
+   "코드": "L12-2",
+   "이름": "AIA생명 (접수 창구 출처 2)",
+   "url": "https://www.aia.co.kr/ko/customer-support/customer-guide/insurance-guide/insurance-payment-procedure.html",
+   "확인일": "2026-10-11",
+   "해시": "edcdf3541da7224435d85fedfa1e2fd3b3f1b2905d30b7a8f98328e9b4988ddd",
+   "길이": 7082,
+   "상태": "신규"
   },
   {
    "코드": "L13",
    "이름": "메트라이프생명",
    "url": "https://cyber.metlife.co.kr/claim/requiredDocumentNotice",
-   "확인일": "2026-07-24",
-   "해시": "930e66687ded08c4f8d1b5c78b012779ba40d6addae3c4f63000499a62981202",
-   "길이": 3623,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "9388c3cea97528eff6a05cf4dc6f6e2ad70bb7aea2f464f7470f318b16c092ed",
+   "길이": 3618,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "L13-1",
+   "이름": "메트라이프생명 (접수 창구 출처 1)",
+   "url": "https://cyber.metlife.co.kr/claim/billNotice",
+   "확인일": "2026-10-11",
+   "해시": "4f7905ad57fa60e188f0043b03988a86ed31ce1c32ad37a2548e744a03809227",
+   "길이": 930,
+   "상태": "신규"
   },
   {
    "코드": "L14",
    "이름": "라이나생명",
    "url": "https://www.lina.co.kr/customer/required",
-   "확인일": "2026-07-24",
-   "해시": "cc040aa26e1e0cc9772501aa34d044f7c081798ed49ae425146eba66b4547d5e",
-   "길이": 4780,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "331c0a62addb124fb2ea6d0cc4f61c073b56dd05f008a4342d93a5d2fc38ae78",
+   "길이": 4801,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "L14-1",
+   "이름": "라이나생명 (접수 창구 출처 1)",
+   "url": "https://www.lina.co.kr/cyber/accident-insurance/accident-insurance-info",
+   "확인일": "2026-10-11",
+   "해시": "d3308b67f3fe7776f4765a7b6a0613993bfc2e5110cda5c9ee91cf39bb1e3b9e",
+   "길이": 2813,
+   "상태": "신규"
   },
   {
    "코드": "L16",
    "이름": "ABL생명",
    "url": "https://www.abllife.co.kr/st/custDesk/insSrvcGudn/acdtInsmClamGudn/acdtInsmClamGudn3",
-   "확인일": "2026-07-24",
+   "확인일": "2026-10-11",
    "해시": "fa7d25102d59583335b84edbc23ecc6baeaa0ba3758eb7e101898dbbfe54a5c0",
    "길이": 2353,
    "상태": "정상"
   },
   {
+   "코드": "L16-1",
+   "이름": "ABL생명 (접수 창구 출처 1)",
+   "url": "https://www.abllife.co.kr/st/custDesk/insSrvcGudn/acdtInsmClamGudn/acdtInsmClamGudn1?page=index",
+   "확인일": "2026-10-11",
+   "해시": "698bf93e835036a0e328916c6ce11f2781c0e707f9510137a2e8621d5241b25c",
+   "길이": 2706,
+   "상태": "신규"
+  },
+  {
    "코드": "L17",
    "이름": "하나생명",
    "url": "https://www.hanalife.co.kr/csc/accidentGuideRenew/accidentReceipt_1.do",
-   "확인일": "2026-07-24",
-   "해시": "bc54fed486facd9c1bd979d960902c39e92fec690850388371f4d476daab34c5",
-   "길이": 1008,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "104e6b1f05e6546c48f1f6fbf31a5cb003b1cb5f155c32d56461f1763e97d747",
+   "길이": 1012,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "L17-1",
+   "이름": "하나생명 (접수 창구 출처 1)",
+   "url": "https://www.hanalife.co.kr/csc/accidentGuideRenew/accidentReceipt_2.do",
+   "확인일": "2026-10-11",
+   "해시": "4e63ecc92576c6ea68f84813487e5e41c8a2d54255b7a68b1eea76a6da435ff9",
+   "길이": 996,
+   "상태": "신규"
+  },
+  {
+   "코드": "L17-2",
+   "이름": "하나생명 (접수 창구 출처 2)",
+   "url": "https://www.hanalife.co.kr/csc/accidentGuideRenew/accidentReceipt_3.do",
+   "확인일": "2026-10-11",
+   "해시": "6578dd38327e3d732f9841af260a6a6cf1163482636558cc90be2854729067ba",
+   "길이": 897,
+   "상태": "신규"
+  },
+  {
+   "코드": "L17-3",
+   "이름": "하나생명 (접수 창구 출처 3)",
+   "url": "https://www.hanalife.co.kr/csc/accidentGuideRenew/accidentReceipt_4.do",
+   "확인일": "2026-10-11",
+   "해시": "d2fc5d804c089a2828fbe3bfa296c1082c48b90acbb848392d1a9a82d48c0ab9",
+   "길이": 773,
+   "상태": "신규"
+  },
+  {
+   "코드": "L17-4",
+   "이름": "하나생명 (접수 창구 출처 4)",
+   "url": "https://www.hanalife.co.kr/csc/accidentGuideRenew/accidentReceipt_5.do",
+   "확인일": "2026-10-11",
+   "해시": "d179b950bd3d2d3202782a6aa6164c9b6162d20453a4c922e757c7e9bce0e072",
+   "길이": 844,
+   "상태": "신규"
+  },
+  {
+   "코드": "L17-5",
+   "이름": "하나생명 (접수 창구 출처 5)",
+   "url": "https://www.hanalife.co.kr/csc/accidentGuideRenew/accidentPaymentDocument.do",
+   "확인일": "2026-10-11",
+   "해시": "61d0c5e4a7e0d3e821528a605bde634408722a82dde2c6aaee8f0a397a5288d8",
+   "길이": 1085,
+   "상태": "신규"
   },
   {
    "코드": "L18",
    "이름": "KB라이프생명",
    "url": "https://www.kblife.co.kr/customer-center/informRequiredDocument.do",
-   "확인일": "2026-07-24",
-   "해시": "75fd93738c0852044b4c05b3f3b5452f89bbd0e12741fc2dd986150d1d60943c",
-   "길이": 3977,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "2cd8450e832405935f81df921f8ae27d956f2d25c7f285b13f6f7d264607d467",
+   "길이": 4003,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "L18-1",
+   "이름": "KB라이프생명 (접수 창구 출처 1)",
+   "url": "https://www.kblife.co.kr/customer-center/benefitClaimMethod.do",
+   "확인일": "2026-10-11",
+   "해시": "0060ff847ba953ea356f0d6d57a8fb73dc8eec79ee64094cca48c675c197cb9a",
+   "길이": 6688,
+   "상태": "신규"
+  },
+  {
+   "코드": "L18-2",
+   "이름": "KB라이프생명 (접수 창구 출처 2)",
+   "url": "https://www.kblife.co.kr/customer-center/requiredDocumentFormat.do",
+   "확인일": "2026-10-11",
+   "해시": "87d18e888cfc27e043d9c45ed2b9cb16e3bc17a91dc6690844d351a16b5a35be",
+   "길이": 924,
+   "상태": "신규"
   },
   {
    "코드": "L19",
    "이름": "iM라이프생명",
    "url": "https://www.imlifeins.co.kr/BB/BB_D010.do",
-   "확인일": "2026-07-24",
-   "해시": "cb71d6dbeee83313fada066abc57205f1773cd8de2f4aecade919b58ee0a7dd4",
-   "길이": 1952,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "3e30717761e1f2331b82f2ba39ead4a908e6cfa98b7a9e250d533775e23bde2d",
+   "길이": 2010,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
   },
   {
    "코드": "L20",
    "이름": "교보라이프플래닛생명",
    "url": "https://www.lifeplanet.co.kr/contact/pet/HPCG01S0.dev",
-   "확인일": "2026-07-24",
+   "확인일": "2026-10-11",
    "해시": "6b27956e0d0be33610cc82a5598d69d4956cf01fd327da82722c3bbf9ca1896b",
    "길이": 4211,
    "상태": "정상"
   },
   {
+   "코드": "L20-1",
+   "이름": "교보라이프플래닛생명 (접수 창구 출처 1)",
+   "url": "https://www.lifeplanet.co.kr/contact/pet/HPCG11S0.dev",
+   "확인일": "2026-10-11",
+   "해시": "f229b215a669e050e730b70174c87e667728bab71a33256e1ed6292ce9ec545e",
+   "길이": 1363,
+   "상태": "신규"
+  },
+  {
+   "코드": "L20-2",
+   "이름": "교보라이프플래닛생명 (접수 창구 출처 2)",
+   "url": "https://www.lifeplanet.co.kr/lpds2/contact/ct/CT01001S.dev",
+   "확인일": "2026-10-11",
+   "해시": "3aa1a2ea5e72f19e05eb812afdb46706e8df2af33287de94941c99aff7c5abfa",
+   "길이": 605,
+   "상태": "신규"
+  },
+  {
    "코드": "L21",
    "이름": "BNP파리바카디프생명",
-   "url": "https://www.cardif.co.kr/customer-center/보험금-청구.do",
-   "확인일": "2026-07-24",
-   "해시": "44cc7cfe5c6e02707bd432b8c8cc0681941160f65b80d778af16a7689fbae4f4",
-   "길이": 3635,
-   "상태": "정상"
+   "url": "https://www.cardif.co.kr/customer-center/hcwgi001.do",
+   "확인일": "2026-10-11",
+   "해시": "4cf873b9eed568a8c7253dab703f35750d194ff99c1e8ed0ecbab7cefa221210",
+   "길이": 1941,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
   },
   {
    "코드": "L22",
    "이름": "IBK연금보험",
    "url": "https://www.ibki.co.kr/process/HP_CSCETR_POSN_DOC_INS_LIST",
-   "확인일": "2026-07-24",
+   "확인일": "2026-10-11",
    "해시": "3a1fcd345d0c11b64d702465b9cc49029e8f974aaad871aed844be49ec756c0c",
    "길이": 102,
    "상태": "정상"
   },
   {
+   "코드": "L22-1",
+   "이름": "IBK연금보험 (접수 창구 출처 1)",
+   "url": "https://www.ibki.co.kr/process/HP_CSCETR_USE_PAYATT_MTT",
+   "확인일": "2026-10-11",
+   "해시": "21687e16a15aa600a4bd7b214fa39af23fe55f0fbb7d62353ce3e44f272d670a",
+   "길이": 1547,
+   "상태": "신규"
+  },
+  {
+   "코드": "L22-2",
+   "이름": "IBK연금보험 (접수 창구 출처 2)",
+   "url": "https://www.ibki.co.kr/process/HP_CSCETR_POSN_DOC_INS_LIST?bltb_cod=SC000014&sctn=in&TAB=in",
+   "확인일": "2026-10-11",
+   "해시": "7e9791fdb0aa77de3209210f181f39bc18405b469ef9b835ae16ace8d84eb585",
+   "길이": 729,
+   "상태": "신규"
+  },
+  {
    "코드": "P01",
    "이름": "삼성화재",
    "url": "https://www.samsungfire.com/claim/P_P03_01_02_009.html",
-   "확인일": "2026-07-24",
-   "해시": "1c7a9757062eef9f5338087b7b66bf036af191c114423478fd3c62c8dca73885",
-   "길이": 1528,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "c62fbf68c88913ce4bacf32557f8e149ceb709ca4b25a8b0310914ddc4116712",
+   "길이": 1566,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "P01-1",
+   "이름": "삼성화재 (접수 창구 출처 1)",
+   "url": "https://www.samsungfire.com/vh/page/VH.HPCLA001.do",
+   "확인일": "2026-10-11",
+   "해시": "aa92cd4842df9eb4d1afc561938de33303328a6cef7451fead56f7f5ea6b3b44",
+   "길이": 856,
+   "상태": "신규"
+  },
+  {
+   "코드": "P01-2",
+   "이름": "삼성화재 (접수 창구 출처 2)",
+   "url": "https://www.samsungfire.com/v2/html/customer/13/G_030_010_010.html",
+   "확인일": "2026-10-11",
+   "해시": "75766d70d55b0af3edc89af38fc98c01fa1e7d004761de73d3e91619ba66555c",
+   "길이": 1143,
+   "상태": "신규"
+  },
+  {
+   "코드": "P01-3",
+   "이름": "삼성화재 (접수 창구 출처 3)",
+   "url": "https://www.samsungfire.com/v2/html/customer/13/G_030_050_001.html",
+   "확인일": "2026-10-11",
+   "해시": "0ed98790370cfec12b9ec2942f08e8073b5f146eac408da54d087d7dcfd7605e",
+   "길이": 1736,
+   "상태": "신규"
   },
   {
    "코드": "P02",
    "이름": "현대해상",
    "url": "https://www.hi.co.kr/serviceAction.do?menuId=100631",
-   "확인일": "2026-07-24",
-   "해시": "dc8c63665fea8136e82ab488e75b18e97e68f9a833e46ec5c6481ea6a4058f2f",
-   "길이": 8234,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "f7997353313460afd1ddf92031816aabc21c1cf41e1f702a36bf63e16e3e94ad",
+   "길이": 8288,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "P02-1",
+   "이름": "현대해상 (접수 창구 출처 1)",
+   "url": "https://www.hi.co.kr/serviceAction.do?menuId=203004",
+   "확인일": "2026-10-11",
+   "해시": "3fe69f06645290972f38cce219bd41b7e435f0ce7a1bb248b67aa95e0748993e",
+   "길이": 4065,
+   "상태": "신규"
+  },
+  {
+   "코드": "P02-2",
+   "이름": "현대해상 (접수 창구 출처 2)",
+   "url": "https://www.hi.co.kr/serviceAction.do?menuId=205003",
+   "확인일": "2026-10-11",
+   "해시": "6a01425622346ff9ec7a2d2aaa5fb36de0802c23cad6dbc046cc0f4f2b3c0126",
+   "길이": 3797,
+   "상태": "신규"
   },
   {
    "코드": "P03",
    "이름": "DB손해보험",
    "url": "https://www.idbins.com/pc/bizxpress/ct/dc/FWCUSV1300.shtm",
-   "확인일": "2026-07-24",
-   "해시": "88dd263e2fad29af37fc2b1f2693f4f3f650a8086b8118a5e0f14639f25e20c8",
-   "길이": 4320,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "4d4177ec5b3b38890d275bf93e91c8e90ff090749828f4af703593da1c667c18",
+   "길이": 4348,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "P03-1",
+   "이름": "DB손해보험 (접수 창구 출처 1)",
+   "url": "https://www.idbins.com/pc/bizxpress/ct/dc/FWCUSV1301.shtm",
+   "확인일": "2026-10-11",
+   "해시": "4f6091687f28bd1cfd2e7a788687e4b43df2c6366cc1f9cb4653c946966094de",
+   "길이": 4346,
+   "상태": "신규"
+  },
+  {
+   "코드": "P03-2",
+   "이름": "DB손해보험 (접수 창구 출처 2)",
+   "url": "https://www.idbins.com/pc/bizxpress/ask/ia/FWCLAV1118.shtm",
+   "확인일": "2026-10-11",
+   "해시": "60f52551e61631042e166c9fb62f9105439b5e858a71f6102c5417d4f202d1a5",
+   "길이": 978,
+   "상태": "신규"
+  },
+  {
+   "코드": "P03-3",
+   "이름": "DB손해보험 (접수 창구 출처 3)",
+   "url": "https://www.idbins.com/pc/bizxpress/cmy/pr/an/227256.shtm?tp=T&tx=&ct=97",
+   "확인일": "2026-10-11",
+   "해시": "59e6441eeb952ba9dd81cc6be16970be34b0e640bda95aa37a7fd1317b48b83d",
+   "길이": 938,
+   "상태": "신규"
+  },
+  {
+   "코드": "P03-4",
+   "이름": "DB손해보험 (접수 창구 출처 4)",
+   "url": "https://www.idbins.com/pc/bizxpress/cmy/pr/an/225920.shtm?tp=T&tx=&ct=98",
+   "확인일": "2026-10-11",
+   "해시": "0e04af6d692da6fa6b908f4ca0de43f1b6d165e3c330149636277130d730aad6",
+   "길이": 977,
+   "상태": "신규"
   },
   {
    "코드": "P04",
    "이름": "KB손해보험",
    "url": "https://www.kbinsure.co.kr/CG205010001.ec",
-   "확인일": "2026-07-24",
-   "해시": "bb899e9f1087afad62e110ca019f0e9e5c2dd1cef33625a13d7e9525dc05e8e9",
+   "확인일": "2026-10-11",
+   "해시": "5169ab76757c3164042b445d5bcf67440dec11bd65af25918e63b2fa19eb9113",
    "길이": 2629,
-   "상태": "정상"
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
   },
   {
    "코드": "P05",
    "이름": "메리츠화재",
    "url": "https://www.meritzfire.com/compensation/longterm-insurance/request-document.do",
-   "확인일": "2026-07-24",
-   "해시": "040270448fd44ff55de756f2075d899f71ad3245d373a408dae5af8d64333042",
-   "길이": 4631,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "cc0ae506976958a83bf7d51e524f9c0dcd842d9442222b4f770eebb107c68a7f",
+   "길이": 4650,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "P05-1",
+   "이름": "메리츠화재 (접수 창구 출처 1)",
+   "url": "https://www.meritzfire.com/compensation/longterm-insurance/request.do",
+   "확인일": "2026-10-11",
+   "해시": "a6d9d23fb6c77a34dab3f5f2d2e39b281f975659dfdcde9de020a4fb81f2e857",
+   "길이": 2441,
+   "상태": "신규"
+  },
+  {
+   "코드": "P05-2",
+   "이름": "메리츠화재 (접수 창구 출처 2)",
+   "url": "https://www.meritzfire.com/compensation/longterm-insurance/claim-notice.do",
+   "확인일": "2026-10-11",
+   "해시": "d441bcc1c0fabea14596403ce8921429675ebd83297c2a2c3eb8bbbc47fd3a5b",
+   "길이": 5190,
+   "상태": "신규"
+  },
+  {
+   "코드": "P05-3",
+   "이름": "메리츠화재 (접수 창구 출처 3)",
+   "url": "https://www.meritzfire.com/compensation/fax-service/receive-state.do",
+   "확인일": "2026-10-11",
+   "해시": "436fe100a64e61123559fa62c98c7f91adae0c9fb11a74b0b2e7dc0e7d6d6d6c",
+   "길이": 1177,
+   "상태": "신규"
   },
   {
    "코드": "P06",
    "이름": "한화손해보험",
    "url": "https://m.hwgeneralins.com/fplaza/compensation/receipt01.do",
-   "확인일": "2026-07-24",
+   "확인일": "2026-10-11",
+   "상태": "접속실패",
+   "오류": "Page.evaluate: Execution context was destroyed, most likely because of a navigation",
    "해시": "8fe13aec9eb5959b5c93e5dcd25ca19204a9b19583a40efac568035a2ee72085",
-   "길이": 1329,
-   "상태": "정상"
+   "길이": 1329
+  },
+  {
+   "코드": "P06-1",
+   "이름": "한화손해보험 (접수 창구 출처 1)",
+   "url": "https://www.hwgeneralins.com/fplaza/compensation/charge00-info.do",
+   "확인일": "2026-10-11",
+   "상태": "접속실패",
+   "오류": "Page.evaluate: Execution context was destroyed, most likely because of a navigation"
+  },
+  {
+   "코드": "P06-2",
+   "이름": "한화손해보험 (접수 창구 출처 2)",
+   "url": "https://www.hwgeneralins.com/fplaza/compensation/receipt01.do",
+   "확인일": "2026-10-11",
+   "상태": "접속실패",
+   "오류": "Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://www.hwgeneralins.com/fplaza/compensation/recei"
+  },
+  {
+   "코드": "P06-3",
+   "이름": "한화손해보험 (접수 창구 출처 3)",
+   "url": "https://www.hwgeneralins.com/lounge/required-doc/list.do",
+   "확인일": "2026-10-11",
+   "상태": "접속실패",
+   "오류": "Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://www.hwgeneralins.com/lounge/required-doc/list."
   },
   {
    "코드": "P07",
    "이름": "롯데손해보험",
    "url": "https://www.lotteins.co.kr/web/C/D/C/cdc_claim_0502.jsp",
-   "확인일": "2026-07-24",
+   "확인일": "2026-10-11",
    "해시": "0a6a43ff00ea63698bd7b4701a3b880c89b14e8aacfd29a50169cb6fc31fc407",
    "길이": 3093,
    "상태": "정상"
   },
   {
+   "코드": "P07-1",
+   "이름": "롯데손해보험 (접수 창구 출처 1)",
+   "url": "https://www.lotteins.co.kr/web/C/D/C/cdc_claim_0101.jsp",
+   "확인일": "2026-10-11",
+   "해시": "b64765f5279fbafef2d8ee5c481b907a23d33493ce3116144b6ab706524a1be7",
+   "길이": 1530,
+   "상태": "신규"
+  },
+  {
+   "코드": "P07-2",
+   "이름": "롯데손해보험 (접수 창구 출처 2)",
+   "url": "https://www.lotteins.co.kr/web/C/D/C/cdc_claim_0104.jsp",
+   "확인일": "2026-10-11",
+   "해시": "1aa889f9acfe3e596e2fd72d405cffbe12a0f9382473fda6ee950ced069b13c7",
+   "길이": 3825,
+   "상태": "신규"
+  },
+  {
+   "코드": "P07-3",
+   "이름": "롯데손해보험 (접수 창구 출처 3)",
+   "url": "https://www.lotteins.co.kr/web/C/D/I/popcdi010_mob_insupaybill.jsp",
+   "확인일": "2026-10-11",
+   "해시": "ae18f504868565e233e9c6a4bc7ddcbb114d6bc654fe866830480da8c5baeace",
+   "길이": 210,
+   "상태": "신규"
+  },
+  {
    "코드": "P08",
    "이름": "흥국화재",
    "url": "https://www.heungkukfire.co.kr/FRW/helpdesk/docInfoTemplate.do",
-   "확인일": "2026-07-24",
+   "확인일": "2026-10-11",
    "해시": "6cd2550850cb815c6ad883c39588ef34aff36077dbaf28cb287f06e1a7ccc9ae",
    "길이": 3522,
    "상태": "정상"
   },
   {
+   "코드": "P08-1",
+   "이름": "흥국화재 (접수 창구 출처 1)",
+   "url": "https://www.heungkukfire.co.kr/FRW/compensation/accidentInfo.do",
+   "확인일": "2026-10-11",
+   "해시": "9099e789aabb885339a993112512d6255df7a0c93fe1615d74f74b788479b85b",
+   "길이": 1080,
+   "상태": "신규"
+  },
+  {
+   "코드": "P08-2",
+   "이름": "흥국화재 (접수 창구 출처 2)",
+   "url": "https://www.heungkukfire.co.kr/FRW/compensation/accidentDocInfo.do",
+   "확인일": "2026-10-11",
+   "해시": "144cc10475b1f90848aa2c60f1af52d8fe8b2429831d68dbde394b2657d978ef",
+   "길이": 3497,
+   "상태": "신규"
+  },
+  {
    "코드": "P09",
    "이름": "AXA손해보험",
-   "url": "https://www.axa.co.kr/AsianPlatformInternet/html/axacms/shcl/pa/process/index.html",
-   "확인일": "2026-07-24",
-   "해시": "91ee12fdff61597bfefe424710866299344084be1219c86e767c4f88fd531b7c",
-   "길이": 406,
-   "상태": "정상"
+   "url": "https://www.axa.co.kr/cui/cmk/cl/CMKCLL07M01.html",
+   "확인일": "2026-10-11",
+   "해시": "b03579b88d04a6d6a8b5df5e3131a0521e356d631e0a1c032f4056e2f43a9dd7",
+   "길이": 806,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
   },
   {
    "코드": "P10",
    "이름": "하나손해보험",
    "url": "https://www.hanainsure.co.kr/w/claim/healthReward/accidentReceipt",
-   "확인일": "2026-07-24",
-   "해시": "9161f26151bcb9d3b37d99b80672b5a996c9d736ba869cc8ebf46f6c3ed52ac7",
-   "길이": 2680,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "2ba8900c140f985d8dc13c2c6e12d1c548904b1785b2b243b20aba3f9f4d975d",
+   "길이": 2673,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "P10-1",
+   "이름": "하나손해보험 (접수 창구 출처 1)",
+   "url": "https://www.hanainsure.co.kr/w/claim/healthReward/rewardProcedure",
+   "확인일": "2026-10-11",
+   "해시": "883f03961c93148e890ce6697538a5ba69d02d51627992293d8ee0c5be84a9cf",
+   "길이": 3814,
+   "상태": "신규"
+  },
+  {
+   "코드": "P10-2",
+   "이름": "하나손해보험 (접수 창구 출처 2)",
+   "url": "https://www.hanainsure.co.kr/w/claim/healthReward/rewardDocCarGuide",
+   "확인일": "2026-10-11",
+   "해시": "b86dcd1f48076e3f0cae5d452afd0ebef92a7964ffd8f1587ee1c555038deddb",
+   "길이": 3820,
+   "상태": "신규"
+  },
+  {
+   "코드": "P10-3",
+   "이름": "하나손해보험 (접수 창구 출처 3)",
+   "url": "https://www.hanainsure.co.kr/w/customer/mobileService/appGuide",
+   "확인일": "2026-10-11",
+   "해시": "7e5a6b18709f18c8d2f7e82521765a2d3a635edc488af30f0578b66e6a475ed1",
+   "길이": 2371,
+   "상태": "신규"
+  },
+  {
+   "코드": "P10-4",
+   "이름": "하나손해보험 (접수 창구 출처 4)",
+   "url": "https://www.hanainsure.co.kr/download?a=healthRewardGuide1_1",
+   "확인일": "2026-10-11",
+   "상태": "접속실패",
+   "오류": "본문 과소(0자) — 렌더 실패 의심"
   },
   {
    "코드": "P11",
    "이름": "NH농협손해보험",
    "url": "https://www.nhfire.co.kr/customer/bilgdcm/retrieveBilgDcmList.nhfire",
-   "확인일": "2026-07-24",
-   "해시": "4026a0572559e50df4a9b0722dea9f747b3c7232083ec699cde3d308e566a638",
-   "길이": 3610,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "d878201ca0cb474138ae35dda6152da85f43ab94e02be5dff6f0fb154011d842",
+   "길이": 3550,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "P11-1",
+   "이름": "NH농협손해보험 (접수 창구 출처 1)",
+   "url": "https://www.nhfire.co.kr/customer/guide/insuranceClaimGuide.nhfire",
+   "확인일": "2026-10-11",
+   "해시": "6023e0fad8f1e5fab9942f249ee453a5e82f2cc22964c3d4c3e4a39be3455d70",
+   "길이": 2122,
+   "상태": "신규"
   },
   {
    "코드": "P13",
    "이름": "신한EZ손해보험",
    "url": "https://www.shinhanez.co.kr/static/cus/CUS50000M01.html?docInfoYn=Y",
-   "확인일": "2026-07-24",
-   "해시": "beb8d23853017d6958424c89359ec592610a790c9f571cc8ea81a99bf3f84b95",
-   "길이": 1237,
-   "상태": "정상"
+   "확인일": "2026-10-11",
+   "해시": "f33a4943671e2570d660b2680c2d5ce59b39c4bc5fa035f5afb2d7d5d6a22cba",
+   "길이": 1202,
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "P13-1",
+   "이름": "신한EZ손해보험 (접수 창구 출처 1)",
+   "url": "https://www.shinhanez.co.kr/static/cus/CUS50000P02.html",
+   "확인일": "2026-10-11",
+   "해시": "65ff7e940579a53d8e2e9500e96133c032de5edc506c12a232f3648aae20b17e",
+   "길이": 12302,
+   "상태": "신규"
   },
   {
    "코드": "P14",
    "이름": "캐롯손해보험",
    "url": "https://www.carrotins.com/desktop/reward/claim/guide/",
-   "확인일": "2026-07-24",
+   "확인일": "2026-10-11",
    "해시": "12d843f31b821fc237c622f98d1b5e481dbcb5273055770ff1e0fa0aae862009",
    "길이": 418,
    "상태": "정상"
   },
   {
+   "코드": "P14-1",
+   "이름": "캐롯손해보험 (접수 창구 출처 1)",
+   "url": "https://www.carrotins.com/desktop/reward/claim/guide/?page=GuideListTemplate",
+   "확인일": "2026-10-11",
+   "해시": "d4553260ada14c7fe387373c35d205c103b19560568c9639bc19de6487bba83d",
+   "길이": 1435,
+   "상태": "신규"
+  },
+  {
+   "코드": "P14-2",
+   "이름": "캐롯손해보험 (접수 창구 출처 2)",
+   "url": "https://www.carrotins.com/desktop/reward/claim/guide/?page=GuideDocCheck",
+   "확인일": "2026-10-11",
+   "해시": "bc79f5b3b216d9af8265d6d4f9da4e366c9833b8324c05706602f3e9bb142cf2",
+   "길이": 476,
+   "상태": "신규"
+  },
+  {
    "코드": "P15",
    "이름": "AIG손해보험",
    "url": "https://m.aig.co.kr/wm/content.html?contentId=DPWMS406",
-   "확인일": "2026-07-24",
+   "확인일": "2026-10-11",
    "해시": "6c3bc8a672948c00c31e36cfd20c152af8d6037c2f4c778a1e7125389b13d28d",
    "길이": 4411,
    "상태": "정상"
   },
   {
+   "코드": "P15-1",
+   "이름": "AIG손해보험 (접수 창구 출처 1)",
+   "url": "https://m.aig.co.kr/wm/content.html?contentId=DPWMS403&menuId=MS403",
+   "확인일": "2026-10-11",
+   "해시": "efa3b9d60601cd3126ae9a3022304b78f81561bb3945e676a49dcfc44e2f2a0a",
+   "길이": 1447,
+   "상태": "신규"
+  },
+  {
+   "코드": "P15-2",
+   "이름": "AIG손해보험 (접수 창구 출처 2)",
+   "url": "https://m.aig.co.kr/wm/content.html?contentId=DPWMS404&menuId=MS404",
+   "확인일": "2026-10-11",
+   "해시": "d668ae181ce9654a0cb4d24917d34fc2b12807174cab171ac202dbc3efe5e1e3",
+   "길이": 6885,
+   "상태": "신규"
+  },
+  {
    "코드": "P16",
    "이름": "처브손해보험",
    "url": "https://www.chubb.com/kr-kr/claims/report-a-claim.html",
-   "확인일": "2026-07-24",
-   "해시": "d48a9e63e7e4f7879a43c61f3dbc947e01d9c7dbd03621d5095e6f29e44915e5",
+   "확인일": "2026-10-11",
+   "해시": "02d49f8a239df45f2969a7ff4548800721b7dc4f5d1e075fd6d795a520b6cb5c",
    "길이": 496,
-   "상태": "정상"
+   "상태": "정상",
+   "메모": "2026-10-11 접수 창구 조사에서 직접 읽고 기준값을 새로 잡음"
+  },
+  {
+   "코드": "P16-1",
+   "이름": "처브손해보험 (접수 창구 출처 1)",
+   "url": "https://www.chubb.com/kr-kr/claims/individual-insurance-payment.html",
+   "확인일": "2026-10-11",
+   "해시": "06c74e6e2578adcb6ff7e3083a5d7d1ee5dc66e953aba4e70cc5c400fad3079e",
+   "길이": 5010,
+   "상태": "신규"
+  },
+  {
+   "코드": "P16-2",
+   "이름": "처브손해보험 (접수 창구 출처 2)",
+   "url": "https://www.chubb.com/kr-kr/claims-service/claims-documents-forms.html",
+   "확인일": "2026-10-11",
+   "해시": "b36c024af4cdb0f38af59bf8f94f2bc1c9295511a956f83c64d37389cc4a0c26",
+   "길이": 8826,
+   "상태": "신규"
+  },
+  {
+   "코드": "P16-3",
+   "이름": "처브손해보험 (접수 창구 출처 3)",
+   "url": "https://www.chubb.com/kr-kr/claims-service/claims-handling-process.html",
+   "확인일": "2026-10-11",
+   "해시": "66f21252b2ec9f12167d69251b543bff9cd1651dfdf39a71b7998c350a968d8d",
+   "길이": 5322,
+   "상태": "신규"
   },
   {
    "코드": "P17",
    "이름": "서울보증보험",
-   "url": "https://www.sgic.co.kr/chp/iutf/hp/bbs/CHPINFO102VM0.mvc",
-   "확인일": "2026-07-24",
+   "url": "https://www.sgic.co.kr/?p=CCPCLM010101F01",
+   "확인일": "2026-10-11",
+   "상태": "접속실패",
+   "오류": "본문 과소(0자) — 렌더 실패 의심",
    "해시": "390f4a42f4e1477cf693af7cf73ceab98c21c7342e6c591b7356c9fe7e69b330",
-   "길이": 540,
-   "상태": "정상"
+   "길이": 540
+  },
+  {
+   "코드": "P17-1",
+   "이름": "서울보증보험 (접수 창구 출처 1)",
+   "url": "https://www.sgic.co.kr/biz/ccp/clm/0101/CCPCLM010101F01.html",
+   "확인일": "2026-10-11",
+   "해시": "9a661fdf0573f3d3d1b7a242f52d622ccdf862eddcdbd665f51027825dcae759",
+   "길이": 1669,
+   "상태": "신규"
   },
   {
    "코드": "P18",
    "이름": "예별손해보험",
    "url": "https://www.yebyeol.co.kr/RW031010DM.scp?menuId=MN0501020",
-   "확인일": "2026-07-24",
+   "확인일": "2026-10-11",
    "해시": "0e714608d8fcb31938f047ebede3d326316b14dcfbb74e8efc6529f0dc9e9fb2",
    "길이": 3693,
    "상태": "정상"
   },
   {
-   "코드": "L07",
-   "이름": "동양생명",
-   "url": "https://www.myangel.co.kr/customer/service/propose/WE_CR_PS_04_02_06.jsp",
-   "상태": "수동확인",
-   "확인일": ""
+   "코드": "P18-1",
+   "이름": "예별손해보험 (접수 창구 출처 1)",
+   "url": "https://www.yebyeol.co.kr/webdocs/biz/rw/rw031010dm.js",
+   "확인일": "2026-10-11",
+   "해시": "969eb199dd5c92e6e31873018ca8120a64459358f099cc99755eaa93e12e797c",
+   "길이": 3353,
+   "상태": "신규"
   },
   {
    "코드": "L15",
    "이름": "푸본현대생명",
-   "url": null,
+   "url": "https://www.fubonhyundai.com/#CUSI070100000000",
    "상태": "수동확인",
    "확인일": ""
   },

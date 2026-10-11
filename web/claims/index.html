@@ -53,9 +53,13 @@
         <div class="section-head"><div><h2>청구 사유별 서류 가이드</h2><p id="docs-basis"></p></div></div>
         <p class="notice" style="text-align:left;margin:0 0 16px">참고용 안내입니다. 회사·상품·약관 발행연도·청구 금액에 따라 필요 서류가 다를 수 있으며, 최종 기준은 반드시 해당 보험사입니다.</p>
         <div class="filter-bar" id="docs-types" aria-label="청구 사유"></div>
+        <div class="filter-bar"><label for="docs-co" style="font-size:13px;font-weight:700;margin-right:10px;align-self:center">보험사</label>
+          <select id="docs-co" style="min-height:40px;min-width:220px"><option value="">회사를 고르세요</option></select></div>
         <div class="surface-card" id="docs-body">
-          <div class="empty-inline" style="min-height:0;padding:16px"><div><strong>청구 사유를 선택하세요</strong><span>위에서 사유를 고르면 공통 서류와 사유별 서류, 유의사항이 표시됩니다. 회사별 청구서 양식·접수 채널 안내는 준비 중입니다.</span></div></div>
+          <div class="empty-inline" style="min-height:0;padding:16px"><div><strong>청구 사유를 선택하세요</strong><span>위에서 사유를 고르면 공통 서류와 사유별 서류, 유의사항이 표시됩니다. 보험사를 고르면 그 회사 접수 창구가 아래에 함께 나옵니다.</span></div></div>
         </div>
+
+        <div class="surface-card" id="co-body" style="margin-top:16px" hidden></div>
 
         <div class="section-head" style="margin-top:32px"><div><h2>보험사 청구 안내 변경 현황</h2><p id="monitor-basis">전 생보·손보 청구 안내 페이지를 매달 자동 점검합니다. 변경이 감지된 회사는 링크를 열어 서류 안내를 확인하세요.</p></div></div>
         <div class="surface-card" id="monitor-box">
@@ -221,10 +225,53 @@
         $("docs-body").innerHTML = "<h3 style='margin:0 0 4px'>" + esc(docSel["이름"]) + "</h3>"
           + "<h4 style='margin:14px 0 6px'>공통 서류</h4><ul style='margin:0;padding-left:20px'>"
           + DOCS["공통서류"].map(function (d) { return "<li>" + esc(d) + "</li>"; }).join("") + "</ul>"
+          + (DOCS["공통유의"] ? "<p style='margin:6px 0 0;font-size:12px;color:var(--platform-muted)'>" + esc(DOCS["공통유의"]) + "</p>" : "")
           + "<h4 style='margin:14px 0 6px'>유형별 서류</h4><ul style='margin:0;padding-left:20px'>"
           + docSel["서류"].map(function (d) { return "<li>" + esc(d) + "</li>"; }).join("") + "</ul>"
+          + (docSel["회사에따라"] ? "<h4 style='margin:14px 0 6px'>회사에 따라 더 받는 서류</h4><ul style='margin:0;padding-left:20px'>"
+            + docSel["회사에따라"].map(function (d) {
+              return "<li>" + esc(d["서류"]) + " <span style='font-size:12px;color:var(--platform-faint)'>" + esc(d["회사"].join("·")) + "</span></li>";
+            }).join("") + "</ul>" : "")
           + (docSel["유의"] ? "<h4 style='margin:14px 0 6px'>유의</h4><p style='margin:0;color:var(--platform-muted);font-size:13px'>" + esc(docSel["유의"]) + "</p>" : "")
           + sil;
+      });
+
+      // ── 회사별 접수 창구 — insurers.json(공식 페이지 확인분만, 못 찾은 값은 비어 있다)
+      var COS = [];
+      fetch("../../data/claims/insurers.json")
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          COS = data["회사"].filter(function (c) { return c["감시"] !== "제외"; });
+          $("docs-co").insertAdjacentHTML("beforeend", ["생보", "손보"].map(function (g) {
+            return '<optgroup label="' + (g === "생보" ? "생명보험" : "손해보험") + '">'
+              + COS.filter(function (c) { return c["구분"] === g; }).map(function (c) {
+                return '<option value="' + esc(c["코드"]) + '">' + esc(c["이름"]) + "</option>";
+              }).join("") + "</optgroup>";
+          }).join(""));
+        })
+        .catch(function () { $("docs-co").disabled = true; });
+
+      $("docs-co").addEventListener("change", function () {
+        var c = COS.find(function (x) { return x["코드"] === this.value; }, this);
+        var box = $("co-body");
+        if (!c) { box.hidden = true; return; }
+        var row = function (k, v) { return v ? "<h4 style='margin:14px 0 6px'>" + k + "</h4>" + v : ""; };
+        var link = function (u, label) { return u ? '<a class="detail-link" href="' + esc(window.mg.safeUrl(u)) + '" target="_blank" rel="noopener">' + label + "</a> " : ""; };
+        var ways = (c["청구방법"] || []).map(function (w) {
+          return "<li><strong>" + esc(w["방법"]) + "</strong>" + (w["안내"] ? " — " + esc(w["안내"]) : "") + "</li>";
+        }).join("");
+        var fax = (c["청구팩스"] || []).map(function (f) {
+          return "<li>" + (f["구분"] ? esc(f["구분"]) + " " : "") + "<strong style='font-variant-numeric:tabular-nums'>" + esc(f["번호"]) + "</strong></li>";
+        }).join("");
+        var tel = c["콜센터"] ? '<a href="tel:' + esc(c["콜센터"].replace(/[^0-9]/g, "")) + '" style="font-weight:700;font-variant-numeric:tabular-nums">' + esc(c["콜센터"]) + "</a>" : "";
+        box.innerHTML = "<h3 style='margin:0 0 4px'>" + esc(c["이름"]) + " 접수 창구</h3>"
+          + (c["확인일"] ? "<p style='margin:0;font-size:12px;color:var(--platform-faint)'>공식 페이지 확인 " + esc(c["확인일"]) + " · 최종 기준은 회사 안내</p>" : "<p style='margin:0;font-size:12px;color:var(--platform-faint)'>접수 창구는 아직 정리 전입니다. 회사 안내를 열어 확인하세요.</p>")
+          + row("청구 방법", ways ? "<ul style='margin:0;padding-left:20px'>" + ways + "</ul>" : "")
+          + row("콜센터", tel)
+          + row("청구 팩스", fax ? "<ul style='margin:0;padding-left:20px'>" + fax + "</ul>" : (c["확인일"] ? "<p style='margin:0;font-size:13px;color:var(--platform-muted)'>" + ((c["청구방법"] || []).some(function (w) { return w["방법"] === "팩스"; }) ? "고정 번호를 공개하지 않습니다. 위 청구 방법의 팩스 안내를 보세요." : "공식 페이지에 청구 팩스 안내가 없습니다.") + "</p>" : ""))
+          + row("원본·사본 기준", c["사본기준"] ? "<p style='margin:0;font-size:13px'>" + esc(c["사본기준"]) + "</p>" : "")
+          + "<p style='margin:16px 0 0'>" + link(c["청구안내URL"], "회사 서류 안내 열기") + link(c["양식URL"], "청구서 양식 받기") + "</p>";
+        box.hidden = false;
       });
 
       // ── 보험사 청구 안내 변경 현황 — monitor_insurers.py 산출물(monitor-state.json) 표시.
@@ -249,7 +296,7 @@
             rows.forEach(function (r) {
               h.push('<div class="meeting-row"><span class="badge-status ' + cls + '">' + esc(r["이름"]) + "</span>"
                 + (r["url"] ? '<a class="detail-link" href="' + esc(window.mg.safeUrl(r["url"])) + '" target="_blank" rel="noopener">청구 안내 열기</a>' : "")
-                + (r["오류"] ? '<span style="font-size:12px;color:var(--platform-faint)">' + esc(r["오류"]) + "</span>" : "")
+                + (r["오류"] ? '<span style="font-size:12px;color:var(--platform-faint)">' + esc(/Timeout/.test(r["오류"]) ? "응답 시간 초과" : /과소/.test(r["오류"]) ? "본문을 읽지 못함" : "페이지를 여는 중 끊김") + "</span>" : "")
                 + "</div>");
             });
             h.push("</div></div>");

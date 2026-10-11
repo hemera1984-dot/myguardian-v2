@@ -62,6 +62,26 @@ def fetch_text(page, url):
     return page.evaluate("() => document.body ? document.body.innerText : ''")
 
 
+def targets(companies):
+    """감시=자동 회사의 청구안내URL + 접수 창구를 읽은 출처 페이지(2026-10-11~).
+    출처는 코드-1, 코드-2… 로 따로 지문을 남긴다. PDF·파일 내려받기 주소는 열지 않는다."""
+    out = []
+    for c in companies:
+        if c.get("감시") != "자동" or not c.get("청구안내URL"):
+            continue
+        out.append({"코드": c["코드"], "이름": c["이름"], "청구안내URL": c["청구안내URL"]})
+        seen = {c["청구안내URL"]}
+        n = 0
+        for u in c.get("출처", []):
+            low = u.lower()
+            if u in seen or ".pdf" in low or "filedown" in low or "/attach/" in low or "/upload/" in low:
+                continue
+            seen.add(u)
+            n += 1
+            out.append({"코드": f"{c['코드']}-{n}", "이름": f"{c['이름']} (접수 창구 출처 {n})", "청구안내URL": u})
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--code", help="특정 회사 코드만 점검 (예: L04)")
@@ -74,10 +94,10 @@ def main():
         sys.exit(1)
 
     companies = data["회사"]
-    auto = [c for c in companies if c.get("감시") == "자동" and c.get("청구안내URL")]
+    auto = targets(companies)
     manual = [c for c in companies if c.get("감시") == "수동"]
     if args.code:
-        auto = [c for c in auto if c["코드"] == args.code]
+        auto = [c for c in auto if c["코드"].split("-")[0] == args.code]
 
     if args.list:
         print(f"자동 감시 {len(auto)}곳 / 수동 확인 {len(manual)}곳")
@@ -93,12 +113,15 @@ def main():
     items = []
 
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        browser = p.chromium.launch(channel="chrome")  # 내장 브라우저 대신 설치된 크롬(새 PC에 playwright 브라우저 미설치)
         ctx = browser.new_context(user_agent=(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
             "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
         ))
+        # 알림창(alert·confirm)을 띄우는 페이지에서 playwright 드라이버가 죽던 문제(2026-10-11) — 창 자체를 막는다
+        ctx.add_init_script("window.alert = window.confirm = window.prompt = function () { return true; };")
         page = ctx.new_page()
+        page.on("dialog", lambda d: None)
         for c in auto:
             code, name, url = c["코드"], c["이름"], c["청구안내URL"]
             row = {"코드": code, "이름": name, "url": url, "확인일": today}
@@ -137,7 +160,7 @@ def main():
     # --code 등으로 이번에 점검하지 않은 자동 회사는 이전 지문을 보존한다
     # (부분 실행이 전체 state를 덮어쓰지 않도록)
     processed = {r["코드"] for r in items}
-    all_auto = [c for c in companies if c.get("감시") == "자동" and c.get("청구안내URL")]
+    all_auto = targets(companies)
     for c in all_auto:
         if c["코드"] not in processed and prev.get(c["코드"]):
             items.append(prev[c["코드"]])
