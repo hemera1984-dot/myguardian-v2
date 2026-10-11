@@ -261,11 +261,11 @@
         if (!c) { box.hidden = true; return; }
         var row = function (k, v) { return v ? "<h4 style='margin:14px 0 6px'>" + k + "</h4>" + v : ""; };
         var link = function (u, label) { return u ? '<a class="detail-link" href="' + esc(window.mg.safeUrl(u)) + '" target="_blank" rel="noopener">' + label + "</a> " : ""; };
-        var ways = (c["청구방법"] || []).map(function (w) {
-          return "<li><strong>" + esc(w["방법"]) + "</strong>" + (w["안내"] ? " — " + esc(w["안내"]) : "") + "</li>";
-        }).join("");
+        // 2026-10-11 사용자 결정: 금액 한도·조건·사본 기준은 자주 바뀌고 페이지끼리 엇갈려 화면에 싣지 않는다(자료 파일엔 남김)
+        var ways = (c["청구방법"] || []).map(function (w) { return esc(w["방법"]); }).join(" · ");
         var fax = (c["청구팩스"] || []).map(function (f) {
-          return "<li>" + (f["구분"] ? esc(f["구분"]) + " " : "") + "<strong style='font-variant-numeric:tabular-nums'>" + esc(f["번호"]) + "</strong></li>";
+          var label = (f["구분"] || "").replace(/\s*\([^)]*만원[^)]*\)/g, "").trim();
+          return "<li>" + (label ? esc(label) + " " : "") + "<strong style='font-variant-numeric:tabular-nums'>" + esc(f["번호"]) + "</strong></li>";
         }).join("");
         // 콜센터 칸에 번호가 여럿·운영시간이 같이 있어서, 전화 걸기는 첫 번호만
         var first = c["콜센터"] ? (c["콜센터"].match(/\d{2,4}-\d{3,4}(-\d{4})?/) || [""])[0] : "";
@@ -273,10 +273,10 @@
           + esc(c["콜센터"].replace(first, "")) : "";
         box.innerHTML = "<h3 style='margin:0 0 4px'>" + esc(c["이름"]) + " 접수 창구</h3>"
           + (c["확인일"] ? "<p style='margin:0;font-size:12px;color:var(--platform-faint)'>공식 페이지 확인 " + esc(c["확인일"]) + " · 최종 기준은 회사 안내</p>" : "<p style='margin:0;font-size:12px;color:var(--platform-faint)'>접수 창구는 아직 정리 전입니다. 회사 안내를 열어 확인하세요.</p>")
-          + row("청구 방법", ways ? "<ul style='margin:0;padding-left:20px'>" + ways + "</ul>" : "")
+          + row("청구 방법", ways ? "<p style='margin:0;font-size:14px'>" + ways + "</p>" : "")
           + row("콜센터", tel)
-          + row("청구 팩스", fax ? "<ul style='margin:0;padding-left:20px'>" + fax + "</ul>" : (c["확인일"] ? "<p style='margin:0;font-size:13px;color:var(--platform-muted)'>" + ((c["청구방법"] || []).some(function (w) { return w["방법"] === "팩스"; }) ? "고정 번호를 공개하지 않습니다. 위 청구 방법의 팩스 안내를 보세요." : "공식 페이지에 청구 팩스 안내가 없습니다.") + "</p>" : ""))
-          + row("원본·사본 기준", c["사본기준"] ? "<p style='margin:0;font-size:13px'>" + esc(c["사본기준"]) + "</p>" : "")
+          + row("청구 팩스", fax ? "<ul style='margin:0;padding-left:20px'>" + fax + "</ul>" : (c["확인일"] ? "<p style='margin:0;font-size:13px;color:var(--platform-muted)'>" + ((c["청구방법"] || []).some(function (w) { return w["방법"] === "팩스"; }) ? "고정 번호를 공개하지 않습니다. 콜센터나 담당자에게 확인하세요." : "공식 페이지에 청구 팩스 안내가 없습니다.") + "</p>" : ""))
+          + "<p style='margin:14px 0 0;font-size:13px;color:var(--platform-muted)'>방법별 금액 한도와 원본·사본 기준은 회사 안내에서 확인하세요.</p>"
           + "<p style='margin:16px 0 0'>" + link(c["청구안내URL"], "회사 서류 안내 열기") + link(c["양식URL"], "청구서 양식 받기") + "</p>";
         box.hidden = false;
       });
