@@ -226,6 +226,10 @@
           + "<h4 style='margin:14px 0 6px'>공통 서류</h4><ul style='margin:0;padding-left:20px'>"
           + DOCS["공통서류"].map(function (d) { return "<li>" + esc(d) + "</li>"; }).join("") + "</ul>"
           + (DOCS["공통유의"] ? "<p style='margin:6px 0 0;font-size:12px;color:var(--platform-muted)'>" + esc(DOCS["공통유의"]) + "</p>" : "")
+          + (DOCS["공통회사에따라"] ? "<ul style='margin:6px 0 0;padding-left:20px;font-size:13px;color:var(--platform-muted)'>"
+            + DOCS["공통회사에따라"].map(function (d) {
+              return "<li>" + esc(d["서류"]) + " <span style='font-size:12px;color:var(--platform-faint)'>" + esc(d["회사"].join("·")) + "</span></li>";
+            }).join("") + "</ul>" : "")
           + "<h4 style='margin:14px 0 6px'>유형별 서류</h4><ul style='margin:0;padding-left:20px'>"
           + docSel["서류"].map(function (d) { return "<li>" + esc(d) + "</li>"; }).join("") + "</ul>"
           + (docSel["회사에따라"] ? "<h4 style='margin:14px 0 6px'>회사에 따라 더 받는 서류</h4><ul style='margin:0;padding-left:20px'>"
@@ -263,7 +267,10 @@
         var fax = (c["청구팩스"] || []).map(function (f) {
           return "<li>" + (f["구분"] ? esc(f["구분"]) + " " : "") + "<strong style='font-variant-numeric:tabular-nums'>" + esc(f["번호"]) + "</strong></li>";
         }).join("");
-        var tel = c["콜센터"] ? '<a href="tel:' + esc(c["콜센터"].replace(/[^0-9]/g, "")) + '" style="font-weight:700;font-variant-numeric:tabular-nums">' + esc(c["콜센터"]) + "</a>" : "";
+        // 콜센터 칸에 번호가 여럿·운영시간이 같이 있어서, 전화 걸기는 첫 번호만
+        var first = c["콜센터"] ? (c["콜센터"].match(/\d{2,4}-\d{3,4}(-\d{4})?/) || [""])[0] : "";
+        var tel = c["콜센터"] ? (first ? '<a href="tel:' + esc(first.replace(/[^0-9]/g, "")) + '" style="font-weight:700;font-variant-numeric:tabular-nums">' + esc(first) + "</a>" : "")
+          + esc(c["콜센터"].replace(first, "")) : "";
         box.innerHTML = "<h3 style='margin:0 0 4px'>" + esc(c["이름"]) + " 접수 창구</h3>"
           + (c["확인일"] ? "<p style='margin:0;font-size:12px;color:var(--platform-faint)'>공식 페이지 확인 " + esc(c["확인일"]) + " · 최종 기준은 회사 안내</p>" : "<p style='margin:0;font-size:12px;color:var(--platform-faint)'>접수 창구는 아직 정리 전입니다. 회사 안내를 열어 확인하세요.</p>")
           + row("청구 방법", ways ? "<ul style='margin:0;padding-left:20px'>" + ways + "</ul>" : "")
