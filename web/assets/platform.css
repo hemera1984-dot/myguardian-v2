@@ -2787,3 +2787,25 @@ body.platform .vault-row .btn { flex: 1; min-height: 40px; }
   .mobile-tabs .nav-icon { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
   body.has-tabs .platform-footer { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
 }
+
+/* 화면별 「?」 도움말 (2026-10-11) — 제목 옆 동그란 단추, 제목 아래 접힌 항목(첫 항목은 펼침) */
+.mg-help-btn { display: inline-grid; place-items: center; width: 26px; height: 26px; margin-left: 10px; vertical-align: 0.15em;
+  border: 1px solid var(--platform-line-strong); border-radius: 50%; background: transparent; color: var(--platform-muted);
+  font: 700 14px/1 inherit; cursor: pointer; position: relative; }
+.mg-help-btn::before { content: ""; position: absolute; inset: -9px; } /* 누르는 자리 44px */
+body.platform .page-heading .mg-help-btn { order: 1; align-self: center; margin-left: -4px; } /* 제호 행은 flex 순서로 놓인다 — 제목 바로 뒤 */
+#h-date { display: inline-block; } /* 홈 날짜 옆에 「?」가 같은 줄로 */
+.mg-help-btn:hover, .mg-help-btn[aria-expanded="true"] { border-color: var(--platform-ink); color: var(--platform-ink); }
+.mg-help { max-width: 720px; margin: 4px 0 24px; display: flex; flex-direction: column; gap: 6px; }
+.mg-help[hidden], .mg-news[hidden] { display: none; }
+.mg-help-item { background: var(--platform-surface, #fff); border: 1px solid var(--platform-line); border-radius: 10px; }
+.mg-help-item > summary { cursor: pointer; min-height: 44px; padding: 8px 14px; display: flex; align-items: center; gap: 8px; font-weight: 700; list-style: none; }
+.mg-help-item > summary::-webkit-details-marker { display: none; }
+.mg-help-item > summary::after { content: "›"; margin-left: auto; color: var(--platform-faint); transform: rotate(90deg); transition: transform .15s; }
+.mg-help-item[open] > summary::after { transform: rotate(-90deg); }
+.mg-help-item > summary small { font-weight: 500; color: var(--platform-muted); font-size: 12px; }
+.mg-help-body { padding: 0 14px 12px; font-size: 14px; line-height: 1.65; color: var(--platform-g800, var(--platform-ink)); }
+.mg-help-body ul { margin: 0; padding-left: 18px; } .mg-help-body li { margin: 3px 0; } .mg-help-body p { margin: 0; }
+.mg-news { margin: 0 0 24px; padding: 18px 20px; border: 1px solid var(--platform-line-strong); border-radius: 12px; background: var(--platform-surface, #fff); max-width: 720px; }
+.mg-news-h { margin: 0 0 8px; font-size: 13px; font-weight: 750; color: var(--platform-ink); }
+.mg-news ul { margin: 0 0 14px; padding-left: 18px; font-size: 14px; line-height: 1.65; color: var(--platform-g800, var(--platform-ink)); }

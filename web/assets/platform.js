@@ -3,6 +3,9 @@
 (function () {
   "use strict";
 
+  // 도움말 파일(guides.js)은 이 파일 옆에 있다 — 화면 HTML 열 개를 고치지 않으려고 여기서 불러온다
+  var ASSET_BASE = (document.currentScript && document.currentScript.src || "").replace(/platform\.js[^/]*$/, "");
+
   window.mg = {
     // HTML 이스케이프 — innerHTML 조립 전 필수
     esc: function (s) {
@@ -432,4 +435,72 @@
       "관리자가 승인하면 바로 이용할 수 있습니다."
     ].join("\n");
   }
+
+  // ── 화면별 「?」 도움말 (2026-10-11, 하랑지점·모션보드와 같은 방식) ─────────
+  // 제목 옆 「?」를 누르면 guides.js 에서 그 화면 몫만 접힌 목록으로 연다. 도움말이 있으면 설명 한 줄은 숨긴다.
+  // 홈에는 업데이트 뒤 처음 한 번 「이번에 바뀐 것」을 띄운다 — 확인하면 다음 날짜까지 안 뜬다.
+  function guideKey(p) {
+    if (/install\.html$/.test(p)) return "install";
+    if (/\/care\/desk\.html$/.test(p)) return "desk";
+    if (/\/care\/shelf\.html$/.test(p)) return "shelf";
+    var m = p.match(/\/(customers|claims|cases|learn|brief|requests|admin)\/(index\.html)?$/);
+    if (m) return m[1];
+    return /^\/(web\/)?(index\.html)?$/.test(p) ? "home" : "";
+  }
+  window.mg.guideKey = guideKey;
+
+  function mountGuide() {
+    var G = window.MG_GUIDE, key = guideKey(window.location.pathname);
+    var items = G && G.screens[key];
+    var h1 = document.querySelector(".page-heading h1, #h-date, .shelf-hero__title");
+    if (!items || !items.length || !h1 || document.querySelector(".mg-help-btn")) return;
+    var esc = window.mg.esc;
+    var head = h1.closest(".page-heading, .h-mast, header, section") || h1.parentNode;
+    var box = document.createElement("div");
+    box.className = "mg-help";
+    box.hidden = true;
+    box.innerHTML = items.map(function (it, i) {
+      return '<details class="mg-help-item"' + (i ? "" : " open") + "><summary>" + esc(it.t)
+        + (it.sub ? " <small>" + esc(it.sub) + "</small>" : "") + '</summary><div class="mg-help-body">' + it.body + "</div></details>";
+    }).join("");
+    head.after(box);
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "mg-help-btn";
+    btn.textContent = "?";
+    btn.setAttribute("aria-label", "이 화면 도움말");
+    btn.setAttribute("aria-expanded", "false");
+    btn.addEventListener("click", function () {
+      box.hidden = !box.hidden;
+      btn.setAttribute("aria-expanded", String(!box.hidden));
+    });
+    h1.after(btn);
+    var desc = head.classList.contains("page-heading") && head.querySelector("p:not(.eyebrow)");
+    if (desc) desc.hidden = true;
+
+    if (key === "home" && G.news) {
+      var seen = "";
+      try { seen = localStorage.getItem("mg_news_seen") || ""; } catch (e) {}
+      if (seen === G.news.date) return;
+      var card = document.createElement("section");
+      card.className = "mg-news";
+      card.setAttribute("aria-label", "이번에 바뀐 것");
+      card.innerHTML = '<p class="mg-news-h">이번에 바뀐 것 · ' + Number(G.news.date.slice(5, 7)) + "월 " + Number(G.news.date.slice(8)) + "일</p>"
+        + G.news.body + '<button type="button" class="h-btn">확인</button>';
+      card.querySelector("button").addEventListener("click", function () {
+        try { localStorage.setItem("mg_news_seen", G.news.date); } catch (e) {}
+        card.remove();
+      });
+      box.after(card);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    if (!guideKey(window.location.pathname) || !ASSET_BASE) return;
+    if (window.MG_GUIDE) return mountGuide();
+    var s = document.createElement("script");
+    s.src = ASSET_BASE + "guides.js";
+    s.onload = mountGuide;
+    document.head.appendChild(s);
+  });
 })();
