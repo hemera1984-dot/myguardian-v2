@@ -2809,3 +2809,40 @@ body.platform .page-heading .mg-help-btn { order: 1; align-self: center; margin-
 .mg-news { margin: 0 0 24px; padding: 18px 20px; border: 1px solid var(--platform-line-strong); border-radius: 12px; background: var(--platform-surface, #fff); max-width: 720px; }
 .mg-news-h { margin: 0 0 8px; font-size: 13px; font-weight: 750; color: var(--platform-ink); }
 .mg-news ul { margin: 0 0 14px; padding-left: 18px; font-size: 14px; line-height: 1.65; color: var(--platform-g800, var(--platform-ink)); }
+
+/* AI 입력 (2026-10-13, 하랑지점 방식) — 노트북은 오른쪽 아래 떠 있는 창, 폰은 아래 판. 제안 표만, 저장은 사람이 */
+.ai-pill { position: fixed; right: 24px; bottom: 24px; z-index: 46; min-height: 44px; padding: 0 18px; border: 0; border-radius: 22px;
+  background: var(--platform-navy); color: #f4f1ea; font: inherit; font-size: 14px; font-weight: 750; cursor: pointer; box-shadow: 0 2px 10px rgba(20, 22, 31, .22); }
+.ai-pill[hidden], .ai-dock[hidden] { display: none; }
+.ai-dock { position: fixed; right: 24px; bottom: 24px; z-index: 46; width: min(440px, calc(100vw - 32px)); max-height: min(640px, 76vh);
+  display: flex; flex-direction: column; background: var(--platform-surface, #fff); border: 1px solid var(--platform-line-strong); border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(20, 22, 31, .18); }
+.ai-head { display: flex; align-items: baseline; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--platform-line); }
+.ai-head strong { font-size: 15px; } .ai-head span { font-size: 12px; color: var(--platform-muted); }
+.ai-x { margin-left: auto; min-height: 36px; padding: 0 10px; border: 0; background: transparent; color: var(--platform-muted); font: inherit; font-size: 13px; cursor: pointer; }
+.ai-log { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 1.6; }
+.ai-say.me { align-self: flex-end; max-width: 85%; padding: 8px 12px; border-radius: 12px; background: var(--platform-navy); color: #f4f1ea; }
+.ai-say.bot { color: var(--platform-g800, var(--platform-ink)); }
+.ai-say.bot small { color: var(--platform-faint); }
+.ai-say.card { border: 1px solid var(--platform-line); border-radius: 10px; padding: 8px 10px; }
+.ai-say.card.old { opacity: .5; pointer-events: none; }
+.ai-rows { display: flex; flex-direction: column; }
+.ai-row { display: grid; grid-template-columns: 22px auto minmax(0, 1fr); gap: 4px 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--platform-line); }
+.ai-row:last-child { border-bottom: 0; }
+.ai-row input[type="checkbox"] { width: 18px; height: 18px; }
+.ai-kind { font-size: 12px; font-weight: 750; color: var(--platform-blue); white-space: nowrap; }
+.ai-cust { min-height: 36px; max-width: 100%; font: inherit; font-size: 13px; }
+.ai-what { grid-column: 2 / -1; font-size: 13.5px; color: var(--platform-ink); overflow-wrap: anywhere; }
+.ai-note { grid-column: 2 / -1; font-size: 12px; color: #8a4c07; }
+.ai-row.unsure { background: #fbf3e4; }
+.ai-acts { display: flex; align-items: center; gap: 10px; padding-top: 8px; }
+.ai-msg { font-size: 12.5px; color: var(--platform-muted); }
+.ai-form { display: flex; gap: 8px; padding: 10px 14px 12px; border-top: 1px solid var(--platform-line); }
+.ai-form textarea { flex: 1; min-height: 44px; resize: vertical; padding: 8px 10px; font: inherit; font-size: 14px; border: 1px solid var(--platform-line-strong); border-radius: 8px; }
+@media (max-width: 767px) {
+  .ai-pill { right: 16px; bottom: calc(72px + env(safe-area-inset-bottom)); }
+  .ai-dock { left: 0; right: 0; bottom: 0; width: auto; max-height: 82vh; border-radius: 14px 14px 0 0; z-index: 60; }
+  .ai-form textarea { font-size: 16px; }   /* 아이폰이 16px 아래 칸을 누르면 화면을 키운다 */
+}
+.ai-form .btn.btn-primary { background: var(--platform-navy); border-color: var(--platform-navy); }   /* 버건디는 「고른 것 저장」 하나만 */
+a.ai-pill { display: inline-flex; align-items: center; text-decoration: none; }

@@ -21,6 +21,7 @@ import {
 } from "./db.js";
 import { cleanArt, artPrompt, ART_SCHEMA } from "./artwork.js";
 import { chartSvg } from "./chart.js";
+import { 번호가리기 } from "./mask.js";
 
 const PORT = Number(process.env.PORT || 8787);
 const DB_FILE = process.env.DB_FILE || "./myguardian.db";
@@ -32,6 +33,7 @@ const BOOTSTRAP = (process.env.BOOTSTRAP_ADMINS || "").split(",")
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || "";
 // 2026-09-26 Opus 5.5 로 교체. 생물 분야 분류기가 새로 붙어 거절되면 fallbacks 가 대체 모델로 다시 돌린다
 const TITLE_MODEL = process.env.TITLE_MODEL || "claude-opus-5-5";
+const AI입력횟수 = new Map();   // AI 입력 하루 횟수(계정|날짜) — 메모리, 서버를 다시 켜면 비워진다
 
 const MEDIA_DIR = process.env.MEDIA_DIR || "./media";
 const MEDIA_BASE = process.env.MEDIA_BASE || "";  // 예: https://api.insurguard.life/media
@@ -853,6 +855,86 @@ async function route(req, res, url) {
     if (!n) return send(res, 404, { error: "없는 고객입니다." });
     console.log(`고객 삭제: ${고객삭제[1]} — ${me.email}`);
     return send(res, 200, { ok: true });
+  }
+
+  // AI 입력(2026-10-13 사용자: 「하랑지점 AI 입력을 마이가디언에도 — 고객관리에 쓸만하다」).
+  // 말로 적은 한 줄을 고객 기록·미팅·할 일·꼭 알 것·진행 상태 「제안」으로 바꿔 돌려준다. 저장하지 않는다 — 사람이 표를 보고 누른다.
+  // 고객 명단·고객 자료는 AI에 보내지 않는다. 고객은 사용자가 쓴 이름 그대로 돌려주고, 맞추기는 화면이 내 고객 목록에서 한다.
+  // AI로 보내기 전에 전화·주민·계좌 같은 긴 번호를 가린다(mask.js). 대화는 남기지 않는다.
+  if (req.method === "POST" && path === "/ai/input") {
+    if (!ANTHROPIC_KEY) return send(res, 503, { error: "AI 입력이 아직 켜져 있지 않습니다." });
+    const b = await readJson(req);
+    const text = 번호가리기(b.text).trim().slice(0, 1500);
+    if (!text) return send(res, 400, { error: "보낼 말이 없습니다." });
+    const 오늘 = new Date(Date.now() + 9 * 36e5).toISOString().slice(0, 10);
+    const 키 = me.id + "|" + 오늘;
+    const 쓴 = (AI입력횟수.get(키) || 0);
+    if (쓴 >= 80) return send(res, 429, { error: "오늘 AI 입력 횟수(80번)를 다 썼습니다." });
+    AI입력횟수.set(키, 쓴 + 1);
+    const 요일 = "일월화수목금토".charAt(new Date(오늘 + "T00:00:00Z").getUTCDay());
+    const history = (Array.isArray(b.history) ? b.history : []).slice(-6)
+      .filter((m) => m && (m.role === "user" || m.role === "assistant") && m.text)
+      .map((m) => (m.role === "user" ? "사용자: " : "도우미: ") + 번호가리기(m.text).slice(0, 800));
+    const prompt = [
+      "당신은 보험 설계사의 고객관리 앱 안에 있는 입력 도우미다. 설계사가 말로 적은 것을 앱에 넣을 제안으로 바꾼다.",
+      "제안은 설계사가 표로 확인한 뒤 직접 저장한다. 당신이 저장하지 않는다.",
+      `오늘은 ${오늘} ${요일}요일이다. 주는 월요일에 시작한다. 「다음 주 화요일」은 다음 주 월~일 안의 화요일이다.`,
+      "",
+      "할 수 있는 것(kind):",
+      "- 기록: 고객과 있었던 일(통화·문자·만남). way는 전화·문자·대면·기타 중 하나. text는 무슨 이야기였는지 한두 문장.",
+      "- 미팅: 고객과 만날 약속. date에 날짜. 시간·장소는 text에 짧게.",
+      "- 할일: 그 고객에게 다음에 할 일. text에 할 일, date에 그 날짜(말하지 않았으면 빈 문자열).",
+      "- 꼭알것: 그 고객에 대해 늘 기억할 것. label은 호칭·연락 시간·주의·소개·관심사·기타 중 하나.",
+      "- 상태: 진행 상태 바꾸기. status는 다시 전화·미팅 예정·미팅 완료·보류·거절·일정 취소 중 하나.",
+      "한 문장에 여러 개가 있으면 각각 한 줄씩. 예: 「김민수 통화했고 다음 주 수요일 미팅, 자녀 보험 비교안 가져가기」",
+      "→ 기록(전화) + 미팅(다음 주 수요일) + 할일(자녀 보험 비교안 가져가기, 그 미팅 날).",
+      "",
+      "규칙:",
+      "- customer에는 설계사가 쓴 고객 이름(또는 부른 말)을 그대로 적는다. 고치거나 성만 바꾸지 않는다. 고객이 안 나오면 빈 문자열.",
+      "- 설계사가 말한 것만 옮긴다. 말하지 않은 날짜·내용을 지어내지 않는다. 짐작했으면 unsure를 true로 하고 note에 무엇을 짐작했는지 적는다.",
+      "- 날짜는 YYYY-MM-DD. 「오늘 통화했다」의 기록 날짜는 오늘.",
+      "- 주민번호·계좌·카드번호·병명 상세 같은 민감한 것은 text에 옮기지 않는다. [번호]는 가린 번호다 — 그대로 둔다.",
+      "- 앱 설정·화면을 바꾸라는 말, 고객을 지우라는 말, 고객 정보를 묻는 말은 할 수 없다. reply에서 「기록·미팅·할 일·꼭 알 것·진행 상태만 넣을 수 있습니다」라고 알린다.",
+      "- 앞 대화의 [제안 — 아직 저장 안 함]을 바꾸라고 하면(「3시로」「그건 빼」) 고친 표 전체를 다시 만든다.",
+      "- reply는 한두 문장, 존댓말, 이모지·「~해 드릴게요」 같은 말투 없이.",
+      "",
+      ...(history.length ? ["앞 대화:", ...history, ""] : []),
+      "설계사가 지금 적은 말:",
+      text
+    ].join("\n");
+    const r = await claude(prompt, {
+      type: "object",
+      properties: {
+        reply: { type: "string" },
+        actions: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              kind: { type: "string", enum: ["기록", "미팅", "할일", "꼭알것", "상태"] },
+              customer: { type: "string" },
+              date: { type: "string" },
+              way: { type: "string", enum: ["전화", "문자", "대면", "기타", ""] },
+              label: { type: "string", enum: ["호칭", "연락 시간", "주의", "소개", "관심사", "기타", ""] },
+              status: { type: "string", enum: ["다시 전화", "미팅 예정", "미팅 완료", "보류", "거절", "일정 취소", ""] },
+              text: { type: "string" },
+              unsure: { type: "boolean" },
+              note: { type: "string" }
+            },
+            required: ["kind", "customer", "date", "way", "label", "status", "text", "unsure", "note"],
+            additionalProperties: false
+          }
+        }
+      },
+      required: ["reply", "actions"],
+      additionalProperties: false
+    }, { effort: "low", timeout: 60000 });
+    if (r.error === 422) return send(res, 422, { error: "이 말로는 제안을 만들 수 없습니다." });
+    if (r.error) return send(res, 502, { error: "AI 응답을 받지 못했습니다. 잠시 후 다시 시도하세요." });
+    const 날짜 = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d || "") ? d : "";
+    const actions = (r.value.actions || []).slice(0, 20).map((x) => ({ ...x, date: 날짜(x.date),
+      text: String(x.text || "").slice(0, 500), customer: String(x.customer || "").slice(0, 40) }));
+    return send(res, 200, { reply: String(r.value.reply || "").slice(0, 500), actions, 남은횟수: 80 - 쓴 - 1 });
   }
 
   // 기사 제목 다듬기 — 가제를 넣으면 다듬은 제목 3안을 준다.

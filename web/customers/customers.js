@@ -1375,5 +1375,163 @@
         $("connect-box").innerHTML = "<div><strong>서버 고객</strong><span>이 기기에서는 서버에 올라간 내 고객을 엽니다.</span></div>";
       }
       if (window.mgAuth && window.mgAuth.token() && !ALL.length) $("btn-vault-get").click();
+      // ── AI 입력 (2026-10-13 사용자: 「하랑지점 AI 입력을 마이가디언에 — 고객관리에 굉장히 쓸만하다」) ──
+      // 말 → 서버 /ai/input(제안만, 저장 안 함) → 표 → 사람이 골라 「저장」 → 고객마다 commitProfile 한 번(기존 저장 길 그대로).
+      // 고객 명단은 서버·AI로 보내지 않는다. AI가 돌려준 이름을 여기서 내 고객 목록과 맞춘다 — 하나면 고르고, 여럿·없음이면 사람이 고른다.
+      var AI = { history: [], last: null, busy: false };
+      var AI_KIND = { "기록": "기록", "미팅": "미팅 잡기", "할일": "다음 할 일", "꼭알것": "꼭 알 것", "상태": "진행 상태" };
+      function aiNorm(s) { return String(s || "").replace(/\s+/g, "").replace(/(고객님|고객|님|씨)$/, ""); }
+      function aiMatch(name) {
+        var n = aiNorm(name);
+        if (!n) return [];
+        var mine = ALL.filter(쓸수있나);
+        var exact = mine.filter(function (c) { return aiNorm(nameOf(c)) === n; });
+        if (exact.length) return exact;
+        return n.length < 2 ? [] : mine.filter(function (c) { return aiNorm(nameOf(c)).indexOf(n) >= 0; });
+      }
+      function aiSummary(acts, saved) {
+        return "[제안 — " + (saved ? "저장함" : "아직 저장 안 함") + "] " + acts.map(function (a) {
+          return a.kind + " · " + (a.customer || "고객 없음") + (a.date ? " · " + a.date : "") + (a.way ? " · " + a.way : "")
+            + (a.label ? " · " + a.label : "") + (a.status ? " · " + a.status : "") + (a.text ? " · " + a.text : "");
+        }).join(" / ");
+      }
+      function aiDetail(a) {
+        var bits = [];
+        if (a.date) bits.push(md(a.date));
+        if (a.kind === "기록" && a.way) bits.push(a.way);
+        if (a.kind === "꼭알것" && a.label) bits.push(a.label);
+        if (a.kind === "상태") bits.push(a.status || "");
+        if (a.text) bits.push(a.text);
+        return bits.filter(Boolean).join(" · ");
+      }
+      // 저장할 수 있는 줄인가 — 고객이 골라졌고, 미팅은 날짜, 상태는 값, 나머지는 내용이 있어야 한다
+      function aiReady(a) {
+        if (!a.code) return false;
+        if (a.kind === "미팅") return !!a.date;
+        if (a.kind === "상태") return STATUS.indexOf(a.status) >= 0;
+        return !!a.text;
+      }
+      function aiRender(card, acts) {
+        var mine = ALL.filter(쓸수있나).slice().sort(function (x, y) { return nameOf(x) < nameOf(y) ? -1 : 1; });
+        card.innerHTML = '<div class="ai-rows">' + acts.map(function (a, i) {
+          var cands = a.cands.length ? a.cands : mine;
+          var sel = '<select class="ai-cust" data-ai-i="' + i + '" aria-label="고객">'
+            + (a.code ? "" : '<option value="">' + (a.cands.length > 1 ? "같은 이름이 여럿 — 고르세요" : a.customer ? "「" + esc(a.customer) + "」 못 찾음 — 고르세요" : "고객을 고르세요") + "</option>")
+            + cands.map(function (c) { return '<option value="' + esc(c.code) + '"' + (c.code === a.code ? " selected" : "") + ">" + esc(nameOf(c)) + " · " + esc(c.code) + "</option>"; }).join("")
+            + "</select>";
+          return '<div class="ai-row' + (a.unsure ? " unsure" : "") + '"><input type="checkbox" aria-label="이 줄 저장" data-ai-i="' + i + '"' + (aiReady(a) ? " checked" : " disabled") + ">"
+            + '<span class="ai-kind">' + esc(AI_KIND[a.kind] || a.kind) + "</span>" + sel
+            + '<span class="ai-what">' + esc(aiDetail(a) || (a.kind === "미팅" ? "날짜를 말해 주세요" : "")) + "</span>"
+            + (a.unsure && a.note ? '<span class="ai-note">짐작: ' + esc(a.note) + "</span>" : "") + "</div>";
+        }).join("") + "</div>"
+          + '<div class="ai-acts"><button type="button" class="btn btn-primary" data-ai-save>고른 것 저장</button><span class="ai-msg" id="ai-msg" role="status"></span></div>';
+      }
+      function aiSay(who, html) {
+        var p = document.createElement("div");
+        p.className = "ai-say " + who;
+        p.innerHTML = html;
+        $("ai-log").appendChild(p);
+        $("ai-log").scrollTop = $("ai-log").scrollHeight;
+        return p;
+      }
+      function aiOpen(on) {
+        $("ai-dock").hidden = !on;
+        $("ai-pill").hidden = on;
+        try { localStorage.setItem("mg_ai_open", on ? "1" : ""); } catch (e) {}
+        if (on) $("ai-text").focus();
+      }
+      async function aiSend(text) {
+        if (AI.busy || !text) return;
+        if (!ALL.length) { aiSay("bot", "먼저 고객을 불러와 주세요. 이름을 내 고객 목록과 맞춰야 합니다."); return; }
+        AI.busy = true;
+        aiSay("me", esc(text));
+        var wait = aiSay("bot", "표를 만드는 중입니다…");
+        try {
+          var d = await window.mgAuth.api("/ai/input", { method: "POST", body: { text: text, history: AI.history } });
+          AI.history.push({ role: "user", text: text });
+          if (AI.last) AI.last.card.classList.add("old");
+          var acts = (d.actions || []).map(function (a) {
+            var cands = aiMatch(a.customer);
+            return Object.assign({}, a, { cands: cands, code: cands.length === 1 ? cands[0].code : "" });
+          });
+          wait.innerHTML = esc(d.reply || "") + (typeof d["남은횟수"] === "number" && d["남은횟수"] <= 10 ? " <small>오늘 남은 횟수 " + d["남은횟수"] + "</small>" : "");
+          AI.history.push({ role: "assistant", text: (d.reply || "") + (acts.length ? "\n" + aiSummary(acts, false) : "") });
+          if (acts.length) {
+            var card = aiSay("bot card", "");
+            AI.last = { acts: acts, card: card };
+            aiRender(card, acts);
+          } else AI.last = null;
+        } catch (e) {
+          wait.textContent = (e && e.message) || "AI 입력을 쓰지 못했습니다.";
+        } finally { AI.busy = false; }
+      }
+      async function aiSave(card) {
+        if (!AI.last || AI.last.card !== card) return;
+        var acts = AI.last.acts, picked = [];
+        card.querySelectorAll('input[type="checkbox"][data-ai-i]').forEach(function (b) { if (b.checked) picked.push(acts[Number(b.dataset.aiI)]); });
+        if (!picked.length) { $("ai-msg").textContent = "저장할 줄을 고르세요."; return; }
+        var byCode = {};
+        picked.forEach(function (a) { (byCode[a.code] = byCode[a.code] || []).push(a); });
+        var 끝 = [], 실패 = [];
+        for (var code in byCode) {
+          var c = ALL.filter(function (x) { return x.code === code; })[0];
+          if (!c || !쓸수있나(c)) { 실패.push(code); continue; }
+          var list = byCode[code], 새미팅 = [];
+          var ok = await commitProfile(c, function (draft) {
+            새미팅 = [];   // 다른 기기 저장과 겹쳐 다시 지을 때 두 번 쌓이지 않게
+            list.forEach(function (a) {
+              if (a.kind === "기록") draft["기록"] = [{ "일자": a.date || localDate(), "방법": a.way || "기타", "내용": a.text }].concat(draft["기록"] || []);
+              else if (a.kind === "할일") { setNext(draft, a.date || null); draft["다음할일"] = a.text; }
+              else if (a.kind === "꼭알것") draft["고정메모"] = (draft["고정메모"] || []).concat([{ "항목": PIN_KEYS.indexOf(a.label) >= 0 ? a.label : "기타", "내용": a.text }]);
+              else if (a.kind === "상태") draft["진행상태"] = a.status;
+              else if (a.kind === "미팅") {
+                var max = (draft["미팅"] || []).reduce(function (n, m) { return m && m["상태"] !== "취소" ? Math.max(n, Number(m["차수"]) || 0) : n; }, 0);
+                var round = max + 1;
+                draft["미팅"] = (draft["미팅"] || []).concat([{ "차수": round, "일자": a.date, "상태": "예정" }]);
+                if (!list.some(function (x) { return x.kind === "상태"; })) draft["진행상태"] = "미팅 예정";
+                새미팅.push({ round: round, date: a.date });
+              }
+            });
+          }, "ai-msg");
+          // 하랑지점 일정 보내기는 저장이 된 뒤에만 — 미팅 잡기 단추와 같다
+          if (ok) { 새미팅.forEach(function (m) { branchPush(c, m.round, m.date, "예정"); }); 끝.push(nameOf(c) + " " + list.length + "건"); }
+          else 실패.push(nameOf(c));
+        }
+        card.classList.add("old");
+        AI.history.push({ role: "assistant", text: aiSummary(picked, true) });
+        AI.last = null;
+        aiSay("bot", (끝.length ? "저장했습니다 — " + esc(끝.join(", ")) + "." : "") + (실패.length ? " 저장하지 못한 고객: " + esc(실패.join(", ")) + "." : ""));
+      }
+      (function aiMount() {
+        if (!$("ai-dock")) return;
+        $("ai-pill").addEventListener("click", function () { aiOpen(true); });
+        $("ai-close").addEventListener("click", function () { aiOpen(false); });
+        $("ai-form").addEventListener("submit", function (e) {
+          e.preventDefault();
+          var t = $("ai-text").value.trim();
+          $("ai-text").value = "";
+          aiSend(t);
+        });
+        $("ai-text").addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("ai-form").requestSubmit(); }
+        });
+        $("ai-log").addEventListener("change", function (e) {
+          var s = e.target.closest(".ai-cust");
+          if (!s || !AI.last) return;
+          var a = AI.last.acts[Number(s.dataset.aiI)];
+          a.code = s.value;
+          var box = s.closest(".ai-row").querySelector('input[type="checkbox"]');
+          box.disabled = !aiReady(a);
+          box.checked = aiReady(a);
+        });
+        $("ai-log").addEventListener("click", function (e) {
+          var b = e.target.closest("[data-ai-save]");
+          if (b) aiSave(b.closest(".ai-say"));
+        });
+        var was = "";
+        try { was = localStorage.getItem("mg_ai_open") || ""; } catch (e) {}
+        aiOpen(was === "1" || new URLSearchParams(location.search).get("ai") === "1");
+      })();
+
     })();
   
