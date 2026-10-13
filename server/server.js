@@ -22,6 +22,7 @@ import {
 import { cleanArt, artPrompt, ART_SCHEMA } from "./artwork.js";
 import { chartSvg } from "./chart.js";
 import { 번호가리기 } from "./mask.js";
+import vm from "node:vm";
 
 const PORT = Number(process.env.PORT || 8787);
 const DB_FILE = process.env.DB_FILE || "./myguardian.db";
@@ -33,6 +34,25 @@ const BOOTSTRAP = (process.env.BOOTSTRAP_ADMINS || "").split(",")
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY || "";
 // 2026-09-26 Opus 5.5 로 교체. 생물 분야 분류기가 새로 붙어 거절되면 fallbacks 가 대체 모델로 다시 돌린다
 const TITLE_MODEL = process.env.TITLE_MODEL || "claude-opus-5-5";
+// AI 입력 「묻기」의 근거 — 화면 「?」 도움말 글(web/assets/guides.js) 한 곳. 도움말을 고치면 답도 따라 바뀐다(파일 시각이 바뀌면 다시 읽는다).
+const 도움말파일 = new URL("../web/assets/guides.js", import.meta.url);
+const 화면이름 = { home: "홈", customers: "고객관리", claims: "청구·지급", cases: "사례·판례", learn: "학습", brief: "브리핑",
+  desk: "발행 데스크", shelf: "케어센터 서재", requests: "수정 요청", admin: "관리(팀원 초대·조직)", install: "앱 설치" };
+let 도움말기억 = { 시각: 0, 글: "" };
+function 도움말글() {
+  try {
+    const 시각 = statSync(도움말파일).mtimeMs;
+    if (시각 !== 도움말기억.시각) {
+      const 창 = {};
+      vm.runInNewContext(readFileSync(도움말파일, "utf8"), { window: 창 });
+      const 벗기기 = (h) => String(h || "").replace(/<li>/g, "- ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      const 글 = Object.entries(창.MG_GUIDE.screens).map(([키, 항목]) => "[" + (화면이름[키] || 키) + " · " + 키 + "]\n"
+        + 항목.map((x) => "· " + x.t + (x.sub ? "(" + x.sub + ")" : "") + ": " + 벗기기(x.body)).join("\n")).join("\n\n");
+      도움말기억 = { 시각, 글 };
+    }
+  } catch (e) { console.error("도움말 읽기 실패:", e.message); }
+  return 도움말기억.글;
+}
 const AI입력횟수 = new Map();   // AI 입력 하루 횟수(계정|날짜) — 메모리, 서버를 다시 켜면 비워진다
 
 const MEDIA_DIR = process.env.MEDIA_DIR || "./media";
@@ -894,13 +914,21 @@ async function route(req, res, url) {
       "- 설계사가 말한 것만 옮긴다. 말하지 않은 날짜·내용을 지어내지 않는다. 짐작했으면 unsure를 true로 하고 note에 무엇을 짐작했는지 적는다.",
       "- 날짜는 YYYY-MM-DD. 「오늘 통화했다」의 기록 날짜는 오늘.",
       "- 주민번호·계좌·카드번호·병명 상세 같은 민감한 것은 text에 옮기지 않는다. [번호]는 가린 번호다 — 그대로 둔다.",
-      "- 앱 설정·화면을 바꾸라는 말, 고객을 지우라는 말, 고객 정보를 묻는 말은 할 수 없다. reply에서 「기록·미팅·할 일·꼭 알 것·진행 상태만 넣을 수 있습니다」라고 알린다.",
+      "- **앱 사용법을 묻는 말**(「발행은 어떻게 해?」「미팅 잡은 건 어디서 봐?」「이거 뭐 하는 거야?」)에는 맨 아래 「앱 도움말」에 있는 것으로만 답한다.",
+      "  두세 문장, 어느 화면의 어떤 단추인지 짚는다. 도움말에 없으면 지어내지 말고 「도움말에 없는 내용입니다. 수정 요청에 남겨 주세요」라고 답한다.",
+      "  답이 가리키는 화면이 있으면 go에 그 화면 키(대괄호 안 영어 키)를, 없으면 빈 문자열. 묻는 말에는 actions를 비운다.",
+      "  AI 입력 자체를 물으면: 고객 이름과 한 일을 말로 적으면 기록·미팅·다음 할 일·꼭 알 것·진행 상태 표를 만들고, 표를 보고 「고른 것 저장」을 눌러야 들어간다고 알린다.",
+      "- 앱 설정·화면을 바꾸라는 말, 고객을 지우라는 말은 할 수 없다. 고객 정보를 묻는 말(「이번 주 미팅 누구야?」)도 답하지 않는다 — 고객 자료를 받지 않기 때문이다.",
+      "  그때는 reply에서 「고객 자료는 볼 수 없습니다. 고객관리의 보기 단추(이번 주 미팅·연락할 고객)에서 보세요」처럼 어디서 보는지 알린다.",
       "- 앞 대화의 [제안 — 아직 저장 안 함]을 바꾸라고 하면(「3시로」「그건 빼」) 고친 표 전체를 다시 만든다.",
       "- reply는 한두 문장, 존댓말, 이모지·「~해 드릴게요」 같은 말투 없이.",
       "",
       ...(history.length ? ["앞 대화:", ...history, ""] : []),
       "설계사가 지금 적은 말:",
-      text
+      text,
+      "",
+      "앱 도움말(사용법을 물을 때만 근거로 쓴다):",
+      도움말글()
     ].join("\n");
     const r = await claude(prompt, {
       type: "object",
@@ -924,9 +952,10 @@ async function route(req, res, url) {
             required: ["kind", "customer", "date", "way", "label", "status", "text", "unsure", "note"],
             additionalProperties: false
           }
-        }
+        },
+        go: { type: "string", enum: ["", ...Object.keys(화면이름)] }
       },
-      required: ["reply", "actions"],
+      required: ["reply", "actions", "go"],
       additionalProperties: false
     }, { effort: "low", timeout: 60000 });
     if (r.error === 422) return send(res, 422, { error: "이 말로는 제안을 만들 수 없습니다." });
@@ -934,7 +963,8 @@ async function route(req, res, url) {
     const 날짜 = (d) => /^\d{4}-\d{2}-\d{2}$/.test(d || "") ? d : "";
     const actions = (r.value.actions || []).slice(0, 20).map((x) => ({ ...x, date: 날짜(x.date),
       text: String(x.text || "").slice(0, 500), customer: String(x.customer || "").slice(0, 40) }));
-    return send(res, 200, { reply: String(r.value.reply || "").slice(0, 500), actions, 남은횟수: 80 - 쓴 - 1 });
+    const go = Object.prototype.hasOwnProperty.call(화면이름, r.value.go) ? r.value.go : "";
+    return send(res, 200, { reply: String(r.value.reply || "").slice(0, 600), actions, go, 남은횟수: 80 - 쓴 - 1 });
   }
 
   // 기사 제목 다듬기 — 가제를 넣으면 다듬은 제목 3안을 준다.

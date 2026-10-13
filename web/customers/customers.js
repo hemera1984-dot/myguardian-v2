@@ -1379,6 +1379,10 @@
       // 말 → 서버 /ai/input(제안만, 저장 안 함) → 표 → 사람이 골라 「저장」 → 고객마다 commitProfile 한 번(기존 저장 길 그대로).
       // 고객 명단은 서버·AI로 보내지 않는다. AI가 돌려준 이름을 여기서 내 고객 목록과 맞춘다 — 하나면 고르고, 여럿·없음이면 사람이 고른다.
       var AI = { history: [], last: null, busy: false };
+      // 답이 가리키는 화면 — 서버 go 키(guides.js 화면 키와 같다)
+      var AI_GO = { home: ["홈", "../"], customers: ["고객관리", "./"], claims: ["청구·지급", "../claims/"], cases: ["사례·판례", "../cases/"],
+        learn: ["학습", "../learn/"], brief: ["브리핑", "../brief/"], desk: ["발행 데스크", "../care/desk.html"], shelf: ["케어센터 서재", "../care/shelf.html"],
+        requests: ["수정 요청", "../requests/"], admin: ["관리", "../admin/"], install: ["앱 설치", "../install.html"] };
       var AI_KIND = { "기록": "기록", "미팅": "미팅 잡기", "할일": "다음 할 일", "꼭알것": "꼭 알 것", "상태": "진행 상태" };
       function aiNorm(s) { return String(s || "").replace(/\s+/g, "").replace(/(고객님|고객|님|씨)$/, ""); }
       function aiMatch(name) {
@@ -1442,7 +1446,6 @@
       }
       async function aiSend(text) {
         if (AI.busy || !text) return;
-        if (!ALL.length) { aiSay("bot", "먼저 고객을 불러와 주세요. 이름을 내 고객 목록과 맞춰야 합니다."); return; }
         AI.busy = true;
         aiSay("me", esc(text));
         var wait = aiSay("bot", "표를 만드는 중입니다…");
@@ -1454,8 +1457,12 @@
             var cands = aiMatch(a.customer);
             return Object.assign({}, a, { cands: cands, code: cands.length === 1 ? cands[0].code : "" });
           });
-          wait.innerHTML = esc(d.reply || "") + (typeof d["남은횟수"] === "number" && d["남은횟수"] <= 10 ? " <small>오늘 남은 횟수 " + d["남은횟수"] + "</small>" : "");
+          var go = AI_GO[d.go];
+          wait.innerHTML = esc(d.reply || "")
+            + (go && d.go !== "customers" ? ' <a class="ai-go" href="' + go[1] + '">' + esc(go[0]) + " 화면 열기</a>" : "")
+            + (typeof d["남은횟수"] === "number" && d["남은횟수"] <= 10 ? " <small>오늘 남은 횟수 " + d["남은횟수"] + "</small>" : "");
           AI.history.push({ role: "assistant", text: (d.reply || "") + (acts.length ? "\n" + aiSummary(acts, false) : "") });
+          if (acts.length && !ALL.length) { aiSay("bot", "표를 저장하려면 먼저 「내 고객 불러오기」로 고객을 불러와 주세요. 이름을 내 고객 목록과 맞춰야 합니다."); }
           if (acts.length) {
             var card = aiSay("bot card", "");
             AI.last = { acts: acts, card: card };

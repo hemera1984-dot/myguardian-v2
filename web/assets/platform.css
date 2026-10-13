@@ -2848,3 +2848,4 @@ body.platform .page-heading .mg-help-btn { order: 1; align-self: center; margin-
 a.ai-pill { display: inline-flex; align-items: center; text-decoration: none; }
 body.platform .ai-pill, body.platform .ai-pill:visited { color: #f4f1ea; }   /* 공용 「button·a 글자색 상속」 규칙이 남색 위 검은 글자로 덮던 것 */
 body.platform .ai-form .btn.btn-primary { color: #fff; }
+body.platform .ai-go { margin-left: 4px; font-weight: 700; color: var(--platform-blue); text-decoration: underline; text-underline-offset: 3px; }
