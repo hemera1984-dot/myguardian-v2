@@ -39,7 +39,7 @@
       var frameWin = null;      // HTML 자료 iframe (다리를 통해서만 대화한다)
       var unbindFrame = null;
       var pendingSlide = null;  // 프레임이 뜨기 전에 도착한 장
-      var pendingBeat = 0;
+      var pendingBeat = 0, pendingDone = false;
       var 채널이름 = null;      // connect()에서 정해진다 — 자료 안 영상 통로 이름에도 쓴다
 
       var stageWrap = document.getElementById("stage-wrap");
@@ -69,7 +69,7 @@
               if (pendingSlide !== null) {
                 var want = pendingSlide;
                 pendingSlide = null;
-                B.htmlSlideGoTo(frameWin, want, pendingBeat);
+                B.htmlSlideGoTo(frameWin, want, pendingBeat, pendingDone);
               }
             });
           }
@@ -99,10 +99,10 @@
 
       // HTML 자료는 장이 슬라이드 문서 안에 있다 — 그 문서를 발표자와 같은 장으로 옮긴다.
       // 그 밖의 자료(문서·PDF·이미지)는 종전대로 페이지를 그린다.
-      function applyPage(n, beat) {
+      function applyPage(n, beat, done) {
         if (driver && driver.kind === "html") {
-          if (frameWin) B.htmlSlideGoTo(frameWin, n, beat || 0);
-          else { pendingSlide = n; pendingBeat = beat || 0; }   // 아직 안 떴으면 뜬 뒤에 맞춘다
+          if (frameWin) B.htmlSlideGoTo(frameWin, n, beat || 0, done === true);
+          else { pendingSlide = n; pendingBeat = beat || 0; pendingDone = done === true; }   // 아직 안 떴으면 뜬 뒤에 맞춘다
           return;
         }
         show(n);
@@ -144,7 +144,7 @@
         protocol = B.createProtocol(transport, {
           page: function (msg) {
             if (!driver) { pendingState = { page: msg.page, beat: msg.beat }; return; }
-            applyPage(msg.page, msg.beat);
+            applyPage(msg.page, msg.beat, msg.done);
           },
           state: function (msg) {
             if (!driver) { pendingState = msg; return; }
