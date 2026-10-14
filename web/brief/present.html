@@ -139,6 +139,7 @@
       // 장 넘김은 슬라이드 문서 안에서 일어난다. 다리가 바뀔 때마다 알려 주므로 그대로 중계한다.
       // 되풀이 송신도 함께 한다 — 청중 쪽이 한 번 어긋나면 스스로는 돌아오지 못하기 때문이다.
       var lastSlideSent = -1;
+      var lastBeatSent = 0;    // 박자 장(연구회 덱 data-beats) — 한 장 안의 클릭 장면도 청중에 맞춘다(2026-10-14)
       var lastScrollSent = 0;
       var unbindFrame = null;
       var beatTimer = null;
@@ -216,10 +217,11 @@
                 B.htmlSlideGoTo(frameWin, 옛장.slide);
               }
             }
-            if (복원끝(복원 && d.slide === 복원.slide) && d.slide !== lastSlideSent) {
+            if (복원끝(복원 && d.slide === 복원.slide) && (d.slide !== lastSlideSent || d.beat !== lastBeatSent)) {
               lastSlideSent = d.slide;
+              lastBeatSent = d.beat || 0;
               기억({ slide: d.slide });
-              protocol.sendPage(d.slide);
+              protocol.sendPage(d.slide, lastBeatSent);
             }
           }
           if (typeof d.scroll === "number") {
@@ -232,7 +234,7 @@
         });
         if (beatTimer) clearInterval(beatTimer);
         beatTimer = setInterval(function () {
-          if (lastSlideSent >= 0) protocol.sendPage(lastSlideSent);
+          if (lastSlideSent >= 0) protocol.sendPage(lastSlideSent, lastBeatSent);
         }, 1500);
       }
 
@@ -416,7 +418,7 @@
             // 번호는 0부터다 — 다리가 알려 주기 전에는 장을 보내지 않는다(1을 보내면 둘째 장으로 간다).
             if (driver.kind === "html") {
               var page = 복원 && typeof 복원.slide === "number" ? 복원.slide : lastSlideSent;
-              if (page >= 0) protocol.sendState(page, null, scrollRatio());
+              if (page >= 0) protocol.sendState(page, null, scrollRatio(), page === lastSlideSent ? lastBeatSent : 0);
               return;
             }
             protocol.sendState(current, videoState(), scrollRatio());

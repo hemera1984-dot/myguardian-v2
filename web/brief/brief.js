@@ -207,7 +207,7 @@
   }
 
   var VALIDATORS = {
-    page: function (m) { return isNum(m.page); },
+    page: function (m) { return isNum(m.page) && (m.beat === undefined || (isNum(m.beat) && m.beat >= 0 && m.beat <= 999)); },
     pointer: function (m) {
       if (m.on === false) return true;
       return m.on === true && isNum(m.x) && isNum(m.y)
@@ -220,6 +220,7 @@
     hello: function () { return true; },
     state: function (m) {
       if (!isNum(m.page)) return false;
+      if (m.beat !== undefined && !(isNum(m.beat) && m.beat >= 0 && m.beat <= 999)) return false;
       if (m.scroll !== undefined && !(isNum(m.scroll) && m.scroll >= 0 && m.scroll <= 1)) return false;
       if (m.video == null) return true;
       return typeof m.video === "object" && (m.video.time === undefined || isNum(m.video.time));
@@ -250,8 +251,10 @@
       if (fn) fn(msg);
     });
     return {
-      sendPage: function (page) {
-        transport.send({ v: 1, type: "page", page: page });
+      sendPage: function (page, beat) {
+        var msg = { v: 1, type: "page", page: page };
+        if (typeof beat === "number") msg.beat = beat;
+        transport.send(msg);
       },
       sendPointer: function (x, y, on) {
         transport.send({ v: 1, type: "pointer", x: x, y: y, on: on });
@@ -262,8 +265,9 @@
       sendHello: function () {
         transport.send({ v: 1, type: "hello" });
       },
-      sendState: function (page, video, scroll) {
+      sendState: function (page, video, scroll, beat) {
         var msg = { v: 1, type: "state", page: page, video: video };
+        if (typeof beat === "number") msg.beat = beat;
         if (typeof scroll === "number") msg.scroll = scroll;
         transport.send(msg);
       },
@@ -307,24 +311,26 @@
     + "[0,300,1500,4000].forEach(function(ms){setTimeout(소리단속,ms);});\n"
     + "function idx(){var s=all();for(var i=0;i<s.length;i++)if(s[i].classList.contains('active'))return i;"
     + "if(장기록>=0)return 장기록;return s.length>1?0:-1;}\n"
+    + "function 박자(){var s=all()[idx()];return s&&s._beat?s._beat|0:0;}\n"
+    + "window.addEventListener('beat',function(){setTimeout(tell,0);},true);\n"
     + "function ratio(){var e=document.scrollingElement||document.documentElement;"
     + "var r=e.scrollHeight-e.clientHeight;return r>0?Math.min(1,Math.max(0,e.scrollTop/r)):0;}\n"
-    + "function tell(){try{parent.postMessage({mgb:'state',slide:idx(),count:all().length,scroll:ratio()},'*');}catch(e){}}\n"
+    + "function tell(){try{parent.postMessage({mgb:'state',slide:idx(),beat:박자(),count:all().length,scroll:ratio()},'*');}catch(e){}}\n"
     + "function key(k){document.body.dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true,cancelable:true}));}\n"
     // 목표 장까지 한 걸음씩 간다. 움직이지 않으면 그 문서가 화살표를 안 받는 것이므로 멈추고 알린다.
     // 한 번 눌러 안 움직여도 한 번은 더 눌러 본다 — 모션이 도는 중의 첫 누름은 「모션 즉시 완료」로
     // 쓰이고 장은 그대로인 자료가 있다(연구회 슬라이드). 두 번 연속 제자리면 그때 멈춘다.
     // 새 목표가 오면 앞 걸음은 멈춘다(세대 번호) — 둘이 같이 돌면 서로 반대로 누른다(2026-09-27).
     + "var 세대=0;\n"
-    + "function goTo(n){var 내=++세대,tries=0,헛=0;(function step(){if(내!==세대)return;var cur=idx();"
-    + "if(cur<0||cur===n||tries++>5000){tell();return;}"
-    + "key(n>cur?'ArrowRight':'ArrowLeft');"
-    + "if(idx()===cur){if(헛++<1){setTimeout(step,0);return;}tell();return;}"
+    + "function goTo(n,b){b=b|0;var 내=++세대,tries=0,헛=0;(function step(){if(내!==세대)return;var cur=idx(),cb=박자();"
+    + "if(cur<0||(cur===n&&cb===b)||tries++>5000){tell();return;}"
+    + "key(n>cur||(n===cur&&b>cb)?'ArrowRight':'ArrowLeft');"
+    + "if(idx()===cur&&박자()===cb){if(헛++<1){setTimeout(step,0);return;}tell();return;}"
     + "헛=0;setTimeout(step,0);})();}\n"
     // 명령은 이 자료를 담은 앱 창에서 온 것만 받는다 — 자료 안의 다른 틀이 흉내 내지 못하게.
     + "window.addEventListener('message',function(e){if(e.source!==parent)return;var d=e.data;if(!d||d.mgb!=='cmd')return;"
     + "if(d.key){key(d.key);tell();}"
-    + "if(typeof d.goto==='number')goTo(d.goto);"
+    + "if(typeof d.goto==='number')goTo(d.goto,d.박자);"
     // 장으로 나뉜 자료는 스크롤 비율을 따라가지 않는다 — 장 번호로 맞추고, 스크롤은 자료가 스스로 한다.
     // 둘을 같이 쓰면 자리만 옮겨지고 그 장의 글·그림은 꺼진 채 남는다(2026-09-19 청중 화면).
     + "if(typeof d.scroll==='number'&&all().length<2){var el=document.scrollingElement||document.documentElement;"
@@ -504,10 +510,11 @@
         if (!num(d.slide) || !num(d.count) || !num(d.scroll)) return;
         if (d.slide < -1 || d.count < 0 || d.count > 5000) return;
         if (d.scroll < 0 || d.scroll > 1) return;
+        var beat = num(d.beat) && d.beat >= 0 && d.beat <= 999 ? Math.round(d.beat) : 0;
         frameState.set(win, {
-          slide: Math.round(d.slide), count: Math.round(d.count), scroll: d.scroll
+          slide: Math.round(d.slide), beat: beat, count: Math.round(d.count), scroll: d.scroll
         });
-        if (onState) onState({ mgb: "state", slide: Math.round(d.slide), count: Math.round(d.count), scroll: d.scroll });
+        if (onState) onState({ mgb: "state", slide: Math.round(d.slide), beat: beat, count: Math.round(d.count), scroll: d.scroll });
         return;
       }
       if (d.mgb === "key") {
@@ -549,9 +556,9 @@
     return st && typeof st.scroll === "number" ? st.scroll : undefined;
   }
 
-  function htmlSlideGoTo(win, target) {
+  function htmlSlideGoTo(win, target, beat) {
     if (!win || typeof target !== "number") return;
-    try { win.postMessage({ mgb: "cmd", goto: target }, "*"); } catch (e) { /* 닫힌 창 */ }
+    try { win.postMessage({ mgb: "cmd", goto: target, "박자": typeof beat === "number" ? beat : 0 }, "*"); } catch (e) { /* 닫힌 창 */ }
   }
 
   // 자료에 절대 위치를 넣는다 — 자기 조종기를 내주는 자료(하이퍼프레임)에만 먹는다.
