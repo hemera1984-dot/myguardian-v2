@@ -14,7 +14,7 @@ import {
   addReqShot, attachReqShots, looseReqShots, purgeLooseReqShots
 } from "./db.js";
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { cleanArt } from "./artwork.js";
+import { cleanArt, artPrompt, artReviewPrompt, ART_SCHEMA, ART_REVIEW_SCHEMA } from "./artwork.js";
 
 const FILE = "./test-auth.db";
 rmSync(FILE, { force: true });
@@ -149,6 +149,18 @@ check("삽화 — AI가 쓴 SVG는 허용 목록으로 다시 조립한다", () 
   assert.ok(svg.includes('width="1600" height="900"'), "칼럼은 16:9 판형");
   assert.ok(cleanArt("<svg><rect/><rect/></svg>", "표지") === null, "그릴 것이 셋 미만이면 없다");
   assert.ok(cleanArt('<rect/><rect/><rect width="1"/>', "표지").includes('width="1200" height="1600"'), "표지는 3:4 판형");
+});
+
+check("삽화 — 지난 호 장면을 그리는 쪽·검수하는 쪽에 보여 주고, 검수는 추측부터 쓴다", () => {
+  const 지난 = [{ "장면": "모래시계와 동전", "구도": "주인공 왼쪽, 노랑 원 오른쪽 위" }];
+  const p = artPrompt({ 종류: "칼럼", 채널: "주간 안창민", 제목: "연금 언제 받나", 지난 });
+  assert.ok(p.includes("모래시계와 동전") && p.includes("노랑 원 오른쪽 위"), "지난 장면·구도가 그림 요청에 들어간다");
+  assert.ok(p.includes("오른쪽 위 모서리에 걸쳐 잘린 큰 원"), "실제로 반복된 버릇을 피하라고 한다");
+  assert.ok(!artPrompt({ 종류: "칼럼", 채널: "주간", 제목: "x" }).includes("최근 호에 이미"), "지난 장면이 없으면 그 줄도 없다");
+  assert.deepEqual(ART_SCHEMA.required, ["장면", "구도", "svg", "의도"]);
+  const v = artReviewPrompt({ 종류: "표지", 제목: "", 제목들: ["가", "나"], 지난 });
+  assert.ok(v.includes("가 / 나") && v.includes("제호 자리") && v.includes("노랑 원 오른쪽 위"));
+  assert.equal(ART_REVIEW_SCHEMA.required[0], "추측", "판정보다 추측을 먼저 쓰게 한다");
 });
 
 check("조직도는 서버에 남는다 — 고친 사람만 보이던 localStorage를 대신한다", () => {

@@ -2,12 +2,35 @@
 // 종전(2026-08)은 도형 3~6개의 좌표만 받아 흩어 놓았더니 기사와 상관없는 추상화가 됐다.
 // 지금은 기사의 핵심을 사물·장면 하나로 그리게 한다. 받은 원문은 믿지 않는다 —
 // 태그·속성을 목록에 있는 것만 옮겨 적고, 글자·스크립트·외부 참조는 버리고, 색은 팔레트로 끌어온다.
+// 2026-10-19: 그린 뒤 PNG로 바꿔 AI가 눈으로 검수하고, 걸리면 이유를 붙여 한 번 더 그린다.
+// 운영 삽화 6장 중 5장이 「오른쪽 위에 걸친 큰 원」이었다 — 코드만 쓰고 그림을 안 보니 버릇을 모른다.
+
+import { spawn } from "node:child_process";
 
 export const ART_COLORS = {
   "빨강": "#E63329", "파랑": "#005BBB", "노랑": "#F5C518",
   "잉크": "#111111", "종이": "#F4F1EA"
 };
 export const ART_SIZE = { "칼럼": [1600, 900], "표지": [1200, 1600] };
+// 되풀이된 구도 — 운영 삽화에서 실제로 반복된 것(2026-10-19 주간 21·22호 6장 확인)
+const ART_HABITS = ["오른쪽 위 모서리에 걸쳐 잘린 큰 원", "왼쪽 위의 세로로 긴 색 기둥", "왼쪽 아래 파란 네모"];
+
+// SVG → PNG. 서버의 rsvg-convert(librsvg2-bin)를 쓴다. 없으면 null — 검수 없이 종전대로 간다(개발 PC 등).
+let 변환기없음 = false;
+export function svgToPng(svg) {
+  if (변환기없음) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    let p;
+    try { p = spawn("rsvg-convert", ["-f", "png"]); } catch { 변환기없음 = true; return resolve(null); }
+    const chunks = [];
+    const timer = setTimeout(() => { p.kill(); resolve(null); }, 20000);
+    p.on("error", () => { clearTimeout(timer); 변환기없음 = true; resolve(null); });
+    p.stdout.on("data", (c) => chunks.push(c));
+    p.on("close", (code) => { clearTimeout(timer); resolve(code === 0 && chunks.length ? Buffer.concat(chunks) : null); });
+    p.stdin.on("error", () => {});
+    p.stdin.end(svg);
+  });
+}
 
 const PALETTE = Object.values(ART_COLORS).map((h) => [h, parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
 const TAGS = new Set(["g", "path", "rect", "circle", "ellipse", "line", "polyline", "polygon",
@@ -96,7 +119,7 @@ const CHANNEL_TONE = {
   "월간": "월간은 유통기한이 긴 주제를 다룬다. 사물 둘셋이 관계를 이루는 장면으로 공들여(30~70개)."
 };
 
-export function artPrompt({ 종류, 채널, 제목, 카테고리, 요약, 본문, 제목들 }) {
+export function artPrompt({ 종류, 채널, 제목, 카테고리, 요약, 본문, 제목들, 지난 }) {
   const [W, H] = ART_SIZE[종류] || ART_SIZE["칼럼"];
   const 톤 = CHANNEL_TONE[Object.keys(CHANNEL_TONE).find((k) => String(채널).startsWith(k))] || CHANNEL_TONE["주간"];
   const 표지 = 종류 === "표지";
@@ -124,7 +147,11 @@ export function artPrompt({ 종류, 채널, 제목, 카테고리, 요약, 본문
     "- 사물은 원·사각·삼각·굵은 선으로 짓는다. 평면이다(그림자·질감·원근 없음). 윤곽선을 쓰면 잉크색, 굵기 8~16.",
     "- 사람은 얼굴 없는 기하 인형이다(원 머리 + 사다리꼴 몸). 실존 인물을 닮게 그리지 않는다.",
     "- 주인공 사물이 화면의 40~60%를 차지한다. 비대칭으로 앉히고, 큰 색면 하나는 화면 밖으로 걸쳐 나가게 한다.",
-    "- 받침 색면의 자리·모양은 장면에 맞춰 매번 새로 정한다. 왼쪽 아래 파란 네모 같은 버릇을 되풀이하지 않는다.",
+    "- 받침 색면의 자리·모양은 장면에 맞춰 매번 새로 정한다. 이런 버릇을 되풀이하지 않는다: " + ART_HABITS.join(", ") + ".",
+    ...(지난 && 지난.length
+      ? ["- 최근 호에 이미 그린 것이다. 같은 사물, 같은 자리·모양의 받침 색면을 다시 쓰지 않는다:",
+         ...지난.map((x) => `  · ${x["장면"]}${x["구도"] ? " / " + x["구도"] : ""}`)]
+      : []),
     표지
       ? "- 표지 위 25%에는 제호가, 아래 40%에는 표제 글자가 얹힌다. 주인공 사물은 세로 15~60% 사이에 두고 아래쪽은 단순한 색면으로 둔다."
       : "- 가장자리 여백을 살려 지면 본문 옆에 놓였을 때 숨이 트이게 한다.",
@@ -134,6 +161,7 @@ export function artPrompt({ 종류, 채널, 제목, 카테고리, 요약, 본문
     "속성은 좌표·fill·stroke·stroke-width·opacity·transform·clip-path 정도만. 좌표는 viewBox 기준 정수.",
     "쓰지 않는 것: 글자(text)·숫자·로고·통화 기호, image, filter, style, script, use, 외부 참조. 넣어도 서버가 지운다.",
     `svg 칸에는 <svg viewBox="0 0 ${W} ${H}"> 로 시작하는 완결된 SVG 원문만 넣는다. 배경은 첫 요소로 화면 전체를 덮는 rect.`,
+    "구도 칸에는 주인공 사물의 자리와 받침 색면의 자리·모양을 한국어 한 줄로(예: 주인공 왼쪽 가운데, 노랑 반원이 아래 가장자리에 걸침).",
     "의도 칸에는 무엇을 왜 그렸는지 한국어 한 줄."
   ].filter((l) => l !== "").join("\n");
 }
@@ -142,9 +170,43 @@ export const ART_SCHEMA = {
   type: "object",
   properties: {
     장면: { type: "string" },
+    구도: { type: "string" },
     svg: { type: "string" },
     의도: { type: "string" }
   },
-  required: ["장면", "svg", "의도"],
+  required: ["장면", "구도", "svg", "의도"],
+  additionalProperties: false
+};
+
+// 검수 — 그림(PNG)을 함께 보낸다. 추측을 판정보다 먼저 쓰게 해 제목에 끌려가지 않게 한다.
+// 그린 쪽의 장면 설명은 넘기지 않는다 — 그걸 보면 검수가 그림을 좋게 읽어 줘 겉도는 그림도 통과시켰다(2026-10-19 시험).
+export function artReviewPrompt({ 종류, 제목, 제목들, 지난 }) {
+  const 표지 = 종류 === "표지";
+  return [
+    `이 그림은 보험 설계사가 고객에게 보내는 잡지의 ${표지 ? "표지 그림" : "칼럼 삽화"}다. 지면에 내기 전에 검수한다.`,
+    "",
+    "1. 추측 칸: 제목을 모른다고 치고, 그림만 보고 무슨 글의 그림인지 한 줄로 적는다.",
+    표지 ? "2. 이번 호 칼럼: " + 제목들.join(" / ") : "2. 실제 칼럼 제목: " + 제목,
+    "3. 아래 가운데 하나라도 해당하면 통과는 false, 걸린것 칸에 무엇이 걸렸는지 적는다.",
+    "   - 추측이 실제 주제와 이어지지 않는다(글과 겉돈다).",
+    "   - 주인공 사물이 무엇인지 한눈에 알아보기 어렵다.",
+    "   - 돋보기·전구·물음표·체크 표시·톱니바퀴처럼 어느 글에나 붙는 소품이 주인공이다.",
+    "   - 구도가 버릇이다: " + ART_HABITS.join(", ") + ".",
+    ...(지난 && 지난.length ? ["   - 최근 호와 같은 배치다: " + 지난.map((x) => x["구도"]).filter(Boolean).join(" / ")] : []),
+    ...(표지 ? ["   - 위 25%(제호 자리)나 아래 40%(표제 자리)를 주인공 사물이 차지한다."] : []),
+    "   사소한 취향 차이로는 떨어뜨리지 않는다. 위 항목만 본다.",
+    "4. 고칠점 칸: 걸렸으면 다음 판에서 무엇을 어떻게 바꿀지 구체적으로 한두 줄. 통과면 빈 칸."
+  ].join("\n");
+}
+
+export const ART_REVIEW_SCHEMA = {
+  type: "object",
+  properties: {
+    추측: { type: "string" },
+    통과: { type: "boolean" },
+    걸린것: { type: "string" },
+    고칠점: { type: "string" }
+  },
+  required: ["추측", "통과", "걸린것", "고칠점"],
   additionalProperties: false
 };

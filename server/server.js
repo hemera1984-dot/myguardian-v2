@@ -19,7 +19,7 @@ import {
   listReqPosts, getReqPost, addReqPost, editReqPost, answerReqPost, deleteReqPost, toggleReqVote,
   addReqShot, getReqShot, looseReqShots, attachReqShots, purgeLooseReqShots
 } from "./db.js";
-import { cleanArt, artPrompt, ART_SCHEMA } from "./artwork.js";
+import { cleanArt, artPrompt, ART_SCHEMA, svgToPng, artReviewPrompt, ART_REVIEW_SCHEMA } from "./artwork.js";
 import { chartSvg } from "./chart.js";
 import { 번호가리기 } from "./mask.js";
 import vm from "node:vm";
@@ -309,6 +309,19 @@ function canEditBrief(db, me, item) {
 }
 
 // 미디어 파일 저장 — 파일명은 서버가 만든다(올린 이름을 믿지 않는다)
+// 최근에 그린 삽화의 장면·구도 — 같은 사물·같은 배치를 되풀이하지 않게 다음 그림에 보여 준다(2026-10-19)
+const ART_SCENES = join(CARE_DIR, "art-scenes.json");
+function 지난장면(채널) {
+  try { return JSON.parse(readFileSync(ART_SCENES, "utf8")).filter((x) => x["채널"] === 채널).slice(-8); }
+  catch { return []; }
+}
+function 장면남기기(기록) {
+  let 전부 = [];
+  try { 전부 = JSON.parse(readFileSync(ART_SCENES, "utf8")); } catch { /* 처음 */ }
+  전부.push({ ...기록, 날: new Date().toISOString().slice(0, 10) });
+  try { writeFileSync(ART_SCENES, JSON.stringify(전부.slice(-80))); } catch (e) { console.warn("삽화 장면 기록 실패:", e.message); }
+}
+
 function saveMedia(bytes, ext) {
   const name = new Date().toISOString().slice(0, 10).replace(/-/g, "")
     + "-" + randomBytes(6).toString("hex") + ext;
@@ -1559,20 +1572,49 @@ async function route(req, res, url) {
     if (종류 === "표지" ? !제목들.length : !제목) {
       return send(res, 400, { error: 종류 === "표지" ? "칼럼 제목이 먼저 필요합니다." : "제목이 먼저 필요합니다." });
     }
-    const prompt = artPrompt({ 종류, 채널, 제목, 카테고리, 요약, 본문, 제목들 });
-    // 한 번 더 — 드물게 그릴 것이 비거나 마크업이 무너진다
-    for (let 시도 = 0; 시도 < 2; 시도++) {
-      const r = await claude(prompt, ART_SCHEMA, { effort: "medium", maxTokens: 24000, timeout: 240000 });
-      if (r.error === 422) return send(res, 422, { error: "이 내용으로는 삽화를 만들 수 없습니다." });
-      if (r.error) return send(res, 502, { error: "삽화를 만들지 못했습니다. 잠시 후 다시 시도하세요." });
+    const 지난 = 지난장면(채널);
+    const prompt = artPrompt({ 종류, 채널, 제목, 카테고리, 요약, 본문, 제목들, 지난 });
+    // 그린 뒤 PNG로 바꿔 AI가 눈으로 본다 — 글과 겉돌거나 버릇 구도면 이유를 붙여 한 번만 다시 그린다.
+    // 빈 그림(마크업 무너짐)은 다시 그림으로 세지 않고 한 번 더 그린다. 검수가 실패해도 그림은 낸다.
+    let 고칠 = "", 판 = null, 다시그림 = 0;
+    for (let 시도 = 0; 시도 < 4; 시도++) {
+      const r = await claude(고칠 ? prompt + "\n\n앞 판을 검수했더니 걸린 것이다. 이번 판에서 고친다:\n" + 고칠 : prompt,
+        ART_SCHEMA, { effort: "medium", maxTokens: 24000, timeout: 240000 });
+      if (r.error) {
+        if (판) break;                              // 다시 그리다 실패하면 앞 판을 낸다
+        if (r.error === 422) return send(res, 422, { error: "이 내용으로는 삽화를 만들 수 없습니다." });
+        return send(res, 502, { error: "삽화를 만들지 못했습니다. 잠시 후 다시 시도하세요." });
+      }
       const svg = cleanArt(r.value["svg"], 종류);
       if (!svg) { console.warn(`삽화 비어 다시 그림(${시도 + 1}) — ${me.email}`); continue; }
-      const info = saveMedia(Buffer.from(svg, "utf8"), ".svg");
-      console.log(`삽화: ${채널} ${종류} ${svg.length}자 — ${r.value["장면"]} — ${me.email}`);
-      // 표지는 화면이 PNG로 바꿔 다시 올린다(카톡이 SVG를 못 그린다) — 원문을 같이 준다
-      return send(res, 200, { ...info, 의도: String(r.value["의도"] || r.value["장면"] || ""), ...(종류 === "표지" ? { svg } : {}) });
+      const png = await svgToPng(svg);
+      let 검수 = null;
+      if (png) {
+        const v = await claude([
+          { type: "image", source: { type: "base64", media_type: "image/png", data: png.toString("base64") } },
+          { type: "text", text: artReviewPrompt({ 종류, 제목, 제목들, 지난 }) }
+        ], ART_REVIEW_SCHEMA, { effort: "medium", maxTokens: 8000, timeout: 120000 });   // low는 같은 그림을 세 번에 한 번꼴로 다르게 판정했다
+        if (!v.error) 검수 = v.value;
+      }
+      판 = { r, svg, png, 검수 };
+      if (!검수 || 검수["통과"] === true || 다시그림 >= 1) break;
+      다시그림 += 1;
+      고칠 = String(검수["고칠점"] || 검수["걸린것"] || "").slice(0, 600);
+      console.log(`삽화 검수 걸림 — ${검수["걸린것"]} (추측: ${검수["추측"]}) — ${me.email}`);
     }
-    return send(res, 502, { error: "삽화가 비어 나왔습니다. 다시 시도하세요." });
+    if (!판) return send(res, 502, { error: "삽화가 비어 나왔습니다. 다시 시도하세요." });
+    const { r, svg, png, 검수 } = 판;
+    const info = saveMedia(Buffer.from(svg, "utf8"), ".svg");
+    // 표지는 PNG로 낸다 — 카톡 미리보기가 SVG를 못 그린다. 서버에서 못 바꾸면 화면이 바꾸도록 원문을 준다.
+    const 표지png = 종류 === "표지" && png ? saveMedia(png, ".png") : null;
+    장면남기기({ 채널, 종류, 장면: String(r.value["장면"] || "").slice(0, 120), 구도: String(r.value["구도"] || "").slice(0, 120) });
+    console.log(`삽화: ${채널} ${종류} ${svg.length}자 — ${r.value["장면"]} — 다시 그림 ${다시그림} · 검수 ${검수 ? (검수["통과"] ? "통과" : "걸림") : "못 함"} — ${me.email}`);
+    return send(res, 200, {
+      ...(표지png || info),
+      의도: String(r.value["의도"] || r.value["장면"] || ""),
+      다시그림,
+      ...(종류 === "표지" && !표지png ? { svg } : {})
+    });
   }
 
   // 편집장의 말 — 확정된 칼럼 제목들을 보고 서문을 쓴다
