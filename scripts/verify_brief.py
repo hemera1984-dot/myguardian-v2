@@ -3,7 +3,7 @@
 같은 브라우저 컨텍스트에 발표자(present)·청중(view) 두 페이지를 열어 확인한다:
   1. 페이지 넘김이 청중 창에 반영되는가
   2. 포인터 좌표가 비율(0~1)로 전달·표시되는가
-  3. 영상 play/pause/seek 동기화 (검증용 무음 클립을 MediaRecorder로 즉석 생성)
+  3. 영상 play/pause/seek 동기화 (저장소의 무음 인트로 영상)
   4. 청중 창을 늦게 열어도 현재 페이지로 맞춰지는가
   5. 로컬 파일 동선(진입 → 파일 선택 → 발표 시작 → 청중 창 문서 전달)이 동작하는가
   6. 스크립트가 청중 화면 DOM에 절대 나타나지 않는가
@@ -14,15 +14,20 @@
   11. HTML 업로드의 스크롤이 청중 창에 동기화되는가
   12. 스크립트 PDF는 전체를 두루마리로 렌더하고 슬라이드와 분리되는가(HTML은 hr 구분 파싱)
   13. 라이브러리 탑재 자료가 재접속 후에도 목차에 남고, 모드가 분리되며, 목차에서 발표되는가
+  14. 연구회 덱(.slide · data-beats · [data-step])의 장·박자·「두 번 눌러 즉시 완료」가 청중 창에 따라가는가
+  15. 교육 덱(.s · data-steps 점)의 장·단계가 청중 창에 따라가는가
+  16. 발표자 화면 청중 위치 표시 — 맞음 / 어긋남(청중 덱이 키를 못 받게 막음) / 연결 끊김(청중 창 닫음)
+14~16은 두 엔진의 넘김 약속만 흉내 낸 픽스처로 돈다. 실제 발표 파일은 공개 저장소에 넣지 않으므로
+발표 전에는 파일을 인자로 넘겨 같은 검사를 돌린다(2026-10-14 12회차 청중 화면이 안 따라온 뒤 생김).
 seek 검증은 발표자가 실제로 이동했는지(≥1.0s)를 전제로 단언한다 — 거짓 양성 방지.
 업로드 픽스처(PDF·스크립트·HTML)는 실행 시 scripts/fixtures/brief/에 생성한다.
 추가로 3해상도(1920/1180/390) 스크린샷을 scripts/shots/에 저장한다.
 
-사용법: python scripts/verify_brief.py
+사용법: python scripts/verify_brief.py [발표파일.html ...]
+  예: python scripts/verify_brief.py "C:/Users/.../브리핑용/당근/주말12_누가받는가/★발표_12회차_누가받는가.html"
 사전 준비: pip install playwright && python -m playwright install chromium
 """
 
-import base64
 import functools
 import json
 import sys
@@ -58,39 +63,9 @@ class QuietHandler(SimpleHTTPRequestHandler):
 
 
 def make_video_fixture(browser, base: str) -> None:
-    """검증용 무음 색상 클립(webm)과 영상 페이지 문서를 즉석 생성한다."""
+    """영상 페이지 문서를 즉석 생성한다. 클립은 저장소의 무음 인트로 영상을 쓴다 —
+    캔버스 녹화로 만들던 클립은 설치형 크롬 headless에서 빈 파일이 나왔다(2026-10-18)."""
     FIXTURES.mkdir(parents=True, exist_ok=True)
-    page = browser.new_page()
-    page.goto(base + "/web/brief/view.html")  # 아무 페이지든 무방 (실행 컨텍스트용)
-    b64 = page.evaluate(
-        """async () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = 320; canvas.height = 180;
-          const ctx = canvas.getContext('2d');
-          let hue = 0;
-          const iv = setInterval(() => {
-            ctx.fillStyle = 'hsl(' + (hue += 9) + ', 55%, 52%)';
-            ctx.fillRect(0, 0, 320, 180);
-          }, 40);
-          const rec = new MediaRecorder(canvas.captureStream(25), { mimeType: 'video/webm' });
-          const chunks = [];
-          rec.ondataavailable = (e) => chunks.push(e.data);
-          const done = new Promise((r) => { rec.onstop = r; });
-          rec.start();
-          await new Promise((r) => setTimeout(r, 2000));
-          rec.stop();
-          await done;
-          clearInterval(iv);
-          const buf = new Uint8Array(await new Blob(chunks).arrayBuffer());
-          let s = '';
-          for (let i = 0; i < buf.length; i += 8192) {
-            s += String.fromCharCode.apply(null, buf.subarray(i, i + 8192));
-          }
-          return btoa(s);
-        }"""
-    )
-    page.close()
-    (FIXTURES / "clip.webm").write_bytes(base64.b64decode(b64))
     doc = {
         "id": "verify-video",
         "제목": "영상 동기화 검증",
@@ -102,8 +77,8 @@ def make_video_fixture(browser, base: str) -> None:
                 "번호": 1,
                 "유형": "영상",
                 "제목": "영상 동기화 검증",
-                "영상": "scripts/fixtures/brief/clip.webm",
-                "캡션": "검증용 무음 색상 클립",
+                "영상": "web/assets/intro-bg-v2.mp4",
+                "캡션": "검증용 무음 클립",
                 "스크립트": "검증 전용 스크립트 문장",
             }
         ],
@@ -168,9 +143,171 @@ def make_upload_fixtures() -> tuple:
     return pdf_path, txt_path, html_path, script_pdf_path
 
 
+# 연구회 덱 엔진(theme.py)의 넘김 약속만 흉내 낸다 — 브리핑 다리가 기대는 것:
+# .slide를 scrollIntoView로 넘김 · 장 요소의 _beat와 거품 없는 'beat' 이벤트 · [data-step]에 .on ·
+# 움직이는 중에 → 를 누르면 그 장의 움직임을 바로 끝냄(즉시 완료).
+DECK_SLIDE = """<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>연구회 덱 흉내</title>
+<style>html,body{margin:0;height:100%;overflow:hidden}.slide{height:100vh;box-sizing:border-box;padding:40px;font:32px sans-serif}
+[data-step]{opacity:.15}[data-step].on{opacity:1}</style></head><body>
+<section class="slide"><h1>1 표지</h1></section>
+<section class="slide"><h1>2 단계</h1><p data-step>가</p><p data-step>나</p><p data-step>다</p><p data-step>라</p></section>
+<section class="slide" data-beats="3"><h1>3 박자</h1></section>
+<section class="slide"><h1>4 단계</h1><p data-step>가</p><p data-step>나</p><p data-step>다</p></section>
+<section class="slide" data-beats="2"><h1>5 박자와 단계</h1><p data-step>가</p><p data-step>나</p></section>
+<section class="slide"><h1>6 끝</h1></section>
+<script>
+var S=[].slice.call(document.querySelectorAll('.slide')),cur=0,busyUntil=0,timers=[];
+function play(s,instant){timers.forEach(clearTimeout);timers=[];var st=[].slice.call(s.querySelectorAll('[data-step]'));
+  if(instant||!st.length){st.forEach(function(e){e.classList.add('on')});busyUntil=0;return;}
+  st.forEach(function(e){e.classList.remove('on')});
+  st.forEach(function(e,i){timers.push(setTimeout(function(){e.classList.add('on')},300*(i+1)))});busyUntil=Date.now()+300*st.length;}
+function go(i,instant){if(i<0||i>=S.length)return;cur=i;S[i]._beat=0;S[i].scrollIntoView();play(S[i],instant);}
+function beat(s,n){s._beat=n;s.dispatchEvent(new CustomEvent('beat',{detail:n}));}
+function advance(){var s=S[cur];if(Date.now()<busyUntil){play(s,true);return;}
+  var n=+(s.dataset.beats||0);if(n&&(s._beat||0)<n){beat(s,(s._beat||0)+1);return;}go(cur+1);}
+function back(){var s=S[cur];if(s._beat>0){beat(s,s._beat-1);return;}go(cur-1,true);}
+document.addEventListener('keydown',function(e){if(e.key==='ArrowRight'){e.preventDefault();advance();}
+  else if(e.key==='ArrowLeft'){e.preventDefault();back();}});
+go(0);
+</script></body></html>"""
+
+# 교육 덱 엔진(edu/팀교육_공통/덱.js) 흉내 — .s 장을 hidden으로 갈아 끼우고, 단계는 점으로 보이며
+# 점 색은 다음 그림 틀(requestAnimationFrame)에서 바뀐다. 장 번호를 바깥에 알리지 않아 키 전달로 맞춘다.
+DECK_EDU = """<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>교육 덱 흉내</title>
+<style>html,body{margin:0;height:100%;overflow:hidden;font:32px sans-serif}.s{position:absolute;inset:0;padding:40px}
+.dots i{display:inline-block;width:12px;height:12px;margin:3px;background:#ccc}.dots i.on{background:#333}</style></head><body>
+<section class="s on"><h1>1 표지</h1></section>
+<section class="s" data-steps="2"><h1>2</h1></section>
+<section class="s" data-steps="3"><h1>3</h1></section>
+<section class="s"><h1>4</h1></section>
+<section class="s" data-steps="2"><h1>5</h1></section>
+<section class="s"><h1>6 끝</h1></section>
+<script>
+var S=[].slice.call(document.querySelectorAll('.s')),i=0,k=0;
+function steps(s){return +(s.dataset.steps||0);}
+S.forEach(function(s,j){var n=steps(s);if(n){var d=document.createElement('div');d.className='dots';
+  for(var m=0;m<n;m++)d.appendChild(document.createElement('i'));s.appendChild(d);s._dots=[].slice.call(d.children);}s.hidden=j>0;});
+function show(n,kk){S[i].hidden=true;S[i].classList.remove('on');i=n;S[i].hidden=false;S[i].classList.add('on');k=kk;}
+function next(){if(k<steps(S[i]))k++;else if(i<S.length-1)show(i+1,0);}
+function prev(){if(k>0)k--;else if(i>0)show(i-1,steps(S[i-1]));}
+(function f(){var s=S[i];if(s._dots)s._dots.forEach(function(d,j){d.classList.toggle('on',j<k)});requestAnimationFrame(f);})();
+addEventListener('keydown',function(e){if(e.key==='ArrowRight'){e.preventDefault();next();}
+  else if(e.key==='ArrowLeft'){e.preventDefault();prev();}});
+</script></body></html>"""
+
+POS_SLIDE = """() => { const s = [...document.querySelectorAll('.slide')];
+  const i = s.findIndex(x => Math.abs(x.getBoundingClientRect().top) < 200); const c = s[i];
+  return [i, c && c._beat || 0, c ? c.querySelectorAll('[data-step]:not(.on)').length : -1]; }"""
+POS_EDU = """() => { const s = [...document.querySelectorAll('section.s')]; const i = s.findIndex(x => !x.hidden);
+  return [i, i < 0 ? 0 : s[i].querySelectorAll('.dots i.on').length]; }"""
+
+
+def make_deck_fixtures() -> list:
+    FIXTURES.mkdir(parents=True, exist_ok=True)
+    out = []
+    for name, html in (("deck-slide.html", DECK_SLIDE), ("deck-edu.html", DECK_EDU)):
+        path = FIXTURES / name
+        path.write_text(html, encoding="utf-8")
+        out.append(path)
+    return out
+
+
+def deck_frame(page, ready: str = "document.querySelectorAll('.slide, section.s').length > 1"):
+    """발표 자료가 든 프레임 — 자료가 다 뜰 때까지 기다린다. 서버 틀(/brief/frame)이 없으면
+    6초 뒤 예전 방식(blob)으로 열리므로 넉넉히 본다."""
+    page.wait_for_selector("#stage iframe", timeout=8000)
+    for _ in range(60):
+        h = page.locator("#stage iframe").first.element_handle()
+        f = h.content_frame() if h else None
+        try:
+            if f and f.evaluate(ready):
+                return f
+        except Exception:
+            pass
+        page.wait_for_timeout(250)
+    return None
+
+
+def check_deck_sync(ctx, base: str, deck: Path, label: str, errors: list) -> None:
+    """14~16 — 자료를 올려 발표자·청중 두 창을 열고, 넘길 때마다 두 프레임의 자리를 견준다."""
+    pe = ctx.new_page()
+    watch_console(pe, errors, label + "-present")
+    pe.goto(f"{base}/web/brief/index.html", wait_until="networkidle")
+    pe.locator(".mode-grid .action-card[data-mode='강의']").click()
+    pe.set_input_files("#file-input", str(deck))
+    pe.wait_for_selector("#local-start")
+    pe.locator("#local-start").click()
+    pe.wait_for_selector("#stage iframe")
+    with ctx.expect_page() as pv_info:
+        pe.locator("#open-view").click()
+    pv = pv_info.value
+    watch_console(pv, errors, label + "-view")
+    pf, vf = deck_frame(pe), deck_frame(pv)
+    if not (pf and vf):
+        check(label + " 자료 열기", False, "자료 프레임을 찾지 못함")
+        pe.close()
+        return
+    edu = pf.evaluate("document.querySelectorAll('.slide').length") < 2
+    pos = POS_EDU if edu else POS_SLIDE
+    pv.wait_for_timeout(2500)   # 실제 덱은 크다 — 청중 창이 다 뜰 때까지
+    pe.locator("#doc-title").click()   # 자료 밖을 눌러 키가 발표자 화면으로 가게
+
+    def compare(tag: str, bad: list) -> None:
+        # 청중 창은 1초 남짓 늦게 따라오고, 그 사이 움직이는 단계 수도 다르다 — 3초 안에 같아지면 맞은 것
+        for _ in range(15):
+            a, v = pf.evaluate(pos), vf.evaluate(pos)
+            if a == v:
+                return
+            pe.wait_for_timeout(200)
+        bad.append(f"{tag} 발표자{a} 청중{v}")
+
+    bad = []
+    keys = ["ArrowRight"] * 12 + ["ArrowLeft"] * 4
+    for n, key in enumerate(keys, 1):
+        pe.keyboard.press(key)
+        pe.wait_for_timeout(1000)
+        compare(f"{n}번째 {'→' if key == 'ArrowRight' else '←'}", bad)
+    check(f"{label} 장·{'단계' if edu else '박자'} 동기화", not bad,
+          "; ".join(bad[:3]) if bad else f"{len(keys)}번 넘김 모두 같은 자리")
+
+    if not edu:
+        bad = []
+        for n in range(1, 6):
+            pe.keyboard.press("ArrowRight")
+            pe.wait_for_timeout(150)
+            pe.keyboard.press("ArrowRight")   # 움직이는 중 두 번째 누름 = 즉시 완료(움직임 없으면 다음)
+            pe.wait_for_timeout(1300)
+            compare(f"{n}번째 두 번 누름", bad)
+        check(f"{label} 두 번 눌러 즉시 완료 동기화", not bad,
+              "; ".join(bad[:3]) if bad else "5번 모두 같은 자리 · 남은 단계 수까지 같음")
+
+    def view_state() -> str:
+        return pe.evaluate("(e => e.hidden ? '(숨김)' : e.textContent)(document.getElementById('view-state'))")
+
+    pe.wait_for_timeout(1800)
+    s = view_state()
+    check(f"{label} 청중 위치 표시 — {'연결됨' if edu else '맞음'}", ("연결됨" if edu else "맞음") in s, s)
+    if not edu:
+        # 청중 덱이 키를 못 받으면 따라오지 못한다 — 발표자 화면이 그걸 알려야 한다
+        vf.evaluate("window.addEventListener('keydown', e => e.stopImmediatePropagation(), true)")
+        pe.keyboard.press("ArrowLeft")
+        pe.wait_for_timeout(1200)
+        pe.keyboard.press("ArrowLeft")
+        pe.wait_for_timeout(3500)
+        s = view_state()
+        check(f"{label} 청중 위치 표시 — 어긋남", "어긋남" in s, s)
+    pv.close()
+    pe.wait_for_timeout(5000)
+    s = view_state()
+    check(f"{label} 청중 위치 표시 — 연결 끊김", "연결 끊김" in s, s)
+    pe.close()
+
+
 def watch_console(page, errors: list, label: str) -> None:
     page.on("console", lambda m: errors.append(f"[{label}] {m.text}") if m.type == "error" else None)
     page.on("pageerror", lambda e: errors.append(f"[{label}] {e}"))
+    # 콘솔의 404 줄에는 주소가 없다 — 무엇이 없는지 같이 남긴다
+    page.on("response", lambda r: errors.append(f"[{label}] {r.status} {r.url}") if r.status >= 400 else None)
 
 
 def main() -> None:
@@ -185,7 +322,7 @@ def main() -> None:
 
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(args=["--autoplay-policy=no-user-gesture-required"])
+            browser = p.chromium.launch(channel="chrome", args=["--autoplay-policy=no-user-gesture-required"])   # 설치된 크롬 — 내장 브라우저 판을 따로 받지 않는다
             make_video_fixture(browser, base)
             pdf_path, txt_path, html_path, script_pdf_path = make_upload_fixtures()
             ctx = browser.new_context(viewport={"width": 1600, "height": 1000})
@@ -317,9 +454,13 @@ def main() -> None:
                 }"""
             )
             vp.evaluate("() => { document.querySelector('#stage video').currentTime = 1.2; }")
-            vp.wait_for_timeout(600)
-            t_present = vp.evaluate("() => document.querySelector('#stage video').currentTime")
-            t_view = vv.evaluate("() => document.querySelector('#stage video').currentTime")
+            # 청중 창의 탐색은 메시지가 건너간 뒤 일어난다 — 한 번 재면 늦게 오는 판이 있어 3초까지 본다
+            for _ in range(15):
+                vp.wait_for_timeout(200)
+                t_present = vp.evaluate("() => document.querySelector('#stage video').currentTime")
+                t_view = vv.evaluate("() => document.querySelector('#stage video').currentTime")
+                if t_present >= 1.0 and abs(t_present - t_view) < 0.6:
+                    break
             check(
                 "영상 seek 동기화",
                 t_present >= 1.0 and abs(t_present - t_view) < 0.6,
@@ -411,15 +552,18 @@ def main() -> None:
             watch_console(hv, errors, "view-html")
             hv.wait_for_selector("#stage iframe", timeout=6000)
             hv.wait_for_timeout(400)
-            he.evaluate("() => { const f = document.querySelector('#stage iframe'); f.contentWindow.scrollTo(0, 999999); }")
-            hv.wait_for_function(
-                "() => { const f = document.querySelector('#stage iframe');"
-                " if (!f || !f.contentWindow) return false;"
-                " const el = f.contentWindow.document.scrollingElement;"
-                " return !!el && el.scrollTop > 500; }",
-                timeout=4000,
-            )
-            check("HTML 업로드 + 스크롤 동기화", True, "발표자 스크롤 → 청중 창 반영")
+            # 자료 창은 출처가 끊긴 iframe이다 — contentWindow로는 닿지 않아 프레임에 직접 들어가 본다
+            doc_ready = "!!document.querySelector('h1') && document.querySelector('h1').textContent.includes('스크롤 검증')"
+            hef, hvf = deck_frame(he, doc_ready), deck_frame(hv, doc_ready)
+            hef.evaluate("() => window.scrollTo(0, 999999)")
+            moved = 0
+            for _ in range(20):
+                hv.wait_for_timeout(200)
+                moved = hvf.evaluate("() => (document.scrollingElement || document.documentElement).scrollTop")
+                if moved > 500:
+                    break
+            mine = hef.evaluate("() => (document.scrollingElement || document.documentElement).scrollTop")
+            check("HTML 업로드 + 스크롤 동기화", moved > 500, f"발표자 {mine:.0f}px → 청중 {moved:.0f}px")
             hv.close()
             he.close()
 
@@ -494,7 +638,16 @@ def main() -> None:
             )
             le.close()
 
+            # 14~16. 연구회 덱 · 교육 덱 동기화 + 청중 위치 표시 (인자로 넘긴 실제 발표 파일도)
+            slide_deck, edu_deck = make_deck_fixtures()
+            check_deck_sync(ctx, base, slide_deck, "연구회 덱", errors)
+            check_deck_sync(ctx, base, edu_deck, "교육 덱", errors)
+            for extra in sys.argv[1:]:
+                check_deck_sync(ctx, base, Path(extra), Path(extra).stem, errors)
+
             # --- 검증 7: 콘솔 오류 ---
+            for e in errors:
+                print("  오류:", e)
             check("콘솔 오류 0건", not errors, "; ".join(errors[:4]))
 
             # --- 3해상도 스크린샷 ---
