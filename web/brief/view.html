@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="brief.css">
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="brief.js?v=20260927a"></script>
+  <script src="brief.js?v=20261018a"></script>
 </head>
 <body class="brief-view">
   <div class="vw-stage-wrap stage-wrap" id="stage-wrap" hidden>
@@ -40,7 +40,9 @@
       var unbindFrame = null;
       var pendingSlide = null;  // 프레임이 뜨기 전에 도착한 장
       var pendingBeat = 0, pendingDone = false;
-      var 채널이름 = null;      // connect()에서 정해진다 — 자료 안 영상 통로 이름에도 쓴다
+      var 채널이름 = null;
+      var 보인자리 = { page: -1, beat: 0 };   // 이 창에 실제로 보이는 장·박자(-1 = 아직 모름) — 발표자 화면이 어긋남을 알게 되풀이해 알린다
+      function 자리알림() { if (protocol && 보인자리) protocol.send청중(보인자리.page, 보인자리.beat); }      // connect()에서 정해진다 — 자료 안 영상 통로 이름에도 쓴다
 
       var stageWrap = document.getElementById("stage-wrap");
       var stage = document.getElementById("stage");
@@ -58,6 +60,7 @@
           document.getElementById("wait").hidden = true;
           stageWrap.hidden = false;
           stage.dataset.page = String(n);
+          if (driver.kind !== "html") { 보인자리 = { page: n, beat: 0 }; 자리알림(); }
           if (frame) {
             frameWin = frame.contentWindow;
             // 자료가 자기 화면에 띄우는 단축키 안내는 발표자 몫이다 — 빔프로젝터에서는 감춘다
@@ -65,7 +68,8 @@
             // 자료의 영상 동기화 통로를 같은 채널 이름으로 잇는다(청중 역할 — 음소거 자동재생)
             B.html연결(frameWin, 채널이름, true);
             if (unbindFrame) unbindFrame();
-            unbindFrame = B.bridgeListen(frameWin, function () {
+            unbindFrame = B.bridgeListen(frameWin, function (d) {
+              if (d && d.mgb === "state") { 보인자리 = { page: d.slide, beat: d.beat }; 자리알림(); }
               if (pendingSlide !== null) {
                 var want = pendingSlide;
                 pendingSlide = null;
@@ -172,6 +176,7 @@
 
         // 발표자보다 먼저 열렸으면 최초 hello가 유실된다 — 준비될 때까지 재요청
         protocol.sendHello();
+        setInterval(자리알림, 1500);
         var helloTimer = setInterval(function () {
           if (driver) {
             clearInterval(helloTimer);

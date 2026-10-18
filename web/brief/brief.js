@@ -13,6 +13,7 @@
 //   { v:1, type:"scroll",  y:0.35 }                     // HTML 자료 스크롤 위치 (0~1 비율)
 //   { v:1, type:"hello" }                               // 청중 창이 현재 상태를 요청
 //   { v:1, type:"state",   page:3, video:{playing:false, time:0}, scroll:0.35 }
+//   { v:1, type:"청중",    page:3, beat:2 }             // 청중 창이 실제로 보이는 자리(발표자 화면 표시용)
 // v1의 doc 메시지(로컬 문서 방송)는 폐기 — 로컬 자료는 IndexedDB를 통해 두 창이
 // 같은 기기 안에서 직접 읽는다. 문서 내용이 채널에 실리지 않아 2차 원격에서도 안전.
 (function () {
@@ -230,6 +231,9 @@
       return typeof m.video === "object" && (m.video.time === undefined || isNum(m.video.time));
     },
     scroll: function (m) { return isNum(m.y) && m.y >= 0 && m.y <= 1; },
+    "청중": function (m) {
+      return isNum(m.page) && m.page >= -1 && m.page <= 5000 && isNum(m.beat) && m.beat >= 0 && m.beat <= 999;
+    },
     // 장 넘김 키 그대로 전달 — 자료가 장 목록을 자기 안에 감추고 있어(하이퍼프레임)
     // 몇 쪽인지 셀 수 없을 때 쓴다. 두 화면이 같은 장에서 시작해 같은 키를 받는다.
     "키": function (m) { return 넘김키.indexOf(m.key) >= 0; },
@@ -284,6 +288,9 @@
       },
       send자리: function (pos) {
         transport.send({ v: 1, type: "자리", pos: pos });
+      },
+      send청중: function (page, beat) {
+        transport.send({ v: 1, type: "청중", page: page, beat: beat });
       }
     };
   }

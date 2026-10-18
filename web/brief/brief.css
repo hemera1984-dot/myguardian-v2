@@ -330,6 +330,17 @@ body.brief-present {
   gap: 10px;
 }
 
+.pr-view-state {
+  color: var(--brief-faint);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pr-view-state.off {
+  color: #ffb4a8;
+}
+
 .pr-timer {
   color: var(--brief-muted);
   font-size: 14px;

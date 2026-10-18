@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="brief.css">
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="brief.js?v=20260927a"></script>
+  <script src="brief.js?v=20261018a"></script>
 </head>
 <body class="brief-present">
   <header class="pr-topbar" id="topbar" hidden>
@@ -21,6 +21,7 @@
     <div class="pr-top-right">
       <button class="pr-timer" id="timer" type="button" title="누르면 0:00부터 다시 잽니다" aria-label="경과 시간, 누르면 초기화">0:00</button>
       <button class="pr-button" id="pointer-toggle" type="button" aria-pressed="true">포인터 송신</button>
+      <span class="pr-view-state" id="view-state" role="status" hidden></span>
       <button class="pr-button primary" id="open-view" type="button">청중 화면 열기</button>
     </div>
   </header>
@@ -142,6 +143,30 @@
       var lastBeatSent = 0;    // 박자 장(연구회 덱 data-beats) — 한 장 안의 클릭 장면도 청중에 맞춘다(2026-10-14)
       var lastDoneSent = true;   // 그 장의 장면이 다 보였는가 — 발표자가 → 로 즉시 완료하면 청중도 끝낸다
       var lastScrollSent = 0;
+      // 청중 창이 알려 온 자리 — 발표자는 뒤의 빔프로젝터를 못 보므로 어긋나면 여기 띄운다(2026-10-18)
+      var 청중자리 = null, 어긋난때 = 0;
+      function 청중표시() {
+        var el = document.getElementById("view-state");
+        if (!청중자리 || Date.now() - 청중자리.at > 4000) {
+          el.hidden = !청중자리;   // 한 번도 안 열었으면 감춘다
+          el.className = "pr-view-state";
+          el.textContent = "청중 화면 연결 끊김";
+          return;
+        }
+        el.hidden = false;
+        var html = driver && driver.kind === "html";
+        var 내장 = html ? lastSlideSent : current, 내박자 = html ? lastBeatSent : 0;
+        // 장 번호를 알려 주지 않는 자료(교육 덱·하이퍼프레임)는 키로 맞추므로 연결만 보인다
+        if (청중자리.page < 0 || 내장 < 0 || 자리모드) { el.className = "pr-view-state"; el.textContent = "청중 화면 연결됨"; return; }
+        var 장 = html ? 청중자리.page + 1 : 청중자리.page;
+        var 글 = "청중 " + 장 + "장" + (청중자리.beat ? " · 장면 " + 청중자리.beat : "");
+        if (청중자리.page === 내장 && 청중자리.beat === 내박자) { 어긋난때 = 0; el.className = "pr-view-state"; el.textContent = 글 + " · 맞음"; return; }
+        if (!어긋난때) 어긋난때 = Date.now();
+        // 따라가는 데 1초 남짓 걸린다 — 그동안은 어긋남으로 치지 않는다
+        if (Date.now() - 어긋난때 < 2000) return;
+        el.className = "pr-view-state off";
+        el.textContent = 글 + " · 어긋남, 여기는 " + (html ? 내장 + 1 : 내장) + "장" + (내박자 ? " · 장면 " + 내박자 : "");
+      }
       var unbindFrame = null;
       var beatTimer = null;
       // 청중 화면에도 같은 넘김 키를 방송한다. 자료 안에서 키가 올라오기를 기다리지 않는다 —
@@ -424,8 +449,10 @@
               return;
             }
             protocol.sendState(current, videoState(), scrollRatio());
-          }
+          },
+          "청중": function (msg) { 청중자리 = { page: msg.page, beat: msg.beat, at: Date.now() }; }
         });
+        setInterval(청중표시, 500);
 
         if (driver.kind === "html") {
           // HTML 자료: 단일 문서 스크롤 동기화. 페이지 네비·포인터는 없다
