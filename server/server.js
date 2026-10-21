@@ -980,6 +980,65 @@ async function route(req, res, url) {
     return send(res, 200, { reply: String(r.value.reply || "").slice(0, 600), actions, go, 남은횟수: 80 - 쓴 - 1 });
   }
 
+  // DB 사진 읽기 — DB 업체 화면·명단을 찍은 사진에서 고객 줄을 뽑는다(2026-10-22 팀원 건의).
+  // 고객 자료를 AI로 보내지 않는다는 원칙의 예외다 — 발표자 결정: DB 업체에 이미 올라가 있던 정보이고
+  // 서버는 사진도 결과도 저장하지 않는다. 결과는 화면이 표로 보여 주고 사람이 골라 등록한다.
+  if (req.method === "POST" && path === "/ai/dbphoto") {
+    if (!ANTHROPIC_KEY) return send(res, 503, { error: "AI 입력이 아직 켜져 있지 않습니다." });
+    const b = await readJson(req, 8 * 1024 * 1024);
+    const 사진 = (Array.isArray(b.images) ? b.images : []).slice(0, 4)
+      .map((s) => String(s || "")).filter((s) => /^[A-Za-z0-9+/=]{100,}$/.test(s));
+    if (!사진.length) return send(res, 400, { error: "사진이 없습니다." });
+    const 오늘 = new Date(Date.now() + 9 * 36e5).toISOString().slice(0, 10);
+    const 키 = me.id + "|" + 오늘;
+    const 쓴 = (AI입력횟수.get(키) || 0);
+    if (쓴 + 사진.length > 80) return send(res, 429, { error: "오늘 AI 입력 횟수(80번)를 다 썼습니다." });
+    AI입력횟수.set(키, 쓴 + 사진.length);
+    const 칸 = ["이름", "나이", "성별", "전화", "유입일시", "희망시간", "월보험료", "메모"];
+    const r = await claude([
+      ...사진.map((data) => ({ type: "image", source: { type: "base64", media_type: "image/jpeg", data } })),
+      { type: "text", text: [
+        "보험 설계사가 DB 업체 화면이나 고객 명단을 찍은 사진이다. 사진에 있는 고객을 한 사람에 한 줄로 옮긴다.",
+        `오늘은 ${오늘}이다.`,
+        "칸: 이름 · 나이(숫자만, 「45세」면 45) · 성별(남·여, 모르면 빈 칸) · 전화(보이는 그대로, 하이픈 포함) · 유입일시(DB가 들어온 날짜·시각) · 희망시간(상담·통화 희망 시간) · 월보험료(지금 내는 보험료, 단위까지) · 메모(그 밖에 적힌 참고 내용).",
+        "규칙:",
+        "- 사진에 보이는 것만 옮긴다. 안 보이거나 안 읽히는 칸은 빈 문자열이다. 짐작해서 채우지 않는다.",
+        "- 글자가 흐리거나 잘려서 확실하지 않은 칸이 있으면 unsure를 true로 하고 note에 어느 칸이 불확실한지 적는다.",
+        "- 같은 사람이 사진 두 장에 나오면 한 줄로 합친다.",
+        "- 주민번호·계좌·카드번호는 옮기지 않는다.",
+        "- 고객 줄이 없는 사진이면 rows를 비우고 reply에 무엇이 찍혔는지 한 줄로 적는다.",
+        "- reply는 한 문장, 존댓말. 예: 「7명을 읽었습니다. 2명은 전화번호가 흐립니다.」"
+      ].join("\n") }
+    ], {
+      type: "object",
+      properties: {
+        reply: { type: "string" },
+        rows: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { ...Object.fromEntries(칸.map((k) => [k, { type: "string" }])), unsure: { type: "boolean" }, note: { type: "string" } },
+            required: [...칸, "unsure", "note"],
+            additionalProperties: false
+          }
+        }
+      },
+      required: ["reply", "rows"],
+      additionalProperties: false
+    }, { effort: "medium", maxTokens: 16000, timeout: 150000 });
+    if (r.error === 422) return send(res, 422, { error: "이 사진으로는 읽을 수 없습니다." });
+    if (r.error) return send(res, 502, { error: "사진을 읽지 못했습니다. 잠시 후 다시 시도하세요." });
+    const rows = (r.value.rows || []).slice(0, 60).map((x) => {
+      const o = {};
+      for (const k of 칸) o[k] = String(x[k] || "").replace(/\s+/g, " ").trim().slice(0, k === "메모" ? 300 : 60);
+      o["성별"] = o["성별"] === "남" || o["성별"] === "여" ? o["성별"] : "";
+      o["나이"] = /^\d{1,3}$/.test(o["나이"]) ? o["나이"] : "";
+      return { ...o, unsure: !!x.unsure, note: String(x.note || "").slice(0, 200) };
+    }).filter((x) => x["이름"] || x["전화"]);
+    console.log(`DB 사진 읽기: 사진 ${사진.length}장 → ${rows.length}명 — ${me.email}`);
+    return send(res, 200, { reply: String(r.value.reply || "").slice(0, 300), rows, 남은횟수: 80 - 쓴 - 사진.length });
+  }
+
   // 기사 제목 다듬기 — 가제를 넣으면 다듬은 제목 3안을 준다.
   // 승인된 계정이면 누구나. 키는 서버에만 있고 응답에 실리지 않는다.
   if (req.method === "POST" && path === "/ai/title") {

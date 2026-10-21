@@ -1025,95 +1025,195 @@
         return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
       }
 
+      // 고객 한 명 등록 — 서버 고객이면 서버로, 폴더면 폴더에 넣고 만든 고객 코드를 돌려준다.
+      // makeProfile(code) → profile. 신규 등록 칸과 DB 사진 등록이 같이 쓴다(2026-10-22).
+      async function 등록하나(makeProfile) {
+        // 서버 고객이면 서버에 바로 넣는다 — 폰·태블릿·다른 PC 어디서든 새 고객을 만들 수 있어야
+        // 팀 플랫폼이다(2026-09-10 사용자: 「기존 고객 말고 새로 고객 추가해서 관리할 수 있게」).
+        // 코드는 이 화면이 아는 목록 기준 다음 번호다. 신규로 올리면 서버는 같은 코드를 덮지 않고
+        // 409로 돌려준다 — 그러면 서버 목록을 다시 받아 다음 번호로 한 번 더 시도한다.
+        if (SOURCE === "서버") {
+          var 새코드 = nextCode();
+          var 새레코드 = function (code) {
+            return { "고객코드": code, "profile": makeProfile(code), "policies": { policies: [] },
+              "memoText": "# 상담 메모 — " + code + "\n\n" };
+          };
+          var 보낸것 = 새레코드(새코드), 응답;
+          try {
+            응답 = await window.mgVaultUI.신규올리기(보낸것);
+          } catch (e1) {
+            if (!e1 || e1.status !== 409) throw e1;
+            // 다른 기기에서 같은 번호를 먼저 썼다 — 서버 목록으로 맞추고 다음 번호로 한 번만 더
+            var 최신 = await window.mgVaultUI.내려받기();
+            ALL = 최신.고객.map(받은모양).sort(function (a, b) { return a.code < b.code ? -1 : 1; });
+            var 겹친코드 = 새코드;
+            새코드 = nextCode();
+            if (새코드 <= 겹친코드) 새코드 = 다음번호(겹친코드);   // 못 푼 건이 그 번호를 쥐고 있을 때
+            보낸것 = 새레코드(새코드);
+            응답 = await window.mgVaultUI.신규올리기(보낸것);
+          }
+          ALL.push({ code: 새코드, profile: 보낸것.profile, policies: { policies: [] }, memoText: 보낸것.memoText,
+            stamp: 응답 && 응답["시각"] && 응답["시각"][새코드] });
+          ALL.sort(function (a, b) { return a.code < b.code ? -1 : 1; });
+          $("vault-note").hidden = true;       // 「올라간 고객이 없습니다」가 남지 않게
+          return 새코드;
+        }
+        // 코드 충돌 방지: 화면에 안 보이는 폴더(profile 손상 등)가 있어도 덮어쓰지 않는다
+        var code = nextCode();
+        for (var guard = 0; guard < 999; guard++) {
+          try {
+            await ROOT_HANDLE.getDirectoryHandle(code); // create 없이 — 존재하면 다음 번호
+            code = 다음번호(code);
+          } catch (e) { break; }
+        }
+        var dir = await ROOT_HANDLE.getDirectoryHandle(code, { create: true });
+        var profile = makeProfile(code);
+        var memoInit = "# 상담 메모 — " + code + "\n\n";
+        try {
+          var pf = await dir.getFileHandle("profile.json", { create: true });
+          var w = await pf.createWritable();
+          await w.write(JSON.stringify(profile, null, 1));
+          await w.close();
+          var mf = await dir.getFileHandle("memo.md", { create: true });
+          var mw = await mf.createWritable();
+          await mw.write(memoInit);
+          await mw.close();
+        } catch (writeErr) {
+          // 부분 생성물 정리 — 불완전 고객 폴더를 남기지 않는다
+          try { await ROOT_HANDLE.removeEntry(code, { recursive: true }); } catch (e2) {}
+          throw writeErr;
+        }
+        ALL.push({ code: code, profile: profile, policies: { policies: [] }, handle: dir, memoText: memoInit });
+        ALL.sort(function (a, b) { return a.code < b.code ? -1 : 1; });
+        return code;
+      }
+      function 등록막힘() {
+        if (SOURCE === "남") return "팀원 고객을 열어 둔 중에는 등록하지 않습니다.";
+        if (SOURCE !== "서버" && (!ROOT_HANDLE || !CAN_CREATE)) return "쓰기 가능한 고객 저장소 폴더를 연결하세요.";
+        return "";
+      }
+      function 등록실패(e) { return SOURCE === "서버" ? 저장실패문구({}, e, "등록 실패") : "등록 실패: 폴더 쓰기 권한을 확인하세요."; }
+
       $("new-save").addEventListener("click", async function () {
         var saveBtn = this;
         if (saveBtn.disabled) return;
         var name = $("new-name").value.trim();
         if (!name) { $("new-msg").textContent = "이름을 입력하세요."; return; }
-        // 서버 고객이면 서버에 바로 넣는다 — 폰·태블릿·다른 PC 어디서든 새 고객을 만들 수 있어야
-        // 팀 플랫폼이다(2026-09-10 사용자: 「기존 고객 말고 새로 고객 추가해서 관리할 수 있게」).
-        // 코드는 이 화면이 아는 목록 기준 다음 번호다. 신규로 올리면 서버는 같은 코드를 덮지 않고
-        // 409로 돌려준다 — 그러면 서버 목록을 다시 받아 다음 번호로 한 번 더 시도한다.
-        if (SOURCE === "남") { $("new-msg").textContent = "팀원 고객을 열어 둔 중에는 등록하지 않습니다."; return; }
-        if (SOURCE === "서버") {
-          saveBtn.disabled = true;
-          var 새코드 = nextCode();
-          var 새레코드 = function (code) {
-            return { "고객코드": code, "profile": 새프로필(code, name), "policies": { policies: [] },
-              "memoText": "# 상담 메모 — " + code + "\n\n" };
-          };
-          try {
-            var 보낸것 = 새레코드(새코드), 응답;
-            try {
-              응답 = await window.mgVaultUI.신규올리기(보낸것);
-            } catch (e1) {
-              if (!e1 || e1.status !== 409) throw e1;
-              // 다른 기기에서 같은 번호를 먼저 썼다 — 서버 목록으로 맞추고 다음 번호로 한 번만 더
-              var 최신 = await window.mgVaultUI.내려받기();
-              ALL = 최신.고객.map(받은모양).sort(function (a, b) { return a.code < b.code ? -1 : 1; });
-              var 겹친코드 = 새코드;
-              새코드 = nextCode();
-              if (새코드 <= 겹친코드) 새코드 = 다음번호(겹친코드);   // 못 푼 건이 그 번호를 쥐고 있을 때
-              보낸것 = 새레코드(새코드);
-              응답 = await window.mgVaultUI.신규올리기(보낸것);
-            }
-            var 새프로필값 = 보낸것.profile, 새메모 = 보낸것.memoText;
-            ALL.push({ code: 새코드, profile: 새프로필값, policies: { policies: [] }, memoText: 새메모,
-              stamp: 응답 && 응답["시각"] && 응답["시각"][새코드] });
-            ALL.sort(function (a, b) { return a.code < b.code ? -1 : 1; });
-            $("new-form").hidden = true;
-            $("new-name").value = ""; $("new-phone").value = "";
-            $("new-msg").textContent = "";
-            renderList();
-            $("connect-box").querySelector("span").textContent = "고객 " + ALL.length + "명. " + 새코드 + " 서버에 등록됨.";
-            $("vault-note").hidden = true;       // 「올라간 고객이 없습니다」가 남지 않게
-          } catch (e) {
-            $("new-msg").textContent = 저장실패문구({}, e, "등록 실패");
-          } finally {
-            saveBtn.disabled = false;
-          }
-          return;
-        }
-        if (!ROOT_HANDLE || !CAN_CREATE) { $("new-msg").textContent = "쓰기 가능한 고객 저장소 폴더를 연결하세요."; return; }
+        var 막힘 = 등록막힘();
+        if (막힘) { $("new-msg").textContent = 막힘; return; }
         saveBtn.disabled = true;
-        // 코드 충돌 방지: 화면에 안 보이는 폴더(profile 손상 등)가 있어도 덮어쓰지 않는다
-        var code = nextCode();
         try {
-          for (var guard = 0; guard < 999; guard++) {
-            try {
-              await ROOT_HANDLE.getDirectoryHandle(code); // create 없이 — 존재하면 다음 번호
-              code = 다음번호(code);
-            } catch (e) { break; }
-          }
-          var dir = await ROOT_HANDLE.getDirectoryHandle(code, { create: true });
-          var profile = 새프로필(code, name);
-          var memoInit = "# 상담 메모 — " + code + "\n\n";
-          try {
-            var pf = await dir.getFileHandle("profile.json", { create: true });
-            var w = await pf.createWritable();
-            await w.write(JSON.stringify(profile, null, 1));
-            await w.close();
-            var mf = await dir.getFileHandle("memo.md", { create: true });
-            var mw = await mf.createWritable();
-            await mw.write(memoInit);
-            await mw.close();
-          } catch (writeErr) {
-            // 부분 생성물 정리 — 불완전 고객 폴더를 남기지 않는다
-            try { await ROOT_HANDLE.removeEntry(code, { recursive: true }); } catch (e2) {}
-            throw writeErr;
-          }
-          ALL.push({ code: code, profile: profile, policies: { policies: [] }, handle: dir, memoText: memoInit });
-          ALL.sort(function (a, b) { return a.code < b.code ? -1 : 1; });
+          var code = await 등록하나(function (cd) { return 새프로필(cd, name); });
           $("new-form").hidden = true;
           $("new-name").value = ""; $("new-phone").value = "";
           $("new-msg").textContent = "";
           renderList();
-          $("connect-box").querySelector("span").textContent = "고객 " + ALL.length + "명. " + code + " 등록됨.";
+          $("connect-box").querySelector("span").textContent = "고객 " + ALL.length + "명. " + code + (SOURCE === "서버" ? " 서버에 등록됨." : " 등록됨.");
         } catch (e) {
-          $("new-msg").textContent = "등록 실패: 폴더 쓰기 권한을 확인하세요.";
+          $("new-msg").textContent = 등록실패(e);
         } finally {
           saveBtn.disabled = false;
         }
+      });
+
+      // ── DB 사진으로 여러 명 등록 — 사진을 AI가 읽어 표로, 사람이 고치고 골라 등록(2026-10-22 팀원 건의)
+      var DB칸 = ["이름", "나이", "성별", "전화", "유입일시", "희망시간", "월보험료", "메모"];
+      var db줄 = [];
+      // 사진은 긴 변 1800px JPEG로 줄여 보낸다 — 폰 원본(10MB 안팎)을 그대로 올리지 않게
+      function 사진줄이기(file) {
+        return new Promise(function (ok, fail) {
+          var url = URL.createObjectURL(file), img = new Image();
+          img.onload = function () {
+            var k = Math.min(1, 1800 / Math.max(img.naturalWidth, img.naturalHeight));
+            var cv = document.createElement("canvas");
+            cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
+            cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+            URL.revokeObjectURL(url);
+            ok(cv.toDataURL("image/jpeg", 0.85).split(",")[1]);
+          };
+          img.onerror = function () { URL.revokeObjectURL(url); fail(new Error(file.name + "을(를) 열지 못했습니다.")); };
+          img.src = url;
+        });
+      }
+      function DB프로필(code, r, cat) {
+        var p = { "고객코드": code, "담당FC": 담당FC(), "카테고리": cat, "등록일": localDate(),
+          "customerName": r["이름"] || "이름 미기재", "phone": r["전화"] || null };
+        if (r["나이"]) p.age = Number(r["나이"]) || r["나이"];
+        if (r["성별"]) p.gender = r["성별"] === "남" ? "male" : r["성별"] === "여" ? "female" : r["성별"];
+        if (r["희망시간"]) p["고정메모"] = [{ "항목": "연락 시간", "내용": r["희망시간"] }];
+        var 줄 = [r["유입일시"] && "유입 " + r["유입일시"], r["월보험료"] && "월보험료 " + r["월보험료"], r["메모"]].filter(Boolean).join(" · ");
+        p["기록"] = [{ "일자": localDate(), "방법": "기타", "내용": "DB 사진으로 등록" + (줄 ? " — " + 줄 : "") }];
+        return p;
+      }
+      function renderDb() {
+        $("db-rows").innerHTML = db줄.map(function (r, i) {
+          return '<tr class="' + (r.unsure ? "unsure" : "") + '"><td><input type="checkbox" data-db-pick="' + i + '"' + (r.pick ? " checked" : "") + ' aria-label="' + esc(r["이름"] || "이름 없음") + ' 등록"></td>'
+            + DB칸.map(function (k) {
+                return '<td class="' + (k === "메모" ? "memo" : "") + '"><input type="text" data-db="' + i + '" data-k="' + k + '" value="' + esc(r[k]) + '" aria-label="' + k + '"></td>';
+              }).join("") + "</tr>"
+            + (r.note ? '<tr><td></td><td colspan="8" class="note">확인 필요 — ' + esc(r.note) + "</td></tr>" : "");
+        }).join("");
+        $("db-cat").innerHTML = catOptions($("db-cat").value && $("db-cat").value !== 새그룹 ? $("db-cat").value : "valueup", false);
+        $("db-all").checked = db줄.length > 0 && db줄.every(function (r) { return r.pick; });
+      }
+      $("db-photo-btn").addEventListener("click", function () {
+        var 막힘 = 등록막힘();
+        if (막힘) { $("new-msg").textContent = 막힘; return; }
+        $("db-photo-input").click();
+      });
+      $("db-photo-input").addEventListener("change", async function (e) {
+        var files = Array.prototype.slice.call(e.target.files || []).slice(0, 4);
+        e.target.value = "";
+        if (!files.length) return;
+        $("db-panel").hidden = false;
+        $("db-rows").innerHTML = "";
+        $("db-msg").textContent = "사진 " + files.length + "장을 읽는 중입니다. 30초~1분 걸립니다.";
+        $("db-save").disabled = true;
+        try {
+          var images = [];
+          for (var i = 0; i < files.length; i++) images.push(await 사진줄이기(files[i]));
+          var d = await window.mgAuth.api("/ai/dbphoto", { method: "POST", body: { images: images } });
+          db줄 = (d.rows || []).map(function (r) { return Object.assign({ pick: !!r["이름"] }, r); });
+          $("db-msg").textContent = (d.reply || db줄.length + "명을 읽었습니다.") + " 칸을 고친 뒤 고른 고객만 등록합니다. 노란 줄은 다시 확인하세요.";
+          renderDb();
+        } catch (err) {
+          $("db-msg").textContent = (err && err.message) || "사진을 읽지 못했습니다.";
+        } finally {
+          $("db-save").disabled = false;
+        }
+      });
+      $("db-rows").addEventListener("input", function (e) {
+        var t = e.target.closest("[data-db]");
+        if (t) db줄[Number(t.dataset.db)][t.dataset.k] = t.value.trim();
+      });
+      $("db-rows").addEventListener("change", function (e) {
+        var t = e.target.closest("[data-db-pick]");
+        if (t) { db줄[Number(t.dataset.dbPick)].pick = t.checked; $("db-all").checked = db줄.every(function (r) { return r.pick; }); }
+      });
+      $("db-all").addEventListener("change", function (e) { db줄.forEach(function (r) { r.pick = e.target.checked; }); renderDb(); });
+      $("db-close").addEventListener("click", function () { $("db-panel").hidden = true; db줄 = []; });
+      $("db-save").addEventListener("click", async function () {
+        var 고른 = db줄.filter(function (r) { return r.pick && (r["이름"] || r["전화"]); });
+        if (!고른.length) { $("db-msg").textContent = "등록할 고객을 고르세요."; return; }
+        var cat = 그룹이름($("db-cat").value);
+        if (cat === null) { renderDb(); return; }
+        var 막힘 = 등록막힘();
+        if (막힘) { $("db-msg").textContent = 막힘; return; }
+        var btn = $("db-save"), 된것 = 0, 실패 = "";
+        btn.disabled = true;
+        for (var i = 0; i < 고른.length; i++) {
+          $("db-msg").textContent = "등록하는 중 " + (i + 1) + "/" + 고른.length;
+          try {
+            await 등록하나(function (cd) { return DB프로필(cd, 고른[i], cat); });
+            고른[i].pick = false; 고른[i].done = true; 된것 += 1;
+          } catch (err) { 실패 = 등록실패(err); break; }   // 한 명이 막히면 나머지도 같은 이유로 막힌다 — 멈추고 알린다
+        }
+        db줄 = db줄.filter(function (r) { return !r.done; });
+        btn.disabled = false;
+        renderList();
+        $("connect-box").querySelector("span").textContent = "고객 " + ALL.length + "명.";
+        $("db-msg").textContent = 된것 + "명을 「" + (CAT[cat] || cat) + "」 분류로 등록했습니다." + (실패 ? " 나머지는 멈췄습니다 — " + 실패 : "");
+        if (db줄.length) renderDb(); else $("db-rows").innerHTML = "";
       });
 
       // 키보드 접근: 목록 행 Enter/Space 선택

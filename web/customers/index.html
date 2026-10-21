@@ -65,6 +65,19 @@
     .cu-bulk select { height: 34px; padding: 0 8px; border: 1px solid var(--platform-line-strong); background: var(--platform-surface); font: inherit; font-size: 13px; color: inherit; }
     .cu-bulk .btn[disabled] { opacity: .45; cursor: default; }
     .cu-sels { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+    .db-panel { margin-top: 14px; border-top: 2px solid var(--platform-ink); padding-top: 10px; flex-basis: 100%; }
+    .db-head { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; font-size: 13px; color: var(--platform-muted); }
+    .db-head strong { font-size: 15px; color: var(--platform-ink); }
+    .db-wrap { overflow-x: auto; margin-top: 8px; }
+    .db-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .db-table th { text-align: left; font-size: 11px; font-weight: 700; color: var(--platform-faint); padding: 6px 4px; border-bottom: 1px solid var(--platform-line); white-space: nowrap; }
+    .db-table td { padding: 4px; border-bottom: 1px solid var(--platform-line); vertical-align: top; }
+    .db-table input[type=text] { width: 100%; min-width: 64px; height: 32px; padding: 0 6px; border: 1px solid var(--platform-line-strong); background: var(--platform-surface); font: inherit; font-size: 13px; color: inherit; box-sizing: border-box; }
+    .db-table td.memo input { min-width: 180px; }
+    .db-table tr.unsure input[type=text] { background: #fbf3df; }
+    .db-table .note { font-size: 11.5px; color: var(--platform-partial); padding: 2px 4px 6px; }
+    .db-foot { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-top: 10px; font-size: 13px; }
+    .db-foot select { height: 34px; padding: 0 8px; border: 1px solid var(--platform-line-strong); background: var(--platform-surface); font: inherit; font-size: 13px; }
     body.platform #rows .case-row:hover { background: #f3f1ed; color: inherit; }
     body.platform #rows .case-row.active { background: var(--platform-blue-soft); box-shadow: inset 3px 0 0 var(--platform-blue); }
     #rows .cu-n { font-size: 15px; font-weight: 750; }
@@ -259,6 +272,20 @@
             <button class="btn" type="button" id="new-save">등록</button>
             <button class="btn" type="button" id="new-cancel">취소</button>
             <span id="new-msg" style="font-size:0.83rem;color:var(--platform-muted)"></span>
+            <button class="btn" type="button" id="db-photo-btn" style="margin-left:auto">DB 사진으로 여러 명 등록</button>
+            <input type="file" id="db-photo-input" accept="image/*" multiple hidden>
+          </div>
+          <!-- DB 사진 등록 — 사진을 AI가 읽어 표로 보여 주고, 사람이 고치고 골라 등록한다(2026-10-22) -->
+          <div class="db-panel" id="db-panel" hidden>
+            <div class="db-head"><strong>DB 사진으로 등록</strong><span id="db-msg"></span></div>
+            <div class="db-wrap"><table class="db-table"><thead><tr><th><input type="checkbox" id="db-all" checked aria-label="모두 고르기"></th>
+              <th>이름</th><th>나이</th><th>성별</th><th>전화</th><th>유입일시</th><th>희망시간</th><th>월보험료</th><th>메모</th></tr></thead><tbody id="db-rows"></tbody></table></div>
+            <div class="db-foot">
+              <label>분류 <select id="db-cat" aria-label="등록할 분류"></select></label>
+              <button class="btn btn-primary" type="button" id="db-save">고른 고객 등록</button>
+              <button class="btn" type="button" id="db-close">닫기</button>
+              <span class="cu-msg">희망시간은 「꼭 알 것」에, 유입일시·월보험료·메모는 첫 기록으로 남습니다.</span>
+            </div>
           </div>
           <input type="file" id="dir-input" webkitdirectory multiple hidden>
         </div>
