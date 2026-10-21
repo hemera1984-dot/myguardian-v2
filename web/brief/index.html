@@ -93,6 +93,13 @@
     .lib-main .l-meta { display: block; margin-top: 4px; color: var(--platform-faint); font-size: 12.5px; font-variant-numeric: tabular-nums; }
     .lib-del { border: none; background: none; font: inherit; font-size: 12.5px; color: var(--platform-faint); cursor: pointer; padding: 2px 4px; transition: color 0.14s ease; }
     .lib-del:hover { color: var(--platform-denied); }
+    .lib-edit { border: none; background: none; font: inherit; font-size: 12.5px; color: var(--platform-faint); cursor: pointer; padding: 2px 4px; transition: color 0.14s ease; }
+    .lib-edit:hover, .lib-edit[aria-expanded="true"] { color: var(--platform-blue); }
+    .lib-script { border-bottom: 1px solid var(--platform-line); padding: 4px 4px 16px 34px; }
+    .lib-script p { margin: 0 0 8px; color: var(--platform-faint); font-size: 12.5px; }
+    .lib-script textarea { width: 100%; box-sizing: border-box; min-height: 260px; font: inherit; font-size: 14px; line-height: 1.7; padding: 10px 12px; border: 1px solid var(--platform-line-strong, #c9c2b8); border-radius: 4px; background: var(--platform-surface, #fff); color: inherit; resize: vertical; }
+    .lib-script .row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+    .lib-script .row span { color: var(--platform-faint); font-size: 12.5px; }
   </style>
 </head>
 <body class="platform">
@@ -145,7 +152,7 @@
             <h3>내 컴퓨터에서 열기</h3>
             <p class="surface-desc" id="local-desc">브리핑 문서(JSON)·PDF·HTML·이미지(여러 장)를 열어 발표합니다. 스크립트 파일(.txt/.md/.pdf/.html)을 함께 올리면 페이지별 발표자 스크립트가 됩니다 — PDF는 페이지를 원본 서식 그대로 표시하고, 텍스트는 "---", HTML은 수평선(hr)으로 구간을 나눠 순서대로 연결합니다. 파일은 이 브라우저 안에서만 처리되며 어디에도 전송되지 않습니다.</p>
             <input type="file" id="file-input" accept=".json,application/json,.pdf,application/pdf,.html,.htm,text/html,image/*" multiple>
-            <input type="file" id="script-input" accept=".txt,.md,.pdf,.html,.htm,text/plain,text/markdown,application/pdf,text/html">
+            <input type="file" id="script-input">
             <div class="local-actions">
               <button class="local-button" id="file-open" type="button">슬라이드 파일 선택</button>
               <button class="local-button" id="script-open" type="button">스크립트 파일 선택 (선택)</button>
@@ -341,6 +348,10 @@
               box.appendChild(row);
               return;
             }
+            var edit = el("button", "lib-edit", "스크립트 고치기");
+            edit.type = "button";
+            edit.setAttribute("aria-expanded", "false");
+            row.appendChild(edit);
             var del = el("button", "lib-del", "삭제");
             del.type = "button";
             del.addEventListener("click", function () {
@@ -353,8 +364,69 @@
             });
             row.appendChild(del);
             box.appendChild(row);
+            edit.addEventListener("click", function () {
+              var open = row.nextSibling && row.nextSibling.classList && row.nextSibling.classList.contains("lib-script");
+              if (open) { row.parentNode.removeChild(row.nextSibling); edit.setAttribute("aria-expanded", "false"); return; }
+              row.parentNode.insertBefore(스크립트편집(it), row.nextSibling);
+              edit.setAttribute("aria-expanded", "true");
+            });
           });
         }).catch(function () {});
+      }
+
+      // 목차에 올린 자료의 스크립트를 그 자리에서 고친다(2026-10-21 수정 요청 — 파일을 다시 만들어 올리지 않게).
+      // 구간은 「---」 한 줄로 나눈다. 저장하면 슬라이드는 그대로 두고 스크립트만 바꿔 다시 싣는다.
+      function 스크립트편집(it) {
+        var box = el("div", "lib-script");
+        var pdf = !!(it["스크립트문서"] || it["스크립트주소"]);
+        box.appendChild(el("p", null, pdf
+          ? "지금 스크립트는 PDF라 글로 고칠 수 없습니다. 여기 글을 써서 저장하면 PDF 대신 이 글이 스크립트가 됩니다."
+          : "구간은 「---」 한 줄로 나눕니다. 구간 순서대로 1·2·3…장에 붙습니다. 비우고 저장하면 스크립트가 빠집니다."));
+        var ta = document.createElement("textarea");
+        ta.value = pdf ? "" : (it["스크립트"] || []).join("\n---\n");
+        ta.setAttribute("aria-label", "발표 스크립트");
+        box.appendChild(ta);
+        var row = el("div", "row");
+        var save = el("button", "local-button primary", "저장");
+        save.type = "button";
+        var close = el("button", "local-button", "닫기");
+        close.type = "button";
+        var note = el("span");
+        row.appendChild(save); row.appendChild(close); row.appendChild(note);
+        box.appendChild(row);
+        function 구간수() {
+          var n = ta.value.trim() ? window.mgBrief.parseScriptText(ta.value).length : 0;
+          note.textContent = n ? n + "구간" : "스크립트 없음";
+        }
+        ta.addEventListener("input", 구간수);
+        구간수();
+        close.addEventListener("click", function () { renderLibrary(); });
+        save.addEventListener("click", function () {
+          var 구간 = ta.value.trim() ? window.mgBrief.parseScriptText(ta.value) : null;
+          save.disabled = true;
+          note.textContent = "저장하는 중입니다.";
+          스크립트바꾸기(it, 구간).then(renderLibrary).catch(function (err) {
+            save.disabled = false;
+            note.textContent = "저장하지 못했습니다: " + (err && err.message ? err.message : err);
+          });
+        });
+        return box;
+      }
+
+      function 스크립트바꾸기(it, 구간) {
+        if (it.__팀) {
+          // 서버가 붙인 칸은 빼고 다시 싣는다 — 같은 id면 서버가 덮어쓰고, 안 쓰게 된 스크립트 PDF는 서버가 지운다
+          var 뺄것 = ["__팀", "내가올림", "지울수있음", "올린이", "올린이메일", "등록일", "스크립트", "스크립트주소", "스크립트이름"];
+          var 항목 = {};
+          Object.keys(it).forEach(function (k) { if (뺄것.indexOf(k) < 0) 항목[k] = it[k]; });
+          if (구간) 항목["스크립트"] = 구간;
+          return window.mgAuth.api("/brief/library", { method: "POST", body: 항목 });
+        }
+        var rec = Object.assign({}, it);
+        delete rec["스크립트"];
+        delete rec["스크립트문서"];
+        if (구간) rec["스크립트"] = 구간;
+        return window.mgBrief.libraryPut(rec);
       }
 
       function selectMode(next) {
@@ -511,6 +583,14 @@
           return;
         }
         var scriptExt = fileExt(f.name);
+        // 고르는 창에서 형식을 거르면 맥에서 HTML 스크립트가 회색으로 막혔다(2026-10-21 수정 요청) —
+        // 아무 파일이나 고르게 두고 여기서 이름으로 가른다
+        if (["txt", "md", "pdf", "html", "htm"].indexOf(scriptExt) < 0) {
+          scriptInput.value = "";
+          showLocalError("스크립트는 txt·md·pdf·html 파일만 받습니다. 고른 파일: " + f.name);
+          updateSummary();
+          return;
+        }
         if (scriptExt === "pdf") {
           scriptPdfFile = f; // 파싱하지 않고 원본 PDF 그대로 — 발표 화면이 페이지로 렌더한다
           updateSummary();
