@@ -22,7 +22,8 @@
       var ALL = [];
       // 지금 목록이 어디서 왔는가 — "폴더" 또는 "서버". 저장 경로와 편집 가능 여부가 갈린다.
       var SOURCE = "폴더";
-      var state = { q: "", cat: "", view: "all", sort: "meet", sel: null };
+      var state = { q: "", cat: "", st: "", view: "all", sort: "meet", sel: null };
+      var picked = {};   // 목록에서 체크한 고객 코드 — 분류를 한 번에 바꾼다(2026-10-22 팀원 건의)
       var $ = function (id) { return document.getElementById(id); };
 
       var esc = window.mg.esc;
@@ -204,6 +205,22 @@
         }).join("");
       }
 
+      // 진행상태 거르기 — 거절만, 다시 전화만 … 「기계약」은 보유보험이 한 건이라도 있는 고객(2026-10-22 팀원 건의)
+      function polCount(c) { return ((c.policies && c.policies.policies) || []).length; }
+      function stMatch(c, st) {
+        if (st === "__none") return !custStatus(c);
+        if (st === "__holder") return polCount(c) > 0;
+        return custStatus(c) === st;
+      }
+      function renderStFilter() {
+        var n = function (st) { return ALL.filter(function (c) { return stMatch(c, st); }).length; };
+        $("f-st").innerHTML = '<option value="">상태 전체</option>'
+          + STATUS.map(function (s) { return '<option value="' + esc(s) + '">' + esc(s) + " " + n(s) + "</option>"; }).join("")
+          + '<option value="__none">미분류 ' + n("__none") + "</option>"
+          + '<option value="__holder">기계약(보유보험 있음) ' + n("__holder") + "</option>";
+        $("f-st").value = state.st;
+      }
+
       // 초성 검색 — 「ㄱㅁㅅ」로 김민수를 찾는다(국내 설계사 앱 공통)
       var CHO = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
       function choseong(s) {
@@ -214,7 +231,8 @@
         var view = (VIEWS.find(function (v) { return v[0] === state.view; }) || VIEWS[0])[2];
         var list = ALL.filter(function (c) {
           var o = v1(c);
-          if (state.cat && catOf(c) !== state.cat) return false;
+          if (state.cat && (state.cat === "__none" ? !!catOf(c) : catOf(c) !== state.cat)) return false;
+          if (state.st && !stMatch(c, state.st)) return false;
           if (!view(c)) return false;
           if (q) {
             var name = String(o.customerName || "").replace(/\s+/g, "");
@@ -243,14 +261,19 @@
         if (nc) sub.push('<span class="' + (dayDiff(nc) <= 0 ? "cu-due" : "cu-next") + '">' + md(nc) + " · " + esc(todoText(c) || "다음 연락") + "</span>");
         else if (why) sub.push("<span>" + esc(why) + "</span>");
         sub.push('<span class="' + (isQuiet(c) ? "cu-late" : "") + '">' + agoText(l === null ? null : -dayDiff(l)) + "</span>");
-        return '<div class="case-row' + (c.code === state.sel ? " active" : "") + '" tabindex="0" role="button" data-code="' + esc(c.code) + '">'
-          + '<div class="cu-n">' + esc(nameOf(c)) + "<small>" + esc(CAT[catOf(c)] || catOf(c) || "미분류") + "</small></div>"
+        var pick = 쓸수있나(c)
+          ? '<label class="cu-pick" title="골라서 분류 바꾸기"><input type="checkbox" data-pick="' + esc(c.code) + '"' + (picked[c.code] ? " checked" : "") + ' aria-label="' + esc(nameOf(c)) + ' 고르기"></label>'
+          : "<span></span>";
+        return '<div class="case-row' + (c.code === state.sel ? " active" : "") + (picked[c.code] ? " picked" : "") + '" tabindex="0" role="button" data-code="' + esc(c.code) + '">'
+          + pick + '<div class="cu-n">' + esc(nameOf(c)) + "<small>" + esc(CAT[catOf(c)] || catOf(c) || "미분류") + "</small></div>"
           + '<div class="cu-st' + (st === "다시 전화" ? " call" : "") + '">' + esc(st || "미분류") + "</div>"
           + '<div class="cu-sub">' + sub.join("") + "</div></div>";
       }
 
       function renderList() {
         renderViews();
+        renderStFilter();
+        renderCatFilter();
         var list = filtered();
         $("result-count").textContent = list.length + "명";
         // 선택 고객이 현재 결과에 없으면 상세도 함께 비운다 (목록-상세 상태 일치)
@@ -258,8 +281,10 @@
           state.sel = null;
           $("detail").innerHTML = DETAIL_EMPTY;
           $("work-grid").classList.remove("show-detail");
+          $("work-block").classList.remove("reading");
         }
         $("rows").innerHTML = list.length ? list.map(rowHtml).join("") : '<div class="list-empty">이 보기에 해당하는 고객이 없습니다.</div>';
+        renderBulk(list);
         if (!$("board").hidden) renderBoard();
       }
 
@@ -298,8 +323,9 @@
         var head = '<button class="btn cu-back" type="button" id="cu-back">← 고객 목록</button>'
           + '<div class="cu-head"><div class="cu-head-top"><div><h2>' + esc(nameOf(c)) + "<small>" + cd + "</small></h2>"
           + '<div class="cu-meta">' + esc([CAT[catOf(c)] || catOf(c), o.age ? o.age + "세" : "", gender, o.address].filter(Boolean).join(" · ")) + "</div></div>"
-          + (w ? '<select class="cu-sel" id="st-sel" data-code="' + cd + '" aria-label="진행상태"><option value="">미분류</option>'
-                + STATUS.map(function (s) { return "<option" + (s === st ? " selected" : "") + ">" + esc(s) + "</option>"; }).join("") + "</select>"
+          + (w ? '<div class="cu-sels"><select class="cu-sel" id="cat-sel" data-code="' + cd + '" aria-label="분류">' + catOptions(catOf(c), true) + "</select>"
+                + '<select class="cu-sel" id="st-sel" data-code="' + cd + '" aria-label="진행상태"><option value="">미분류</option>'
+                + STATUS.map(function (s) { return "<option" + (s === st ? " selected" : "") + ">" + esc(s) + "</option>"; }).join("") + "</select></div>"
               : '<span class="cu-meta">' + esc(st || "미분류") + "</span>")
           + "</div>"
           + '<div class="cu-facts">'
@@ -840,6 +866,7 @@
         var cur = ALL.find(function (x) { return x.code === state.sel; });
         if (btn.id === "cu-back") {
           $("work-grid").classList.remove("show-detail");
+          $("work-block").classList.remove("reading");
           var row = document.querySelector('#rows .case-row[data-code="' + state.sel + '"]');
           if (row) row.scrollIntoView({ block: "center" });
           return;
@@ -929,6 +956,12 @@
       $("detail").addEventListener("change", function (e) {
         var cur = ALL.find(function (x) { return x.code === state.sel; });
         if (cur && e.target.id === "st-sel") { saveStatus(cur, e.target.value); return; }
+        if (cur && e.target.id === "cat-sel") {
+          var cv = 그룹이름(e.target.value);
+          if (cv === null) { renderDetail(cur); return; }
+          commitProfile(cur, function (draft) { setCat(draft, cv); }, "status-msg");
+          return;
+        }
         if (cur && e.target.id === "nc-date") { var nd = e.target.value; commitProfile(cur, function (draft) { setNext(draft, nd); }, "info-msg"); return; }
         if (cur && e.target.id === "nc-todo") { var tv = e.target.value.trim(); commitProfile(cur, function (draft) { if (tv) draft["다음할일"] = tv; else delete draft["다음할일"]; }, "info-msg"); return; }
         if (cur && e.target.id === "cycle-sel") { var cy = Number(e.target.value); commitProfile(cur, function (draft) { draft["연락주기"] = cy; }, "info-msg"); return; }
@@ -1092,6 +1125,7 @@
 
       $("q").addEventListener("input", function (e) { state.q = e.target.value.trim(); renderList(); });
       $("f-cat").addEventListener("change", function (e) { state.cat = e.target.value; renderList(); });
+      $("f-st").addEventListener("change", function (e) { state.st = e.target.value; renderList(); });
       $("f-sort").addEventListener("change", function (e) { state.sort = e.target.value; renderList(); });
       $("views").addEventListener("click", function (e) {
         var b = e.target.closest("[data-view]");
@@ -1114,8 +1148,9 @@
         state.sel = code;
         document.querySelectorAll("#rows .case-row").forEach(function (r) { r.classList.toggle("active", r.dataset.code === code); });
         renderDetail(c);
-        // 좁은 화면은 목록 대신 상세가 뜬다 — 맨 위로 올려 머리부터 보이게
+        // 목록 대신 상세가 뜬다 — 맨 위로 올려 머리부터 보이게
         $("work-grid").classList.add("show-detail");
+        $("work-block").classList.add("reading");
         var d = $("detail");
         if (d.getBoundingClientRect().top < 0 || d.getBoundingClientRect().top > window.innerHeight * 0.6) {
           d.scrollIntoView({ block: "start", behavior: "auto" });
@@ -1130,8 +1165,97 @@
         openCustomer(b.dataset.code);
       });
       $("rows").addEventListener("click", function (e) {
+        if (e.target.closest(".cu-pick")) return;   // 체크 칸은 고르기만 — 상세를 열지 않는다
         var row = e.target.closest(".case-row");
         if (row) openCustomer(row.dataset.code);
+      });
+      $("rows").addEventListener("change", function (e) {
+        var box = e.target.closest("[data-pick]");
+        if (!box) return;
+        if (box.checked) picked[box.dataset.pick] = true; else delete picked[box.dataset.pick];
+        box.closest(".case-row").classList.toggle("picked", box.checked);
+        renderBulk(filtered());
+      });
+
+      // ── 여러 명 분류 바꾸기 — 고른 고객마다 프로필을 한 번씩 저장한다(commitProfile)
+      // 분류 = 기본 넷(지인·이관·밸류업·계약) + 각자 만든 그룹(2026-10-22 팀원 건의: DB 종류·누가 준 DB인지 가르게).
+      // 그룹 목록을 따로 두지 않는다 — 내 고객에게 붙은 이름이 곧 목록이라 어느 기기에서 열어도 같다.
+      // 아무 고객에게도 안 붙은 그룹은 목록에서 사라진다.
+      function catChoices() {
+        var out = Object.keys(CAT).map(function (k) { return [k, CAT[k]]; }), seen = {};
+        Object.keys(CAT).forEach(function (k) { seen[k] = 1; });
+        ALL.map(catOf).filter(function (v) { return v && !seen[v] && (seen[v] = 1); })
+          .sort(function (a, b) { return a.localeCompare(b, "ko"); })
+          .forEach(function (v) { out.push([v, v]); });
+        return out;
+      }
+      var 새그룹 = "__new";
+      function catOptions(sel, 미분류) {
+        return (미분류 ? '<option value="">미분류</option>' : "")
+          + catChoices().map(function (x) { return '<option value="' + esc(x[0]) + '"' + (x[0] === sel ? " selected" : "") + ">" + esc(x[1]) + "</option>"; }).join("")
+          + '<option value="' + 새그룹 + '">+ 새 그룹 만들기</option>';
+      }
+      // 「+ 새 그룹 만들기」를 고르면 이름을 묻는다. 취소하면 null
+      function 그룹이름(v) {
+        if (v !== 새그룹) return v;
+        var n = window.prompt("새 그룹 이름 — 예: 10월 ○○ DB, 김 팀장 소개");
+        n = String(n || "").replace(/\s+/g, " ").trim().slice(0, 20);
+        if (!n) return null;
+        var 같은것 = catChoices().find(function (x) { return x[1] === n; });
+        return 같은것 ? 같은것[0] : n;
+      }
+      function renderCatFilter() {
+        var n = function (v) { return ALL.filter(function (c) { return v === "__none" ? !catOf(c) : catOf(c) === v; }).length; };
+        $("f-cat").innerHTML = '<option value="">분류 전체</option>'
+          + catChoices().map(function (x) { return '<option value="' + esc(x[0]) + '">' + esc(x[1]) + " " + n(x[0]) + "</option>"; }).join("")
+          + '<option value="__none">미분류 ' + n("__none") + "</option>";
+        $("f-cat").value = state.cat;
+        if ($("f-cat").value !== state.cat) { state.cat = ""; $("f-cat").value = ""; }   // 고른 그룹이 사라졌으면 전체로
+      }
+      function setCat(draft, v) {
+        var o = draft["v1원본"] || draft;   // catOf가 읽는 자리에 쓴다 — 옛 고객은 v1원본.category
+        if (o.category) o.category = v; else o["카테고리"] = v;
+      }
+      function renderBulk(list) {
+        var 쓸것 = list.filter(쓸수있나);
+        $("bulk").hidden = !쓸것.length;
+        if (!쓸것.length) return;
+        var n = Object.keys(picked).length;
+        $("bulk-n").textContent = n;
+        $("bulk-go").disabled = !n;
+        $("bulk-clear").disabled = !n;
+        var all = $("bulk-all");
+        var 보이는고른것 = 쓸것.filter(function (c) { return picked[c.code]; }).length;
+        all.checked = 보이는고른것 > 0 && 보이는고른것 === 쓸것.length;
+        all.indeterminate = 보이는고른것 > 0 && 보이는고른것 < 쓸것.length;
+        var 고른분류 = $("bulk-cat").value;
+        $("bulk-cat").innerHTML = catOptions(고른분류 && 고른분류 !== 새그룹 ? 고른분류 : "valueup", false);
+      }
+      $("bulk-all").addEventListener("change", function (e) {
+        filtered().filter(쓸수있나).forEach(function (c) { if (e.target.checked) picked[c.code] = true; else delete picked[c.code]; });
+        renderList();
+      });
+      $("bulk-clear").addEventListener("click", function () { picked = {}; $("bulk-msg").textContent = ""; renderList(); });
+      $("bulk-go").addEventListener("click", async function () {
+        var v = 그룹이름($("bulk-cat").value);
+        if (v === null) { renderList(); return; }
+        var 이름 = CAT[v] || v;
+        var 대상 = ALL.filter(function (c) { return picked[c.code] && 쓸수있나(c); });
+        if (!대상.length || !window.confirm(대상.length + "명을 「" + 이름 + "」 분류로 옮길까요?")) { renderList(); return; }
+        var btn = $("bulk-go"), msg = $("bulk-msg"), 실패 = 0;
+        btn.disabled = true;
+        for (var i = 0; i < 대상.length; i++) {
+          msg.textContent = "옮기는 중 " + (i + 1) + "/" + 대상.length;
+          if (catOf(대상[i]) === v) continue;
+          var ok = await commitProfile(대상[i], function (d) { setCat(d, v); }, "bulk-msg");
+          if (!ok) 실패 += 1;
+        }
+        picked = {};
+        renderList();
+        // 받침이 있으면 「으로」(ㄹ 받침은 「로」) — 「이관로」가 되지 않게
+        var 끝 = 이름.charCodeAt(이름.length - 1) - 0xac00, 받침 = 끝 >= 0 && 끝 < 11172 ? 끝 % 28 : 0;
+        var 로 = 받침 && 받침 !== 8 ? "으로" : "로";
+        msg.textContent = 실패 ? (대상.length - 실패) + "명 옮겼고 " + 실패 + "명은 저장하지 못했습니다." : 대상.length + "명을 「" + 이름 + "」" + 로 + " 옮겼습니다.";
       });
 
       // ── 서버 고객 (2026-08-31 — 잠금문구 폐지)

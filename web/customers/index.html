@@ -47,24 +47,44 @@
     .cu-seg button { min-height: 36px; padding: 0 12px; border: 0; background: var(--platform-surface); font: inherit; font-size: 13px; font-weight: 650; color: var(--platform-muted); cursor: pointer; transition: background-color .14s, color .14s; }
     .cu-seg button.on { background: var(--platform-ink); color: var(--platform-surface); }
 
-    body.platform #work-grid { grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); }
-    body.platform #work-grid .workspace-list { padding-top: 0; padding-right: 0; }
-    body.platform #work-grid .case-rows { max-height: calc(100vh - 260px); min-height: 360px; }
-    body.platform #rows .case-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 12px; padding: 12px 16px 12px 14px; box-shadow: inset 3px 0 0 transparent; transition: background-color .14s, box-shadow .14s; }
+    /* 목록과 상세를 나란히 두지 않는다 — 목록은 넓게 펼쳐 여러 명을 보고, 누르면 상세가 목록 자리에 뜬다
+       (2026-10-22 팀원 건의: 반반으로 붙어 있으면 한 화면에 6명뿐). 「← 고객 목록」으로 돌아온다. */
+    body.platform #work-grid { grid-template-columns: 1fr; }
+    body.platform #work-grid .workspace-list { padding: 0; border-bottom: 0; }
+    body.platform #work-grid .case-rows { max-height: none; min-height: 0; }
+    #work-grid.show-detail .workspace-list, #work-block.reading .cu-bulk { display: none; }
+    #work-grid:not(.show-detail) #detail { display: none; }
+    body.platform #rows .case-row { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 3px 12px; padding: 12px 16px 12px 8px; box-shadow: inset 3px 0 0 transparent; transition: background-color .14s, box-shadow .14s; }
+    .cu-pick { display: flex; align-items: center; justify-content: center; align-self: center; width: 28px; height: 28px; cursor: pointer; }
+    .cu-pick input { width: 16px; height: 16px; margin: 0; accent-color: var(--platform-ink); cursor: pointer; }
+    body.platform #rows .case-row.picked { background: #f3f1ed; }
+    .cu-bulk { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 0 10px 8px; border-bottom: 1px solid var(--platform-line); font-size: 13px; color: var(--platform-muted); }
+    .cu-bulk label { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 650; }
+    .cu-bulk label input { width: 16px; height: 16px; margin: 0 6px; accent-color: var(--platform-ink); }
+    .cu-bulk b { color: var(--platform-ink); font-variant-numeric: tabular-nums; }
+    .cu-bulk select { height: 34px; padding: 0 8px; border: 1px solid var(--platform-line-strong); background: var(--platform-surface); font: inherit; font-size: 13px; color: inherit; }
+    .cu-bulk .btn[disabled] { opacity: .45; cursor: default; }
+    .cu-sels { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
     body.platform #rows .case-row:hover { background: #f3f1ed; color: inherit; }
     body.platform #rows .case-row.active { background: var(--platform-blue-soft); box-shadow: inset 3px 0 0 var(--platform-blue); }
     #rows .cu-n { font-size: 15px; font-weight: 750; }
     #rows .cu-n small { margin-left: 6px; font-size: 12px; font-weight: 600; color: var(--platform-faint); }
     #rows .cu-st { font-size: 12px; font-weight: 700; color: var(--platform-muted); white-space: nowrap; text-align: right; }
     #rows .cu-st.call { color: var(--platform-blue); }
-    #rows .cu-sub { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12px; color: var(--platform-faint); }
+    #rows .cu-sub { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 12px; color: var(--platform-faint); }
+    /* 넓은 화면은 한 줄 표 — 이름 · 진행상태 · 다음 미팅/할 일 · 마지막 연락 */
+    @media (min-width: 901px) {
+      body.platform #rows .case-row { grid-template-columns: 28px minmax(150px, 240px) 92px minmax(0, 1fr); align-items: center; padding: 9px 16px 9px 8px; }
+      #rows .cu-st { text-align: left; }
+      #rows .cu-sub { grid-column: auto; flex-wrap: nowrap; overflow: hidden; white-space: nowrap; }
+    }
     .cu-late { color: var(--platform-partial) !important; font-weight: 700; }
     .cu-next { color: var(--platform-ink); font-weight: 700; }
     .cu-due { color: var(--platform-blue) !important; font-weight: 700; }
     .cu-fact .v small { display: block; font-size: 12px; font-weight: 600; color: var(--platform-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     body.platform #detail { padding-top: 0; display: block; }
-    .cu-back { display: none; }
+    .cu-back { display: inline-flex; margin-top: 12px; }
     .cu-head { padding: 18px 0 14px; border-bottom: 1px solid var(--platform-line); }
     .cu-head-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
     .cu-head h2 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -.04em; }
@@ -141,20 +161,18 @@
     body.platform .cu-card b { display: block; font-size: 14px; color: var(--platform-ink); }
 
     @media (max-width: 1180px) {
-      body.platform #work-grid { grid-template-columns: 300px minmax(0, 1fr); column-gap: 20px; }
       .cu-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .cu-fact:nth-child(3) { padding-left: 0; border-left: 0; }
       .cu-fact:nth-child(n+3) { border-top: 1px solid var(--platform-line); }
     }
     /* 폰·좁은 패드 — 목록 → 누르면 상세로 넘어가고 「고객 목록」으로 돌아온다 */
     @media (max-width: 900px) {
-      body.platform #work-grid { grid-template-columns: 1fr; }
-      body.platform #work-grid .workspace-list { border-bottom: 0; padding: 0; }
-      body.platform #work-grid .case-rows { max-height: none; min-height: 0; }
-      #work-grid.show-detail .workspace-list { display: none; }
-      #work-grid:not(.show-detail) #detail { display: none; }
-      .cu-back { display: inline-flex; margin-top: 12px; }
-      .cu-tools select, .cu-tools .cu-count { display: none; }
+      /* 폰에서도 분류·상태로 거른다(2026-10-22 필터 강화) — 정렬과 건수만 감춘다 */
+      .cu-tools { flex-wrap: wrap; }
+      .cu-tools #f-sort, .cu-tools .cu-count { display: none; }
+      .cu-tools input[type=search] { flex: 1 1 100%; }
+      .cu-tools #f-cat, .cu-tools #f-st { flex: 1 1 28%; min-width: 0; order: 2; }
+      .cu-tools .cu-seg { order: 3; }
       .cu-tools .cu-seg button { min-height: 40px; }
       .cu-tools input[type=search] { max-width: none; }
     }
@@ -251,13 +269,22 @@
         <nav class="cu-views" id="views" aria-label="보기"></nav>
         <div class="cu-tools">
           <input type="search" id="q" aria-label="고객 검색" placeholder="이름·초성·번호 뒤 4자리·기록">
-          <select id="f-cat" aria-label="카테고리"><option value="">카테고리 전체</option><option value="referral">지인</option><option value="transfer">이관</option><option value="valueup">밸류업</option><option value="contract">계약</option></select>
+          <select id="f-cat" aria-label="분류"></select>
+          <select id="f-st" aria-label="진행상태"></select>
           <select id="f-sort" aria-label="정렬"><option value="meet">다음 미팅 순</option><option value="quiet">마지막 연락 오래된 순</option><option value="name">이름 순</option><option value="code">고객코드 순</option></select>
           <span class="cu-count" id="result-count">-</span>
           <div class="cu-seg" role="group" aria-label="보기 방식"><button class="on" type="button" data-mode="list">목록</button><button type="button" data-mode="board">단계</button></div>
         </div>
 
         <div class="cu-board" id="board" hidden></div>
+        <div class="cu-bulk" id="bulk" hidden>
+          <label><input type="checkbox" id="bulk-all">보이는 고객 모두</label>
+          <span><b id="bulk-n">0</b>명 골랐습니다</span>
+          <select id="bulk-cat" aria-label="바꿀 분류"></select>
+          <button class="btn" type="button" id="bulk-go" disabled>분류 바꾸기</button>
+          <button class="btn" type="button" id="bulk-clear" disabled>고른 것 풀기</button>
+          <span class="cu-msg" id="bulk-msg"></span>
+        </div>
         <div class="workspace-grid" id="work-grid">
           <div class="workspace-list">
             <div class="case-rows" id="rows"></div>
