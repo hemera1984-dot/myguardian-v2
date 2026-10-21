@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="brief.css">
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="brief.js?v=20261018a"></script>
+  <script src="brief.js?v=20261021a"></script>
 </head>
 <body class="brief-present">
   <header class="pr-topbar" id="topbar" hidden>
@@ -142,7 +142,8 @@
       // 되풀이 송신도 함께 한다 — 청중 쪽이 한 번 어긋나면 스스로는 돌아오지 못하기 때문이다.
       var lastSlideSent = -1;
       var lastBeatSent = 0;    // 박자 장(연구회 덱 data-beats) — 한 장 안의 클릭 장면도 청중에 맞춘다(2026-10-14)
-      var lastDoneSent = true;   // 그 장의 장면이 다 보였는가 — 발표자가 → 로 즉시 완료하면 청중도 끝낸다
+      var lastDoneSent = true;
+      var 스크립트장 = 1;      // HTML 자료의 스크립트 구간 — 다리가 알려 준 장 번호(0부터)+1   // 그 장의 장면이 다 보였는가 — 발표자가 → 로 즉시 완료하면 청중도 끝낸다
       var lastScrollSent = 0;
       // 청중 창이 알려 온 자리 — 발표자는 뒤의 빔프로젝터를 못 보므로 어긋나면 여기 띄운다(2026-10-18)
       var 청중자리 = null, 어긋난때 = 0;
@@ -245,11 +246,14 @@
               }
             }
             if (복원끝(복원 && d.slide === 복원.slide) && (d.slide !== lastSlideSent || d.beat !== lastBeatSent || d.done !== lastDoneSent)) {
+              var 장바뀜 = d.slide !== lastSlideSent;
               lastSlideSent = d.slide;
               lastBeatSent = d.beat || 0;
               lastDoneSent = d.done !== false;
               기억({ slide: d.slide });
               protocol.sendPage(d.slide, lastBeatSent, lastDoneSent);
+              // 장이 바뀌면 그 장의 스크립트 구간으로 — 박자만 바뀔 때는 읽던 자리를 두고 간다
+              if (장바뀜) { 스크립트장 = d.slide + 1; updateScript(); }
             }
           }
           if (typeof d.scroll === "number") {
@@ -331,7 +335,7 @@
         if (scriptPdf) return;
         var scriptBody = document.getElementById("script-body");
         scriptBody.scrollTop = 0; // 페이지별 스크립트(문서/텍스트)는 넘길 때 맨 위부터
-        var text = driver.scriptFor(current);
+        var text = driver.scriptFor(driver.kind === "html" ? 스크립트장 : current);
         if (text) {
           scriptBody.textContent = text;
           scriptBody.classList.remove("empty");

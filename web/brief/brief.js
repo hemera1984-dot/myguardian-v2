@@ -1018,7 +1018,8 @@
             frame.setAttribute("webkitallowfullscreen", "");
             return 틀에담기(frame, 본문, stageEl);
           },
-          scriptFor: function () { return scriptAt(1); }
+          // 장 번호는 다리가 알려 준다(present.html). 구간이 하나면 나누지 않은 대본이라 어느 장에서나 전체를 보인다(2026-10-21)
+          scriptFor: function (n) { return sidecar && sidecar.length > 1 ? scriptAt(n || 1) : scriptAt(1); }
         };
       });
     }
