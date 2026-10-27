@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="brief.css">
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="brief.js?v=20261021a"></script>
+  <script src="brief.js?v=20261028a"></script>
 </head>
 <body class="brief-present">
   <header class="pr-topbar" id="topbar" hidden>
@@ -143,7 +143,8 @@
       var lastSlideSent = -1;
       var lastBeatSent = 0;    // 박자 장(연구회 덱 data-beats) — 한 장 안의 클릭 장면도 청중에 맞춘다(2026-10-14)
       var lastDoneSent = true;
-      var 스크립트장 = 1;      // HTML 자료의 스크립트 구간 — 다리가 알려 준 장 번호(0부터)+1   // 그 장의 장면이 다 보였는가 — 발표자가 → 로 즉시 완료하면 청중도 끝낸다
+      var 스크립트장 = 1;
+      var 보인스크립트 = null;  // 지금 스크립트 칸에 띄운 글      // HTML 자료의 스크립트 구간 — 다리가 알려 준 장 번호(0부터)+1   // 그 장의 장면이 다 보였는가 — 발표자가 → 로 즉시 완료하면 청중도 끝낸다
       var lastScrollSent = 0;
       // 청중 창이 알려 온 자리 — 발표자는 뒤의 빔프로젝터를 못 보므로 어긋나면 여기 띄운다(2026-10-18)
       var 청중자리 = null, 어긋난때 = 0;
@@ -334,8 +335,11 @@
         // 스크립트 PDF는 슬라이드와 분리 — 페이지를 넘겨도 그대로 둔다(직접 스크롤).
         if (scriptPdf) return;
         var scriptBody = document.getElementById("script-body");
-        scriptBody.scrollTop = 0; // 페이지별 스크립트(문서/텍스트)는 넘길 때 맨 위부터
         var text = driver.scriptFor(driver.kind === "html" ? 스크립트장 : current);
+        // 같은 글이면 다시 그리지 않는다 — 나누지 않은 대본에서 장을 넘길 때마다 맨 위로 돌아갔다(2026-10-28)
+        if (text && text === 보인스크립트) return;
+        보인스크립트 = text || "";
+        scriptBody.scrollTop = 0; // 다른 구간으로 바뀌었을 때만 맨 위부터
         if (text) {
           scriptBody.textContent = text;
           scriptBody.classList.remove("empty");

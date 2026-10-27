@@ -855,28 +855,40 @@
       .map(function (s) { return s.trim(); });
   }
 
-  // 스크립트 파일(HTML): <hr> 요소 또는 줄 단독 "---"가 구간 구분. 블록 요소는 줄바꿈으로
+  // 스크립트 파일(HTML): <hr> 요소 또는 줄 단독 "---"가 구간 구분. 블록 요소는 줄바꿈으로.
+  // 구분선 없이 장마다 <section>으로 나눈 대본(연구회 스크립트 HTML)은 section 하나가 한 구간이다 —
+  // 머리 막대·메타처럼 section 밖에 있는 것은 대본이 아니다(2026-10-28 13회차: 구간 1개로 잡혀 넘길 때마다 맨 위로).
+  // 소스의 줄바꿈·들여쓰기는 HTML처럼 빈칸 하나로 접는다 — 그대로 옮기면 빈 줄이 줄줄이 생겼다.
   function parseScriptHtml(html) {
-    var parsed = new DOMParser().parseFromString(String(html), "text/html");
-    var out = [];
-    var BLOCK = /^(P|DIV|LI|UL|OL|SECTION|ARTICLE|H[1-6]|BR|TR|TABLE|BLOCKQUOTE)$/;
-    (function walk(node) {
-      node.childNodes.forEach(function (child) {
-        if (child.nodeType === 3) {
-          out.push(child.nodeValue);
-          return;
-        }
-        if (child.nodeType !== 1) return;
-        if (child.tagName === "HR") {
-          out.push("\n---\n");
-          return;
-        }
-        if (child.tagName === "SCRIPT" || child.tagName === "STYLE") return;
-        walk(child);
-        if (BLOCK.test(child.tagName)) out.push("\n");
-      });
-    })(parsed.body);
-    return parseScriptText(out.join(""));
+    var body = new DOMParser().parseFromString(String(html), "text/html").body;
+    var BLOCK = /^(P|DIV|LI|UL|OL|SECTION|ARTICLE|H[1-6]|TR|TABLE|BLOCKQUOTE)$/;
+    var 문단 = /^(P|H[1-6]|BLOCKQUOTE|UL|OL|TABLE)$/;
+    function 글로(root) {
+      var out = [];
+      (function walk(node) {
+        // 글자 없이 요소만 든 줄(번호·제목 칩)은 요소 사이를 띄운다 — 「1대기」가 되지 않게
+        var 요소만 = Array.prototype.every.call(node.childNodes, function (c) { return c.nodeType !== 3 || !c.nodeValue.trim(); });
+        node.childNodes.forEach(function (child) {
+          if (child.nodeType === 3) { out.push(child.nodeValue.replace(/\s+/g, " ")); return; }
+          if (child.nodeType !== 1) return;
+          if (child.tagName === "HR") { out.push("\n---\n"); return; }
+          if (child.tagName === "BR") { out.push("\n"); return; }
+          if (child.tagName === "SCRIPT" || child.tagName === "STYLE") return;
+          walk(child);
+          if (문단.test(child.tagName)) out.push("\n\n");
+          else if (BLOCK.test(child.tagName)) out.push("\n");
+          else if (요소만) out.push(" ");
+        });
+      })(root);
+      return out.join("").split("\n").map(function (l) { return l.replace(/\s+/g, " ").trim(); })
+        .join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    }
+    var 장들 = body.querySelectorAll("section");
+    if (!body.querySelector("hr") && 장들.length > 1) {
+      // 빈 구간도 남긴다 — 빼면 그 뒤 장들의 대본이 한 장씩 밀린다
+      return Array.prototype.map.call(장들, 글로);
+    }
+    return parseScriptText(글로(body));
   }
 
   // 로컬 자료 채널 ID (파일명·크기 기반 — 문서 ID 형식 규칙을 따른다)
