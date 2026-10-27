@@ -811,6 +811,39 @@
     return t ? { Authorization: "Bearer " + t } : {};
   }
 
+  // 발표자 화면에서 고친 스크립트를 그 자료가 온 곳에 다시 싣는다(2026-10-28 발표자 요청).
+  // 이 기기 발표 칸은 늘, 팀 라이브러리·이 브라우저 라이브러리는 거기서 온 자료일 때만.
+  // 발표 화면은 auth.js를 싣지 않는다 — 토큰·서버 주소는 auth.js와 같은 규칙으로 직접 읽는다.
+  function 스크립트다시싣기(record, 구간) {
+    record["스크립트"] = 구간;
+    delete record["스크립트문서"];
+    var jobs = [saveMaterial(record)];
+    if (record.__출처 === "브라우저") {
+      var lib = Object.assign({}, record);
+      delete lib.__출처;
+      jobs.push(libraryPut(lib));
+    }
+    if (record.__출처 === "팀" && record.__팀항목) {
+      var 항목 = Object.assign({}, record.__팀항목);
+      delete 항목["스크립트주소"]; delete 항목["스크립트이름"];
+      항목["스크립트"] = 구간;
+      var h = location.hostname;
+      var 서버 = h === "localhost" || h === "127.0.0.1" ? "http://localhost:8787" : "https://api.insurguard.life";
+      var t = null;
+      try { t = localStorage.getItem("mg_session"); } catch (e) { /* 막힌 저장소 */ }
+      if (!t) return Promise.reject(new Error("로그인이 풀려 팀 라이브러리에는 저장하지 못했습니다. 이 기기 발표에는 바뀌었습니다."));
+      jobs.push(fetch(서버 + "/brief/library", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + t, "Content-Type": "application/json" },
+        body: JSON.stringify(항목)
+      }).then(function (r) {
+        if (r.ok) return;
+        return r.json().catch(function () { return {}; }).then(function (d) { throw new Error(d.error || "서버 " + r.status); });
+      }));
+    }
+    return Promise.all(jobs);
+  }
+
   // ---------- 라이브러리 (IndexedDB "library" 스토어) ----------
   // 탑재한 발표 자료를 record.id 키로 여러 개 보관한다. 목차로 훑고 골라서 발표한다.
   // 저장소(git)에는 올라가지 않고 이 브라우저에만 남는다 — 개인정보·상담 자료 보호.
@@ -1082,6 +1115,7 @@
     serverRecordToMaterial: serverRecordToMaterial,
     loadMaterial: loadMaterial,
     libraryPut: libraryPut,
+    스크립트다시싣기: 스크립트다시싣기,
     libraryList: libraryList,
     libraryDelete: libraryDelete,
     parseScriptText: parseScriptText,

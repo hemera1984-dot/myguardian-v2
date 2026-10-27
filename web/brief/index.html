@@ -11,7 +11,7 @@
   <script src="../assets/platform.js"></script>
   <script src="../assets/auth.js"></script>
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="brief.js?v=20261028a"></script>
+  <script src="brief.js?v=20261028b"></script>
   <style>
     /* 모드 카드 — 에디토리얼 괘선 문법(테두리·그림자 없음), 선택은 좌측 3px 인셋 막대 */
     .mode-grid button.action-card {
@@ -228,6 +228,12 @@
         if (record.__팀) say("자료를 내려받는 중입니다.");
         준비
           .then(function (rec) {
+            // 어디서 온 자료인지 — 발표자 화면 「고치기」가 고친 스크립트를 그곳에 다시 싣는다(2026-10-28)
+            if (record.__팀 && record["지울수있음"] !== false) {
+              var 뺄것 = ["__팀", "내가올림", "지울수있음", "올린이", "올린이메일", "등록일"], 항목 = {};
+              Object.keys(record).forEach(function (k) { if (뺄것.indexOf(k) < 0) 항목[k] = record[k]; });
+              rec.__출처 = "팀"; rec.__팀항목 = 항목;
+            } else if (!record.__팀 && record["등록일"]) rec.__출처 = "브라우저";
             // 저장 단계 실패는 내려받기 실패와 원인이 전혀 다르다 — 구분해서 알린다
             return window.mgBrief.saveMaterial(rec).catch(function (e) {
               throw new Error("[기기 저장 실패] 브라우저가 자료를 보관하지 못했습니다 — "

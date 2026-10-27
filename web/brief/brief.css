@@ -460,6 +460,26 @@ body.brief-present {
   gap: 6px;
 }
 
+.pr-script-editor { display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; padding: 14px 18px 18px; }
+.pr-script-editor[hidden] { display: none; }
+.pr-script-editor textarea {
+  flex: 1;
+  min-height: 260px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid var(--brief-line-strong);
+  border-radius: 4px;
+  background: var(--brief-bg);
+  color: var(--brief-ink);
+  font: inherit;
+  font-size: 17px;
+  line-height: 1.7;
+  resize: vertical;
+}
+.pr-script-editor textarea:focus { outline: none; border-color: var(--brief-muted); }
+.pr-script-editor-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--brief-faint); font-size: 13px; }
+
 .pr-script-zoom button {
   min-width: 30px;
   height: 26px;
