@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="brief.css">
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="brief.js?v=20261028b"></script>
+  <script src="brief.js?v=20261029a"></script>
 </head>
 <body class="brief-view">
   <div class="vw-stage-wrap stage-wrap" id="stage-wrap" hidden>
@@ -19,6 +19,7 @@
       <div class="pointer-dot" id="pointer"></div>
     </div>
   </div>
+  <div class="vw-veil" id="veil" hidden></div>
   <div class="vw-wait" id="wait">
     <div>
       <strong>발표자 화면 연결 대기 중</strong>
@@ -172,7 +173,12 @@
           // 쪽 번호를 셀 수 없는 자료(하이퍼프레임)를 맞추는 유일한 길이다.
           "키": function (msg) { if (frameWin) B.htmlSendKey(frameWin, msg.key); },
           // 자료가 알려 준 절대 위치 — 마우스로 넘겨도, 어긋나 있어도 여기서 맞춰진다
-          "자리": function (msg) { if (frameWin) B.html자리(frameWin, msg.pos); }
+          "자리": function (msg) { if (frameWin) B.html자리(frameWin, msg.pos); },
+          // 자료가 스스로 전체화면이 되면(F) 바깥 막이 안 덮는다 — 무대 자체도 감춘다(전체화면 뒤 바탕은 검정)
+          "가림": function (msg) {
+            document.getElementById("veil").hidden = !msg.on;
+            stageWrap.style.visibility = msg.on ? "hidden" : "";
+          }
         });
 
         // 발표자보다 먼저 열렸으면 최초 hello가 유실된다 — 준비될 때까지 재요청

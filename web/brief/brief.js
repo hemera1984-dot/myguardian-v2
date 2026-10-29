@@ -14,6 +14,7 @@
 //   { v:1, type:"hello" }                               // 청중 창이 현재 상태를 요청
 //   { v:1, type:"state",   page:3, video:{playing:false, time:0}, scroll:0.35 }
 //   { v:1, type:"청중",    page:3, beat:2 }             // 청중 창이 실제로 보이는 자리(발표자 화면 표시용)
+//   { v:1, type:"가림",    on:true }                    // 청중 화면만 잠깐 검게 가린다(발표자 화면은 그대로)
 // v1의 doc 메시지(로컬 문서 방송)는 폐기 — 로컬 자료는 IndexedDB를 통해 두 창이
 // 같은 기기 안에서 직접 읽는다. 문서 내용이 채널에 실리지 않아 2차 원격에서도 안전.
 (function () {
@@ -231,6 +232,7 @@
       return typeof m.video === "object" && (m.video.time === undefined || isNum(m.video.time));
     },
     scroll: function (m) { return isNum(m.y) && m.y >= 0 && m.y <= 1; },
+    "가림": function (m) { return typeof m.on === "boolean"; },
     "청중": function (m) {
       return isNum(m.page) && m.page >= -1 && m.page <= 5000 && isNum(m.beat) && m.beat >= 0 && m.beat <= 999;
     },
@@ -291,6 +293,9 @@
       },
       send청중: function (page, beat) {
         transport.send({ v: 1, type: "청중", page: page, beat: beat });
+      },
+      send가림: function (on) {
+        transport.send({ v: 1, type: "가림", on: on });
       }
     };
   }
@@ -440,7 +445,7 @@
     // 자료에는 안 준다 — 자료(하이퍼프레임)도 ↑↓를 장 넘김으로 쓰기 때문에, 잡는 단계에서
     // 먼저 받아 전파를 끊는다(2026-09-16 사용자: 「위아래 화살표 누르면 슬라이드도 같이 움직인다」).
     + "function 스크립트키(e){"
-    + "if(['ArrowUp','ArrowDown','+','=','-','_'].indexOf(e.key)<0)return;"
+    + "if(['ArrowUp','ArrowDown','+','=','-','_','b','B','ㅠ'].indexOf(e.key)<0)return;"
     + "e.preventDefault();e.stopImmediatePropagation();"
     + "try{parent.postMessage({mgb:'key',key:e.key},'*');}catch(x){}}\n"
     + "window.addEventListener('keydown',스크립트키,true);\n"

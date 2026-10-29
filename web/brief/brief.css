@@ -353,6 +353,17 @@ body.brief-present {
   padding: 6px 4px;
 }
 
+.pr-timer.on { color: var(--brief-ink); }
+.pr-timer:not(.on) {
+  border: 1px solid var(--brief-line-strong);
+  border-radius: 9px;
+  padding: 8px 13px;
+  color: var(--brief-ink);
+}
+
+.vw-veil { position: fixed; inset: 0; z-index: 50; background: #000; }
+.vw-veil[hidden] { display: none; }
+
 .pr-button {
   border: 1px solid var(--brief-line-strong);
   border-radius: 9px;

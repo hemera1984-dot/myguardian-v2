@@ -387,6 +387,25 @@ def main() -> None:
             check("늦게 연 청중 창 → 현재 페이지 동기화", True, "8페이지로 즉시 맞춤")
             late.close()
 
+            # 시간은 「시작」을 누른 때부터 잰다 — 넘기기만 해서는 재지 않는다
+            t0 = present.locator("#timer").inner_text()
+            present.click("#timer")
+            present.wait_for_timeout(1200)
+            t1 = present.locator("#timer").inner_text()
+            check("발표 시간 — 시작 누르기 전에는 안 잼", t0 == "시작" and t1.startswith("0:0"), f"{t0} → {t1}")
+
+            # 청중 가리기 — B 키로 가리고, 늦게 연 창도 가린 채로 열리고, 다시 B면 걷힌다
+            present.keyboard.press("b")
+            view.wait_for_selector("#veil:not([hidden])", timeout=3000)
+            late = ctx.new_page()
+            late.goto(f"{base}/web/brief/view.html?doc={PUBLIC_DOC}", wait_until="networkidle")
+            late.wait_for_selector("#veil:not([hidden])", timeout=3000)
+            late.close()
+            present.click("#veil-toggle")
+            view.wait_for_selector("#veil", state="hidden", timeout=3000)
+            check("청중 가리기 — B·단추·늦게 연 창", present.locator("#veil-toggle").inner_text() == "청중 가리기",
+                  "가림 → 늦은 창도 가림 → 단추로 걷힘")
+
             # 8. 기형·위조 메시지 내성 (Codex 검수 반영: 같은 origin 다른 탭의 채널 위조)
             err_before = len(errors)
             attacker = ctx.new_page()
@@ -398,6 +417,7 @@ def main() -> None:
                 " c.postMessage({ v: 1, type: 'pointer', x: 5, y: -2, on: true });"
                 " c.postMessage({ v: 1, type: 'doc', doc: { '제목': '위조 문서' } });"
                 " c.postMessage({ v: 1, type: 'state', page: 'x' });"
+                " c.postMessage({ v: 1, type: '가림', on: 'x' });"
                 " c.close(); }",
                 f"mg-brief-{PUBLIC_DOC}",
             )
@@ -407,6 +427,7 @@ def main() -> None:
                 "() => parseFloat(document.getElementById('pointer').style.left || '0')"
             )
             forged_title = "위조" in (view.title() or "")
+            forged_title = forged_title or view.locator("#veil").is_visible()   # on이 참·거짓이 아니면 가리지 않는다
             # page 999는 숫자라 유효 — 마지막 페이지로 클램프될 수 있으므로 예외 없음만 본다
             check(
                 "기형·위조 메시지 내성",

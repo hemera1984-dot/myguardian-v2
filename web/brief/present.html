@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="brief.css">
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="brief.js?v=20261028b"></script>
+  <script src="brief.js?v=20261029a"></script>
 </head>
 <body class="brief-present">
   <header class="pr-topbar" id="topbar" hidden>
@@ -20,7 +20,8 @@
     <span class="pr-mode" id="mode-badge"></span>
     <span class="pr-doc-title" id="doc-title"></span>
     <div class="pr-top-right">
-      <button class="pr-timer" id="timer" type="button" title="누르면 0:00부터 다시 잽니다" aria-label="경과 시간, 누르면 초기화">0:00</button>
+      <button class="pr-timer" id="timer" type="button" title="발표 시간을 잽니다">시작</button>
+      <button class="pr-button" id="veil-toggle" type="button" aria-pressed="false" title="청중 화면만 검게 가립니다 (B)">청중 가리기</button>
       <button class="pr-button" id="pointer-toggle" type="button" aria-pressed="true">포인터 송신</button>
       <span class="pr-view-state" id="view-state" role="status" hidden></span>
       <button class="pr-button primary" id="open-view" type="button">청중 화면 열기</button>
@@ -41,7 +42,7 @@
           </div>
         </div>
       </section>
-      <p class="pr-hint" id="hint">새로 열린 청중 창을 빔프로젝터·확장 모니터로 끌어 놓고 F 키를 누르면 전체화면이 됩니다. ←/→ 슬라이드 넘김, ↑/↓ 스크립트 스크롤.</p>
+      <p class="pr-hint" id="hint">새로 열린 청중 창을 빔프로젝터·확장 모니터로 끌어 놓고 F 키를 누르면 전체화면이 됩니다. ←/→ 슬라이드 넘김, ↑/↓ 스크립트 스크롤, B 청중 가리기.</p>
     </div>
     <aside class="pr-side">
       <section class="pr-panel pr-script" aria-label="발표 스크립트">
@@ -108,7 +109,8 @@
       var protocol = null;
       var transport = null;
       var pointerEnabled = true;
-      var startedAt = Date.now();
+      var startedAt = null;       // 「시작」을 누른 때. 누르기 전에는 시간을 재지 않는다(2026-10-29 발표자 요청)
+      var 가림 = false;           // 청중 화면을 가렸는지
 
       var stage = document.getElementById("stage");
       var stageWrap = document.getElementById("stage-wrap");
@@ -461,6 +463,7 @@
         protocol = B.createProtocol(transport, {
           // 청중 창이 뒤늦게 열리면 현재 상태를 보내 맞춘다 (자료 내용은 채널에 싣지 않는다)
           hello: function () {
+            if (가림) protocol.send가림(true);
             // 청중 창이 늦게 열려도 지금 장으로 맞춘다. HTML 자료의 장은 슬라이드 문서 안에 있고
             // 번호는 0부터다 — 다리가 알려 주기 전에는 장을 보내지 않는다(1을 보내면 둘째 장으로 간다).
             if (driver.kind === "html") {
@@ -605,6 +608,9 @@
           } else if (e.key === "-" || e.key === "_") {
             e.preventDefault();
             zoomScript(-0.15); // 스크립트 글자 작게
+          } else if (e.key === "b" || e.key === "B" || e.key === "ㅠ") {
+            e.preventDefault();
+            가리기(!가림);
           } else if (!fromFrame && B.isFullscreenKey(e)) {
             // 발표자 화면에도 전체화면이 있어야 한다 — 청중 창 없이 노트북 하나로
             // 발표하는 자리가 있다. fromFrame은 제외한다: 슬라이드 문서가 이미 자기를
@@ -639,12 +645,33 @@
           });
         })();
 
+        // 발표 시간 — 자료를 연 때가 아니라 「시작」을 누른 때부터 잰다.
+        // 재는 중에 잘못 눌러 시간이 날아가지 않게, 되돌리기는 한 번 묻는다.
         var timer = document.getElementById("timer");
-        setInterval(function () {
+        function 시간표시() {
+          if (startedAt === null) { timer.textContent = "시작"; timer.classList.remove("on"); return; }
           var s = Math.floor((Date.now() - startedAt) / 1000);
           timer.textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
-        }, 1000);
-        timer.addEventListener("click", function () { startedAt = Date.now(); });
+          timer.classList.add("on");
+          timer.title = "누르면 처음으로 되돌립니다";
+        }
+        setInterval(시간표시, 1000);
+        timer.addEventListener("click", function () {
+          if (startedAt === null) startedAt = Date.now();
+          else if (window.confirm("발표 시간을 처음으로 되돌릴까요?")) startedAt = null;
+          시간표시();
+          this.blur();
+        });
+
+        // 청중 가리기 — 질문을 받거나 자료 밖 이야기를 할 때 청중 화면만 검게 둔다(2026-10-29 발표자 요청).
+        var veilBtn = document.getElementById("veil-toggle");
+        function 가리기(on) {
+          가림 = on;
+          veilBtn.setAttribute("aria-pressed", String(on));
+          veilBtn.textContent = on ? "청중 화면 보이기" : "청중 가리기";
+          protocol.send가림(on);
+        }
+        veilBtn.addEventListener("click", function () { 가리기(!가림); this.blur(); });
 
         window.addEventListener("resize", function () {
           B.scaleStage(stageWrap, stage);
