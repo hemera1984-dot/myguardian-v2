@@ -849,6 +849,19 @@
     return Promise.all(jobs);
   }
 
+  // 두 글에서 순서대로 겹치는 글자 수(가장 긴 공통 부분열). 띄어쓰기·문장부호는 빼고 센다.
+  // 리허설: 스크립트를 소리 내어 읽은 글(음성 인식)과 견주어 말한 비율·빠뜨린 문장을 낸다.
+  function 겹친글자수(a, b) {
+    var x = String(a || "").replace(/[^가-힣a-zA-Z0-9]/g, "").slice(0, 3000);
+    var y = String(b || "").replace(/[^가-힣a-zA-Z0-9]/g, "").slice(0, 3000);
+    var prev = new Uint16Array(y.length + 1), cur = new Uint16Array(y.length + 1);
+    for (var i = 1; i <= x.length; i++) {
+      for (var j = 1; j <= y.length; j++) cur[j] = x[i - 1] === y[j - 1] ? prev[j - 1] + 1 : Math.max(prev[j], cur[j - 1]);
+      var t = prev; prev = cur; cur = t;
+    }
+    return { 겹침: prev[y.length], 길이: x.length };
+  }
+
   // ---------- 라이브러리 (IndexedDB "library" 스토어) ----------
   // 탑재한 발표 자료를 record.id 키로 여러 개 보관한다. 목차로 훑고 골라서 발표한다.
   // 저장소(git)에는 올라가지 않고 이 브라우저에만 남는다 — 개인정보·상담 자료 보호.
@@ -1124,6 +1137,7 @@
     libraryList: libraryList,
     libraryDelete: libraryDelete,
     parseScriptText: parseScriptText,
+    겹친글자수: 겹친글자수,
     parseScriptHtml: parseScriptHtml,
     localId: localId,
     createDriver: createDriver

@@ -173,6 +173,15 @@ await check("발표 기록 — 본인·위 팀장급·총관리자만 보고, �
   assert.equal((await call("fc2", "GET", "/brief/talks/notes?id=" + a)).status, 404, "남의 피드백 목록도 못 본다");
   assert.equal((await call("lead", "POST", "/brief/talks/summary", { id: a })).status, 404, "정리는 발표자만");
 });
+await check("리허설 — 지금 발표 중에 안 뜨고 피드백도 못 남기며, 끝나면 같은 자료의 진행 속도 기준이 된다", async () => {
+  const id = (await (await call("fc", "POST", "/brief/talks", { 제목: "시험", 모드: "교육", 장수: 3, 자료: "doc-1", 리허설: true })).json()).id;
+  assert.ok(!(await (await call("lead", "GET", "/brief/talks/live")).json()).some((t) => t.id === id));
+  assert.equal((await call("lead", "POST", "/brief/talks/note", { id, 종류: "좋음" })).status, 404);
+  await call("fc", "POST", "/brief/talks/end", { id, 장시간: [{ 장: 1, 초: 40 }, { 장: 2, 초: 50 }], 분석: [{ 장: 1, 빠르기: 4.2, 덮음: 0.9, 빠뜨림: [] }] });
+  const p = await (await call("fc", "GET", "/brief/talks/plan?doc=doc-1")).json();
+  assert.deepEqual(p.장, { 1: 40, 2: 50 });
+  assert.equal((await (await call("lead", "GET", "/brief/talks/plan?doc=doc-1")).json()).장, null, "기준은 내 기록에서만");
+});
 await check("보이스코칭 — 대본은 팀장급만 올리고, 연습 기록은 위 팀장급까지만 본다", async () => {
   assert.equal((await call("fc", "POST", "/coach/scripts", { 제목: "TA", 대본: "안녕하세요" })).status, 403);
   assert.equal((await call("lead", "POST", "/coach/scripts", { 제목: "TA", 대본: "안녕하세요" })).status, 200);

@@ -155,6 +155,10 @@ export function openDb(file) {
 
   // 구글 계정의 표시 이름이 실제 이름과 다른 사람이 있다(별명·오기·영문 표기).
   // 관리자가 고쳐 넣는 이름을 따로 둔다 — 다시 로그인해도 구글 값이 덮어쓰지 않는다.
+  // 발표 기록 — 같은 자료끼리 잇는 열쇠(진행 속도 기준)와 리허설 분석(2026-10-29)
+  try { db.exec("ALTER TABLE brief_talks ADD COLUMN doc_key TEXT"); } catch (e) { /* 이미 있음 */ }
+  try { db.exec("ALTER TABLE brief_talks ADD COLUMN extra TEXT"); } catch (e) { /* 이미 있음 */ }
+
   try { db.exec("ALTER TABLE accounts ADD COLUMN display_name TEXT"); }
   catch (e) { /* 이미 있음 */ }
 

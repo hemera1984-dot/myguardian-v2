@@ -367,6 +367,9 @@ body.brief-present {
 .pr-note.k-어려움, .pr-note.k-빠름 { color: #ffb4a8; }
 .pr-note.k-좋음 { color: var(--brief-ink); }
 
+.pr-pace { color: var(--brief-muted); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pr-pace.late { color: #ffb4a8; }
+
 .vw-veil { position: fixed; inset: 0; z-index: 50; background: #000; }
 .vw-veil[hidden] { display: none; }
 

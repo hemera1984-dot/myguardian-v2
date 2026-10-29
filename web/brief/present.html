@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="brief.css">
   <script src="../assets/auth.js"></script>
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="brief.js?v=20261029a"></script>
+  <script src="brief.js?v=20261029b"></script>
 </head>
 <body class="brief-present">
   <header class="pr-topbar" id="topbar" hidden>
@@ -22,6 +22,8 @@
     <span class="pr-doc-title" id="doc-title"></span>
     <div class="pr-top-right">
       <button class="pr-timer" id="timer" type="button" title="발표 시간을 잽니다">시작</button>
+      <span class="pr-pace" id="pace" hidden></span>
+      <button class="pr-button" id="rehearse" type="button" hidden title="혼자 소리 내어 읽으며 장마다 시간·빠르기·빠뜨린 문장을 잽니다">리허설</button>
       <button class="pr-button" id="talk-end" type="button" hidden>끝내기</button>
       <button class="pr-button" id="veil-toggle" type="button" aria-pressed="false" title="청중 화면만 검게 가립니다 (B)">청중 가리기</button>
       <button class="pr-button" id="pointer-toggle" type="button" aria-pressed="true">포인터 송신</button>
@@ -656,7 +658,27 @@
         // 장마다 피드백을 보내면 아래 「받은 피드백」에 쌓이고, 끝내면 장마다 머문 시간과 AI 정리가 기록에 남는다.
         var timer = document.getElementById("timer");
         var endBtn = document.getElementById("talk-end");
-        var 기록 = null;                       // { id, 장, 들어온때, 장시간:[{장,초}], 마지막피드백 }
+        var 기록 = null;                       // { id, 장, 들어온때, 장시간:[{장,초}], 마지막피드백, 리허설, 말:{장:글} }
+        var 계획 = null;                       // 같은 자료의 내 마지막 기록에서 장마다 머문 초 — 진행 속도 기준
+        var 계획출처 = "";
+        var paceEl = document.getElementById("pace");
+        var rehearseBtn = document.getElementById("rehearse");
+        var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        function 분초(s) { s = Math.abs(Math.round(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+        // 진행 속도 — 지금 장 앞까지의 예정 시간 + 이 장 예정 안에서 흐른 시간을 실제 흐른 시간과 견준다
+        function 속도표시() {
+          if (!계획 || !기록 || startedAt === null) { paceEl.hidden = true; return; }
+          var n = 지금장(), 예정 = 0;
+          Object.keys(계획).forEach(function (k) { if (Number(k) < n) 예정 += 계획[k]; });
+          var 이장 = 계획[n] || 0, 머묾 = (Date.now() - 기록.들어온때) / 1000;
+          예정 += Math.min(이장, 머묾);
+          var 차이 = (Date.now() - startedAt) / 1000 - 예정;
+          paceEl.hidden = false;
+          paceEl.className = "pr-pace" + (차이 > 60 ? " late" : "");
+          paceEl.textContent = (Math.abs(차이) < 15 ? "예정대로" : "예정보다 " + 분초(차이) + (차이 > 0 ? " 늦음" : " 빠름"))
+            + (이장 ? " · 이 장 " + 분초(머묾) + " / " + 분초(이장) : "");
+          paceEl.title = "기준: " + 계획출처 + " 기록";
+        }
         function 지금장() { return driver.kind === "html" ? 스크립트장 : current; }
         function 시간표시() {
           if (startedAt === null) { timer.textContent = "시작"; timer.classList.remove("on"); return; }
@@ -691,33 +713,68 @@
             document.getElementById("notes-head").textContent = "받은 피드백 " + ol.children.length;
           }).catch(function () {});
         }
-        setInterval(function () { 시간표시(); 장넘김기록(false); }, 1000);
+        setInterval(function () { 시간표시(); 장넘김기록(false); 속도표시(); }, 1000);
         setInterval(알림, 30000);
         setInterval(피드백받기, 5000);
         var 로그인 = !!(window.mgAuth && window.mgAuth.token());
-        timer.addEventListener("click", function () {
-          this.blur();
+        var 기록가능 = 로그인 && driver.mode !== "상담";
+        rehearseBtn.hidden = !기록가능 || !SR;
+        if (기록가능) {
+          window.mgAuth.api("/brief/talks/plan?doc=" + encodeURIComponent(channelId)).then(function (r) {
+            if (r.장 && Object.keys(r.장).length) { 계획 = r.장; 계획출처 = r.출처; }
+          }).catch(function () {});
+        }
+        function 시작하기(리허설) {
           if (startedAt !== null) return;
           startedAt = Date.now();
           시간표시();
           endBtn.hidden = false;
-          if (!로그인 || driver.mode === "상담") return;
+          rehearseBtn.hidden = true;
+          if (!기록가능) return;
           var 제목 = (briefRecord && briefRecord["제목"]) || document.getElementById("doc-title").textContent || "발표";
-          window.mgAuth.api("/brief/talks", { method: "POST", body: { 제목: 제목, 모드: driver.mode || "", 장수: driver.count || 0 } })
+          window.mgAuth.api("/brief/talks", { method: "POST", body: { 제목: 제목, 모드: driver.mode || "", 장수: driver.count || 0, 자료: channelId, 리허설: !!리허설 } })
             .then(function (r) {
-              기록 = { id: r.id, 장: 지금장(), 들어온때: Date.now(), 장시간: [], 마지막피드백: 0 };
+              기록 = { id: r.id, 장: 지금장(), 들어온때: Date.now(), 장시간: [], 마지막피드백: 0, 리허설: !!리허설, 말: {} };
+              if (리허설) { 받아적기(); return; }
               document.getElementById("notes-panel").hidden = false;
               document.getElementById("notes-list").textContent = "";
               document.getElementById("notes-head").textContent = "받은 피드백 — 팀원은 브리핑 「지금 발표 중」에서 보냅니다";
               알림();
             }).catch(function () { /* 서버가 안 되면 시간만 잰다 */ });
-        });
+        }
+        timer.addEventListener("click", function () { this.blur(); 시작하기(false); });
+        // 리허설(2026-10-29 발표자) — 혼자 스크립트를 소리 내어 읽으며 넘긴다. 들은 말은 그때 띄운 장에 붙는다.
+        // 끝내면 장마다 시간·말 빠르기·스크립트를 말한 비율·빠뜨린 문장이 기록에 「리허설」로 남고, 다음 발표의 진행 속도 기준이 된다.
+        var 듣기 = null;
+        function 받아적기() {
+          if (!기록 || !기록.리허설) return;
+          var rec = new SR();
+          rec.lang = "ko-KR"; rec.continuous = true; rec.interimResults = false;
+          rec.onresult = function (e) {
+            if (!기록) return;
+            for (var i = e.resultIndex; i < e.results.length; i++) {
+              if (!e.results[i].isFinal) continue;
+              var n = 지금장();
+              기록.말[n] = (기록.말[n] || "") + " " + e.results[i][0].transcript;
+            }
+          };
+          rec.onerror = function (e) {
+            if (e.error === "not-allowed" || e.error === "service-not-allowed") { 듣기 = null; window.alert("마이크를 쓸 수 없어 리허설은 시간만 잽니다. 주소창 왼쪽에서 마이크를 허용하세요."); }
+          };
+          // 음성 인식은 오래 조용하면 저절로 끝난다 — 리허설이 이어지는 동안 다시 켠다
+          rec.onend = function () { if (듣기 === rec && 기록 && 기록.리허설) setTimeout(받아적기, 300); };
+          듣기 = rec;
+          try { rec.start(); } catch (e) { 듣기 = null; }
+        }
+        rehearseBtn.addEventListener("click", function () { this.blur(); 시작하기(true); });
         endBtn.addEventListener("click", function () {
           this.blur();
-          if (!window.confirm("발표를 끝낼까요?")) return;
+          if (!window.confirm(기록 && 기록.리허설 ? "리허설을 끝낼까요?" : "발표를 끝낼까요?")) return;
           var 총 = Math.floor((Date.now() - startedAt) / 1000);
           startedAt = null;
           endBtn.hidden = true;
+          rehearseBtn.hidden = !기록가능 || !SR;
+          if (듣기) { var d = 듣기; 듣기 = null; try { d.stop(); } catch (e) {} }
           시간표시();
           if (!기록) { window.alert("발표 시간 " + Math.floor(총 / 60) + "분 " + (총 % 60) + "초"); return; }
           장넘김기록(true);
@@ -727,9 +784,35 @@
           var 스크립트 = {};
           var 나눔 = !scriptPdf && (driver.kind !== "html" || (Array.isArray(briefRecord && briefRecord["스크립트"]) && briefRecord["스크립트"].length > 1));
           if (나눔) 끝낸것.장시간.forEach(function (x) { var s = driver.scriptFor(x.장); if (s) 스크립트[x.장] = String(s).slice(0, 2000); });
+          var 분석 = 끝낸것.리허설 ? 리허설분석(끝낸것, 나눔) : [];
           window.open("talk.html?id=" + 끝낸것.id, "_blank");   // 정리는 기록 화면에서 기다린다 — 발표 창은 그대로 둔다
-          window.mgAuth.api("/brief/talks/end", { method: "POST", body: { id: 끝낸것.id, 장시간: 끝낸것.장시간, 스크립트: 스크립트 } }).catch(function () {});
+          window.mgAuth.api("/brief/talks/end", { method: "POST", body: { id: 끝낸것.id, 장시간: 끝낸것.장시간, 스크립트: 스크립트, 분석: 분석 } })
+            .then(function () { 계획 = null; return window.mgAuth.api("/brief/talks/plan?doc=" + encodeURIComponent(channelId)); })
+            .then(function (r) { if (r && r.장 && Object.keys(r.장).length) { 계획 = r.장; 계획출처 = r.출처; } })
+            .catch(function () {});
         });
+
+        // 리허설 분석 — 장마다: 말 빠르기(말한 음절 / 머문 초), 스크립트를 말한 비율, 빠뜨린 문장(반도 안 말한 문장).
+        // 스크립트가 장마다 나뉘어 있지 않으면 빠르기만 잰다.
+        function 리허설분석(끝낸것, 나눔) {
+          var 초 = {};
+          끝낸것.장시간.forEach(function (x) { 초[x.장] = (초[x.장] || 0) + x.초; });
+          return Object.keys(초).map(Number).map(function (n) {
+            var 말 = 끝낸것.말[n] || "";
+            var 음절 = 말.replace(/[^가-힣a-zA-Z0-9]/g, "").length;
+            var 결과 = { 장: n, 빠르기: 음절 && 초[n] ? 음절 / 초[n] : null, 덮음: null, 빠뜨림: [] };
+            var s = 나눔 ? String(driver.scriptFor(n) || "") : "";
+            if (s.trim()) {
+              var 전체 = B.겹친글자수(s, 말);
+              결과.덮음 = 전체.길이 ? 전체.겹침 / 전체.길이 : null;
+              결과.빠뜨림 = s.split(/(?<=[.?!])\s+|\n+/).map(function (x) { return x.trim(); }).filter(function (x) {
+                var r = B.겹친글자수(x, 말);
+                return r.길이 >= 6 && r.겹침 / r.길이 < 0.5;
+              }).slice(0, 6);
+            }
+            return 결과;
+          });
+        }
 
         // 청중 가리기 — 질문을 받거나 자료 밖 이야기를 할 때 청중 화면만 검게 둔다(2026-10-29 발표자 요청).
         var veilBtn = document.getElementById("veil-toggle");

@@ -11,7 +11,7 @@
   <script src="../assets/platform.js"></script>
   <script src="../assets/auth.js"></script>
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="brief.js?v=20261029a"></script>
+  <script src="brief.js?v=20261029b"></script>
   <style>
     /* 모드 카드 — 에디토리얼 괘선 문법(테두리·그림자 없음), 선택은 좌측 3px 인셋 막대 */
     .mode-grid button.action-card {
@@ -711,7 +711,7 @@
         window.mgAuth.api("/brief/talks").then(function (list) {
           var box = document.getElementById("talk-list");
           list.forEach(function (t) {
-            box.appendChild(줄("talk.html?id=" + t.id, t.제목, (t.내것 ? "" : t.발표자 + " · ")
+            box.appendChild(줄("talk.html?id=" + t.id, t.제목, (t.모드 === "리허설" ? "리허설 · " : "") + (t.내것 ? "" : t.발표자 + " · ")
               + new Date(t.시작).toLocaleDateString("ko-KR") + " · " + 분초(t.총초) + " · 피드백 " + t.피드백));
           });
           document.getElementById("talks").hidden = !list.length;

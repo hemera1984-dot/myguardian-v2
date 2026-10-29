@@ -2284,8 +2284,9 @@ async function route(req, res, url) {
       const t = 지금();
       db.prepare("UPDATE brief_talks SET ended_at = ? WHERE owner_id = ? AND ended_at IS NULL").run(t, me.id);   // 발표는 한 번에 하나
       const id = randomBytes(8).toString("hex");
-      db.prepare("INSERT INTO brief_talks (id, owner_id, title, mode, pages, page, started_at, seen_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)")
-        .run(id, me.id, 제목, String(b.모드 || "").slice(0, 10), Math.max(0, Math.min(5000, Number(b.장수) || 0)), t, t);
+      db.prepare("INSERT INTO brief_talks (id, owner_id, title, mode, pages, page, started_at, seen_at, doc_key) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)")
+        .run(id, me.id, 제목, b.리허설 ? "리허설" : String(b.모드 || "").slice(0, 10), Math.max(0, Math.min(5000, Number(b.장수) || 0)), t, t,
+          String(b.자료 || "").slice(0, 120) || null);
       return send(res, 200, { id });
     }
 
@@ -2301,14 +2302,23 @@ async function route(req, res, url) {
     // 지금 발표 중 — 3분 넘게 소식이 없으면 끝난 것으로 본다(창을 그냥 닫은 경우)
     if (req.method === "GET" && path === "/brief/talks/live") {
       const 기준 = new Date(Date.now() - 3 * 60e3).toISOString();
-      return send(res, 200, db.prepare("SELECT * FROM brief_talks WHERE ended_at IS NULL AND seen_at > ? ORDER BY started_at DESC").all(기준)
+      return send(res, 200, db.prepare("SELECT * FROM brief_talks WHERE ended_at IS NULL AND seen_at > ? AND mode != '리허설' ORDER BY started_at DESC").all(기준)
         .map((t) => ({ id: t.id, 제목: t.title, 발표자: 이름(t.owner_id), 장: t.page, 장수: t.pages, 시작: t.started_at, 내것: t.owner_id === me.id })));
+    }
+
+    if (req.method === "GET" && path === "/brief/talks/plan") {
+      const 자료 = String(url.searchParams.get("doc") || "").slice(0, 120);
+      const t = 자료 && db.prepare("SELECT * FROM brief_talks WHERE owner_id = ? AND doc_key = ? AND ended_at IS NOT NULL AND timeline IS NOT NULL AND timeline != '[]' ORDER BY started_at DESC LIMIT 1").get(me.id, 자료);
+      if (!t) return send(res, 200, { 장: null });
+      const 장 = {};
+      (읽기(t.timeline) || []).forEach((x) => { 장[x.장] = (장[x.장] || 0) + x.초; });
+      return send(res, 200, { 장, 출처: (t.mode === "리허설" ? "리허설" : "발표") + " " + t.started_at.slice(5, 10).replace("-", "/") });
     }
 
     if (req.method === "POST" && path === "/brief/talks/note") {
       const b = await readJson(req);
       const t = 하나(b.id);
-      if (!t || t.ended_at) return send(res, 404, { error: "끝났거나 없는 발표입니다." });
+      if (!t || t.ended_at || t.mode === "리허설") return send(res, 404, { error: "끝났거나 없는 발표입니다." });
       const 종류 = ["좋음", "어려움", "빠름", "느림", "메모"].includes(b.종류) ? b.종류 : "";
       const 글 = 번호가리기(String(b.글 || "")).replace(/\s+/g, " ").trim().slice(0, 200);
       if (!종류 || (종류 === "메모" && !글)) return send(res, 400, { error: "남길 피드백이 없습니다." });
@@ -2338,8 +2348,16 @@ async function route(req, res, url) {
         장시간 = (Array.isArray(b.장시간) ? b.장시간 : []).slice(0, 5000)
           .map((x) => ({ 장: 쪽(x && x.장), 초: Math.max(0, Math.min(36000, Math.round(Number(x && x.초) || 0))) }))
           .filter((x) => x.초 > 0);
-        db.prepare("UPDATE brief_talks SET ended_at = ?, timeline = ? WHERE id = ?").run(t.ended_at || 지금(), JSON.stringify(장시간), t.id);
+        const 분석 = (Array.isArray(b.분석) ? b.분석 : []).slice(0, 1000).map((x) => ({
+          장: 쪽(x && x.장), 빠르기: Number.isFinite(Number(x && x.빠르기)) ? Math.round(Number(x.빠르기) * 10) / 10 : null,
+          덮음: Number.isFinite(Number(x && x.덮음)) ? Math.max(0, Math.min(1, Math.round(Number(x.덮음) * 100) / 100)) : null,
+          빠뜨림: (Array.isArray(x && x.빠뜨림) ? x.빠뜨림 : []).slice(0, 6).map((s) => 번호가리기(String(s)).slice(0, 160))
+        }));
+        db.prepare("UPDATE brief_talks SET ended_at = ?, timeline = ?, extra = ? WHERE id = ?")
+          .run(t.ended_at || 지금(), JSON.stringify(장시간), 분석.length ? JSON.stringify({ 분석 }) : null, t.id);
+        t.extra = 분석.length ? JSON.stringify({ 분석 }) : null;
       }
+      const 분석 = ((읽기(t.extra) || {}).분석) || [];
       if (!ANTHROPIC_KEY) return send(res, 200, { ok: true, 요약: null });
       const 스크립트 = b.스크립트 && typeof b.스크립트 === "object" ? b.스크립트 : {};
       const 장별 = {};
@@ -2349,7 +2367,9 @@ async function route(req, res, url) {
       const 분초 = (s) => Math.floor(s / 60) + "분 " + (s % 60) + "초";
       const 장번호 = [...new Set([...Object.keys(장별).map(Number), ...노트.map((n) => n.장)])].sort((a, c) => a - c);
       const prompt = [
-        "보험 설계사가 팀 교육·강의에서 발표한 기록을 정리한다. 발표자 본인과 팀장이 읽고 다음 발표를 고치는 데 쓴다.",
+        t.mode === "리허설"
+          ? "보험 설계사가 발표를 앞두고 혼자 스크립트를 소리 내어 읽은 리허설 기록을 정리한다. 청중 피드백은 없다. 장마다 머문 시간, 말 빠르기(알맞음 3.5~5.5음절/초), 스크립트를 실제로 말한 비율, 빠뜨린 문장을 근거로 짚는다."
+          : "보험 설계사가 팀 교육·강의에서 발표한 기록을 정리한다. 발표자 본인과 팀장이 읽고 다음 발표를 고치는 데 쓴다.",
         "아래 기록에 있는 것만 근거로 쓴다. 기록에 없는 반응·장면을 지어내지 않는다. 피드백이 적으면 적다고 쓴다.",
         "장마다 머문 시간과 스크립트 길이를 견주어 너무 오래 끈 장, 너무 빨리 넘긴 장을 짚는다. 「어려움」「빠름」이 몰린 장은 꼭 짚는다.",
         "존댓말, 이모지·은유·「~해 드릴게요」 없이, 항목마다 한두 문장.",
@@ -2361,7 +2381,9 @@ async function route(req, res, url) {
         ...장번호.map((n) => {
           const s = String(스크립트[n] || "").replace(/\s+/g, " ").trim();
           const ns = 노트.filter((x) => x.장 === n);
+          const a = 분석.find((x) => x.장 === n);
           return [`- ${n}장: ${분초(장별[n] || 0)} 머묾, 스크립트 ${s.length}자${s ? " — " + 번호가리기(s.slice(0, 300)) : ""}`,
+            ...(a ? [`  · 리허설: 빠르기 ${a.빠르기 ?? "모름"}음절/초, 스크립트를 말한 비율 ${a.덮음 != null ? Math.round(a.덮음 * 100) + "%" : "모름"}${a.빠뜨림.length ? ", 빠뜨린 문장: " + a.빠뜨림.join(" / ") : ""}`] : []),
             ...ns.map((x) => `  · 피드백 ${x.종류}${x.글 ? ": " + x.글 : ""}`)].join("\n");
         }),
         "",
@@ -2387,7 +2409,7 @@ async function route(req, res, url) {
     if (req.method === "GET" && path === "/brief/talks") {
       return send(res, 200, db.prepare("SELECT * FROM brief_talks WHERE ended_at IS NOT NULL ORDER BY started_at DESC LIMIT 500").all()
         .filter(볼수있나).slice(0, 100).map((t) => ({
-          id: t.id, 제목: t.title, 발표자: 이름(t.owner_id), 내것: t.owner_id === me.id, 시작: t.started_at,
+          id: t.id, 제목: t.title, 모드: t.mode, 발표자: 이름(t.owner_id), 내것: t.owner_id === me.id, 시작: t.started_at,
           총초: (읽기(t.timeline) || []).reduce((a, x) => a + x.초, 0),
           피드백: db.prepare("SELECT COUNT(*) n FROM brief_notes WHERE talk_id = ?").get(t.id).n,
           정리됨: !!t.summary
@@ -2399,7 +2421,8 @@ async function route(req, res, url) {
       if (!t || !볼수있나(t)) return send(res, 404, { error: "없는 발표입니다." });
       return send(res, 200, {
         id: t.id, 제목: t.title, 모드: t.mode, 장수: t.pages, 발표자: 이름(t.owner_id), 내것: t.owner_id === me.id,
-        시작: t.started_at, 끝: t.ended_at, 장시간: 읽기(t.timeline) || [], 요약: 읽기(t.summary), 피드백: 피드백들(t.id, 0)
+        시작: t.started_at, 끝: t.ended_at, 장시간: 읽기(t.timeline) || [], 요약: 읽기(t.summary), 피드백: 피드백들(t.id, 0),
+        분석: ((읽기(t.extra) || {}).분석) || []
       });
     }
     return send(res, 404, { error: "없는 경로입니다." });

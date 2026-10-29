@@ -59,7 +59,7 @@
         $("title").textContent = t.제목;
         var 장별 = {}, 총 = 0;
         t.장시간.forEach(function (x) { 장별[x.장] = (장별[x.장] || 0) + x.초; 총 += x.초; });
-        $("meta").textContent = t.발표자 + " · " + new Date(t.시작).toLocaleString("ko-KR") + " · 총 " + 분초(총) + " · 피드백 " + t.피드백.length + "건";
+        $("meta").textContent = (t.모드 === "리허설" ? "리허설 · " : "") + t.발표자 + " · " + new Date(t.시작).toLocaleString("ko-KR") + " · 총 " + 분초(총) + (t.모드 === "리허설" ? "" : " · 피드백 " + t.피드백.length + "건");
 
         var sum = $("sum");
         sum.textContent = "";
@@ -101,6 +101,14 @@
           var bar = el("div", "bar");
           bar.style.width = Math.round((장별[n] || 0) / 최대 * 100) + "%";
           right.appendChild(bar);
+          var a = (t.분석 || []).filter(function (x) { return x.장 === n; })[0];
+          if (a) {
+            var 리 = el("div", "notes");
+            리.appendChild(el("div", null, [a.빠르기 != null ? "빠르기 " + a.빠르기 + "음절/초" + (a.빠르기 > 5.5 ? "(빠름)" : a.빠르기 < 3.5 ? "(느림)" : "") : "",
+              a.덮음 != null ? "스크립트 " + Math.round(a.덮음 * 100) + "% 말함" : ""].filter(Boolean).join(" · ")));
+            (a.빠뜨림 || []).forEach(function (s) { 리.appendChild(el("div", "hot", "빠뜨림 — " + s)); });
+            right.appendChild(리);
+          }
           var ns = t.피드백.filter(function (x) { return x.장 === n; });
           if (ns.length) {
             var box = el("div", "notes");
