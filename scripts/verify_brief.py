@@ -195,6 +195,32 @@ addEventListener('keydown',function(e){if(e.key==='ArrowRight'){e.preventDefault
   else if(e.key==='ArrowLeft'){e.preventDefault();prev();}});
 </script></body></html>"""
 
+# 김승은 TA 덱 엔진 흉내 — 장을 겹쳐 두고 지금 장에만 .on, 단계는 data-k·[data-step].in, 다 펼치면 .done.
+# 장 번호를 .active나 scrollIntoView로 알리지 않는다(2026-10-29 「스크립트 화살표로 안 넘어감」).
+DECK_ON = """<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><title>on 덱 흉내</title>
+<style>html,body{margin:0;height:100%;overflow:hidden;font:32px sans-serif}.slide{position:absolute;inset:0;padding:40px;display:none}
+.slide.on{display:block}[data-step]{opacity:.15}[data-step].in{opacity:1}</style></head><body>
+<section class="slide" data-steps="0"><h1>1 표지</h1></section>
+<section class="slide" data-steps="2"><h1>2</h1><p data-step="1">가</p><p data-step="2">나</p></section>
+<section class="slide" data-steps="0"><h1>3</h1></section>
+<section class="slide" data-steps="3"><h1>4</h1><p data-step="1">가</p><p data-step="2">나</p><p data-step="3">다</p></section>
+<section class="slide" data-steps="0"><h1>5 끝</h1></section>
+<script>
+var S=[].slice.call(document.querySelectorAll('.slide')),i=0,k=0;
+function max(s){return +(s.dataset.steps||0);}
+function draw(){S.forEach(function(s,j){s.classList.toggle('on',j===i);});
+  S[i].querySelectorAll('[data-step]').forEach(function(e){e.classList.toggle('in',+e.dataset.step<=k);});
+  S[i].classList.toggle('done',k>=max(S[i]));S[i].dataset.k=k;}
+function next(){if(k<max(S[i])){k++;draw();}else if(i<S.length-1){i++;k=0;draw();}}
+function prev(){if(k>0){k--;draw();}else if(i>0){i--;k=max(S[i]);draw();}}
+addEventListener('keydown',function(e){if(['ArrowRight',' ','PageDown','Enter'].indexOf(e.key)>=0){e.preventDefault();next();}
+  if(['ArrowLeft','PageUp','Backspace'].indexOf(e.key)>=0){e.preventDefault();prev();}});
+draw();
+</script></body></html>"""
+DECK_ON_SCRIPT = "구간 1\n---\n구간 2\n---\n구간 3\n---\n구간 4\n---\n구간 5\n"
+POS_ON = """() => { const s = [...document.querySelectorAll('.slide')]; const i = s.findIndex(x => x.classList.contains('on'));
+  return [i, i < 0 ? 0 : +(s[i].dataset.k || 0)]; }"""
+
 POS_SLIDE = """() => { const s = [...document.querySelectorAll('.slide')];
   const i = s.findIndex(x => Math.abs(x.getBoundingClientRect().top) < 200); const c = s[i];
   return [i, c && c._beat || 0, c ? c.querySelectorAll('[data-step]:not(.on)').length : -1]; }"""
@@ -205,7 +231,7 @@ POS_EDU = """() => { const s = [...document.querySelectorAll('section.s')]; cons
 def make_deck_fixtures() -> list:
     FIXTURES.mkdir(parents=True, exist_ok=True)
     out = []
-    for name, html in (("deck-slide.html", DECK_SLIDE), ("deck-edu.html", DECK_EDU)):
+    for name, html in (("deck-slide.html", DECK_SLIDE), ("deck-edu.html", DECK_EDU), ("deck-on.html", DECK_ON), ("deck-on-script.txt", DECK_ON_SCRIPT)):
         path = FIXTURES / name
         path.write_text(html, encoding="utf-8")
         out.append(path)
@@ -228,13 +254,15 @@ def deck_frame(page, ready: str = "document.querySelectorAll('.slide, section.s'
     return None
 
 
-def check_deck_sync(ctx, base: str, deck: Path, label: str, errors: list) -> None:
+def check_deck_sync(ctx, base: str, deck: Path, label: str, errors: list, script: Path = None) -> None:
     """14~16 — 자료를 올려 발표자·청중 두 창을 열고, 넘길 때마다 두 프레임의 자리를 견준다."""
     pe = ctx.new_page()
     watch_console(pe, errors, label + "-present")
     pe.goto(f"{base}/web/brief/index.html", wait_until="networkidle")
     pe.locator(".mode-grid .action-card[data-mode='강의']").click()
     pe.set_input_files("#file-input", str(deck))
+    if script:
+        pe.set_input_files("#script-input", str(script))
     pe.wait_for_selector("#local-start")
     pe.locator("#local-start").click()
     pe.wait_for_selector("#stage iframe")
@@ -248,7 +276,8 @@ def check_deck_sync(ctx, base: str, deck: Path, label: str, errors: list) -> Non
         pe.close()
         return
     edu = pf.evaluate("document.querySelectorAll('.slide').length") < 2
-    pos = POS_EDU if edu else POS_SLIDE
+    on = not edu and pf.evaluate("!!document.querySelector('.slide.on')")
+    pos = POS_EDU if edu else POS_ON if on else POS_SLIDE
     pv.wait_for_timeout(2500)   # 실제 덱은 크다 — 청중 창이 다 뜰 때까지
     pe.locator("#doc-title").click()   # 자료 밖을 눌러 키가 발표자 화면으로 가게
 
@@ -261,14 +290,21 @@ def check_deck_sync(ctx, base: str, deck: Path, label: str, errors: list) -> Non
             pe.wait_for_timeout(200)
         bad.append(f"{tag} 발표자{a} 청중{v}")
 
-    bad = []
+    bad, 대본틀림 = [], []
     keys = ["ArrowRight"] * 12 + ["ArrowLeft"] * 4
     for n, key in enumerate(keys, 1):
         pe.keyboard.press(key)
         pe.wait_for_timeout(1000)
         compare(f"{n}번째 {'→' if key == 'ArrowRight' else '←'}", bad)
+        if script:
+            장 = pf.evaluate(pos)[0] + 1
+            글 = pe.locator("#script-body").inner_text()
+            if f"구간 {장}" not in 글:
+                대본틀림.append(f"{n}번째 {장}장인데 대본 「{글.strip()[:12]}」")
     check(f"{label} 장·{'단계' if edu else '박자'} 동기화", not bad,
           "; ".join(bad[:3]) if bad else f"{len(keys)}번 넘김 모두 같은 자리")
+    if script:
+        check(f"{label} 대본이 장을 따라감", not 대본틀림, "; ".join(대본틀림[:3]) if 대본틀림 else "넘길 때마다 그 장 구간")
 
     if not edu:
         bad = []
@@ -660,9 +696,10 @@ def main() -> None:
             le.close()
 
             # 14~16. 연구회 덱 · 교육 덱 동기화 + 청중 위치 표시 (인자로 넘긴 실제 발표 파일도)
-            slide_deck, edu_deck = make_deck_fixtures()
+            slide_deck, edu_deck, on_deck, on_script = make_deck_fixtures()
             check_deck_sync(ctx, base, slide_deck, "연구회 덱", errors)
             check_deck_sync(ctx, base, edu_deck, "교육 덱", errors)
+            check_deck_sync(ctx, base, on_deck, "on 덱", errors, on_script)
             for extra in sys.argv[1:]:
                 check_deck_sync(ctx, base, Path(extra), Path(extra).stem, errors)
 
