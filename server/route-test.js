@@ -173,5 +173,15 @@ await check("발표 기록 — 본인·위 팀장급·총관리자만 보고, �
   assert.equal((await call("fc2", "GET", "/brief/talks/notes?id=" + a)).status, 404, "남의 피드백 목록도 못 본다");
   assert.equal((await call("lead", "POST", "/brief/talks/summary", { id: a })).status, 404, "정리는 발표자만");
 });
+await check("보이스코칭 — 대본은 팀장급만 올리고, 연습 기록은 위 팀장급까지만 본다", async () => {
+  assert.equal((await call("fc", "POST", "/coach/scripts", { 제목: "TA", 대본: "안녕하세요" })).status, 403);
+  assert.equal((await call("lead", "POST", "/coach/scripts", { 제목: "TA", 대본: "안녕하세요" })).status, 200);
+  const 목록 = await (await call("fc", "GET", "/coach/scripts")).json();
+  assert.equal(목록.대본들.length, 1); assert.equal(목록.올릴수있음, false);
+  const r = await (await call("fc", "POST", "/coach/records", { 상황이름: "거절 대응", 항목: [{ 반론: "생각해 볼게요", 답: "네 어떤 점이요", 점수: 4 }] })).json();
+  const 봄 = async (who) => (await call(who, "GET", "/coach/records/one?id=" + r.기록)).status === 200;
+  assert.deepEqual([await 봄("fc"), await 봄("lead"), await 봄("boss"), await 봄("fc2")], [true, true, true, false]);
+  assert.equal((await (await call("fc", "GET", "/ai/voice")).json()).켜짐, false, "키가 없으면 네이버 목소리는 꺼짐");
+});
 console.log(`\n결과: ${n} 통과`);
 process.exit(0);

@@ -64,6 +64,34 @@
     .co-lines .line { font-size: 16px; line-height: 1.7; word-break: keep-all; margin: 0 0 8px; }
     .co-lines mark { background: none; color: var(--platform-denied); text-decoration: underline; }
     .co-lines .res { font-size: 13px; color: var(--platform-muted); margin-top: 6px; line-height: 1.6; }
+    .co-scripts { display: grid; gap: 8px; border-top: 1px solid var(--platform-line); padding-top: 10px; }
+    .co-scripts input, .co-scripts textarea { font: inherit; font-size: 13px; border: 1px solid var(--platform-line-strong); border-radius: 4px; padding: 8px 10px; background: var(--platform-surface); color: inherit; }
+    .co-scripts textarea { min-height: 60px; resize: vertical; line-height: 1.6; }
+    #sc-body { min-height: 140px; }
+    .co-sc-list { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+    .co-sc-list li { display: flex; gap: 8px; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--platform-line); }
+    .co-sc-list li span { flex: 1; min-width: 0; }
+    .co-sc-list button { font: inherit; font-size: 12px; border: none; background: none; color: var(--platform-faint); cursor: pointer; padding: 0 2px; }
+    .co-objection { font-size: 20px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.5; margin: 0 0 12px; word-break: keep-all; }
+    .co-drill { list-style: none; margin: 16px 0 0; padding: 0; border-top: 1px solid var(--platform-line); }
+    .co-drill li { padding: 10px 0; border-bottom: 1px solid var(--platform-line); font-size: 14px; line-height: 1.65; word-break: keep-all; }
+    .co-drill .q { font-weight: 700; }
+    .co-score { font-variant-numeric: tabular-nums; font-weight: 700; }
+    .co-play { font: inherit; font-size: 12px; border: 1px solid var(--platform-line-strong); border-radius: 3px; background: none; color: var(--platform-muted); padding: 1px 7px; cursor: pointer; margin-left: 6px; }
+    .co-steps { display: grid; grid-template-columns: 76px 1fr; gap: 4px 10px; font-size: 13px; align-items: center; }
+    .co-steps .bar { height: 8px; background: var(--platform-line); border-radius: 2px; position: relative; }
+    .co-steps .bar i { position: absolute; inset: 0 auto 0 0; background: var(--platform-ink); border-radius: 2px; }
+    .co-steps small { grid-column: 2; color: var(--platform-faint); font-size: 12px; line-height: 1.5; margin-bottom: 4px; }
+    .co-records { margin-top: 32px; }
+    .co-rec-head { display: flex; align-items: baseline; gap: 12px; border-top: 2px solid var(--platform-ink); padding-top: 12px; }
+    .co-rec-head h2 { font-size: 18px; letter-spacing: -0.035em; margin: 0; flex: 1; }
+    .co-rec-head select { font: inherit; font-size: 13px; border: 1px solid var(--platform-line-strong); border-radius: 4px; padding: 6px 8px; background: var(--platform-surface); }
+    .co-trend { font-size: 13px; color: var(--platform-muted); margin: 10px 0; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+    .co-trend svg { width: 220px; height: 40px; }
+    .co-rec-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--platform-line); }
+    .co-rec-list li { display: grid; grid-template-columns: 92px 1fr auto; gap: 10px; padding: 9px 4px; border-bottom: 1px solid var(--platform-line); font-size: 13px; cursor: pointer; transition: background-color 0.14s ease; }
+    .co-rec-list li:hover { background: var(--platform-surface); }
+    .co-rec-list li span { color: var(--platform-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
     @media (max-width: 900px) { .co-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -100,6 +128,16 @@
               <option value="">직접 적기</option>
             </select>
           </label>
+          <div class="co-field"><span>팀 대본 <button class="co-dice" type="button" id="script-admin" hidden>대본 관리</button></span>
+            <select id="script"><option value="">없음 — AI가 기준을 정합니다</option></select>
+          </div>
+          <div class="co-scripts" id="script-panel" hidden>
+            <input id="sc-title" maxlength="60" placeholder="대본 제목 — 예: 리쿠르팅 TA 1차 전화" aria-label="대본 제목">
+            <textarea id="sc-sit" maxlength="800" placeholder="상황(선택) — 누구에게, 무엇을 위해" aria-label="대본 상황"></textarea>
+            <textarea id="sc-body" maxlength="6000" placeholder="대본 — 설계사가 할 말을 순서대로. 문장마다 따라 읽기 연습이 됩니다." aria-label="대본"></textarea>
+            <div class="co-row"><button class="btn btn-primary" type="button" id="sc-save">대본 저장</button><span class="co-note" id="sc-msg"></span></div>
+            <ol class="co-sc-list" id="sc-list"></ol>
+          </div>
           <label class="co-field" id="sit-custom-wrap" hidden><span>상황 직접 적기</span>
             <textarea id="sit-custom" maxlength="800" placeholder="누구와, 어떤 자리에서, 무엇을 이루려는지 — 예: 50대 자영업 고객에게 상속 대비로 종신보험을 처음 꺼내는 자리"></textarea>
           </label>
@@ -132,6 +170,7 @@
           <div class="co-field"><span>연습 방식</span>
             <div class="co-seg" role="radiogroup" aria-label="연습 방식">
               <label><input type="radio" name="way" value="대화" checked>역할 연습</label>
+              <label><input type="radio" name="way" value="반론">반론 훈련</label>
               <label><input type="radio" name="way" value="읽기">따라 읽기</label>
             </div>
           </div>
@@ -139,7 +178,7 @@
           <p class="co-note" id="voice-note" hidden></p>
           <label class="co-field"><span>상대 말 빠르기</span><input type="range" id="rate" min="0.8" max="1.3" step="0.05" value="1"></label>
           <button class="btn btn-primary" type="button" id="start">연습 시작</button>
-          <p class="co-note">말소리는 브라우저 음성 인식(크롬·엣지는 구글, 사파리는 애플)으로 글자가 된 뒤 AI로 갑니다. 실제 고객 이름과 번호는 말하지 마세요. 서버는 대화를 남기지 않습니다.</p>
+          <p class="co-note">말소리는 브라우저 음성 인식(크롬·엣지는 구글, 사파리는 애플)으로 글자가 된 뒤 AI로 갑니다. 실제 고객 이름과 번호는 말하지 마세요. 평가를 받으면 대화 글과 평가가 연습 기록에 남아 나와 내 위 팀장급이 봅니다. 내 목소리 녹음은 이 기기에만 있고 서버로 가지 않습니다.</p>
         </section>
 
         <section class="co-stage" aria-label="연습">
@@ -157,12 +196,26 @@
             <ol class="co-log" id="log" aria-label="대화"></ol>
             <div class="co-report" id="report"></div>
           </div>
+          <div id="drill" hidden>
+            <p class="co-status" id="drill-status">「연습 시작」을 누르면 이 상대가 할 법한 반론 여덟 개가 하나씩 나옵니다. 상대가 말하면 바로 답하세요. 답마다 점수와 모범답이 나옵니다.</p>
+            <p class="co-objection" id="drill-q" hidden></p>
+            <button class="co-mic" type="button" id="drill-mic" disabled>답하기</button>
+            <div class="co-row"><button class="btn" type="button" id="drill-next" disabled>다음 반론</button><button class="btn" type="button" id="drill-end" disabled>끝내고 남기기</button></div>
+            <ol class="co-drill" id="drill-list" aria-label="반론 답"></ol>
+          </div>
           <div id="read" hidden>
             <p class="co-status" id="read-status">「연습 시작」을 누르면 이 상황에서 쓸 문장 다섯 개가 나옵니다. 「들어 보기」로 듣고 「읽기」로 소리 내어 읽으면, 알아들은 글자와 원문을 맞대 봅니다.</p>
             <ol class="co-lines" id="lines"></ol>
           </div>
         </section>
       </div>
+
+      <section class="co-records" id="records" hidden aria-labelledby="rec-title">
+        <div class="co-rec-head"><h2 id="rec-title">연습 기록</h2><select id="rec-who" aria-label="누구의 기록"></select></div>
+        <p class="co-trend" id="rec-trend"></p>
+        <ol class="co-rec-list" id="rec-list"></ol>
+        <div class="co-report" id="rec-detail"></div>
+      </section>
     </main>
     <footer class="platform-footer">마이가디언 v2</footer>
   </div>
@@ -197,7 +250,9 @@
         인물채우기(this.options[this.selectedIndex].getAttribute("data-person"));
       });
       document.querySelectorAll('input[name="way"]').forEach(function (r) {
-        r.addEventListener("change", function () { $("talk").hidden = 값("way") !== "대화"; $("read").hidden = 값("way") !== "읽기"; });
+        r.addEventListener("change", function () {
+          $("talk").hidden = 값("way") !== "대화"; $("drill").hidden = 값("way") !== "반론"; $("read").hidden = 값("way") !== "읽기";
+        });
       });
 
       // ── 목소리 — 이 기기에 있는 한국어 목소리 중 자연스러운 것(엣지 Natural·Online, 구글)을 먼저 고른다
@@ -205,6 +260,7 @@
       // 남녀는 목소리 이름으로 가른다(엣지 InJoon·Hyunsu 등은 남성). 나이는 높낮이와 빠르기로 맞춘다.
       var 남자이름 = /InJoon|Hyunsu|BongJin|GookMin|Minsu|Jinho|male|남/i;
       var 손댄목소리 = false;
+      var 네이버 = false;     // 서버에 네이버 목소리 키가 있는가
       function 한국어목소리() { return 소리 ? 소리.getVoices().filter(function (v) { return /^ko/i.test(v.lang); }) : []; }
       function 목소리목록() {
         var 성별 = 값("sex"), vs = 한국어목소리();
@@ -215,11 +271,12 @@
         vs.sort(function (a, b) { return 점수(a) - 점수(b); });
         var sel = $("voice"), 전 = sel.value;
         sel.textContent = "";
+        if (네이버) { var nv = el("option", null, "네이버 목소리 — 성별·나이에 맞춘 사람 목소리"); nv.value = "__naver"; sel.appendChild(nv); }
         vs.forEach(function (v) { var o = el("option", null, v.name); o.value = v.name; sel.appendChild(o); });
-        if (!vs.length) { var o = el("option", null, "한국어 목소리 없음 — 글로만 보입니다"); o.value = ""; sel.appendChild(o); }
+        if (!vs.length && !네이버) { var o = el("option", null, "한국어 목소리 없음 — 글로만 보입니다"); o.value = ""; sel.appendChild(o); }
         if (손댄목소리 && 전) sel.value = 전;
         var 남자있음 = vs.some(function (v) { return 남자이름.test(v.name); });
-        $("voice-note").hidden = !(성별 === "남성" && vs.length && !남자있음);
+        $("voice-note").hidden = 네이버 || !(성별 === "남성" && vs.length && !남자있음);
         $("voice-note").textContent = "이 기기에는 남자 한국어 목소리가 없어 낮춘 여자 목소리로 읽습니다. 엣지 브라우저로 열면 남자 목소리(InJoon 등)가 있습니다.";
       }
       function 나이소리() {
@@ -232,6 +289,7 @@
         return { 높이: 높이, 빠르기: 빠르기 };
       }
       if (소리) { 목소리목록(); 소리.onvoiceschanged = 목소리목록; }
+      window.mgAuth.api("/ai/voice").then(function (r) { 네이버 = !!r.켜짐; if (네이버) 목소리목록(); }).catch(function () {});
       $("voice").addEventListener("change", function () { 손댄목소리 = true; });
       document.querySelectorAll('input[name="sex"]').forEach(function (r) { r.addEventListener("change", function () { 손댄목소리 = false; 목소리목록(); }); });
 
@@ -266,13 +324,44 @@
       }
       인물채우기($("sit").options[0].getAttribute("data-person"));
 
+      // 네이버 목소리 — 문장마다 따로 받아 첫 문장부터 읽는다(다 받을 때까지 기다리지 않게). 실패하면 브라우저 목소리로.
+      var 재생중 = null;
+      function 멈추기() { if (소리) 소리.cancel(); if (재생중) { 재생중.pause(); 재생중 = null; } }
+      function 네이버말하기(text) {
+        var 문장들 = String(text).split(/(?<=[.?!])\s+/).filter(Boolean);
+        var 받기 = 문장들.map(function (s) {
+          return fetch(window.mgAuth.apiBase() + "/ai/voice", { method: "POST",
+            headers: { Authorization: "Bearer " + window.mgAuth.token(), "Content-Type": "application/json" },
+            body: JSON.stringify({ 말: s, 성별: 값("sex"), 나이: $("p-age").value }) })
+            .then(function (r) { if (!r.ok) throw new Error(); return r.blob(); });
+        });
+        var i = 0;
+        function 다음() {
+          if (i >= 받기.length) return Promise.resolve();
+          var k = i++;
+          return 받기[k].then(function (blob) {
+            return new Promise(function (ok) {
+              var a = new Audio(URL.createObjectURL(blob));
+              재생중 = a;
+              a.onended = a.onerror = function () { URL.revokeObjectURL(a.src); ok(); };
+              a.play().catch(ok);
+            });
+          }, function () { return 브라우저말하기(문장들[k]); }).then(다음);
+        }
+        return 다음();
+      }
       function 말하기(text) {
+        멈추기();
+        return $("voice").value === "__naver" ? 네이버말하기(text) : 브라우저말하기(text);
+      }
+      function 브라우저말하기(text) {
         return new Promise(function (resolve) {
-          if (!소리 || !$("voice").value) return resolve();
+          if (!소리) return resolve();
           소리.cancel();
           var u = new SpeechSynthesisUtterance(text);
           u.lang = "ko-KR";
-          u.voice = 소리.getVoices().filter(function (v) { return v.name === $("voice").value; })[0] || null;
+          u.voice = 소리.getVoices().filter(function (v) { return v.name === $("voice").value; })[0]
+            || 한국어목소리().sort(function (a, b) { return (남자이름.test(b.name) === (값("sex") === "남성")) - (남자이름.test(a.name) === (값("sex") === "남성")); })[0] || null;
           var 나 = 나이소리();
           u.rate = (Number($("rate").value) || 1) * 나.빠르기;
           u.pitch = 나.높이;
@@ -281,11 +370,42 @@
         });
       }
 
+      // ── 내 목소리 녹음 — 듣는 동안 함께 녹음해 끝나면 다시 들을 수 있게. 서버로 보내지 않는다.
+      var 마이크 = null;
+      function 녹음시작() {
+        if (!window.MediaRecorder || !navigator.mediaDevices) return null;
+        var 조각 = [], rec = null, 끝남 = null;
+        var 준비 = (마이크 || (마이크 = navigator.mediaDevices.getUserMedia({ audio: true }))).then(function (stream) {
+          rec = new MediaRecorder(stream);
+          rec.ondataavailable = function (e) { if (e.data.size) 조각.push(e.data); };
+          rec.start();
+        }).catch(function () { 마이크 = null; });
+        return {
+          끝: function () {
+            return 준비.then(function () {
+              if (!rec || rec.state === "inactive") return null;
+              return 끝남 || (끝남 = new Promise(function (ok) {
+                rec.onstop = function () { ok(조각.length ? new Blob(조각, { type: rec.mimeType }) : null); };
+                rec.stop();
+              }));
+            });
+          }
+        };
+      }
+      function 듣기단추(blob) {
+        var b = el("button", "co-play", "내 목소리");
+        b.type = "button";
+        var url = URL.createObjectURL(blob);
+        b.addEventListener("click", function () { 멈추기(); var a = new Audio(url); 재생중 = a; a.play().catch(function () {}); });
+        return b;
+      }
+
       // ── 듣기 — 말이 1.8초 끊기면 다 말한 것으로 본다. 길게 말해도 중간 쉼에서 끊기지 않게 이어서 듣는다.
       function 듣기(보이기) {
         return new Promise(function (resolve, reject) {
           var rec = new SR();
           rec.lang = "ko-KR"; rec.continuous = true; rec.interimResults = true;
+          var 녹음 = 녹음시작();
           var 확정 = "", 확신 = [], 처음 = null, 마지막 = null, 쉼 = null;
           var 그만 = function () { try { rec.stop(); } catch (e) {} };
           var 최대 = setTimeout(그만, 90000);
@@ -307,8 +427,9 @@
           rec.onend = function () {
             clearTimeout(최대); clearTimeout(쉼); 듣는중 = null;
             var text = 확정.replace(/\s+/g, " ").trim();
-            resolve({ text: text, 초: 처음 && 마지막 ? Math.max(0.5, (마지막 - 처음) / 1000) : 0,
-              확신: 확신.length ? 확신.reduce(function (a, c) { return a + c; }, 0) / 확신.length : null });
+            var 결과 = { text: text, 초: 처음 && 마지막 ? Math.max(0.5, (마지막 - 처음) / 1000) : 0,
+              확신: 확신.length ? 확신.reduce(function (a, c) { return a + c; }, 0) / 확신.length : null, 소리: null };
+            (녹음 ? 녹음.끝() : Promise.resolve(null)).then(function (blob) { 결과.소리 = blob; resolve(결과); });
           };
           듣는중 = rec;
           rec.start();
@@ -316,10 +437,12 @@
       }
 
       // ── 역할 연습
-      function 기록(누가, 말) {
+      function 기록(누가, 말, blob) {
         var li = el("li", 누가 === "나" ? "me" : "");
         li.appendChild(el("b", null, 누가));
-        li.appendChild(el("span", null, 말));
+        var span = el("span", null, 말);
+        if (blob) span.appendChild(듣기단추(blob));
+        li.appendChild(span);
         $("log").appendChild(li);
         li.scrollIntoView({ block: "nearest" });
       }
@@ -344,7 +467,7 @@
       function 내말(text, 측정) {
         if (!text) { 상태("말이 들리지 않았습니다.", "「말하기」를 누르고 다시 말해 보세요."); return; }
         대화.push({ 누가: "나", 말: text, 음절: 음절(text), 초: 측정 && 측정.초, 확신: 측정 && 측정.확신 });
-        기록("나", text);
+        기록("나", text, 측정 && 측정.소리);
         return 상대차례();
       }
       function 내차례() {
@@ -357,7 +480,7 @@
       }
       $("mic").addEventListener("click", function () {
         if (듣는중) { try { 듣는중.stop(); } catch (e) {} return; }
-        if (소리) 소리.cancel();
+        멈추기();
         if (!진행) 진행 = true;
         내차례();
       });
@@ -384,12 +507,18 @@
       $("finish").addEventListener("click", function () {
         진행 = false;
         if (듣는중) try { 듣는중.stop(); } catch (e) {}
-        if (소리) 소리.cancel();
+        멈추기();
         var btn = this, box = $("report"), m = 지표();
         btn.disabled = true;
         box.textContent = "";
         box.appendChild(el("p", "co-note", "코칭을 만드는 중입니다. 30초 남짓 걸립니다."));
-        ai({ 방식: "평가", 상황: 상황(), 성향: 값("tone"), 인물: 인물(), 대화: 대화, 지표: m }).then(function (r) {
+        ai({ 방식: "평가", 상황: 상황(), 상황이름: 상황이름(), 대본: $("script").value, 성향: 값("tone"), 인물: 인물(), 대화: 대화, 지표: m }).then(function (r) {
+          평가그리기(box, r, m);
+          btn.disabled = false;
+          기록불러오기();
+        }).catch(function (e) { box.textContent = e.message; btn.disabled = false; });
+      });
+      function 평가그리기(box, r, m) {
           box.textContent = "";
           box.appendChild(el("h3", null, "코칭"));
           box.appendChild(el("p", "lead", r.한줄));
@@ -407,14 +536,23 @@
               box.appendChild(d);
             });
           }
+          if (r.단계 && r.단계.length) {
+            box.appendChild(el("p", "sub", "단계별 점수 (5점 만점, 0은 그 단계가 없었음)"));
+            var g = el("div", "co-steps");
+            r.단계.forEach(function (s) {
+              g.appendChild(el("span", null, s.단계 + " " + s.점수));
+              var bar = el("div", "bar"), fill = el("i"); fill.style.width = (s.점수 / 5 * 100) + "%"; bar.appendChild(fill); g.appendChild(bar);
+              g.appendChild(el("small", null, s.한마디));
+            });
+            box.appendChild(g);
+          }
+          if (r.대본) { box.appendChild(el("p", "sub", "팀 대본과 견주어")); box.appendChild(el("p", null, r.대본)); }
           if (r.준법.length) { box.appendChild(el("p", "sub", "준법 주의")); box.appendChild(목록(r.준법, "co-warn")); }
           box.appendChild(el("p", "sub", "전달"));
           box.appendChild(el("p", null, r.전달));
-          box.appendChild(el("p", "co-note", "말 빠르기 " + (m.빠르기 ? m.빠르기.toFixed(1) + "음절/초 (알맞음 3.5~5.5)" : "잴 수 없음")
-            + " · 군말 " + m.군말 + "번 · 인식 확신도 " + (m.확신 != null ? m.확신.toFixed(2) : "없음") + " — 받아 적은 글로 잰 참고값입니다."));
-          btn.disabled = false;
-        }).catch(function (e) { box.textContent = e.message; btn.disabled = false; });
-      });
+          if (m) box.appendChild(el("p", "co-note", "말 빠르기 " + (m.빠르기 ? m.빠르기.toFixed(1) + "음절/초 (알맞음 3.5~5.5)" : "잴 수 없음")
+            + " · 군말 " + (m.군말 || 0) + "번 · 인식 확신도 " + (m.확신 != null ? m.확신.toFixed(2) : "없음") + " — 받아 적은 글로 잰 참고값입니다."));
+      }
 
       // ── 따라 읽기 — 알아들은 글자와 원문을 한 글자씩 맞대 본다(가장 긴 공통 부분열). 못 알아들은 글자에 밑줄.
       function 맞대기(원문, 들은) {
@@ -438,7 +576,11 @@
       function 문장받기() {
         $("lines").textContent = "";
         $("read-status").textContent = "문장을 만드는 중입니다.";
-        return ai({ 방식: "문장", 상황: 상황(), 성향: 값("tone"), 인물: 인물() }).then(function (r) {
+        var 대본 = 지금대본();
+        var 받기 = 대본 ? Promise.resolve({ 문장: 대본.대본.split(/(?<=[.?!])\s+|\n+/).map(function (s) { return s.trim(); })
+          .filter(function (s) { return 음절(s) >= 4; }).slice(0, 40) })
+          : ai({ 방식: "문장", 상황: 상황(), 성향: 값("tone"), 인물: 인물() });
+        return 받기.then(function (r) {
           $("read-status").textContent = SR ? "「들어 보기」로 듣고 「읽기」를 눌러 소리 내어 읽습니다. 다 읽고 잠깐 쉬면 맞대 봅니다."
             : "이 브라우저는 음성 인식이 없어 「들어 보기」만 됩니다. 크롬·엣지·사파리에서 여세요.";
           r.문장.forEach(function (s) {
@@ -449,7 +591,7 @@
             듣기단추.addEventListener("click", function () { 말하기(s); });
             읽기단추.addEventListener("click", function () {
               if (듣는중) { try { 듣는중.stop(); } catch (e) {} return; }
-              if (소리) 소리.cancel();
+              멈추기();
               읽기단추.textContent = "듣는 중 — 다 읽었으면 누르세요";
               듣기(function (t) { res.textContent = t; }).then(function (m) {
                 읽기단추.textContent = "다시 읽기";
@@ -460,12 +602,14 @@
                 res.textContent = "알아들은 정도 " + Math.round(x.비율 * 100) + "%"
                   + (빠르기 ? " · 빠르기 " + 빠르기.toFixed(1) + "음절/초" + (빠르기 > 5.5 ? " (빠름)" : 빠르기 < 3.5 ? " (느림)" : " (알맞음)") : "")
                   + " — 밑줄은 기계가 다르게 알아들은 글자입니다. 들은 글: " + m.text;
+                if (m.소리) res.appendChild(듣기단추(m.소리));
               }).catch(function (e) { 읽기단추.textContent = "읽기"; res.textContent = e.message; });
             });
             var row = el("div", "co-row"); row.appendChild(듣기단추); row.appendChild(읽기단추);
             li.appendChild(line); li.appendChild(row); li.appendChild(res);
             $("lines").appendChild(li);
           });
+          if (대본) return;
           var li = el("li"), more = el("button", "btn", "다른 문장"); more.type = "button";
           more.addEventListener("click", 문장받기);
           li.appendChild(more); $("lines").appendChild(li);
@@ -476,12 +620,201 @@
         if (!상황()) { $("sit-custom").focus(); return; }
         if (값("way") === "읽기") return 문장받기();
         if (듣는중) try { 듣는중.stop(); } catch (e) {}
-        if (소리) 소리.cancel();
+        멈추기();
+        if (값("way") === "반론") return 반론시작();
         대화 = []; 진행 = true;
         $("log").textContent = ""; $("report").textContent = "";
         $("finish").disabled = true;
         상대차례();
       });
+
+      function 상황이름() { var o = $("sit").options[$("sit").selectedIndex]; return $("sit").value ? o.textContent : "직접 적은 상황"; }
+      function 인물글() { var p = 인물(); return [p.성별, p.나이, p.직업, p.소득, p.가족, p.특이사항].filter(Boolean).join(", "); }
+
+      // ── 반론 훈련 — 반론 여덟 개를 하나씩: 상대가 말하고 → 내가 답하고 → 점수·모범답
+      var 반론 = { 목록: [], 차례: 0, 지금: 0, 항목: [] };     // 차례 = 다음에 낼 반론, 지금 = 답하는(다시 답할 수 있는) 반론
+      function 반론상태(글) { $("drill-status").textContent = 글; }
+      function 반론시작() {
+        반론 = { 목록: [], 차례: 0, 지금: 0, 항목: [] };
+        $("drill-list").textContent = ""; $("drill-q").hidden = true;
+        $("drill-next").disabled = $("drill-end").disabled = $("drill-mic").disabled = true;
+        반론상태("이 상대가 할 법한 반론을 만드는 중입니다.");
+        ai({ 방식: "반론목록", 상황: 상황(), 성향: 값("tone"), 인물: 인물() }).then(function (r) {
+          반론.목록 = r.반론;
+          반론하나();
+        }).catch(function (e) { 반론상태(e.message); });
+      }
+      function 반론하나() {
+        var q = 반론.목록[반론.차례];
+        $("drill-next").disabled = true;
+        if (!q) return 반론끝();
+        반론.지금 = 반론.차례;
+        $("drill-q").hidden = false;
+        $("drill-q").textContent = q;
+        반론상태((반론.차례 + 1) + " / " + 반론.목록.length + " — 상대가 말합니다.");
+        말하기(q).then(function () {
+          $("drill-mic").disabled = !SR;
+          if (SR) 반론답하기(); else 반론상태("이 브라우저는 음성 인식이 없습니다. 크롬·엣지·사파리에서 여세요.");
+        });
+      }
+      function 반론답하기() {
+        $("drill-mic").classList.add("on"); $("drill-mic").textContent = "듣는 중 — 다 말했으면 누르세요";
+        반론상태((반론.지금 + 1) + " / " + 반론.목록.length + " — 답하세요. 말을 마치고 잠깐 쉬면 채점합니다.");
+        듣기(function (t) { 반론상태(t); }).then(function (m) {
+          $("drill-mic").classList.remove("on"); $("drill-mic").textContent = "다시 답하기";
+          if (!m.text) { 반론상태("말이 들리지 않았습니다. 「다시 답하기」를 누르세요."); return; }
+          var k = 반론.지금, q = 반론.목록[k];
+          반론상태("채점하는 중입니다.");
+          return ai({ 방식: "반론채점", 상황: 상황(), 성향: 값("tone"), 인물: 인물(), 반론: q, 답: m.text }).then(function (r) {
+            반론.항목[k] = { 반론: q, 답: m.text, 점수: r.점수, 한마디: r.한마디, 모범답: r.모범답 };
+            var li = el("li");
+            li.appendChild(el("div", "q", q));
+            var 내답 = el("div", null, "내 답: " + m.text); if (m.소리) 내답.appendChild(듣기단추(m.소리)); li.appendChild(내답);
+            var 점 = el("div"); 점.appendChild(el("span", "co-score", r.점수 + "점 ")); 점.appendChild(document.createTextNode(r.한마디)); li.appendChild(점);
+            var 모범 = el("div", "co-note", "모범답: " + r.모범답);
+            var b = el("button", "co-play", "들어 보기"); b.type = "button"; b.addEventListener("click", function () { 말하기(r.모범답); });
+            모범.appendChild(b); li.appendChild(모범);
+            $("drill-list").insertBefore(li, $("drill-list").firstChild);
+            반론.차례 = k + 1;
+            $("drill-next").disabled = false; $("drill-end").disabled = false;
+            $("drill-mic").textContent = "답하기";
+            반론상태(반론.차례 < 반론.목록.length ? "「다음 반론」을 누르면 이어집니다." : "다 했습니다. 「끝내고 남기기」를 누르세요.");
+          });
+        }).catch(function (e) { $("drill-mic").classList.remove("on"); $("drill-mic").textContent = "답하기"; 반론상태(e.message); });
+      }
+      $("drill-mic").addEventListener("click", function () {
+        if (듣는중) { try { 듣는중.stop(); } catch (e) {} return; }
+        멈추기();
+        반론답하기();     // 지금 반론에 (다시) 답한다 — 다시 답하면 점수를 새로 받는다
+      });
+      $("drill-next").addEventListener("click", 반론하나);
+      $("drill-end").addEventListener("click", 반론끝);
+      function 반론끝() {
+        멈추기();
+        if (듣는중) try { 듣는중.stop(); } catch (e) {}
+        $("drill-mic").disabled = $("drill-next").disabled = $("drill-end").disabled = true;
+        var 항목 = 반론.항목.filter(Boolean);
+        if (!항목.length) { 반론상태("답한 반론이 없어 남기지 않았습니다."); return; }
+        window.mgAuth.api("/coach/records", { method: "POST", body: { 상황이름: 상황이름(), 인물: 인물글(), 항목: 항목 } }).then(function (r) {
+          반론상태("반론 " + 항목.length + "개, 평균 " + r.평균 + "점으로 연습 기록에 남겼습니다.");
+          기록불러오기();
+        }).catch(function (e) { 반론상태(e.message); });
+      }
+
+      // ── 팀 대본 — 팀장급이 올리고 모두가 고른다
+      var 대본들 = [];
+      function 지금대본() { var id = $("script").value; return 대본들.filter(function (x) { return x.id === id; })[0] || null; }
+      function 대본불러오기() {
+        return window.mgAuth.api("/coach/scripts").then(function (r) {
+          대본들 = r.대본들 || [];
+          var sel = $("script"), 전 = sel.value;
+          while (sel.options.length > 1) sel.remove(1);
+          대본들.forEach(function (x) { var o = el("option", null, x.제목 + " — " + x.올린이); o.value = x.id; sel.appendChild(o); });
+          sel.value = 대본들.some(function (x) { return x.id === 전; }) ? 전 : "";
+          $("script-admin").hidden = !r.올릴수있음;
+          var ol = $("sc-list"); ol.textContent = "";
+          대본들.forEach(function (x) {
+            var li = el("li"); li.appendChild(el("span", null, x.제목 + " · " + x.날짜));
+            var 고치기 = el("button", null, "고치기"), 지우기 = el("button", null, "지우기");
+            고치기.type = 지우기.type = "button";
+            고치기.addEventListener("click", function () { $("sc-title").value = x.제목; $("sc-sit").value = x.상황 || ""; $("sc-body").value = x.대본; $("sc-save").dataset.id = x.id; });
+            지우기.addEventListener("click", function () {
+              if (!window.confirm("「" + x.제목 + "」 대본을 지울까요?")) return;
+              window.mgAuth.api("/coach/scripts?id=" + encodeURIComponent(x.id), { method: "DELETE" }).then(대본불러오기);
+            });
+            li.appendChild(고치기); li.appendChild(지우기); ol.appendChild(li);
+          });
+        }).catch(function () {});
+      }
+      $("script").addEventListener("change", function () {
+        var x = 지금대본();
+        if (x && x.상황) { $("sit").value = ""; $("sit-custom-wrap").hidden = false; $("sit-custom").value = x.상황; }
+      });
+      $("script-admin").addEventListener("click", function () { $("script-panel").hidden = !$("script-panel").hidden; });
+      $("sc-save").addEventListener("click", function () {
+        var btn = this;
+        btn.disabled = true;
+        window.mgAuth.api("/coach/scripts", { method: "POST", body: { id: btn.dataset.id || "", 제목: $("sc-title").value, 상황: $("sc-sit").value, 대본: $("sc-body").value } })
+          .then(function (r) {
+            $("sc-msg").textContent = "저장했습니다."; delete btn.dataset.id;
+            $("sc-title").value = $("sc-sit").value = $("sc-body").value = "";
+            return 대본불러오기().then(function () { $("script").value = r.id; });
+          }).catch(function (e) { $("sc-msg").textContent = e.message; }).then(function () { btn.disabled = false; });
+      });
+      대본불러오기();
+
+      // ── 연습 기록 — 나와, 팀장급이면 팀원까지. 사람을 고르면 그 사람의 점수 흐름(처음 다섯 번 → 최근 다섯 번)과 목록.
+      var 기록들 = [];
+      function 기록불러오기() {
+        return window.mgAuth.api("/coach/records").then(function (list) {
+          기록들 = list;
+          $("records").hidden = !list.length;
+          var sel = $("rec-who"), 전 = sel.value;
+          var 사람들 = [];
+          list.forEach(function (x) { var k = x.내것 ? "__me" : x.누가; if (사람들.indexOf(k) < 0) 사람들.push(k); });
+          sel.textContent = "";
+          사람들.forEach(function (k) { var o = el("option", null, k === "__me" ? "내 기록" : k); o.value = k; sel.appendChild(o); });
+          sel.hidden = 사람들.length < 2 && 사람들[0] === "__me";   // 남의 기록만 있으면 누구 것인지 보여야 한다
+          sel.value = 사람들.indexOf(전) >= 0 ? 전 : (사람들.indexOf("__me") >= 0 ? "__me" : 사람들[0]);
+          기록목록();
+        }).catch(function () {});
+      }
+      function 꺾은선(값들) {
+        var w = 220, h = 40, n = 값들.length;
+        if (n < 2) return null;
+        var ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg"), path = document.createElementNS(ns, "polyline");
+        svg.setAttribute("viewBox", "0 0 " + w + " " + h); svg.setAttribute("role", "img"); svg.setAttribute("aria-label", "점수 흐름");
+        path.setAttribute("points", 값들.map(function (v, i) { return (i / (n - 1) * (w - 6) + 3).toFixed(1) + "," + (h - 3 - v / 5 * (h - 6)).toFixed(1); }).join(" "));
+        path.setAttribute("fill", "none"); path.setAttribute("stroke", "currentColor"); path.setAttribute("stroke-width", "2");
+        svg.appendChild(path);
+        return svg;
+      }
+      function 평균(a) { return a.length ? Math.round(a.reduce(function (s, v) { return s + v; }, 0) / a.length * 10) / 10 : null; }
+      function 기록목록() {
+        var who = $("rec-who").value;
+        var 내 = 기록들.filter(function (x) { return who === "__me" ? x.내것 : !x.내것 && x.누가 === who; });
+        var 점수들 = 내.slice().reverse().filter(function (x) { return x.점수 != null; }).map(function (x) { return x.점수; });
+        var 빠르기들 = 내.slice().reverse().filter(function (x) { return x.빠르기 != null; }).map(function (x) { return x.빠르기; });
+        var tr = $("rec-trend"); tr.textContent = "";
+        var 선 = 꺾은선(점수들);
+        if (선) tr.appendChild(선);
+        var k = Math.min(5, Math.floor(점수들.length / 2));   // 앞뒤가 겹치지 않게 — 기록이 적으면 절반씩
+        if (k >= 1) tr.appendChild(el("span", null, "점수 처음 " + k + "번 평균 " + 평균(점수들.slice(0, k))
+          + " → 최근 " + k + "번 평균 " + 평균(점수들.slice(-k))));
+        if (빠르기들.length >= 2) tr.appendChild(el("span", null, "말 빠르기 " + 빠르기들[0] + " → " + 빠르기들[빠르기들.length - 1] + "음절/초"));
+        var ol = $("rec-list"); ol.textContent = "";
+        내.forEach(function (x) {
+          var li = el("li");
+          li.appendChild(el("span", null, new Date(x.때).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" }) + " " + x.종류));
+          li.appendChild(el("div", null, x.상황 + (x.대본 ? " · 대본 「" + x.대본 + "」" : "")));
+          li.appendChild(el("span", null, (x.점수 != null ? x.점수 + "점" : "") + (x.준법 ? " · 준법 " + x.준법 : "") + (x.빠르기 != null ? " · " + x.빠르기 + "음절/초" : "")));
+          li.addEventListener("click", function () { 기록보기(x.id); });
+          ol.appendChild(li);
+        });
+      }
+      $("rec-who").addEventListener("change", 기록목록);
+      function 기록보기(id) {
+        var box = $("rec-detail");
+        box.textContent = "불러오는 중입니다.";
+        window.mgAuth.api("/coach/records/one?id=" + id).then(function (r) {
+          box.textContent = "";
+          box.appendChild(el("p", "co-note", r.누가 + " · " + new Date(r.때).toLocaleString("ko-KR") + " · " + r.상황 + (r.인물 ? " · 상대 " + r.인물 : "")));
+          if (r.종류 === "반론") {
+            box.appendChild(el("h3", null, "반론 훈련 평균 " + r.결과.평균 + "점"));
+            r.결과.항목.forEach(function (x) {
+              var d = el("div", "co-fix");
+              d.appendChild(el("p", null, x.반론)); d.appendChild(el("p", null, "답: " + x.답 + " — " + x.점수 + "점"));
+              d.appendChild(el("p", "co-note", x.한마디)); d.appendChild(el("p", "co-note", "모범답: " + x.모범답));
+              box.appendChild(d);
+            });
+          } else {
+            var 판 = el("div"); 평가그리기(판, r.결과, r.지표); box.appendChild(판);
+            if (r.대화.length) { box.appendChild(el("p", "sub", "대화")); box.appendChild(목록(r.대화)); }
+          }
+          box.scrollIntoView({ block: "start", behavior: "smooth" });
+        }).catch(function (e) { box.textContent = e.message; });
+      }
+      기록불러오기();
     })();
   </script>
 </body>

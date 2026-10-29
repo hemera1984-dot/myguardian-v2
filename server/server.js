@@ -54,6 +54,10 @@ function 도움말글() {
   return 도움말기억.글;
 }
 const 코칭횟수 = new Map();     // 보이스코칭 하루 횟수(계정|날짜) — 대화 한 마디가 한 번이라 AI 입력과 따로 센다
+const 목소리횟수 = new Map();   // 네이버 목소리 하루 횟수(계정|날짜) — 요금이 글자 수로 나가므로 따로 막는다
+// 네이버 CLOVA Voice Premium(2026-10-29 발표자: 진짜 사람 같은 목소리) — 키가 있으면 켜지고 없으면 화면이 브라우저 목소리를 쓴다
+const TTS_ID = process.env.NCP_TTS_ID || "";
+const TTS_SECRET = process.env.NCP_TTS_SECRET || "";
 const AI입력횟수 = new Map();   // AI 입력 하루 횟수(계정|날짜) — 메모리, 서버를 다시 켜면 비워진다
 
 const MEDIA_DIR = process.env.MEDIA_DIR || "./media";
@@ -542,6 +546,24 @@ function canAssignUnder(db, me, parentId) {
   if (parentId == null) return false; // 최상위 배치는 총관리자만
   if (parentId === me.id) return true;
   return isDescendantOf(db, parentId, me.id);
+}
+
+// 팀 표준 대본 목록 — app_docs 「coach-scripts」 한 칸에 배열로 둔다(팀 수십 개 규모)
+function 팀대본들() {
+  try { return JSON.parse(getDoc(db, "coach-scripts") || "[]"); } catch (e) { return []; }
+}
+
+// 팀원의 기록(발표·연습)을 볼 수 있는가 — 본인 · 총관리자 · 그 사람 위의 팀장급(직급 rank 3 이하, 하위 트리).
+function 위에서볼수있나(db, me, ownerId) {
+  if (ownerId === me.id || me.is_admin) return true;
+  const g = listGrades(db).find((x) => x.code === me.grade);
+  return !!g && g.rank <= 3 && isDescendantOf(db, ownerId, me.id);
+}
+// 팀장급(대본 올리기 등) — 총관리자, 승인 권한, 직급 rank 3 이하
+function 팀장급인가(db, me) {
+  if (me.is_admin || me.can_approve) return true;
+  const g = listGrades(db).find((x) => x.code === me.grade);
+  return !!g && g.rank <= 3;
 }
 
 // ---------- 라우트 ----------
@@ -2019,6 +2041,8 @@ async function route(req, res, url) {
     const 사람 = b.인물 && typeof b.인물 === "object" ? b.인물 : {};
     const 인물 = [["성별", 10], ["나이", 20], ["직업", 40], ["소득", 40], ["가족", 40], ["특이사항", 200]]
       .map(([k, n]) => { const v = 글(사람[k], n); return v ? `${k} ${v}` : ""; }).filter(Boolean).join(", ");
+    const 대본 = b.대본 ? 팀대본들().find((x) => x.id === b.대본) : null;
+    const 상황이름 = 글(b.상황이름, 60) || 상황.slice(0, 60);
     const 대화록 = (Array.isArray(b.대화) ? b.대화 : []).slice(-60)
       .filter((m) => m && (m.누가 === "나" || m.누가 === "상대") && m.말)
       .map((m) => (m.누가 === "나" ? "설계사: " : "상대: ") + 글(m.말, 600));
@@ -2057,6 +2081,8 @@ async function route(req, res, url) {
         ...공통,
         "",
         "당신은 보험 영업 화법 코치다. 아래 대화를 보고 설계사를 코칭한다. 대화록에 있는 것만 근거로 쓰고, 없는 말을 지어내지 않는다.",
+        "- 단계: 오프닝·상황 묻기·제안·반론 처리·마무리 다섯 단계를 각각 1~5점(5가 가장 좋음)으로 매기고 한마디를 단다. 대화에 그 단계가 아예 없었으면 0점.",
+        ...(대본 ? ["- 팀 표준 대본이 아래에 있다. 대본의 흐름과 핵심 문장을 기준으로 빠뜨린 단계·문장, 대본보다 나았던 말을 대본에 적는다.", `팀 표준 대본 「${대본.제목}」:`, 대본.대본.slice(0, 3000)] : ["- 팀 표준 대본이 없으면 대본은 빈 문자열."]),
         "- 이 상대(인물·성향)에 맞춰 말했는지도 본다 — 나이·직업·소득·가족에 닿는 말을 했는지, 누구에게나 하는 말만 했는지.",
         "- 고칠점은 설계사가 실제로 한 말을 그대로 인용하고(내말), 같은 뜻을 더 낫게 바꾼 말(바꿔말하기)과 이유를 단다. 많아야 다섯.",
         "- 준법: 단정적 표현(「무조건」「확실히 오른다」), 원금·수익 보장으로 들리는 말, 다른 회사 비방, 세금·수익을 계산해 주겠다는 약속, 설명 없이 가입을 서두르는 말,",
@@ -2075,13 +2101,53 @@ async function route(req, res, url) {
           잘한점: { type: "array", items: { type: "string" } },
           고칠점: { type: "array", items: { type: "object", properties: { 내말: { type: "string" }, 바꿔말하기: { type: "string" }, 이유: { type: "string" } }, required: ["내말", "바꿔말하기", "이유"], additionalProperties: false } },
           준법: { type: "array", items: { type: "string" } },
-          전달: { type: "string" }
+          전달: { type: "string" },
+          단계: { type: "array", items: { type: "object", properties: {
+            단계: { type: "string", enum: ["오프닝", "상황 묻기", "제안", "반론 처리", "마무리"] },
+            점수: { type: "integer" }, 한마디: { type: "string" } }, required: ["단계", "점수", "한마디"], additionalProperties: false } },
+          대본: { type: "string" }
         },
-        required: ["한줄", "잘한점", "고칠점", "준법", "전달"],
+        required: ["한줄", "잘한점", "고칠점", "준법", "전달", "단계", "대본"],
         additionalProperties: false
       }, { effort: "medium", timeout: 120000 });
       if (r.error) return send(res, 502, { error: "평가를 받지 못했습니다. 다시 눌러 보세요." });
-      return send(res, 200, r.value);
+      r.value.단계 = (r.value.단계 || []).map((x) => ({ ...x, 점수: Math.max(0, Math.min(5, Math.round(Number(x.점수) || 0))) }));
+      // 연습 기록 — 평가를 받은 연습만 남는다. 대화는 번호를 가린 글로만.
+      const 기록 = db.prepare("INSERT INTO coach_records (owner_id, at, kind, situation, person, script_id, metrics, result, transcript) VALUES (?, ?, '역할', ?, ?, ?, ?, ?, ?)")
+        .run(me.id, new Date().toISOString(), 상황이름, 인물, 대본 ? 대본.id : null,
+          JSON.stringify({ 빠르기: 숫자(지표.빠르기), 군말: 숫자(지표.군말), 확신: 숫자(지표.확신) }), JSON.stringify(r.value), JSON.stringify(대화록));
+      return send(res, 200, { ...r.value, 기록: Number(기록.lastInsertRowid) });
+    }
+    if (b.방식 === "반론목록") {
+      const r = await claude([
+        ...공통,
+        "",
+        "반론 처리 연습이다. 이 상대가 이 상황에서 실제로 할 법한 거절·반론을 여덟 개 만든다. 상대의 나이·직업·소득·가족이 드러나게.",
+        "- 한마디씩, 입말로, 15~60자. 쉬운 것에서 어려운 것 순으로. 서로 겹치지 않게(돈·시간·필요 없음·불신·가족 핑계·이미 있음·미루기·남과 비교)."
+      ].join("\n"), {
+        type: "object", properties: { 반론: { type: "array", items: { type: "string" } } }, required: ["반론"], additionalProperties: false
+      }, { effort: "low", timeout: 60000 });
+      if (r.error) return send(res, 502, { error: "반론을 받지 못했습니다. 다시 눌러 보세요." });
+      return send(res, 200, { 반론: (r.value.반론 || []).slice(0, 10).map((s) => String(s).slice(0, 120)) });
+    }
+    if (b.방식 === "반론채점") {
+      const 반론 = 글(b.반론, 200), 답 = 글(b.답, 600);
+      if (!반론 || !답) return send(res, 400, { error: "반론과 답이 있어야 합니다." });
+      const r = await claude([
+        ...공통,
+        "",
+        "반론 처리 연습이다. 상대의 반론에 설계사가 한 답을 채점한다. 답은 음성 인식으로 받아 적은 글이다.",
+        "- 점수 1~5: 반론을 먼저 인정했는가, 이 상대의 사정에 맞췄는가, 다음 걸음(질문·만남)으로 이었는가, 단정·압박이 없는가.",
+        "- 한마디는 왜 그 점수인지 한두 문장. 모범답은 같은 상황에서 쓸 만한 답 한두 문장, 입말로. 단정·수익 보장·특약 필수 표현 금지.",
+        "",
+        `상대 반론: ${반론}`,
+        `설계사 답: ${답}`
+      ].join("\n"), {
+        type: "object", properties: { 점수: { type: "integer" }, 한마디: { type: "string" }, 모범답: { type: "string" } },
+        required: ["점수", "한마디", "모범답"], additionalProperties: false
+      }, { effort: "low", timeout: 45000 });
+      if (r.error) return send(res, 502, { error: "채점을 받지 못했습니다. 다시 말해 보세요." });
+      return send(res, 200, { ...r.value, 점수: Math.max(1, Math.min(5, Math.round(Number(r.value.점수) || 1))) });
     }
     if (b.방식 === "문장") {
       const r = await claude([
@@ -2103,14 +2169,105 @@ async function route(req, res, url) {
     return send(res, 400, { error: "방식이 올바르지 않습니다." });
   }
 
+  // 반론 훈련 결과 남기기 — 채점은 한 마디씩 이미 받았고, 끝나면 화면이 모아 보낸다
+  if (req.method === "POST" && path === "/coach/records") {
+    const b = await readJson(req, 128 * 1024);
+    const 글 = (v, n) => 번호가리기(String(v || "")).replace(/\s+/g, " ").trim().slice(0, n);
+    const 항목 = (Array.isArray(b.항목) ? b.항목 : []).slice(0, 12).map((x) => ({
+      반론: 글(x && x.반론, 200), 답: 글(x && x.답, 600), 점수: Math.max(1, Math.min(5, Math.round(Number(x && x.점수) || 1))),
+      한마디: 글(x && x.한마디, 400), 모범답: 글(x && x.모범답, 400)
+    })).filter((x) => x.반론 && x.답);
+    if (!항목.length) return send(res, 400, { error: "남길 반론 연습이 없습니다." });
+    const 평균 = Math.round(항목.reduce((a, x) => a + x.점수, 0) / 항목.length * 10) / 10;
+    const r = db.prepare("INSERT INTO coach_records (owner_id, at, kind, situation, person, result) VALUES (?, ?, '반론', ?, ?, ?)")
+      .run(me.id, new Date().toISOString(), 글(b.상황이름, 60) || "반론 훈련", 글(b.인물, 300), JSON.stringify({ 평균, 항목 }));
+    return send(res, 200, { 기록: Number(r.lastInsertRowid), 평균 });
+  }
+  if (req.method === "GET" && path === "/coach/records") {
+    const 이름 = (id) => { const a = getAccount(db, id); return a ? (a.display_name || a.name || "") : ""; };
+    const 대본이름 = Object.fromEntries(팀대본들().map((x) => [x.id, x.제목]));
+    const 읽기 = (s) => { try { return JSON.parse(s || "null"); } catch (e) { return null; } };
+    return send(res, 200, db.prepare("SELECT id, owner_id, at, kind, situation, person, script_id, metrics, result FROM coach_records ORDER BY id DESC LIMIT 2000").all()
+      .filter((x) => 위에서볼수있나(db, me, x.owner_id)).slice(0, 300).map((x) => {
+        const v = 읽기(x.result) || {}, m = 읽기(x.metrics) || {};
+        const 단계 = (v.단계 || []).filter((s) => s.점수 > 0);
+        return { id: x.id, 누가: 이름(x.owner_id), 내것: x.owner_id === me.id, 때: x.at, 종류: x.kind, 상황: x.situation,
+          대본: x.script_id ? (대본이름[x.script_id] || "지운 대본") : "", 빠르기: m.빠르기 ?? null,
+          준법: (v.준법 || []).length, 점수: x.kind === "반론" ? v.평균 : (단계.length ? Math.round(단계.reduce((a, s) => a + s.점수, 0) / 단계.length * 10) / 10 : null) };
+      }));
+  }
+  if (req.method === "GET" && path === "/coach/records/one") {
+    const x = db.prepare("SELECT * FROM coach_records WHERE id = ?").get(Number(url.searchParams.get("id")) || 0);
+    if (!x || !위에서볼수있나(db, me, x.owner_id)) return send(res, 404, { error: "없는 기록입니다." });
+    const 읽기 = (s) => { try { return JSON.parse(s || "null"); } catch (e) { return null; } };
+    const a = getAccount(db, x.owner_id);
+    return send(res, 200, { id: x.id, 누가: a ? (a.display_name || a.name) : "", 때: x.at, 종류: x.kind, 상황: x.situation, 인물: x.person,
+      지표: 읽기(x.metrics), 결과: 읽기(x.result), 대화: 읽기(x.transcript) || [] });
+  }
+
+  // 팀 표준 대본 — 팀장급이 올리고 모두가 고른다. 평가가 이 대본을 기준으로 보고, 따라 읽기가 이 문장을 쓴다.
+  if (path === "/coach/scripts") {
+    if (req.method === "GET") return send(res, 200, { 대본들: 팀대본들(), 올릴수있음: 팀장급인가(db, me) });
+    if (!팀장급인가(db, me)) return send(res, 403, { error: "대본은 팀장급만 올리고 지웁니다." });
+    const 목록 = 팀대본들();
+    if (req.method === "POST") {
+      const b = await readJson(req, 64 * 1024);
+      const 제목 = String(b.제목 || "").trim().slice(0, 60), 대본 = String(b.대본 || "").trim().slice(0, 6000);
+      if (!제목 || !대본) return send(res, 400, { error: "제목과 대본을 적어 주세요." });
+      const 있던 = 목록.find((x) => x.id === b.id);
+      const 새것 = { id: 있던 ? 있던.id : randomBytes(6).toString("hex"), 제목, 상황: String(b.상황 || "").trim().slice(0, 800), 대본,
+        올린이: 있던 ? 있던.올린이 : (me.display_name || me.name), 날짜: new Date().toISOString().slice(0, 10) };
+      setDoc(db, "coach-scripts", JSON.stringify(있던 ? 목록.map((x) => (x.id === 새것.id ? 새것 : x)) : [...목록, 새것].slice(-50)), me.id);
+      return send(res, 200, { id: 새것.id });
+    }
+    if (req.method === "DELETE") {
+      setDoc(db, "coach-scripts", JSON.stringify(목록.filter((x) => x.id !== url.searchParams.get("id"))), me.id);
+      return send(res, 200, { ok: true });
+    }
+  }
+
+  // 네이버 목소리 — 글 한 덩어리를 mp3로. 키가 없으면 켜짐 false라 화면이 브라우저 목소리를 쓴다.
+  // 화자는 성별로 고르고 나이는 높낮이·빠르기로 맞춘다(화자 목록에 나이 구분이 없다 — 들어 보고 바꾼다).
+  if (path === "/ai/voice") {
+    if (req.method === "GET") return send(res, 200, { 켜짐: !!(TTS_ID && TTS_SECRET) });
+    if (req.method !== "POST") return send(res, 405, { error: "허용되지 않은 방식입니다." });
+    if (!TTS_ID || !TTS_SECRET) return send(res, 503, { error: "네이버 목소리가 켜져 있지 않습니다." });
+    const b = await readJson(req);
+    const 말 = 번호가리기(String(b.말 || "")).replace(/\s+/g, " ").trim().slice(0, 400);
+    if (!말) return send(res, 400, { error: "읽을 글이 없습니다." });
+    const 오늘 = new Date(Date.now() + 9 * 36e5).toISOString().slice(0, 10);
+    const 키 = me.id + "|" + 오늘, 쓴 = 목소리횟수.get(키) || 0;
+    if (쓴 >= 600) return send(res, 429, { error: "오늘 목소리 횟수를 다 썼습니다. 브라우저 목소리로 읽습니다." });
+    목소리횟수.set(키, 쓴 + 1);
+    const 나이 = parseInt(String(b.나이 || ""), 10) || 40;
+    const 남 = b.성별 === "남성";
+    const form = new URLSearchParams({
+      speaker: 남 ? (나이 < 35 ? "njihun" : "nminsang") : (나이 < 35 ? "nyejin" : "nara"),
+      text: 말, format: "mp3",
+      pitch: String(나이 < 30 ? -1 : 나이 < 50 ? 0 : 나이 < 60 ? 1 : 2),     // 양수가 낮다
+      speed: String(나이 >= 60 ? 1 : 0)                                       // 양수가 느리다
+    });
+    const r = await fetch("https://naveropenapi.apigw.ntruss.com/tts-premium/v1/tts", {
+      method: "POST",
+      headers: { "X-NCP-APIGW-API-KEY-ID": TTS_ID, "X-NCP-APIGW-API-KEY": TTS_SECRET, "Content-Type": "application/x-www-form-urlencoded" },
+      body: form.toString(), signal: AbortSignal.timeout(20000)
+    }).catch(() => null);
+    if (!r || !r.ok) {
+      console.error("네이버 목소리 실패:", r && r.status, r ? (await r.text().catch(() => "")).slice(0, 200) : "연결 안 됨");
+      return send(res, 502, { error: "네이버 목소리를 받지 못했습니다." });
+    }
+    const buf = Buffer.from(await r.arrayBuffer());
+    res.writeHead(200, { "Content-Type": "audio/mpeg", "Content-Length": buf.length, "Cache-Control": "no-store" });
+    return res.end(buf);
+  }
+
   // ── 발표 기록·피드백(2026-10-29 발표자: 「실시간으로 피드백, 끝나면 브리핑」 — 실시간·사후 둘 다, 팀장급도 보고, AI 정리).
   // 발표자가 「시작」을 누르면 기록이 열리고, 로그인한 팀원은 브리핑 「지금 발표 중」에서 지금 장에 피드백을 남긴다.
   // 「끝내기」면 장마다 머문 시간이 붙고 AI가 정리한다. 보는 사람: 발표자 본인 · 총관리자 · 발표자 위의 팀장급(하위 트리).
   // 상담 모드는 받지 않는다 — 고객 자료가 기록·AI로 가지 않게.
   if (path.startsWith("/brief/talks")) {
     const 이름 = (id) => { const a = getAccount(db, id); return a ? (a.display_name || a.name || "") : ""; };
-    const 팀장급 = !!me.is_admin || ((listGrades(db).find((g) => g.code === me.grade) || {}).rank || 99) <= 3;
-    const 볼수있나 = (t) => t.owner_id === me.id || !!me.is_admin || (팀장급 && isDescendantOf(db, t.owner_id, me.id));
+    const 볼수있나 = (t) => 위에서볼수있나(db, me, t.owner_id);
     const 하나 = (id) => db.prepare("SELECT * FROM brief_talks WHERE id = ?").get(String(id || "").slice(0, 32));
     const 지금 = () => new Date().toISOString();
     const 쪽 = (v, max) => Math.max(1, Math.min(max || 5000, Math.round(Number(v) || 1)));

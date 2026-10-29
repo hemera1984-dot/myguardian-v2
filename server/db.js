@@ -131,6 +131,21 @@ export function openDb(file) {
       at        TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_brief_talks_owner ON brief_talks(owner_id);
+
+    -- 보이스코칭 연습 기록(2026-10-29) — 역할 연습 평가·반론 훈련 결과. 가상 상대와의 연습만 쌓는다.
+    CREATE TABLE IF NOT EXISTS coach_records (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      owner_id   INTEGER NOT NULL REFERENCES accounts(id),
+      at         TEXT NOT NULL,
+      kind       TEXT NOT NULL,
+      situation  TEXT NOT NULL,
+      person     TEXT NOT NULL DEFAULT '',
+      script_id  TEXT,
+      metrics    TEXT,
+      result     TEXT NOT NULL,
+      transcript TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_coach_records_owner ON coach_records(owner_id);
     CREATE INDEX IF NOT EXISTS idx_brief_notes_talk ON brief_notes(talk_id);
   `);
 
