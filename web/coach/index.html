@@ -38,6 +38,9 @@
     .co-stage { border-top: 2px solid var(--platform-ink); padding-top: 12px; min-width: 0; }
     /* 통화 화면 — 말이 주인이다. 지금 누가 말하는지만 크게, 글은 「대화 글 보기」 안에 */
     .co-call { padding: 18px 0 22px; min-height: 150px; }
+    .co-edge { margin: 0 0 4px; padding: 10px 12px; background: var(--platform-surface); border: 1px solid var(--platform-line-strong); border-radius: 4px; font-size: 14px; line-height: 1.6; word-break: keep-all; }
+    .co-edge[hidden] { display: none; }
+    .co-edge .co-dice { margin-left: 6px; }
     .co-who { font-size: 14px; color: var(--platform-muted); margin: 0 0 14px; word-break: keep-all; }
     .co-status { font-size: 26px; font-weight: 700; letter-spacing: -0.04em; line-height: 1.4; margin: 0; word-break: keep-all; }
     .co-status small { display: block; color: var(--platform-faint); font-size: 15px; font-weight: 400; letter-spacing: 0; margin-top: 8px; line-height: 1.6; }
@@ -46,10 +49,11 @@
     .co-level i { display: block; height: 100%; width: 0; background: var(--platform-ink); }
     .co-transcript { margin-top: 18px; border-top: 1px solid var(--platform-line); padding-top: 10px; }
     .co-transcript > summary { cursor: pointer; font-size: 14px; font-weight: 600; color: var(--platform-muted); padding: 4px 0; }
-    .co-mic { width: 100%; min-height: 72px; font: inherit; font-size: 20px; font-weight: 700; border-radius: 4px; cursor: pointer;
+    /* 공용 `.platform button { color: inherit }`(0,1,1)가 이겨 글자가 바탕과 같은 색이 됐다 — 같은 무게로 올린다 */
+    .platform .co-mic { width: 100%; min-height: 72px; font: inherit; font-size: 20px; font-weight: 700; border-radius: 4px; cursor: pointer;
       border: 1px solid var(--platform-ink); background: var(--platform-ink); color: #fff; transition: background-color 0.14s ease, color 0.14s ease; }
-    .co-mic.on { background: var(--platform-blue); border-color: var(--platform-blue); }
-    .co-mic:disabled { background: transparent; color: var(--platform-faint); border-color: var(--platform-line-strong); cursor: default; }
+    .platform .co-mic.on { background: var(--platform-blue); border-color: var(--platform-blue); }
+    .platform .co-mic:disabled { background: transparent; color: var(--platform-faint); border-color: var(--platform-line-strong); cursor: default; }
     #rate { accent-color: var(--platform-ink); }
     .co-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; font-size: 14px; }
     .co-log { list-style: none; margin: 16px 0 0; padding: 0; border-top: 1px solid var(--platform-line); }
@@ -197,6 +201,8 @@
         </section>
 
         <section class="co-stage" aria-label="연습">
+          <p class="co-edge" id="edge-note" hidden>엣지(Microsoft Edge)로 열면 사람에 가까운 무료 목소리(여자 SunHi · 남자 InJoon)로 대답합니다. 지금 브라우저의 목소리는 기계음에 가깝습니다.
+            <button class="co-dice" type="button" id="edge-copy">주소 복사</button></p>
           <div id="talk">
             <div class="co-call">
               <p class="co-who" id="who"></p>
@@ -300,6 +306,9 @@
         if (!vs.length && !네이버) { var o = el("option", null, "한국어 목소리 없음 — 글로만 보입니다"); o.value = ""; sel.appendChild(o); }
         if (손댄목소리 && 전) sel.value = 전;
         var 남자있음 = vs.some(function (v) { return 남자이름.test(v.name); });
+        // 엣지 안내(2026-10-30 발표자: 클로바는 월 9만 원이라 엣지의 무료 Natural 목소리로) — 자연스러운 목소리가 없고 엣지가 아닐 때만
+        var 자연스러움 = vs.some(function (v) { return /Natural|Online/i.test(v.name); });
+        $("edge-note").hidden = 네이버 || 자연스러움 || /Edg\//.test(navigator.userAgent);
         $("voice-note").hidden = 네이버 || !(성별 === "남성" && vs.length && !남자있음);
         $("voice-note").textContent = "이 기기에는 남자 한국어 목소리가 없어 낮춘 여자 목소리로 읽습니다. 엣지 브라우저로 열면 남자 목소리(InJoon 등)가 있습니다.";
       }
@@ -313,6 +322,11 @@
         return { 높이: 높이, 빠르기: 빠르기 };
       }
       if (소리) { 목소리목록(); 소리.onvoiceschanged = 목소리목록; }
+      $("edge-copy").addEventListener("click", function () {
+        var btn = this;
+        (navigator.clipboard ? navigator.clipboard.writeText(location.href) : Promise.reject()).then(function () { btn.textContent = "복사했습니다 — 엣지 주소창에 붙여 넣으세요"; })
+          .catch(function () { btn.textContent = location.href; });
+      });
       window.mgAuth.api("/ai/voice").then(function (r) { 네이버 = !!r.켜짐; if (네이버) 목소리목록(); }).catch(function () {});
       $("voice").addEventListener("change", function () { 손댄목소리 = true; });
       document.querySelectorAll('input[name="sex"]').forEach(function (r) { r.addEventListener("change", function () { 손댄목소리 = false; 목소리목록(); }); });
