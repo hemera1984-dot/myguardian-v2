@@ -18,6 +18,15 @@
           "web/care/index.html"
         ],
         "createdAt": "2026-10-11T06:39:59.416Z"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "web/coach/index.html"
+        ],
+        "createdAt": "2026-10-29T11:33:11.335Z",
+        "reason": "Claude 판정: 이 파일의 한쪽 테두리는 분할 단추(.co-seg) 칸 사이 1px 구분선뿐이고 색 강조 막대가 아니다. 구획 시작 2px 잉크 괘선은 위쪽이며 헌법 에디토리얼 문법"
       }
     ]
   }
