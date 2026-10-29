@@ -160,5 +160,18 @@ await check("사진 올리기 — 크기를 넘으면 끊지 않고 413", async 
 await check("강의 자료 지우기 — 깨진 %인코딩은 400", async () => {
   assert.equal((await call("fc", "DELETE", "/brief/library/%E0")).status, 400);
 });
+await check("발표 기록 — 본인·위 팀장급·총관리자만 보고, 옆 팀원은 못 본다", async () => {
+  const 시작 = async (who) => (await (await call(who, "POST", "/brief/talks", { 제목: "시험", 모드: "교육", 장수: 3 })).json()).id;
+  const a = await 시작("fc"), b = await 시작("fc2");
+  assert.equal((await call("fc2", "POST", "/brief/talks/note", { id: a, 종류: "좋음" })).status, 200, "피드백은 누구나 남긴다");
+  for (const [id, who] of [[a, "fc"], [b, "fc2"]]) {
+    assert.equal((await call(who, "POST", "/brief/talks/end", { id, 장시간: [{ 장: 1, 초: 30 }] })).status, 200);
+  }
+  const 봄 = async (who, id) => (await call(who, "GET", "/brief/talks/one?id=" + id)).status === 200;
+  assert.deepEqual([await 봄("fc", a), await 봄("lead", a), await 봄("boss", a), await 봄("fc2", a)], [true, true, true, false]);
+  assert.deepEqual([await 봄("lead", b), await 봄("boss", b)], [false, true], "팀장은 자기 하위만");
+  assert.equal((await call("fc2", "GET", "/brief/talks/notes?id=" + a)).status, 404, "남의 피드백 목록도 못 본다");
+  assert.equal((await call("lead", "POST", "/brief/talks/summary", { id: a })).status, 404, "정리는 발표자만");
+});
 console.log(`\n결과: ${n} 통과`);
 process.exit(0);

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
+  <title>발표 기록 - 마이가디언</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="../assets/platform.css">
+  <script src="../assets/auth.js"></script>
+  <style>
+    body { background: var(--platform-bg); margin: 0; color: var(--platform-ink); }
+    .tk { max-width: 860px; margin: 0 auto; padding: 24px 20px 60px; }
+    .tk a.back { color: var(--platform-faint); font-size: 13px; text-decoration: none; }
+    .tk h1 { font-size: 26px; letter-spacing: -0.04em; margin: 12px 0 4px; word-break: keep-all; }
+    .tk .meta { color: var(--platform-faint); font-size: 13px; margin: 0 0 20px; font-variant-numeric: tabular-nums; }
+    .tk h2 { font-size: 18px; letter-spacing: -0.035em; margin: 0; padding: 12px 0 8px; border-top: 2px solid var(--platform-ink); }
+    .tk section { margin-bottom: 28px; }
+    .tk .lead { font-size: 17px; line-height: 1.7; margin: 4px 0 12px; word-break: keep-all; }
+    .tk ul { margin: 0; padding-left: 18px; line-height: 1.75; font-size: 14px; word-break: keep-all; }
+    .tk .sub { font-size: 12px; font-weight: 700; color: var(--platform-faint); margin: 12px 0 4px; }
+    .tk .wait { color: var(--platform-faint); font-size: 14px; }
+    .rows { font-size: 13px; }
+    .row { display: grid; grid-template-columns: 48px 56px 1fr; gap: 10px; align-items: start; padding: 7px 0; border-bottom: 1px solid var(--platform-line); }
+    .row b { font-variant-numeric: tabular-nums; }
+    .row .t { font-variant-numeric: tabular-nums; color: var(--platform-muted); }
+    .bar { height: 8px; background: var(--platform-line-strong); border-radius: 2px; margin-top: 5px; }
+    .notes { margin-top: 6px; color: var(--platform-muted); line-height: 1.6; }
+    .notes .hot { color: var(--platform-denied); }
+    @media (max-width: 540px) { .row { grid-template-columns: 40px 48px 1fr; } }
+  </style>
+</head>
+<body>
+  <main class="tk">
+    <a class="back" href="./#talks">브리핑으로</a>
+    <h1 id="title">발표 기록</h1>
+    <p class="meta" id="meta"></p>
+    <section>
+      <h2>AI 정리</h2>
+      <div id="sum"><p class="wait">불러오는 중입니다.</p></div>
+    </section>
+    <section>
+      <h2>장마다 머문 시간과 피드백</h2>
+      <div class="rows" id="rows"></div>
+    </section>
+  </main>
+  <script>
+    (function () {
+      "use strict";
+      var id = new URLSearchParams(location.search).get("id") || "";
+      var $ = function (x) { return document.getElementById(x); };
+      var 기다림 = 0;
+      function 분초(s) { return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+      function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+      function 목록(arr) { var u = el("ul"); arr.forEach(function (s) { u.appendChild(el("li", null, s)); }); return u; }
+
+      function 그리기(t) {
+        $("title").textContent = t.제목;
+        var 장별 = {}, 총 = 0;
+        t.장시간.forEach(function (x) { 장별[x.장] = (장별[x.장] || 0) + x.초; 총 += x.초; });
+        $("meta").textContent = t.발표자 + " · " + new Date(t.시작).toLocaleString("ko-KR") + " · 총 " + 분초(총) + " · 피드백 " + t.피드백.length + "건";
+
+        var sum = $("sum");
+        sum.textContent = "";
+        var s = t.요약;
+        if (s) {
+          sum.appendChild(el("p", "lead", s.한줄));
+          if (s.잘된점.length) { sum.appendChild(el("p", "sub", "잘된 점")); sum.appendChild(목록(s.잘된점)); }
+          if (s.고칠점.length) { sum.appendChild(el("p", "sub", "고칠 점")); sum.appendChild(목록(s.고칠점.map(function (x) { return x.장 + "장 — " + x.내용; }))); }
+          sum.appendChild(el("p", "sub", "시간 배분")); sum.appendChild(목록([s.시간]));
+          if (s.다음연습.length) { sum.appendChild(el("p", "sub", "다음 연습")); sum.appendChild(목록(s.다음연습)); }
+        } else if (!t.끝 || 기다림 < 40) {
+          sum.appendChild(el("p", "wait", t.끝 ? "AI가 정리하는 중입니다. 1분 남짓 걸립니다." : "발표가 아직 진행 중입니다."));
+        } else {
+          sum.appendChild(el("p", "wait", "AI 정리를 받지 못했습니다."));
+          if (t.내것) {
+            var b = el("button", "btn", "다시 정리");
+            b.type = "button";
+            b.addEventListener("click", function () {
+              b.disabled = true; b.textContent = "정리하는 중입니다.";
+              window.mgAuth.api("/brief/talks/summary", { method: "POST", body: { id: id } }).then(불러오기)
+                .catch(function (e) { b.disabled = false; b.textContent = "다시 정리"; window.alert(e.message); });
+            });
+            sum.appendChild(b);
+          }
+        }
+
+        var 장들 = Object.keys(장별).map(Number);
+        t.피드백.forEach(function (n) { if (장들.indexOf(n.장) < 0) 장들.push(n.장); });
+        장들.sort(function (a, b) { return a - b; });
+        var 최대 = Math.max.apply(null, 장들.map(function (n) { return 장별[n] || 0; }).concat([1]));
+        var rows = $("rows");
+        rows.textContent = "";
+        if (!장들.length) rows.appendChild(el("p", "wait", "장 기록이 없습니다."));
+        장들.forEach(function (n) {
+          var r = el("div", "row");
+          r.appendChild(el("b", null, n + "장"));
+          r.appendChild(el("span", "t", 분초(장별[n] || 0)));
+          var right = el("div");
+          var bar = el("div", "bar");
+          bar.style.width = Math.round((장별[n] || 0) / 최대 * 100) + "%";
+          right.appendChild(bar);
+          var ns = t.피드백.filter(function (x) { return x.장 === n; });
+          if (ns.length) {
+            var box = el("div", "notes");
+            ns.forEach(function (x) {
+              box.appendChild(el("div", x.종류 === "어려움" || x.종류 === "빠름" ? "hot" : "", x.종류 + (x.글 ? " — " + x.글 : "") + " · " + x.누가));
+            });
+            right.appendChild(box);
+          }
+          r.appendChild(right);
+          rows.appendChild(r);
+        });
+        // 끝낸 직후에는 정리가 아직 안 왔다 — 2분까지 3초마다 다시 본다
+        if (!s && 기다림 < 40) { 기다림 += 1; setTimeout(불러오기, 3000); }
+      }
+      function 불러오기() {
+        return window.mgAuth.api("/brief/talks/one?id=" + encodeURIComponent(id)).then(그리기)
+          .catch(function (e) { $("sum").textContent = e.message; });
+      }
+      if (!window.mgAuth.token()) { $("sum").textContent = "마이가디언에 로그인한 뒤 여세요."; return; }
+      불러오기();
+    })();
+  </script>
+</body>
+</html>

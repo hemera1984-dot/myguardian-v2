@@ -361,6 +361,12 @@ body.brief-present {
   color: var(--brief-ink);
 }
 
+.pr-notes { padding: 10px 14px; max-height: 180px; overflow: auto; }
+.pr-notes-list { list-style: none; margin: 6px 0 0; padding: 0; font-size: 13px; line-height: 1.6; color: var(--brief-muted); }
+.pr-note { padding: 3px 0; border-top: 1px solid var(--brief-line); }
+.pr-note.k-어려움, .pr-note.k-빠름 { color: #ffb4a8; }
+.pr-note.k-좋음 { color: var(--brief-ink); }
+
 .vw-veil { position: fixed; inset: 0; z-index: 50; background: #000; }
 .vw-veil[hidden] { display: none; }
 

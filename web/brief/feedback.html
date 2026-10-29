@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
+  <title>발표 피드백 - 마이가디언</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="../assets/platform.css">
+  <script src="../assets/auth.js"></script>
+  <style>
+    body { background: var(--platform-bg, #fbfaf7); margin: 0; }
+    .fb { max-width: 540px; margin: 0 auto; padding: 20px 16px 40px; }
+    .fb a.back { color: var(--platform-faint, #8c877d); font-size: 13px; text-decoration: none; }
+    .fb h1 { font-size: 22px; letter-spacing: -0.04em; margin: 12px 0 2px; word-break: keep-all; }
+    .fb .who { color: var(--platform-faint, #8c877d); font-size: 13px; margin: 0 0 18px; }
+    .fb .now { border-top: 2px solid var(--platform-ink, #14161f); padding: 14px 0; display: flex; align-items: baseline; gap: 10px; }
+    .fb .now strong { font-size: 40px; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+    .fb .now span { color: var(--platform-faint, #8c877d); font-size: 13px; }
+    .fb .kinds { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .fb .kinds .btn { min-height: 56px; font-size: 17px; }
+    .fb .memo { display: flex; gap: 8px; margin-top: 10px; }
+    .fb .memo input { flex: 1; min-width: 0; font: inherit; font-size: 15px; padding: 10px 12px; border: 1px solid var(--platform-line-strong, #c9c2b8); border-radius: 4px; background: #fff; }
+    .fb .msg { min-height: 20px; font-size: 13px; color: var(--platform-faint, #8c877d); margin: 10px 0 0; }
+    .fb ol { list-style: none; padding: 0; margin: 18px 0 0; border-top: 1px solid var(--platform-line, #e2ddd6); font-size: 13px; color: var(--platform-faint, #8c877d); }
+    .fb ol li { padding: 7px 0; border-bottom: 1px solid var(--platform-line, #e2ddd6); }
+    .fb .end { padding: 30px 0; color: var(--platform-faint, #8c877d); }
+  </style>
+</head>
+<body>
+  <main class="fb">
+    <a class="back" href="./">브리핑으로</a>
+    <h1 id="title">발표 피드백</h1>
+    <p class="who" id="who"></p>
+    <div id="live" hidden>
+      <div class="now"><strong id="page">-</strong><span>지금 발표 중인 장 — 누르면 이 장에 남습니다</span></div>
+      <div class="kinds">
+        <button class="btn" type="button" data-kind="좋음">좋음</button>
+        <button class="btn" type="button" data-kind="어려움">어려움</button>
+        <button class="btn" type="button" data-kind="빠름">빠름</button>
+        <button class="btn" type="button" data-kind="느림">느림</button>
+      </div>
+      <form class="memo" id="memo">
+        <input id="memo-text" maxlength="200" placeholder="한 줄 남기기" aria-label="한 줄 피드백">
+        <button class="btn btn-primary" type="submit">보내기</button>
+      </form>
+      <p class="msg" id="msg" role="status"></p>
+      <ol id="sent" aria-label="보낸 피드백"></ol>
+    </div>
+    <p class="end" id="end" hidden></p>
+  </main>
+  <script>
+    (function () {
+      "use strict";
+      var id = new URLSearchParams(location.search).get("id") || "";
+      var $ = function (x) { return document.getElementById(x); };
+      var 장 = null;
+
+      function 끝(msg) { $("live").hidden = true; $("end").hidden = false; $("end").textContent = msg; }
+      if (!window.mgAuth.token()) return 끝("마이가디언에 로그인한 뒤 브리핑 화면에서 다시 여세요.");
+
+      // 지금 장은 발표자 화면이 알린 것을 몇 초마다 받아 온다
+      function 새로() {
+        window.mgAuth.api("/brief/talks/live").then(function (list) {
+          var t = list.filter(function (x) { return x.id === id; })[0];
+          if (!t) return 끝("끝난 발표입니다. 고맙습니다.");
+          $("title").textContent = t.제목;
+          $("who").textContent = t.발표자 + " 발표";
+          장 = t.장;
+          $("page").textContent = t.장 + "장";
+          $("live").hidden = false;
+        }).catch(function (e) { 끝(e.message); });
+      }
+      새로();
+      var 타이머 = setInterval(function () { if ($("end").hidden) 새로(); else clearInterval(타이머); }, 3000);
+
+      function 보내기(종류, 글) {
+        $("msg").textContent = "보내는 중입니다.";
+        return window.mgAuth.api("/brief/talks/note", { method: "POST", body: { id: id, 종류: 종류, 글: 글 || "" } }).then(function (r) {
+          $("msg").textContent = r.장 + "장에 남겼습니다.";
+          var li = document.createElement("li");
+          li.textContent = r.장 + "장 · " + 종류 + (글 ? " — " + 글 : "");
+          $("sent").insertBefore(li, $("sent").firstChild);
+        }).catch(function (e) { $("msg").textContent = e.message; });
+      }
+      Array.prototype.forEach.call(document.querySelectorAll("[data-kind]"), function (b) {
+        b.addEventListener("click", function () { 보내기(b.getAttribute("data-kind")); });
+      });
+      $("memo").addEventListener("submit", function (e) {
+        e.preventDefault();
+        var v = $("memo-text").value.trim();
+        if (!v) return;
+        보내기("메모", v).then(function () { $("memo-text").value = ""; });
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -53,6 +53,7 @@ function 도움말글() {
   } catch (e) { console.error("도움말 읽기 실패:", e.message); }
   return 도움말기억.글;
 }
+const 코칭횟수 = new Map();     // 보이스코칭 하루 횟수(계정|날짜) — 대화 한 마디가 한 번이라 AI 입력과 따로 센다
 const AI입력횟수 = new Map();   // AI 입력 하루 횟수(계정|날짜) — 메모리, 서버를 다시 켜면 비워진다
 
 const MEDIA_DIR = process.env.MEDIA_DIR || "./media";
@@ -1998,6 +1999,249 @@ async function route(req, res, url) {
   // 종전에는 브라우저 IndexedDB에만 쌓여 올린 사람만 볼 수 있었다. 팀 플랫폼이므로
   // 승인 계정이면 누구나 목록을 보고 발표할 수 있어야 한다(2026-08-05 사용자 지시).
   // 상담 자료는 여기 올리지 않는다 — 화면이 이미 강의 모드에서만 탑재를 연다.
+  // 보이스코칭(2026-10-29 발표자: 「역할놀이로 리쿠르팅 TA·상품 제안 상담 화법을 혼자 연마, 발음 교정도, AI 답도 말로」).
+  // 말은 화면(브라우저 음성 인식)이 글자로 바꿔 보내고, 답은 화면이 소리로 읽는다. 서버는 글만 오가고 아무것도 남기지 않는다.
+  // 가상의 상대와 하는 연습만 받는다 — 실제 고객 상담 녹음·전송은 하지 않는다(decisions.md 「세일즈 코칭」).
+  //   대화: 상대 역할의 다음 한마디 / 평가: 끝난 대화의 코칭 / 문장: 소리 내어 읽을 화법 문장
+  if (req.method === "POST" && path === "/ai/coach") {
+    if (!ANTHROPIC_KEY) return send(res, 503, { error: "AI가 아직 켜져 있지 않습니다." });
+    const b = await readJson(req, 256 * 1024);
+    const 오늘 = new Date(Date.now() + 9 * 36e5).toISOString().slice(0, 10);
+    const 키 = me.id + "|" + 오늘;
+    const 쓴 = 코칭횟수.get(키) || 0;
+    if (쓴 >= 300) return send(res, 429, { error: "오늘 코칭 횟수(300번)를 다 썼습니다." });
+    코칭횟수.set(키, 쓴 + 1);
+    const 글 = (v, n) => 번호가리기(String(v || "")).replace(/\s+/g, " ").trim().slice(0, n);
+    const 상황 = 글(b.상황, 800);
+    if (!상황) return send(res, 400, { error: "연습할 상황이 없습니다." });
+    const 성향 = ["호의적", "보통", "까다로움"].includes(b.성향) ? b.성향 : "보통";
+    const 대화록 = (Array.isArray(b.대화) ? b.대화 : []).slice(-60)
+      .filter((m) => m && (m.누가 === "나" || m.누가 === "상대") && m.말)
+      .map((m) => (m.누가 === "나" ? "설계사: " : "상대: ") + 글(m.말, 600));
+    const 공통 = [
+      "보험 설계사가 혼자 화법을 연습하는 앱이다. 설계사는 말로 하고, 그 말은 음성 인식으로 받아 적은 글이라 띄어쓰기·맞춤법이 틀릴 수 있다.",
+      `연습 상황: ${상황}`,
+      `상대 성향: ${성향} (호의적=관심을 보이고 잘 들어 준다 / 보통=바쁘고 조금 의심하지만 이유가 있으면 듣는다 / 까다로움=거절과 반론이 잦다)`
+    ];
+    if (b.방식 === "대화") {
+      const r = await claude([
+        ...공통,
+        "",
+        "당신은 이 상황의 상대(고객·지원자 등)를 연기한다. 실제 사람처럼 말하고, 당신의 말은 그대로 소리로 읽힌다.",
+        "- 한 번에 한두 문장, 많아야 세 문장. 입말로. 괄호·목록·이모지·동작 묘사를 쓰지 않는다.",
+        "- 성향을 지킨다. 설계사의 말이 구체적이고 나에게 맞으면 조금씩 마음을 열고, 근거 없는 약속이나 밀어붙이기에는 경계한다.",
+        "- 회사·상품 이름, 수익률, 보험료 같은 숫자를 먼저 지어내지 않는다. 물을 수는 있다.",
+        "- 연기를 멈추고 코칭하지 않는다. 대화가 자연스럽게 끝났으면(약속이 잡혔거나, 끊었거나, 거절이 굳었으면) 끝을 true로 한다.",
+        "- 앞 대화가 없으면 이 상황에서 상대가 하는 첫마디를 한다(전화면 받는 말).",
+        "",
+        ...(대화록.length ? ["앞 대화:", ...대화록] : ["앞 대화: 없음"])
+      ].join("\n"), {
+        type: "object",
+        properties: { 말: { type: "string" }, 끝: { type: "boolean" } },
+        required: ["말", "끝"],
+        additionalProperties: false
+      }, { effort: "low", timeout: 45000 });
+      if (r.error) return send(res, 502, { error: "AI 응답을 받지 못했습니다. 다시 말해 보세요." });
+      return send(res, 200, { 말: String(r.value.말 || "").slice(0, 400), 끝: !!r.value.끝, 남은횟수: 300 - 쓴 - 1 });
+    }
+    if (b.방식 === "평가") {
+      if (!대화록.length) return send(res, 400, { error: "평가할 대화가 없습니다." });
+      const 지표 = b.지표 && typeof b.지표 === "object" ? b.지표 : {};
+      const 숫자 = (v) => (typeof v === "number" && isFinite(v) ? Math.round(v * 10) / 10 : null);
+      const r = await claude([
+        ...공통,
+        "",
+        "당신은 보험 영업 화법 코치다. 아래 대화를 보고 설계사를 코칭한다. 대화록에 있는 것만 근거로 쓰고, 없는 말을 지어내지 않는다.",
+        "- 고칠점은 설계사가 실제로 한 말을 그대로 인용하고(내말), 같은 뜻을 더 낫게 바꾼 말(바꿔말하기)과 이유를 단다. 많아야 다섯.",
+        "- 준법: 단정적 표현(「무조건」「확실히 오른다」), 원금·수익 보장으로 들리는 말, 다른 회사 비방, 세금·수익을 계산해 주겠다는 약속, 설명 없이 가입을 서두르는 말,",
+        "  특정 특약을 누구에게나 필수라고 하는 말이 있으면 인용해 짚는다. 없으면 빈 배열.",
+        "- 전달: 아래 숫자를 근거로 말 빠르기와 군말, 또렷함을 한두 문장으로. 숫자는 받아 적은 글로 잰 것이라 참고값이다.",
+        "- 존댓말. 이모지·은유·「~해 드릴게요」 없이. 한줄은 오늘 연습의 핵심 한 문장.",
+        "",
+        "대화:",
+        ...대화록,
+        "",
+        `전달 지표: 말 빠르기 ${숫자(지표.빠르기) ?? "모름"}음절/초(알맞음 3.5~5.5), 군말 ${숫자(지표.군말) ?? "모름"}번, 인식 확신도 평균 ${숫자(지표.확신) ?? "모름"}(1에 가까울수록 또렷하게 알아들음)`
+      ].join("\n"), {
+        type: "object",
+        properties: {
+          한줄: { type: "string" },
+          잘한점: { type: "array", items: { type: "string" } },
+          고칠점: { type: "array", items: { type: "object", properties: { 내말: { type: "string" }, 바꿔말하기: { type: "string" }, 이유: { type: "string" } }, required: ["내말", "바꿔말하기", "이유"], additionalProperties: false } },
+          준법: { type: "array", items: { type: "string" } },
+          전달: { type: "string" }
+        },
+        required: ["한줄", "잘한점", "고칠점", "준법", "전달"],
+        additionalProperties: false
+      }, { effort: "medium", timeout: 120000 });
+      if (r.error) return send(res, 502, { error: "평가를 받지 못했습니다. 다시 눌러 보세요." });
+      return send(res, 200, r.value);
+    }
+    if (b.방식 === "문장") {
+      const r = await claude([
+        ...공통,
+        "",
+        "이 상황에서 설계사가 소리 내어 읽으며 연습할 화법 문장 다섯 개를 만든다. 발음과 전달을 다듬는 데 쓴다.",
+        "- 한 문장에 한두 문장, 입말로, 40~90자. 실제 상황에서 그대로 쓸 수 있게.",
+        "- 받침이 겹치는 말·숫자·전문 용어(보장, 납입, 해지환급금 같은)를 섞어 발음 연습이 되게.",
+        "- 단정·과장·수익 보장으로 들리는 말을 쓰지 않는다. 회사·상품 이름과 구체 금액은 넣지 않는다."
+      ].join("\n"), {
+        type: "object",
+        properties: { 문장: { type: "array", items: { type: "string" } } },
+        required: ["문장"],
+        additionalProperties: false
+      }, { effort: "low", timeout: 60000 });
+      if (r.error) return send(res, 502, { error: "문장을 받지 못했습니다. 다시 눌러 보세요." });
+      return send(res, 200, { 문장: (r.value.문장 || []).slice(0, 8).map((s) => String(s).slice(0, 200)) });
+    }
+    return send(res, 400, { error: "방식이 올바르지 않습니다." });
+  }
+
+  // ── 발표 기록·피드백(2026-10-29 발표자: 「실시간으로 피드백, 끝나면 브리핑」 — 실시간·사후 둘 다, 팀장급도 보고, AI 정리).
+  // 발표자가 「시작」을 누르면 기록이 열리고, 로그인한 팀원은 브리핑 「지금 발표 중」에서 지금 장에 피드백을 남긴다.
+  // 「끝내기」면 장마다 머문 시간이 붙고 AI가 정리한다. 보는 사람: 발표자 본인 · 총관리자 · 발표자 위의 팀장급(하위 트리).
+  // 상담 모드는 받지 않는다 — 고객 자료가 기록·AI로 가지 않게.
+  if (path.startsWith("/brief/talks")) {
+    const 이름 = (id) => { const a = getAccount(db, id); return a ? (a.display_name || a.name || "") : ""; };
+    const 팀장급 = !!me.is_admin || ((listGrades(db).find((g) => g.code === me.grade) || {}).rank || 99) <= 3;
+    const 볼수있나 = (t) => t.owner_id === me.id || !!me.is_admin || (팀장급 && isDescendantOf(db, t.owner_id, me.id));
+    const 하나 = (id) => db.prepare("SELECT * FROM brief_talks WHERE id = ?").get(String(id || "").slice(0, 32));
+    const 지금 = () => new Date().toISOString();
+    const 쪽 = (v, max) => Math.max(1, Math.min(max || 5000, Math.round(Number(v) || 1)));
+    const 피드백들 = (id, after) => db.prepare(
+      "SELECT id, author_id, page, kind, text, at FROM brief_notes WHERE talk_id = ? AND id > ? ORDER BY id"
+    ).all(id, Number(after) || 0).map((n) => ({ id: n.id, 장: n.page, 종류: n.kind, 글: n.text, 누가: 이름(n.author_id), 시각: n.at }));
+    const 읽기 = (s) => { try { return JSON.parse(s || "null"); } catch (e) { return null; } };
+
+    if (req.method === "POST" && path === "/brief/talks") {
+      const b = await readJson(req);
+      if (b.모드 === "상담") return send(res, 400, { error: "상담 자료는 기록하지 않습니다." });
+      const 제목 = String(b.제목 || "").trim().slice(0, 120);
+      if (!제목) return send(res, 400, { error: "자료 제목이 없습니다." });
+      const t = 지금();
+      db.prepare("UPDATE brief_talks SET ended_at = ? WHERE owner_id = ? AND ended_at IS NULL").run(t, me.id);   // 발표는 한 번에 하나
+      const id = randomBytes(8).toString("hex");
+      db.prepare("INSERT INTO brief_talks (id, owner_id, title, mode, pages, page, started_at, seen_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?)")
+        .run(id, me.id, 제목, String(b.모드 || "").slice(0, 10), Math.max(0, Math.min(5000, Number(b.장수) || 0)), t, t);
+      return send(res, 200, { id });
+    }
+
+    // 발표자 화면이 장을 넘길 때와 몇 초마다 알린다 — 「지금 발표 중」 목록과 피드백이 붙을 장이 이것으로 정해진다
+    if (req.method === "POST" && path === "/brief/talks/now") {
+      const b = await readJson(req);
+      const t = 하나(b.id);
+      if (!t || t.owner_id !== me.id || t.ended_at) return send(res, 404, { error: "진행 중인 발표가 아닙니다." });
+      db.prepare("UPDATE brief_talks SET page = ?, seen_at = ? WHERE id = ?").run(쪽(b.장), 지금(), t.id);
+      return send(res, 200, { ok: true });
+    }
+
+    // 지금 발표 중 — 3분 넘게 소식이 없으면 끝난 것으로 본다(창을 그냥 닫은 경우)
+    if (req.method === "GET" && path === "/brief/talks/live") {
+      const 기준 = new Date(Date.now() - 3 * 60e3).toISOString();
+      return send(res, 200, db.prepare("SELECT * FROM brief_talks WHERE ended_at IS NULL AND seen_at > ? ORDER BY started_at DESC").all(기준)
+        .map((t) => ({ id: t.id, 제목: t.title, 발표자: 이름(t.owner_id), 장: t.page, 장수: t.pages, 시작: t.started_at, 내것: t.owner_id === me.id })));
+    }
+
+    if (req.method === "POST" && path === "/brief/talks/note") {
+      const b = await readJson(req);
+      const t = 하나(b.id);
+      if (!t || t.ended_at) return send(res, 404, { error: "끝났거나 없는 발표입니다." });
+      const 종류 = ["좋음", "어려움", "빠름", "느림", "메모"].includes(b.종류) ? b.종류 : "";
+      const 글 = 번호가리기(String(b.글 || "")).replace(/\s+/g, " ").trim().slice(0, 200);
+      if (!종류 || (종류 === "메모" && !글)) return send(res, 400, { error: "남길 피드백이 없습니다." });
+      if (db.prepare("SELECT COUNT(*) n FROM brief_notes WHERE talk_id = ?").get(t.id).n >= 1000) {
+        return send(res, 429, { error: "이 발표에 남길 수 있는 피드백을 다 채웠습니다." });
+      }
+      db.prepare("INSERT INTO brief_notes (talk_id, author_id, page, kind, text, at) VALUES (?, ?, ?, ?, ?, ?)")
+        .run(t.id, me.id, t.page, 종류, 글, 지금());
+      return send(res, 200, { ok: true, 장: t.page });
+    }
+
+    if (req.method === "GET" && path === "/brief/talks/notes") {
+      const t = 하나(url.searchParams.get("id"));
+      if (!t || !볼수있나(t)) return send(res, 404, { error: "없는 발표입니다." });
+      return send(res, 200, 피드백들(t.id, url.searchParams.get("after")));
+    }
+
+    // 끝내기 — 장마다 머문 시간을 붙이고 AI가 정리한다. 정리가 실패해도 기록은 남는다(「다시 정리」로 다시 부른다).
+    // 스크립트는 정리할 때만 쓰고 저장하지 않는다.
+    if (req.method === "POST" && (path === "/brief/talks/end" || path === "/brief/talks/summary")) {
+      const b = await readJson(req, 512 * 1024);
+      const t = 하나(b.id);
+      if (!t || t.owner_id !== me.id) return send(res, 404, { error: "없는 발표입니다." });
+      let 장시간 = 읽기(t.timeline);
+      if (path === "/brief/talks/end") {
+        if (t.ended_at && t.timeline) return send(res, 400, { error: "이미 끝낸 발표입니다." });
+        장시간 = (Array.isArray(b.장시간) ? b.장시간 : []).slice(0, 5000)
+          .map((x) => ({ 장: 쪽(x && x.장), 초: Math.max(0, Math.min(36000, Math.round(Number(x && x.초) || 0))) }))
+          .filter((x) => x.초 > 0);
+        db.prepare("UPDATE brief_talks SET ended_at = ?, timeline = ? WHERE id = ?").run(t.ended_at || 지금(), JSON.stringify(장시간), t.id);
+      }
+      if (!ANTHROPIC_KEY) return send(res, 200, { ok: true, 요약: null });
+      const 스크립트 = b.스크립트 && typeof b.스크립트 === "object" ? b.스크립트 : {};
+      const 장별 = {};
+      (장시간 || []).forEach((x) => { 장별[x.장] = (장별[x.장] || 0) + x.초; });
+      const 노트 = 피드백들(t.id, 0);
+      const 총초 = Object.values(장별).reduce((a, c) => a + c, 0);
+      const 분초 = (s) => Math.floor(s / 60) + "분 " + (s % 60) + "초";
+      const 장번호 = [...new Set([...Object.keys(장별).map(Number), ...노트.map((n) => n.장)])].sort((a, c) => a - c);
+      const prompt = [
+        "보험 설계사가 팀 교육·강의에서 발표한 기록을 정리한다. 발표자 본인과 팀장이 읽고 다음 발표를 고치는 데 쓴다.",
+        "아래 기록에 있는 것만 근거로 쓴다. 기록에 없는 반응·장면을 지어내지 않는다. 피드백이 적으면 적다고 쓴다.",
+        "장마다 머문 시간과 스크립트 길이를 견주어 너무 오래 끈 장, 너무 빨리 넘긴 장을 짚는다. 「어려움」「빠름」이 몰린 장은 꼭 짚는다.",
+        "존댓말, 이모지·은유·「~해 드릴게요」 없이, 항목마다 한두 문장.",
+        "",
+        `발표: ${t.title} (${t.mode || "모드 없음"}, 전체 ${t.pages || "?"}장)`,
+        `총 발표 시간: ${분초(총초)}`,
+        "",
+        "장별 기록:",
+        ...장번호.map((n) => {
+          const s = String(스크립트[n] || "").replace(/\s+/g, " ").trim();
+          const ns = 노트.filter((x) => x.장 === n);
+          return [`- ${n}장: ${분초(장별[n] || 0)} 머묾, 스크립트 ${s.length}자${s ? " — " + 번호가리기(s.slice(0, 300)) : ""}`,
+            ...ns.map((x) => `  · 피드백 ${x.종류}${x.글 ? ": " + x.글 : ""}`)].join("\n");
+        }),
+        "",
+        `피드백 모두 ${노트.length}건.`
+      ].join("\n");
+      const r = await claude(prompt, {
+        type: "object",
+        properties: {
+          한줄: { type: "string" },
+          잘된점: { type: "array", items: { type: "string" } },
+          고칠점: { type: "array", items: { type: "object", properties: { 장: { type: "integer" }, 내용: { type: "string" } }, required: ["장", "내용"], additionalProperties: false } },
+          시간: { type: "string" },
+          다음연습: { type: "array", items: { type: "string" } }
+        },
+        required: ["한줄", "잘된점", "고칠점", "시간", "다음연습"],
+        additionalProperties: false
+      }, { effort: "medium", timeout: 120000 });
+      if (r.error) return send(res, 200, { ok: true, 요약: null, error: "AI 정리를 받지 못했습니다. 기록에서 「다시 정리」를 누르세요." });
+      db.prepare("UPDATE brief_talks SET summary = ? WHERE id = ?").run(JSON.stringify(r.value), t.id);
+      return send(res, 200, { ok: true, 요약: r.value });
+    }
+
+    if (req.method === "GET" && path === "/brief/talks") {
+      return send(res, 200, db.prepare("SELECT * FROM brief_talks WHERE ended_at IS NOT NULL ORDER BY started_at DESC LIMIT 500").all()
+        .filter(볼수있나).slice(0, 100).map((t) => ({
+          id: t.id, 제목: t.title, 발표자: 이름(t.owner_id), 내것: t.owner_id === me.id, 시작: t.started_at,
+          총초: (읽기(t.timeline) || []).reduce((a, x) => a + x.초, 0),
+          피드백: db.prepare("SELECT COUNT(*) n FROM brief_notes WHERE talk_id = ?").get(t.id).n,
+          정리됨: !!t.summary
+        })));
+    }
+
+    if (req.method === "GET" && path === "/brief/talks/one") {
+      const t = 하나(url.searchParams.get("id"));
+      if (!t || !볼수있나(t)) return send(res, 404, { error: "없는 발표입니다." });
+      return send(res, 200, {
+        id: t.id, 제목: t.title, 모드: t.mode, 장수: t.pages, 발표자: 이름(t.owner_id), 내것: t.owner_id === me.id,
+        시작: t.started_at, 끝: t.ended_at, 장시간: 읽기(t.timeline) || [], 요약: 읽기(t.summary), 피드백: 피드백들(t.id, 0)
+      });
+    }
+    return send(res, 404, { error: "없는 경로입니다." });
+  }
+
   if (req.method === "GET" && path === "/brief/library") {
     // 소유 판정용 메일은 서버 안에서만 쓴다. 목록에는 이름만 내보내고,
     // 화면이 "내가 올린 것"을 가릴 수 있게 그 여부만 알려 준다.

@@ -268,6 +268,7 @@
     "사례·판례": "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6",
     "학습": "M4 6.5A2.5 2.5 0 0 1 6.5 4H20v15H6.5A2.5 2.5 0 0 0 4 21.5zM9 9h7",
     "브리핑": "M3 5h18v12H3zM8 21h8M12 17v4",
+    "보이스코칭": "M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7",
     "케어센터": "M4 5h8v15H6a2 2 0 0 1-2-2zM12 5h8v13a2 2 0 0 1-2 2h-6zM7 9h3M7 13h3",
     "보장분석": "M6 3h8l4 4v6M6 3v18h6M9 8h4M9 12h2M16.5 17.5a3 3 0 1 0-6 0 3 3 0 0 0 6 0zM18.6 19.6 21 22",
     "발행 데스크": "M4 4h16v5H4zM4 12h7v8H4zM13 12h7v8h-7z",
@@ -354,7 +355,7 @@
 
   // 수정 요청 메뉴 — 로그인한 계정 전원에게 보인다(2026-09-20 사용자: 「팀원들이 프로그램
   // 수정요청 등을 올릴 메뉴」). 화면 HTML 16개를 고치지 않으려고 여기 한 곳에서 붙인다.
-  // 메뉴 상한 9개 중 아홉째다 — 더 늘리려면 헌법의 상한부터 다시 본다.
+  // 보이스코칭(2026-10-29)까지 메뉴 아홉 개로 상한이 찼다 — 더 늘리려면 헌법의 상한부터 다시 본다.
   function addRequestMenu(sidebar) {
     var loggedIn = false;
     try { loggedIn = !!localStorage.getItem("mg_session"); } catch (e) {}
@@ -443,7 +444,7 @@
     if (/install\.html$/.test(p)) return "install";
     if (/\/care\/desk\.html$/.test(p)) return "desk";
     if (/\/care\/shelf\.html$/.test(p)) return "shelf";
-    var m = p.match(/\/(customers|claims|cases|learn|brief|requests|admin)\/(index\.html)?$/);
+    var m = p.match(/\/(customers|claims|cases|learn|brief|coach|requests|admin)\/(index\.html)?$/);
     if (m) return m[1];
     return /^\/(web\/)?(index\.html)?$/.test(p) ? "home" : "";
   }

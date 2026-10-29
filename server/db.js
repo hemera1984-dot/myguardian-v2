@@ -105,6 +105,33 @@ export function openDb(file) {
     CREATE INDEX IF NOT EXISTS idx_accounts_status ON accounts(status);
     CREATE INDEX IF NOT EXISTS idx_sessions_account ON sessions(account_id);
     CREATE INDEX IF NOT EXISTS idx_clients_owner ON clients(소유계정);
+
+    -- 브리핑 발표 기록(2026-10-29) — 「시작」부터 「끝내기」까지. 고객 자료는 싣지 않는다(상담 모드는 기록 안 함).
+    CREATE TABLE IF NOT EXISTS brief_talks (
+      id         TEXT PRIMARY KEY,
+      owner_id   INTEGER NOT NULL REFERENCES accounts(id),
+      title      TEXT NOT NULL,
+      mode       TEXT NOT NULL DEFAULT '',
+      pages      INTEGER NOT NULL DEFAULT 0,
+      page       INTEGER NOT NULL DEFAULT 1,
+      started_at TEXT NOT NULL,
+      seen_at    TEXT NOT NULL,
+      ended_at   TEXT,
+      timeline   TEXT,
+      summary    TEXT
+    );
+    -- 발표를 보던 팀원이 장마다 남긴 피드백
+    CREATE TABLE IF NOT EXISTS brief_notes (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      talk_id   TEXT NOT NULL REFERENCES brief_talks(id) ON DELETE CASCADE,
+      author_id INTEGER NOT NULL REFERENCES accounts(id),
+      page      INTEGER NOT NULL,
+      kind      TEXT NOT NULL,
+      text      TEXT NOT NULL DEFAULT '',
+      at        TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_brief_talks_owner ON brief_talks(owner_id);
+    CREATE INDEX IF NOT EXISTS idx_brief_notes_talk ON brief_notes(talk_id);
   `);
 
   // 이미 만들어진 DB에 컬럼 추가 (있으면 그냥 실패하므로 삼킨다)

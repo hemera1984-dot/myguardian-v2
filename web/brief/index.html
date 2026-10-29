@@ -85,6 +85,10 @@
     .local-error { margin-top: 12px; color: var(--platform-denied); font-size: 13px; }
     /* 내 라이브러리 목차 */
     .library-list { border-top: 1px solid var(--platform-line); }
+    .talk-row { display: flex; gap: 12px; align-items: baseline; padding: 10px 4px; border-bottom: 1px solid var(--platform-line); color: inherit; text-decoration: none; font-size: 14px; }
+    .talk-row:hover strong { color: var(--platform-blue); }
+    .talk-row strong { flex: 1; min-width: 0; font-weight: 650; word-break: keep-all; transition: color 0.14s ease; }
+    .talk-row span { color: var(--platform-faint); font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .lib-item { display: flex; align-items: baseline; gap: 14px; border-bottom: 1px solid var(--platform-line); padding: 14px 4px; }
     .lib-num { min-width: 24px; font-weight: 700; font-size: 14px; color: var(--platform-faint); font-variant-numeric: tabular-nums; }
     .lib-main { flex: 1; text-align: left; font: inherit; background: none; border: none; padding: 0; cursor: pointer; }
@@ -107,7 +111,7 @@
     <a class="platform-brand" href="../" aria-label="마이가디언 홈"><span class="brand-mark"><img src="../assets/logo.svg" alt=""></span><span><span class="brand-name">마이가디언</span><span class="brand-caption">FC 업무 플랫폼</span></span></a>
     <nav class="platform-nav" aria-label="주요 메뉴">
       <p class="nav-group-label">업무</p>
-      <a href="../">홈</a><a href="../customers/">고객관리</a><a href="../claims/">청구·지급</a><a href="../cases/">사례·판례</a><a href="../learn/">학습</a><a class="active" href="./">브리핑</a>      <p class="nav-group-label">발행</p><a href="../care/shelf.html">케어센터</a>
+      <a href="../">홈</a><a href="../customers/">고객관리</a><a href="../claims/">청구·지급</a><a href="../cases/">사례·판례</a><a href="../learn/">학습</a><a class="active" href="./">브리핑</a><a href="../coach/">보이스코칭</a>      <p class="nav-group-label">발행</p><a href="../care/shelf.html">케어센터</a>
     </nav>
     <div class="sidebar-status"><strong>브리핑</strong><span>상담·교육·강의 발표 도구</span></div>
   </aside>
@@ -135,9 +139,19 @@
         </div>
       </section>
 
+      <section class="section-block" id="live-section" hidden aria-labelledby="live-title">
+        <div class="section-head"><div><h2 id="live-title">지금 발표 중</h2><p>팀원이 발표하고 있습니다. 누르면 폰에서 장마다 피드백을 남깁니다.</p></div></div>
+        <div id="live-list" class="library-list"></div>
+      </section>
+
       <section class="section-block" id="library-section" hidden aria-labelledby="lib-title">
         <div class="section-head"><div><h2 id="lib-title">내 라이브러리</h2><p>탑재한 발표 자료 목차입니다. 제목을 누르면 바로 발표합니다. 강의 자료는 팀이 함께 씁니다 — 올리면 다른 팀원도 목록에서 보고 발표할 수 있습니다. 상담 자료는 탑재하지 않습니다.</p></div></div>
         <div id="library-list" class="library-list"></div>
+      </section>
+
+      <section class="section-block" id="talks" hidden aria-labelledby="talks-title">
+        <div class="section-head"><div><h2 id="talks-title">지난 발표 기록</h2><p>「시작」부터 「끝내기」까지 장마다 머문 시간, 받은 피드백, AI 정리입니다. 내 발표와, 팀장급은 팀원 발표까지 보입니다.</p></div></div>
+        <div id="talk-list" class="library-list"></div>
       </section>
 
       <section class="section-block" id="doc-section" hidden aria-labelledby="doc-title">
@@ -672,6 +686,37 @@
             showLocalError("라이브러리에 탑재하지 못했습니다: " + err.message);
           });
       });
+
+      // 발표 피드백(2026-10-29) — 로그인했을 때만. 지금 발표 중은 10초마다 다시 본다.
+      if (window.mgAuth && window.mgAuth.token()) {
+        var 분초 = function (s) { return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+        var 줄 = function (href, 제목, 옆) {
+          var a = el("a", "talk-row");
+          a.href = href;
+          a.appendChild(el("strong", null, 제목));
+          a.appendChild(el("span", null, 옆));
+          return a;
+        };
+        var 지금발표 = function () {
+          window.mgAuth.api("/brief/talks/live").then(function (list) {
+            list = list.filter(function (t) { return !t.내것; });
+            var box = document.getElementById("live-list");
+            box.textContent = "";
+            list.forEach(function (t) { box.appendChild(줄("feedback.html?id=" + t.id, t.제목, t.발표자 + " · " + t.장 + "장")); });
+            document.getElementById("live-section").hidden = !list.length;
+          }).catch(function () {});
+        };
+        지금발표();
+        setInterval(지금발표, 10000);
+        window.mgAuth.api("/brief/talks").then(function (list) {
+          var box = document.getElementById("talk-list");
+          list.forEach(function (t) {
+            box.appendChild(줄("talk.html?id=" + t.id, t.제목, (t.내것 ? "" : t.발표자 + " · ")
+              + new Date(t.시작).toLocaleDateString("ko-KR") + " · " + 분초(t.총초) + " · 피드백 " + t.피드백));
+          });
+          document.getElementById("talks").hidden = !list.length;
+        }).catch(function () {});
+      }
     })();
   </script>
 </body>

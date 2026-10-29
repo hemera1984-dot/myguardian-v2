@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="brief.css">
+  <script src="../assets/auth.js"></script>
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
   <script src="brief.js?v=20261029a"></script>
 </head>
@@ -21,6 +22,7 @@
     <span class="pr-doc-title" id="doc-title"></span>
     <div class="pr-top-right">
       <button class="pr-timer" id="timer" type="button" title="발표 시간을 잽니다">시작</button>
+      <button class="pr-button" id="talk-end" type="button" hidden>끝내기</button>
       <button class="pr-button" id="veil-toggle" type="button" aria-pressed="false" title="청중 화면만 검게 가립니다 (B)">청중 가리기</button>
       <button class="pr-button" id="pointer-toggle" type="button" aria-pressed="true">포인터 송신</button>
       <span class="pr-view-state" id="view-state" role="status" hidden></span>
@@ -41,6 +43,10 @@
             <div class="pr-next-empty" id="next-empty" hidden>마지막</div>
           </div>
         </div>
+      </section>
+      <section class="pr-panel pr-notes" id="notes-panel" aria-label="받은 피드백" hidden>
+        <p class="pr-panel-label" id="notes-head">받은 피드백</p>
+        <ol class="pr-notes-list" id="notes-list"></ol>
       </section>
       <p class="pr-hint" id="hint">새로 열린 청중 창을 빔프로젝터·확장 모니터로 끌어 놓고 F 키를 누르면 전체화면이 됩니다. ←/→ 슬라이드 넘김, ↑/↓ 스크립트 스크롤, B 청중 가리기.</p>
     </div>
@@ -645,22 +651,84 @@
           });
         })();
 
-        // 발표 시간 — 자료를 연 때가 아니라 「시작」을 누른 때부터 잰다.
-        // 재는 중에 잘못 눌러 시간이 날아가지 않게, 되돌리기는 한 번 묻는다.
+        // 발표 시간 — 자료를 연 때가 아니라 「시작」을 누른 때부터 잰다. 「끝내기」로 멈춘다.
+        // 로그인했고 상담 자료가 아니면 발표 기록이 열린다(2026-10-29 발표자 요청): 팀원이 브리핑 「지금 발표 중」에서
+        // 장마다 피드백을 보내면 아래 「받은 피드백」에 쌓이고, 끝내면 장마다 머문 시간과 AI 정리가 기록에 남는다.
         var timer = document.getElementById("timer");
+        var endBtn = document.getElementById("talk-end");
+        var 기록 = null;                       // { id, 장, 들어온때, 장시간:[{장,초}], 마지막피드백 }
+        function 지금장() { return driver.kind === "html" ? 스크립트장 : current; }
         function 시간표시() {
           if (startedAt === null) { timer.textContent = "시작"; timer.classList.remove("on"); return; }
           var s = Math.floor((Date.now() - startedAt) / 1000);
           timer.textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
           timer.classList.add("on");
-          timer.title = "누르면 처음으로 되돌립니다";
         }
-        setInterval(시간표시, 1000);
+        function 장넘김기록(끝) {
+          if (!기록) return;
+          var n = 지금장(), 지금 = Date.now();
+          if (n === 기록.장 && !끝) return;
+          var 초 = Math.round((지금 - 기록.들어온때) / 1000);
+          if (초 > 0) 기록.장시간.push({ 장: 기록.장, 초: 초 });
+          기록.장 = n; 기록.들어온때 = 지금;
+          if (!끝) 알림();
+        }
+        function 알림() {
+          if (기록) window.mgAuth.api("/brief/talks/now", { method: "POST", body: { id: 기록.id, 장: 기록.장 } }).catch(function () {});
+        }
+        function 피드백받기() {
+          if (!기록) return;
+          window.mgAuth.api("/brief/talks/notes?id=" + 기록.id + "&after=" + 기록.마지막피드백).then(function (list) {
+            if (!기록 || !list.length) return;
+            var ol = document.getElementById("notes-list");
+            list.forEach(function (n) {
+              기록.마지막피드백 = Math.max(기록.마지막피드백, n.id);
+              var li = document.createElement("li");
+              li.className = "pr-note k-" + n.종류;
+              li.textContent = n.장 + "장 · " + n.종류 + (n.글 ? " — " + n.글 : "") + " · " + n.누가;
+              ol.insertBefore(li, ol.firstChild);
+            });
+            document.getElementById("notes-head").textContent = "받은 피드백 " + ol.children.length;
+          }).catch(function () {});
+        }
+        setInterval(function () { 시간표시(); 장넘김기록(false); }, 1000);
+        setInterval(알림, 30000);
+        setInterval(피드백받기, 5000);
+        var 로그인 = !!(window.mgAuth && window.mgAuth.token());
         timer.addEventListener("click", function () {
-          if (startedAt === null) startedAt = Date.now();
-          else if (window.confirm("발표 시간을 처음으로 되돌릴까요?")) startedAt = null;
-          시간표시();
           this.blur();
+          if (startedAt !== null) return;
+          startedAt = Date.now();
+          시간표시();
+          endBtn.hidden = false;
+          if (!로그인 || driver.mode === "상담") return;
+          var 제목 = (briefRecord && briefRecord["제목"]) || document.getElementById("doc-title").textContent || "발표";
+          window.mgAuth.api("/brief/talks", { method: "POST", body: { 제목: 제목, 모드: driver.mode || "", 장수: driver.count || 0 } })
+            .then(function (r) {
+              기록 = { id: r.id, 장: 지금장(), 들어온때: Date.now(), 장시간: [], 마지막피드백: 0 };
+              document.getElementById("notes-panel").hidden = false;
+              document.getElementById("notes-list").textContent = "";
+              document.getElementById("notes-head").textContent = "받은 피드백 — 팀원은 브리핑 「지금 발표 중」에서 보냅니다";
+              알림();
+            }).catch(function () { /* 서버가 안 되면 시간만 잰다 */ });
+        });
+        endBtn.addEventListener("click", function () {
+          this.blur();
+          if (!window.confirm("발표를 끝낼까요?")) return;
+          var 총 = Math.floor((Date.now() - startedAt) / 1000);
+          startedAt = null;
+          endBtn.hidden = true;
+          시간표시();
+          if (!기록) { window.alert("발표 시간 " + Math.floor(총 / 60) + "분 " + (총 % 60) + "초"); return; }
+          장넘김기록(true);
+          var 끝낸것 = 기록;
+          기록 = null;
+          // 스크립트는 AI 정리에만 쓰고 서버에 남지 않는다. 장마다 나눈 스크립트일 때만 보낸다.
+          var 스크립트 = {};
+          var 나눔 = !scriptPdf && (driver.kind !== "html" || (Array.isArray(briefRecord && briefRecord["스크립트"]) && briefRecord["스크립트"].length > 1));
+          if (나눔) 끝낸것.장시간.forEach(function (x) { var s = driver.scriptFor(x.장); if (s) 스크립트[x.장] = String(s).slice(0, 2000); });
+          window.open("talk.html?id=" + 끝낸것.id, "_blank");   // 정리는 기록 화면에서 기다린다 — 발표 창은 그대로 둔다
+          window.mgAuth.api("/brief/talks/end", { method: "POST", body: { id: 끝낸것.id, 장시간: 끝낸것.장시간, 스크립트: 스크립트 } }).catch(function () {});
         });
 
         // 청중 가리기 — 질문을 받거나 자료 밖 이야기를 할 때 청중 화면만 검게 둔다(2026-10-29 발표자 요청).
