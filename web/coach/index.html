@@ -13,37 +13,45 @@
   <script src="../assets/auth.js"></script>
   <style>
     /* 보이스코칭 — 왼쪽 연습 고르기, 오른쪽 연습. 괘선으로만 가르고 카드·그림자는 쓰지 않는다. */
-    .co-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 28px; align-items: start; }
-    .co-setup { display: grid; gap: 14px; }
-    .co-field { display: grid; gap: 6px; }
-    .co-field > span { font-size: 11px; font-weight: 700; color: var(--platform-faint); }
+    .co-grid { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 36px; align-items: start; }
+    .co-setup { display: grid; gap: 26px; min-width: 0; }
+    .co-group { display: grid; gap: 14px; min-width: 0; border-top: 2px solid var(--platform-ink); padding-top: 12px; }
+    .co-h { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; letter-spacing: -0.03em; margin: 0; }
+    .co-field { display: grid; gap: 6px; min-width: 0; }
+    .co-field > span { font-size: 13px; font-weight: 600; color: var(--platform-muted); }
     .co-field select, .co-field textarea, .co-type input {
-      font: inherit; font-size: 13px; border: 1px solid var(--platform-line-strong); border-radius: 4px;
-      padding: 8px 10px; background: var(--platform-surface); color: inherit;
+      font: inherit; font-size: 14px; border: 1px solid var(--platform-line-strong); border-radius: 4px;
+      padding: 10px 12px; background: var(--platform-surface); color: inherit; width: 100%; min-width: 0; box-sizing: border-box;
     }
     .co-field textarea { min-height: 84px; resize: vertical; line-height: 1.6; }
     .co-seg { display: flex; border: 1px solid var(--platform-line-strong); border-radius: 4px; overflow: hidden; }
-    .co-seg label { flex: 1; text-align: center; font-size: 13px; padding: 8px 4px; cursor: pointer; transition: background-color 0.14s ease, color 0.14s ease; }
+    .co-seg label { flex: 1; text-align: center; font-size: 14px; padding: 10px 4px; cursor: pointer; transition: background-color 0.14s ease, color 0.14s ease; }
     .co-seg label + label { border-left: 1px solid var(--platform-line-strong); }
     .co-seg input { position: absolute; opacity: 0; pointer-events: none; }
     .co-seg label:has(input:checked) { background: var(--platform-ink); color: #fff; }
     .co-seg label:has(input:focus-visible) { outline: 2px solid var(--platform-blue); outline-offset: -2px; }
-    .co-person { border: 0; border-top: 1px solid var(--platform-line); margin: 0; padding: 12px 0 0; display: grid; gap: 10px; min-width: 0; }
-    .co-person legend { font-size: 11px; font-weight: 700; color: var(--platform-faint); padding: 0 6px 0 0; display: flex; gap: 8px; align-items: center; }
     .co-dice { font: inherit; font-size: 12px; font-weight: 600; border: 1px solid var(--platform-line-strong); border-radius: 3px; background: none; color: var(--platform-muted); padding: 2px 8px; cursor: pointer; transition: border-color 0.14s ease, color 0.14s ease; }
     .co-dice:hover { border-color: var(--platform-ink); color: var(--platform-ink); }
     .co-two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .co-field input[maxlength] { font: inherit; font-size: 13px; border: 1px solid var(--platform-line-strong); border-radius: 4px; padding: 8px 10px; background: var(--platform-surface); color: inherit; min-width: 0; }
-    .co-note { font-size: 12px; color: var(--platform-faint); line-height: 1.6; margin: 0; }
-    .co-stage { border-top: 2px solid var(--platform-ink); padding-top: 14px; min-width: 0; }
-    .co-status { font-size: 15px; line-height: 1.6; min-height: 48px; margin: 0 0 12px; word-break: keep-all; }
-    .co-status small { display: block; color: var(--platform-faint); font-size: 13px; }
-    .co-mic { width: 100%; min-height: 64px; font: inherit; font-size: 18px; font-weight: 700; border-radius: 4px; cursor: pointer;
+    .co-field input[maxlength] { font: inherit; font-size: 14px; border: 1px solid var(--platform-line-strong); border-radius: 4px; padding: 10px 12px; background: var(--platform-surface); color: inherit; width: 100%; min-width: 0; box-sizing: border-box; }
+    .co-note { font-size: 13px; color: var(--platform-faint); line-height: 1.65; margin: 0; }
+    .co-stage { border-top: 2px solid var(--platform-ink); padding-top: 12px; min-width: 0; }
+    /* 통화 화면 — 말이 주인이다. 지금 누가 말하는지만 크게, 글은 「대화 글 보기」 안에 */
+    .co-call { padding: 18px 0 22px; min-height: 150px; }
+    .co-who { font-size: 14px; color: var(--platform-muted); margin: 0 0 14px; word-break: keep-all; }
+    .co-status { font-size: 26px; font-weight: 700; letter-spacing: -0.04em; line-height: 1.4; margin: 0; word-break: keep-all; }
+    .co-status small { display: block; color: var(--platform-faint); font-size: 15px; font-weight: 400; letter-spacing: 0; margin-top: 8px; line-height: 1.6; }
+    .co-level { height: 6px; background: var(--platform-line); border-radius: 3px; margin-top: 16px; overflow: hidden; }
+    .co-level[hidden] { display: none; }
+    .co-level i { display: block; height: 100%; width: 0; background: var(--platform-ink); }
+    .co-transcript { margin-top: 18px; border-top: 1px solid var(--platform-line); padding-top: 10px; }
+    .co-transcript > summary { cursor: pointer; font-size: 14px; font-weight: 600; color: var(--platform-muted); padding: 4px 0; }
+    .co-mic { width: 100%; min-height: 72px; font: inherit; font-size: 20px; font-weight: 700; border-radius: 4px; cursor: pointer;
       border: 1px solid var(--platform-ink); background: var(--platform-ink); color: #fff; transition: background-color 0.14s ease, color 0.14s ease; }
     .co-mic.on { background: var(--platform-blue); border-color: var(--platform-blue); }
     .co-mic:disabled { background: transparent; color: var(--platform-faint); border-color: var(--platform-line-strong); cursor: default; }
     #rate { accent-color: var(--platform-ink); }
-    .co-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; font-size: 13px; }
+    .co-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; font-size: 14px; }
     .co-log { list-style: none; margin: 16px 0 0; padding: 0; border-top: 1px solid var(--platform-line); }
     .co-log li { display: grid; grid-template-columns: 44px 1fr; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--platform-line); font-size: 14px; line-height: 1.65; word-break: keep-all; }
     .co-log li b { font-size: 12px; color: var(--platform-faint); padding-top: 2px; }
@@ -72,8 +80,8 @@
     .co-sc-list li { display: flex; gap: 8px; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--platform-line); }
     .co-sc-list li span { flex: 1; min-width: 0; }
     .co-sc-list button { font: inherit; font-size: 12px; border: none; background: none; color: var(--platform-faint); cursor: pointer; padding: 0 2px; }
-    .co-hints { margin: 12px 0 0; padding: 10px 0 0 18px; border-top: 1px solid var(--platform-line); font-size: 14px; line-height: 1.7; word-break: keep-all; color: var(--platform-muted); }
-    .co-objection { font-size: 20px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.5; margin: 0 0 12px; word-break: keep-all; }
+    .co-hints { margin: 14px 0 0; padding: 12px 0 0 20px; border-top: 1px solid var(--platform-line); font-size: 15px; line-height: 1.7; word-break: keep-all; color: var(--platform-muted); }
+    .co-objection { font-size: 22px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.5; margin: 0 0 12px; word-break: keep-all; }
     .co-drill { list-style: none; margin: 16px 0 0; padding: 0; border-top: 1px solid var(--platform-line); }
     .co-drill li { padding: 10px 0; border-bottom: 1px solid var(--platform-line); font-size: 14px; line-height: 1.65; word-break: keep-all; }
     .co-drill .q { font-weight: 700; }
@@ -119,6 +127,8 @@
 
       <div class="co-grid" id="work" hidden>
         <section class="co-setup" aria-label="연습 고르기">
+          <div class="co-group">
+            <h2 class="co-h">1 상황</h2>
           <label class="co-field"><span>상황</span>
             <select id="sit">
               <option value="리쿠르팅 TA — 전화. 설계사가 예전에 알던 지인에게 전화해 보험 설계사라는 일을 소개하고 커피 한잔 만날 약속을 잡으려 한다. 상대는 설계사 일에 선입견이 있다." data-person="남성|30대 후반|중견기업 영업직 회사원|월 400만 원대|기혼, 자녀 하나|이직을 고민한 적이 있다">리쿠르팅 TA (전화)</option>
@@ -142,8 +152,9 @@
           <label class="co-field" id="sit-custom-wrap" hidden><span>상황 직접 적기</span>
             <textarea id="sit-custom" maxlength="800" placeholder="누구와, 어떤 자리에서, 무엇을 이루려는지 — 예: 50대 자영업 고객에게 상속 대비로 종신보험을 처음 꺼내는 자리"></textarea>
           </label>
-          <fieldset class="co-person" aria-label="상대 인물">
-            <legend>상대 인물 <button class="co-dice" type="button" id="dice">무작위</button></legend>
+          </div>
+          <div class="co-group">
+            <h2 class="co-h">2 상대 <button class="co-dice" type="button" id="dice">무작위</button></h2>
             <div class="co-seg" role="radiogroup" aria-label="성별">
               <label><input type="radio" name="sex" value="남성" checked>남성</label>
               <label><input type="radio" name="sex" value="여성">여성</label>
@@ -160,43 +171,53 @@
             <datalist id="job-list"><option>회사원(사무직)</option><option>중견기업 영업직 회사원</option><option>공무원</option><option>초등학교 교사</option><option>간호사</option><option>IT 회사 개발자</option><option>식당 운영 자영업</option><option>온라인 쇼핑몰 운영</option><option>프리랜서 디자이너</option><option>생산직</option><option>택시 기사</option><option>전업주부</option><option>개원 의사</option><option>중소기업 대표</option><option>은퇴</option></datalist>
             <datalist id="income-list"><option>월 250만 원대</option><option>월 350만 원대</option><option>월 500만 원대</option><option>월 700만 원대</option><option>월 1,000만 원 이상</option><option>월 수입 들쭉날쭉</option><option>연금 생활</option></datalist>
             <datalist id="family-list"><option>미혼</option><option>기혼, 자녀 없음</option><option>기혼, 자녀 하나</option><option>기혼, 자녀 둘</option><option>기혼, 자녀 독립</option><option>한부모, 자녀 하나</option><option>사별, 혼자 삶</option></datalist>
-          </fieldset>
-          <div class="co-field"><span>상대 성향</span>
+          <div class="co-field"><span>성향</span>
             <div class="co-seg" role="radiogroup" aria-label="상대 성향">
               <label><input type="radio" name="tone" value="호의적">호의적</label>
               <label><input type="radio" name="tone" value="보통" checked>보통</label>
               <label><input type="radio" name="tone" value="까다로움">까다로움</label>
             </div>
           </div>
-          <div class="co-field"><span>연습 방식</span>
+          <label class="co-field"><span>상대 목소리 — 성별·나이에 맞춰 고릅니다</span><select id="voice"></select></label>
+          <p class="co-note" id="voice-note" hidden></p>
+          <label class="co-field"><span>상대 말 빠르기</span><input type="range" id="rate" min="0.8" max="1.3" step="0.05" value="1"></label>
+          </div>
+          <div class="co-group">
+            <h2 class="co-h">3 연습 방식</h2>
+          <div class="co-field">
             <div class="co-seg" role="radiogroup" aria-label="연습 방식">
               <label><input type="radio" name="way" value="대화" checked>역할 연습</label>
               <label><input type="radio" name="way" value="반론">반론 훈련</label>
               <label><input type="radio" name="way" value="읽기">따라 읽기</label>
             </div>
           </div>
-          <label class="co-field"><span>상대 목소리 — 성별·나이에 맞춰 고릅니다</span><select id="voice"></select></label>
-          <p class="co-note" id="voice-note" hidden></p>
-          <label class="co-field"><span>상대 말 빠르기</span><input type="range" id="rate" min="0.8" max="1.3" step="0.05" value="1"></label>
           <button class="btn btn-primary" type="button" id="start">연습 시작</button>
           <p class="co-note">말소리는 브라우저 음성 인식(크롬·엣지는 구글, 사파리는 애플)으로 글자가 된 뒤 AI로 갑니다. 실제 고객 이름과 번호는 말하지 마세요. 평가를 받으면 대화 글과 평가가 연습 기록에 남아 나와 내 위 팀장급이 봅니다. 내 목소리 녹음은 이 기기에만 있고 서버로 가지 않습니다.</p>
+          </div>
         </section>
 
         <section class="co-stage" aria-label="연습">
           <div id="talk">
-            <p class="co-status" id="status">상황과 성향을 고르고 「연습 시작」을 누르면 상대가 먼저 말합니다.</p>
-            <button class="co-mic" type="button" id="mic" disabled>말하기</button>
+            <div class="co-call">
+              <p class="co-who" id="who"></p>
+              <p class="co-status" id="status">「연습 시작」을 누르면 상대가 먼저 말합니다.</p>
+              <div class="co-level" id="level" hidden aria-hidden="true"><i id="level-bar"></i></div>
+            </div>
+            <button class="co-mic" type="button" id="mic">연습 시작</button>
             <div class="co-row">
               <label><input type="checkbox" id="auto" checked> 상대 말이 끝나면 바로 듣기</label>
               <button class="btn" type="button" id="hint" disabled>힌트</button>
               <button class="btn" type="button" id="finish" disabled>끝내고 평가 받기</button>
             </div>
-            <form class="co-type" id="type-form">
-              <input id="type-text" maxlength="600" placeholder="말 대신 글로 보내기" aria-label="글로 보내기">
-              <button class="btn" type="submit">보내기</button>
-            </form>
             <ul class="co-hints" id="hints" hidden aria-label="힌트"></ul>
-            <ol class="co-log" id="log" aria-label="대화"></ol>
+            <details class="co-transcript" id="transcript">
+              <summary>대화 글 보기</summary>
+              <ol class="co-log" id="log" aria-label="대화"></ol>
+              <form class="co-type" id="type-form">
+                <input id="type-text" maxlength="600" placeholder="말 대신 글로 보내기" aria-label="글로 보내기">
+                <button class="btn" type="submit">보내기</button>
+              </form>
+            </details>
             <div class="co-report" id="report"></div>
           </div>
           <div id="drill" hidden>
@@ -239,7 +260,7 @@
         return;
       }
       $("work").hidden = false;
-      if (!SR) $("status").textContent = "이 브라우저는 음성 인식이 없습니다. 크롬·엣지·사파리에서 여세요. 아래 칸에 글로 적어 연습할 수는 있습니다.";
+      if (!SR) { $("status").textContent = "이 브라우저는 음성 인식이 없습니다. 크롬·엣지·사파리에서 여세요."; $("transcript").open = true; }
 
       function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
       function 값(name) { var c = document.querySelector('input[name="' + name + '"]:checked'); return c ? c.value : ""; }
@@ -302,7 +323,7 @@
         if (p.length < 6) return;
         document.querySelector('input[name="sex"][value="' + p[0] + '"]').checked = true;
         $("p-age").value = p[1]; $("p-job").value = p[2]; $("p-income").value = p[3]; $("p-family").value = p[4]; $("p-note").value = p[5];
-        손댄목소리 = false; 목소리목록();
+        손댄목소리 = false; 목소리목록(); 상대줄();
       }
       function 하나(list) { return list[Math.floor(Math.random() * list.length)]; }
       function 보기들(id) { return Array.prototype.map.call($(id).options, function (o) { return o.value || o.textContent; }); }
@@ -325,6 +346,10 @@
         return { 성별: 값("sex"), 나이: $("p-age").value, 직업: $("p-job").value.trim(), 소득: $("p-income").value.trim(),
           가족: $("p-family").value.trim(), 특이사항: $("p-note").value.trim() };
       }
+      // 통화 화면 위에 지금 상대가 누구인지 한 줄
+      function 상대줄() { $("who").textContent = "상대 — " + 인물글() + " · " + 값("tone"); }
+      ["p-age", "p-job", "p-income", "p-family", "p-note"].forEach(function (id) { $(id).addEventListener("input", 상대줄); $(id).addEventListener("change", 상대줄); });
+      document.querySelectorAll('input[name="sex"], input[name="tone"]').forEach(function (r) { r.addEventListener("change", 상대줄); });
       인물채우기($("sit").options[0].getAttribute("data-person"));
 
       // 네이버 목소리 — 문장마다 따로 받아 첫 문장부터 읽는다(다 받을 때까지 기다리지 않게). 실패하면 브라우저 목소리로.
@@ -382,10 +407,12 @@
           rec = new MediaRecorder(stream);
           rec.ondataavailable = function (e) { if (e.data.size) 조각.push(e.data); };
           rec.start();
+          막대시작(stream);
         }).catch(function () { 마이크 = null; });
         return {
           끝: function () {
             return 준비.then(function () {
+              막대멈춤();
               if (!rec || rec.state === "inactive") return null;
               return 끝남 || (끝남 = new Promise(function (ok) {
                 rec.onstop = function () { ok(조각.length ? new Blob(조각, { type: rec.mimeType }) : null); };
@@ -394,6 +421,27 @@
             });
           }
         };
+      }
+      var 소리판 = null, 막대 = null;
+      function 막대시작(stream) {
+        try {
+          소리판 = 소리판 || new (window.AudioContext || window.webkitAudioContext)();
+          var src = 소리판.createMediaStreamSource(stream), an = 소리판.createAnalyser();
+          an.fftSize = 512; src.connect(an);
+          var buf = new Uint8Array(an.fftSize), 이번 = { src: src, on: true };
+          막대 = 이번; $("level").hidden = false;
+          (function 그리기() {
+            if (!이번.on) return;
+            an.getByteTimeDomainData(buf);
+            var s = 0; for (var i = 0; i < buf.length; i++) { var v = (buf[i] - 128) / 128; s += v * v; }
+            $("level-bar").style.width = Math.min(100, Math.sqrt(s / buf.length) * 450) + "%";
+            requestAnimationFrame(그리기);
+          })();
+        } catch (e) { /* 소리 막대 없이 듣기만 */ }
+      }
+      function 막대멈춤() {
+        if (막대) { 막대.on = false; try { 막대.src.disconnect(); } catch (e) {} 막대 = null; }
+        $("level").hidden = true;
       }
       function 듣기단추(blob) {
         var b = el("button", "co-play", "내 목소리");
@@ -493,7 +541,7 @@
           return 큐.then(function () {
             if (!진행) return;
             $("mic").disabled = !SR;
-            if (끝) { 진행 = false; $("hint").disabled = true; 상태("대화가 끝났습니다.", "「끝내고 평가 받기」를 누르면 코칭이 나옵니다."); return; }
+            if (끝) { 진행 = false; $("hint").disabled = true; $("mic").textContent = "새로 연습 시작"; 상태("대화가 끝났습니다.", "「끝내고 평가 받기」를 누르면 코칭이 나옵니다."); return; }
             if ($("auto").checked && SR) return 내차례();
             상태("내 차례입니다.", SR ? "「말하기」를 누르고 말합니다." : "아래 칸에 적어 보냅니다.");
           });
@@ -526,10 +574,11 @@
           return 내말(m.text, m);
         }).catch(function (e) { $("mic").classList.remove("on"); $("mic").textContent = "말하기"; 상태(e.message); });
       }
+      // 연습 전·끝난 뒤에는 이 큰 단추가 「연습 시작」이다(왼쪽 맨 아래까지 내려가지 않게)
       $("mic").addEventListener("click", function () {
         if (듣는중) { try { 듣는중.stop(); } catch (e) {} return; }
+        if (!진행) { $("start").click(); return; }
         멈추기();
-        if (!진행) 진행 = true;
         내차례();
       });
       $("type-form").addEventListener("submit", function (e) {
@@ -555,6 +604,7 @@
       $("finish").addEventListener("click", function () {
         진행 = false;
         $("hint").disabled = true; $("hints").hidden = true;
+        $("mic").disabled = false; $("mic").textContent = "새로 연습 시작";
         if (듣는중) try { 듣는중.stop(); } catch (e) {}
         멈추기();
         var btn = this, box = $("report"), m = 지표();
@@ -672,6 +722,8 @@
         멈추기();
         if (값("way") === "반론") return 반론시작();
         대화 = []; 진행 = true;
+        상대줄();
+        $("mic").textContent = "말하기";
         $("hint").disabled = false; $("hints").hidden = true;
         $("log").textContent = ""; $("report").textContent = "";
         $("finish").disabled = true;
