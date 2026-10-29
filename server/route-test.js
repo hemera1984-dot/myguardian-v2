@@ -192,5 +192,13 @@ await check("보이스코칭 — 대본은 팀장급만 올리고, 연습 기록
   assert.deepEqual([await 봄("fc"), await 봄("lead"), await 봄("boss"), await 봄("fc2")], [true, true, true, false]);
   assert.equal((await (await call("fc", "GET", "/ai/voice")).json()).켜짐, false, "키가 없으면 네이버 목소리는 꺼짐");
 });
+await check("약한 반론 — 마지막 점수가 3점 이하인 것만, 다시 넘기면 빠진다", async () => {
+  const 남기기 = (항목) => call("fc2", "POST", "/coach/records", { 상황이름: "거절 대응", 인물: "여성", 항목 });
+  await 남기기([{ 반론: "비싸요", 답: "음", 점수: 2 }, { 반론: "생각해 볼게요", 답: "네", 점수: 3 }]);
+  await 남기기([{ 반론: "비싸요", 답: "부담되시죠", 점수: 4, 상황: "거절 대응", 인물: "여성" }]);
+  const 약한 = await (await call("fc2", "GET", "/coach/weak")).json();
+  assert.deepEqual(약한.map((x) => x.반론), ["생각해 볼게요"]);
+  assert.equal(약한[0].상황, "거절 대응");
+});
 console.log(`\n결과: ${n} 통과`);
 process.exit(0);

@@ -1163,7 +1163,7 @@ async function route(req, res, url) {
   // SSE를 읽어 응답을 복원한다. 흘려받지 않으면 5분 넘는 요청은 아무것도 안 흐르는 사이
   // 중간 장비가 연결을 끊어 버린다(2026-09-07 /ai/column 실패 원인). 글자가 계속 흐르면 안 끊긴다.
   // content_block_start/delta/stop을 모아 블록을 되살린다 — pause_turn 재개에 그 블록이 필요하다.
-  async function 흘려받기(upstream) {
+  async function 흘려받기(upstream, 조각마다) {
     const reader = upstream.body.getReader();
     const dec = new TextDecoder();
     const blocks = [];
@@ -1181,7 +1181,7 @@ async function route(req, res, url) {
       } else if (d.type === "content_block_delta") {
         const b = blocks[d.index];
         if (!b) return;
-        if (d.delta.type === "text_delta") b.text = (b.text || "") + d.delta.text;
+        if (d.delta.type === "text_delta") { b.text = (b.text || "") + d.delta.text; if (조각마다) 조각마다(d.delta.text); }
         else if (d.delta.type === "thinking_delta") b.thinking = (b.thinking || "") + d.delta.thinking;
         else if (d.delta.type === "signature_delta") b.signature = (b.signature || "") + d.delta.signature;
         else if (d.delta.type === "input_json_delta") b._json += d.delta.partial_json;
@@ -2040,7 +2040,7 @@ async function route(req, res, url) {
     // 상대 인물(2026-10-29 발표자: 「고객마다 직업·나이·성별·소득이 다르니 설정하면 그런 사람이 되게」) — 가상 인물만, 실제 고객 정보를 넣지 않는다
     const 사람 = b.인물 && typeof b.인물 === "object" ? b.인물 : {};
     const 인물 = [["성별", 10], ["나이", 20], ["직업", 40], ["소득", 40], ["가족", 40], ["특이사항", 200]]
-      .map(([k, n]) => { const v = 글(사람[k], n); return v ? `${k} ${v}` : ""; }).filter(Boolean).join(", ");
+      .map(([k, n]) => { const v = 글(사람[k], n); return v ? `${k} ${v}` : ""; }).filter(Boolean).join(", ") || 글(b.인물글, 300);
     const 대본 = b.대본 ? 팀대본들().find((x) => x.id === b.대본) : null;
     const 상황이름 = 글(b.상황이름, 60) || 상황.slice(0, 60);
     const 대화록 = (Array.isArray(b.대화) ? b.대화 : []).slice(-60)
@@ -2053,25 +2053,47 @@ async function route(req, res, url) {
       ...(인물 ? [`상대 인물: ${인물}`, "상대의 말투·쓰는 낱말·관심사·걱정·반대 이유는 이 사람의 나이·성별·직업·소득·가족에서 나온다. 같은 상황이라도 사람이 다르면 다르게 반응한다."] : [])
     ];
     if (b.방식 === "대화") {
-      const r = await claude([
+      const 지시 = [
         ...공통,
         "",
         "당신은 이 상황의 상대(고객·지원자 등)를 연기한다. 실제 사람처럼 말하고, 당신의 말은 그대로 소리로 읽힌다.",
         "- 한 번에 한두 문장, 많아야 세 문장. 입말로. 괄호·목록·이모지·동작 묘사를 쓰지 않는다.",
         "- 성향을 지킨다. 설계사의 말이 구체적이고 나에게 맞으면 조금씩 마음을 열고, 근거 없는 약속이나 밀어붙이기에는 경계한다.",
         "- 회사·상품 이름, 수익률, 보험료 같은 숫자를 먼저 지어내지 않는다. 물을 수는 있다.",
-        "- 연기를 멈추고 코칭하지 않는다. 대화가 자연스럽게 끝났으면(약속이 잡혔거나, 끊었거나, 거절이 굳었으면) 끝을 true로 한다.",
+        "- 연기를 멈추고 코칭하지 않는다. 대화가 자연스럽게 끝났으면(약속이 잡혔거나, 끊었거나, 거절이 굳었으면) 맨 끝에 [끝] 을 붙인다.",
         "- 앞 대화가 없으면 이 상황에서 상대가 하는 첫마디를 한다(전화면 받는 말).",
+        "- 상대의 말 글만 쓴다. 따옴표·「상대:」 같은 이름표를 붙이지 않는다.",
         "",
         ...(대화록.length ? ["앞 대화:", ...대화록] : ["앞 대화: 없음"])
+      ].join("\n");
+      const upstream = await 다시걸기(() => fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "x-api-key": ANTHROPIC_KEY, "anthropic-version": "2023-06-01", "anthropic-beta": "server-side-fallback-2026-07-01", "content-type": "application/json" },
+        body: JSON.stringify({ model: TITLE_MODEL, fallbacks: "default", max_tokens: 2000, stream: true,
+          output_config: { effort: "low" }, messages: [{ role: "user", content: 지시 }] }),
+        signal: AbortSignal.timeout(45000)
+      })).catch(() => null);
+      if (!upstream || !upstream.ok) {
+        if (upstream) console.error("코칭 대화 실패:", upstream.status, (await upstream.text().catch(() => "")).slice(0, 200));
+        return send(res, 502, { error: "AI 응답을 받지 못했습니다. 다시 말해 보세요." });
+      }
+      res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store", "X-Accel-Buffering": "no" });
+      try { await 흘려받기(upstream, (조각) => res.write(조각)); } catch (e) { res.write("\n[오류]"); }
+      return res.end();
+    }
+    if (b.방식 === "힌트") {
+      const r = await claude([
+        ...공통,
+        "",
+        "설계사가 대화 중에 막혔다. 지금 이어서 할 만한 말을 세 가지 제안한다. 서로 다른 방향으로(공감·질문·다음 걸음).",
+        "- 하나에 한두 문장, 입말로, 이 상대의 사정에 맞게. 단정·수익 보장·특약 필수 표현 금지.",
+        "",
+        ...(대화록.length ? ["지금까지 대화:", ...대화록] : ["아직 대화 전이다. 첫마디를 제안한다."])
       ].join("\n"), {
-        type: "object",
-        properties: { 말: { type: "string" }, 끝: { type: "boolean" } },
-        required: ["말", "끝"],
-        additionalProperties: false
+        type: "object", properties: { 힌트: { type: "array", items: { type: "string" } } }, required: ["힌트"], additionalProperties: false
       }, { effort: "low", timeout: 45000 });
-      if (r.error) return send(res, 502, { error: "AI 응답을 받지 못했습니다. 다시 말해 보세요." });
-      return send(res, 200, { 말: String(r.value.말 || "").slice(0, 400), 끝: !!r.value.끝, 남은횟수: 300 - 쓴 - 1 });
+      if (r.error) return send(res, 502, { error: "힌트를 받지 못했습니다. 다시 눌러 보세요." });
+      return send(res, 200, { 힌트: (r.value.힌트 || []).slice(0, 3).map((s) => String(s).slice(0, 200)) });
     }
     if (b.방식 === "평가") {
       if (!대화록.length) return send(res, 400, { error: "평가할 대화가 없습니다." });
@@ -2175,13 +2197,22 @@ async function route(req, res, url) {
     const 글 = (v, n) => 번호가리기(String(v || "")).replace(/\s+/g, " ").trim().slice(0, n);
     const 항목 = (Array.isArray(b.항목) ? b.항목 : []).slice(0, 12).map((x) => ({
       반론: 글(x && x.반론, 200), 답: 글(x && x.답, 600), 점수: Math.max(1, Math.min(5, Math.round(Number(x && x.점수) || 1))),
-      한마디: 글(x && x.한마디, 400), 모범답: 글(x && x.모범답, 400)
+      한마디: 글(x && x.한마디, 400), 모범답: 글(x && x.모범답, 400),
+      ...(x && x.상황 ? { 상황: 글(x.상황, 60), 인물: 글(x.인물, 300) } : {})   // 복습은 반론마다 원래 상황을 지닌다
     })).filter((x) => x.반론 && x.답);
     if (!항목.length) return send(res, 400, { error: "남길 반론 연습이 없습니다." });
     const 평균 = Math.round(항목.reduce((a, x) => a + x.점수, 0) / 항목.length * 10) / 10;
     const r = db.prepare("INSERT INTO coach_records (owner_id, at, kind, situation, person, result) VALUES (?, ?, '반론', ?, ?, ?)")
       .run(me.id, new Date().toISOString(), 글(b.상황이름, 60) || "반론 훈련", 글(b.인물, 300), JSON.stringify({ 평균, 항목 }));
     return send(res, 200, { 기록: Number(r.lastInsertRowid), 평균 });
+  }
+  if (req.method === "GET" && path === "/coach/weak") {
+    const 마지막 = new Map();
+    for (const x of db.prepare("SELECT situation, person, result FROM coach_records WHERE owner_id = ? AND kind = '반론' ORDER BY id").all(me.id)) {
+      let v; try { v = JSON.parse(x.result); } catch (e) { continue; }
+      for (const it of (v && v.항목) || []) 마지막.set(it.반론, { 반론: it.반론, 점수: it.점수, 모범답: it.모범답, 상황: it.상황 || x.situation, 인물: it.인물 || x.person });
+    }
+    return send(res, 200, [...마지막.values()].filter((x) => x.점수 <= 3).slice(-12));
   }
   if (req.method === "GET" && path === "/coach/records") {
     const 이름 = (id) => { const a = getAccount(db, id); return a ? (a.display_name || a.name || "") : ""; };

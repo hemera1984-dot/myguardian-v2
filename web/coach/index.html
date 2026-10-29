@@ -72,6 +72,7 @@
     .co-sc-list li { display: flex; gap: 8px; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--platform-line); }
     .co-sc-list li span { flex: 1; min-width: 0; }
     .co-sc-list button { font: inherit; font-size: 12px; border: none; background: none; color: var(--platform-faint); cursor: pointer; padding: 0 2px; }
+    .co-hints { margin: 12px 0 0; padding: 10px 0 0 18px; border-top: 1px solid var(--platform-line); font-size: 14px; line-height: 1.7; word-break: keep-all; color: var(--platform-muted); }
     .co-objection { font-size: 20px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.5; margin: 0 0 12px; word-break: keep-all; }
     .co-drill { list-style: none; margin: 16px 0 0; padding: 0; border-top: 1px solid var(--platform-line); }
     .co-drill li { padding: 10px 0; border-bottom: 1px solid var(--platform-line); font-size: 14px; line-height: 1.65; word-break: keep-all; }
@@ -187,12 +188,14 @@
             <button class="co-mic" type="button" id="mic" disabled>말하기</button>
             <div class="co-row">
               <label><input type="checkbox" id="auto" checked> 상대 말이 끝나면 바로 듣기</label>
+              <button class="btn" type="button" id="hint" disabled>힌트</button>
               <button class="btn" type="button" id="finish" disabled>끝내고 평가 받기</button>
             </div>
             <form class="co-type" id="type-form">
               <input id="type-text" maxlength="600" placeholder="말 대신 글로 보내기" aria-label="글로 보내기">
               <button class="btn" type="submit">보내기</button>
             </form>
+            <ul class="co-hints" id="hints" hidden aria-label="힌트"></ul>
             <ol class="co-log" id="log" aria-label="대화"></ol>
             <div class="co-report" id="report"></div>
           </div>
@@ -200,7 +203,7 @@
             <p class="co-status" id="drill-status">「연습 시작」을 누르면 이 상대가 할 법한 반론 여덟 개가 하나씩 나옵니다. 상대가 말하면 바로 답하세요. 답마다 점수와 모범답이 나옵니다.</p>
             <p class="co-objection" id="drill-q" hidden></p>
             <button class="co-mic" type="button" id="drill-mic" disabled>답하기</button>
-            <div class="co-row"><button class="btn" type="button" id="drill-next" disabled>다음 반론</button><button class="btn" type="button" id="drill-end" disabled>끝내고 남기기</button></div>
+            <div class="co-row"><button class="btn" type="button" id="drill-next" disabled>다음 반론</button><button class="btn" type="button" id="drill-end" disabled>끝내고 남기기</button><button class="btn" type="button" id="drill-weak" hidden>약한 반론 복습</button></div>
             <ol class="co-drill" id="drill-list" aria-label="반론 답"></ol>
           </div>
           <div id="read" hidden>
@@ -350,8 +353,8 @@
         }
         return 다음();
       }
-      function 말하기(text) {
-        멈추기();
+      function 말하기(text, 이어서) {
+        if (!이어서) 멈추기();
         return $("voice").value === "__naver" ? 네이버말하기(text) : 브라우저말하기(text);
       }
       function 브라우저말하기(text) {
@@ -449,21 +452,66 @@
       function 상대차례() {
         상태("상대가 생각하는 중입니다.");
         $("mic").disabled = true;
-        return ai({ 방식: "대화", 상황: 상황(), 성향: 값("tone"), 인물: 인물(), 대화: 대화 }).then(function (r) {
+        $("hints").hidden = true;
+        var 글 = "", 읽은 = 0, 큐 = Promise.resolve(), span = null;
+        function 읽기(문장) { 큐 = 큐.then(function () { return 진행 ? 말하기(문장, true) : null; }); }
+        // 끝난 문장(문장부호 뒤 띄어쓰기)만 떼어 읽는다 — 이어질 글을 끊지 않게
+        function 문장떼기(다왔음) {
+          var 남은 = 글.slice(읽은), m;
+          while ((m = /[.?!…]+["'」』)]?\s+/.exec(남은))) {
+            var 문장 = 남은.slice(0, m.index + m[0].length);
+            읽은 += 문장.length; 남은 = 남은.slice(문장.length);
+            문장 = 문장.replace("[끝]", "").trim();
+            if (문장) 읽기(문장);
+          }
+          if (다왔음) { var 끝말 = 남은.replace("[끝]", "").trim(); 읽은 = 글.length; if (끝말) 읽기(끝말); }
+        }
+        return fetch(window.mgAuth.apiBase() + "/ai/coach", { method: "POST",
+          headers: { Authorization: "Bearer " + window.mgAuth.token(), "Content-Type": "application/json" },
+          body: JSON.stringify({ 방식: "대화", 상황: 상황(), 성향: 값("tone"), 인물: 인물(), 대화: 대화 }) }).then(function (r) {
+          if (!r.ok) return r.json().catch(function () { return {}; }).then(function (d) { throw new Error(d.error || "AI 응답을 받지 못했습니다. 다시 말해 보세요."); });
+          var reader = r.body.getReader(), dec = new TextDecoder();
+          function 받기() {
+            return reader.read().then(function (x) {
+              if (x.done) return;
+              글 += dec.decode(x.value, { stream: true });
+              if (!진행) return;
+              if (!span) { 기록("상대", ""); span = $("log").lastChild.querySelector("span"); 상태("상대가 말하는 중입니다."); }
+              span.textContent = 글.replace("[끝]", "").trim();
+              문장떼기(false);
+              return 받기();
+            });
+          }
+          return 받기();
+        }).then(function () {
           if (!진행) return;
-          대화.push({ 누가: "상대", 말: r.말 });
-          기록("상대", r.말);
+          if (/\[오류\]/.test(글) || !글.trim()) throw new Error("AI 응답이 끊겼습니다. 다시 말해 보세요.");
+          문장떼기(true);
+          var 끝 = 글.indexOf("[끝]") >= 0, 말 = 글.replace("[끝]", "").trim();
+          대화.push({ 누가: "상대", 말: 말 });
           $("finish").disabled = 대화.length < 2;
-          상태("상대가 말하는 중입니다.");
-          return 말하기(r.말).then(function () {
+          return 큐.then(function () {
             if (!진행) return;
             $("mic").disabled = !SR;
-            if (r.끝) { 진행 = false; 상태("대화가 끝났습니다.", "「끝내고 평가 받기」를 누르면 코칭이 나옵니다."); return; }
+            if (끝) { 진행 = false; $("hint").disabled = true; 상태("대화가 끝났습니다.", "「끝내고 평가 받기」를 누르면 코칭이 나옵니다."); return; }
             if ($("auto").checked && SR) return 내차례();
             상태("내 차례입니다.", SR ? "「말하기」를 누르고 말합니다." : "아래 칸에 적어 보냅니다.");
           });
         }).catch(function (e) { 상태(e.message); $("mic").disabled = !SR; });
       }
+
+      // 힌트 — 막혔을 때 이어서 할 만한 말 셋(공감·질문·다음 걸음). 읽어 주지 않는다 — 내 말로 다시 하게.
+      $("hint").addEventListener("click", function () {
+        var btn = this, box = $("hints");
+        btn.disabled = true;
+        box.hidden = false; box.textContent = "";
+        box.appendChild(el("li", null, "힌트를 만드는 중입니다."));
+        ai({ 방식: "힌트", 상황: 상황(), 성향: 값("tone"), 인물: 인물(), 대화: 대화 }).then(function (r) {
+          box.textContent = "";
+          r.힌트.forEach(function (s) { box.appendChild(el("li", null, s)); });
+        }).catch(function (e) { box.textContent = ""; box.appendChild(el("li", null, e.message)); })
+          .then(function () { btn.disabled = !진행; });
+      });
       function 내말(text, 측정) {
         if (!text) { 상태("말이 들리지 않았습니다.", "「말하기」를 누르고 다시 말해 보세요."); return; }
         대화.push({ 누가: "나", 말: text, 음절: 음절(text), 초: 측정 && 측정.초, 확신: 측정 && 측정.확신 });
@@ -506,6 +554,7 @@
       function 목록(arr, cls) { var u = el("ul", cls); arr.forEach(function (s) { u.appendChild(el("li", null, s)); }); return u; }
       $("finish").addEventListener("click", function () {
         진행 = false;
+        $("hint").disabled = true; $("hints").hidden = true;
         if (듣는중) try { 듣는중.stop(); } catch (e) {}
         멈추기();
         var btn = this, box = $("report"), m = 지표();
@@ -623,6 +672,7 @@
         멈추기();
         if (값("way") === "반론") return 반론시작();
         대화 = []; 진행 = true;
+        $("hint").disabled = false; $("hints").hidden = true;
         $("log").textContent = ""; $("report").textContent = "";
         $("finish").disabled = true;
         상대차례();
@@ -632,10 +682,27 @@
       function 인물글() { var p = 인물(); return [p.성별, p.나이, p.직업, p.소득, p.가족, p.특이사항].filter(Boolean).join(", "); }
 
       // ── 반론 훈련 — 반론 여덟 개를 하나씩: 상대가 말하고 → 내가 답하고 → 점수·모범답
-      var 반론 = { 목록: [], 차례: 0, 지금: 0, 항목: [] };     // 차례 = 다음에 낼 반론, 지금 = 답하는(다시 답할 수 있는) 반론
+      var 반론 = { 목록: [], 차례: 0, 지금: 0, 항목: [], 복습: null };     // 차례 = 다음에 낼 반론, 지금 = 답하는(다시 답할 수 있는) 반론, 복습 = 약한 반론 목록
+      var 약한반론 = [];
+      function 약한반론받기() {
+        return window.mgAuth.api("/coach/weak").then(function (list) {
+          약한반론 = list;
+          $("drill-weak").hidden = !list.length;
+          $("drill-weak").textContent = "약한 반론 복습 " + list.length;
+        }).catch(function () {});
+      }
+      약한반론받기();
+      $("drill-weak").addEventListener("click", function () {
+        if (!약한반론.length) return;
+        멈추기();
+        반론 = { 목록: 약한반론.map(function (x) { return x.반론; }), 차례: 0, 지금: 0, 항목: [], 복습: 약한반론.slice() };
+        $("drill-list").textContent = "";
+        $("drill-end").disabled = true;
+        반론하나();
+      });
       function 반론상태(글) { $("drill-status").textContent = 글; }
       function 반론시작() {
-        반론 = { 목록: [], 차례: 0, 지금: 0, 항목: [] };
+        반론 = { 목록: [], 차례: 0, 지금: 0, 항목: [], 복습: null };
         $("drill-list").textContent = ""; $("drill-q").hidden = true;
         $("drill-next").disabled = $("drill-end").disabled = $("drill-mic").disabled = true;
         반론상태("이 상대가 할 법한 반론을 만드는 중입니다.");
@@ -651,7 +718,8 @@
         반론.지금 = 반론.차례;
         $("drill-q").hidden = false;
         $("drill-q").textContent = q;
-        반론상태((반론.차례 + 1) + " / " + 반론.목록.length + " — 상대가 말합니다.");
+        var 지난 = 반론.복습 && 반론.복습[반론.차례];
+        반론상태((반론.차례 + 1) + " / " + 반론.목록.length + " — 상대가 말합니다." + (지난 ? " 지난번 " + 지난.점수 + "점." : ""));
         말하기(q).then(function () {
           $("drill-mic").disabled = !SR;
           if (SR) 반론답하기(); else 반론상태("이 브라우저는 음성 인식이 없습니다. 크롬·엣지·사파리에서 여세요.");
@@ -665,8 +733,10 @@
           if (!m.text) { 반론상태("말이 들리지 않았습니다. 「다시 답하기」를 누르세요."); return; }
           var k = 반론.지금, q = 반론.목록[k];
           반론상태("채점하는 중입니다.");
-          return ai({ 방식: "반론채점", 상황: 상황(), 성향: 값("tone"), 인물: 인물(), 반론: q, 답: m.text }).then(function (r) {
+          var 원래 = 반론.복습 && 반론.복습[k];
+          return ai({ 방식: "반론채점", 상황: 원래 ? 원래.상황 : 상황(), 성향: 값("tone"), 인물: 원래 ? {} : 인물(), 인물글: 원래 ? 원래.인물 : "", 반론: q, 답: m.text }).then(function (r) {
             반론.항목[k] = { 반론: q, 답: m.text, 점수: r.점수, 한마디: r.한마디, 모범답: r.모범답 };
+            if (원래) { 반론.항목[k].상황 = 원래.상황; 반론.항목[k].인물 = 원래.인물; }
             var li = el("li");
             li.appendChild(el("div", "q", q));
             var 내답 = el("div", null, "내 답: " + m.text); if (m.소리) 내답.appendChild(듣기단추(m.소리)); li.appendChild(내답);
@@ -695,9 +765,10 @@
         $("drill-mic").disabled = $("drill-next").disabled = $("drill-end").disabled = true;
         var 항목 = 반론.항목.filter(Boolean);
         if (!항목.length) { 반론상태("답한 반론이 없어 남기지 않았습니다."); return; }
-        window.mgAuth.api("/coach/records", { method: "POST", body: { 상황이름: 상황이름(), 인물: 인물글(), 항목: 항목 } }).then(function (r) {
+        window.mgAuth.api("/coach/records", { method: "POST", body: { 상황이름: 반론.복습 ? "약한 반론 복습" : 상황이름(), 인물: 반론.복습 ? "" : 인물글(), 항목: 항목 } }).then(function (r) {
           반론상태("반론 " + 항목.length + "개, 평균 " + r.평균 + "점으로 연습 기록에 남겼습니다.");
           기록불러오기();
+          약한반론받기();
         }).catch(function (e) { 반론상태(e.message); });
       }
 
