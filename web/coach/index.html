@@ -28,6 +28,12 @@
     .co-seg input { position: absolute; opacity: 0; pointer-events: none; }
     .co-seg label:has(input:checked) { background: var(--platform-ink); color: #fff; }
     .co-seg label:has(input:focus-visible) { outline: 2px solid var(--platform-blue); outline-offset: -2px; }
+    .co-person { border: 0; border-top: 1px solid var(--platform-line); margin: 0; padding: 12px 0 0; display: grid; gap: 10px; min-width: 0; }
+    .co-person legend { font-size: 11px; font-weight: 700; color: var(--platform-faint); padding: 0 6px 0 0; display: flex; gap: 8px; align-items: center; }
+    .co-dice { font: inherit; font-size: 12px; font-weight: 600; border: 1px solid var(--platform-line-strong); border-radius: 3px; background: none; color: var(--platform-muted); padding: 2px 8px; cursor: pointer; transition: border-color 0.14s ease, color 0.14s ease; }
+    .co-dice:hover { border-color: var(--platform-ink); color: var(--platform-ink); }
+    .co-two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .co-field input[maxlength] { font: inherit; font-size: 13px; border: 1px solid var(--platform-line-strong); border-radius: 4px; padding: 8px 10px; background: var(--platform-surface); color: inherit; min-width: 0; }
     .co-note { font-size: 12px; color: var(--platform-faint); line-height: 1.6; margin: 0; }
     .co-stage { border-top: 2px solid var(--platform-ink); padding-top: 14px; min-width: 0; }
     .co-status { font-size: 15px; line-height: 1.6; min-height: 48px; margin: 0 0 12px; word-break: keep-all; }
@@ -86,17 +92,36 @@
         <section class="co-setup" aria-label="연습 고르기">
           <label class="co-field"><span>상황</span>
             <select id="sit">
-              <option value="리쿠르팅 TA — 전화. 설계사가 예전에 알던 지인(30대 후반 직장인)에게 전화해 보험 설계사라는 일을 소개하고 커피 한잔 만날 약속을 잡으려 한다. 상대는 설계사 일에 선입견이 있다.">리쿠르팅 TA (전화)</option>
-              <option value="DB 고객 첫 전화. 보장 점검을 신청했던 고객(40대 맞벌이)에게 처음 전화해 방문 상담 약속을 잡으려 한다. 상대는 신청한 기억이 흐릿하고 바쁘다.">DB 고객 첫 전화</option>
-              <option value="상품 제안 상담 — 대면. 보장분석을 마친 고객(40대 가장, 자녀 둘)을 다시 만나 부족한 보장을 채우는 제안을 설명한다. 목표는 제안을 이해시키고 다음 단계(청약, 또는 가족과 상의 뒤 다시 만남)에 동의를 받는 것.">상품 제안 상담 (대면)</option>
-              <option value="거절 대응. 제안을 들은 고객이 「보험은 이미 많아요」「생각해 볼게요」「배우자와 상의해야 해요」 같은 말로 미룬다. 설계사는 거절 이유를 듣고 다음 만남을 남기려 한다.">거절 대응</option>
-              <option value="소개 요청. 계약한 지 한 달 된, 만족한 고객에게 주변에 보장 점검이 필요한 분을 소개해 달라고 부탁한다.">소개 요청</option>
+              <option value="리쿠르팅 TA — 전화. 설계사가 예전에 알던 지인에게 전화해 보험 설계사라는 일을 소개하고 커피 한잔 만날 약속을 잡으려 한다. 상대는 설계사 일에 선입견이 있다." data-person="남성|30대 후반|중견기업 영업직 회사원|월 400만 원대|기혼, 자녀 하나|이직을 고민한 적이 있다">리쿠르팅 TA (전화)</option>
+              <option value="DB 고객 첫 전화. 보장 점검을 신청했던 고객에게 처음 전화해 방문 상담 약속을 잡으려 한다. 상대는 신청한 기억이 흐릿하고 바쁘다." data-person="여성|40대 초반|초등학교 교사|월 500만 원대(맞벌이)|기혼, 자녀 둘|실손보험 하나와 오래전 든 종신보험이 있다">DB 고객 첫 전화</option>
+              <option value="상품 제안 상담 — 대면. 보장분석을 마친 고객을 다시 만나 부족한 보장을 채우는 제안을 설명한다. 목표는 제안을 이해시키고 다음 단계(청약, 또는 가족과 상의 뒤 다시 만남)에 동의를 받는 것." data-person="남성|40대 중반|식당 운영 자영업|월 600만 원대, 들쭉날쭉|기혼, 자녀 둘(중학생)|가게 대출이 있고 본인이 아프면 가게가 멈춘다">상품 제안 상담 (대면)</option>
+              <option value="거절 대응. 제안을 들은 고객이 「보험은 이미 많아요」「생각해 볼게요」「배우자와 상의해야 해요」 같은 말로 미룬다. 설계사는 거절 이유를 듣고 다음 만남을 남기려 한다." data-person="여성|50대 초반|중소기업 경리 과장|월 350만 원대|기혼, 자녀 독립|보험료가 이미 월 40만 원이 넘는다">거절 대응</option>
+              <option value="소개 요청. 계약한 지 한 달 된, 만족한 고객에게 주변에 보장 점검이 필요한 분을 소개해 달라고 부탁한다." data-person="남성|30대 중반|IT 회사 개발자|월 550만 원대|미혼|동호회 활동이 많고 주변에 미혼 친구가 많다">소개 요청</option>
               <option value="">직접 적기</option>
             </select>
           </label>
           <label class="co-field" id="sit-custom-wrap" hidden><span>상황 직접 적기</span>
             <textarea id="sit-custom" maxlength="800" placeholder="누구와, 어떤 자리에서, 무엇을 이루려는지 — 예: 50대 자영업 고객에게 상속 대비로 종신보험을 처음 꺼내는 자리"></textarea>
           </label>
+          <fieldset class="co-person" aria-label="상대 인물">
+            <legend>상대 인물 <button class="co-dice" type="button" id="dice">무작위</button></legend>
+            <div class="co-seg" role="radiogroup" aria-label="성별">
+              <label><input type="radio" name="sex" value="남성" checked>남성</label>
+              <label><input type="radio" name="sex" value="여성">여성</label>
+            </div>
+            <div class="co-two">
+              <label class="co-field"><span>나이</span>
+                <select id="p-age"><option>20대 후반</option><option>30대 초반</option><option>30대 중반</option><option>30대 후반</option><option>40대 초반</option><option>40대 중반</option><option>40대 후반</option><option>50대 초반</option><option>50대 후반</option><option>60대</option><option>70대</option></select>
+              </label>
+              <label class="co-field"><span>소득</span><input id="p-income" list="income-list" maxlength="40" placeholder="월 400만 원대"></label>
+            </div>
+            <label class="co-field"><span>직업</span><input id="p-job" list="job-list" maxlength="40" placeholder="예: 식당 운영 자영업"></label>
+            <label class="co-field"><span>가족</span><input id="p-family" list="family-list" maxlength="40" placeholder="예: 기혼, 자녀 둘"></label>
+            <label class="co-field"><span>특이사항</span><input id="p-note" maxlength="200" placeholder="예: 보험료가 이미 많다, 부모님 간병 경험"></label>
+            <datalist id="job-list"><option>회사원(사무직)</option><option>중견기업 영업직 회사원</option><option>공무원</option><option>초등학교 교사</option><option>간호사</option><option>IT 회사 개발자</option><option>식당 운영 자영업</option><option>온라인 쇼핑몰 운영</option><option>프리랜서 디자이너</option><option>생산직</option><option>택시 기사</option><option>전업주부</option><option>개원 의사</option><option>중소기업 대표</option><option>은퇴</option></datalist>
+            <datalist id="income-list"><option>월 250만 원대</option><option>월 350만 원대</option><option>월 500만 원대</option><option>월 700만 원대</option><option>월 1,000만 원 이상</option><option>월 수입 들쭉날쭉</option><option>연금 생활</option></datalist>
+            <datalist id="family-list"><option>미혼</option><option>기혼, 자녀 없음</option><option>기혼, 자녀 하나</option><option>기혼, 자녀 둘</option><option>기혼, 자녀 독립</option><option>한부모, 자녀 하나</option><option>사별, 혼자 삶</option></datalist>
+          </fieldset>
           <div class="co-field"><span>상대 성향</span>
             <div class="co-seg" role="radiogroup" aria-label="상대 성향">
               <label><input type="radio" name="tone" value="호의적">호의적</label>
@@ -110,7 +135,8 @@
               <label><input type="radio" name="way" value="읽기">따라 읽기</label>
             </div>
           </div>
-          <label class="co-field"><span>상대 목소리</span><select id="voice"></select></label>
+          <label class="co-field"><span>상대 목소리 — 성별·나이에 맞춰 고릅니다</span><select id="voice"></select></label>
+          <p class="co-note" id="voice-note" hidden></p>
           <label class="co-field"><span>상대 말 빠르기</span><input type="range" id="rate" min="0.8" max="1.3" step="0.05" value="1"></label>
           <button class="btn btn-primary" type="button" id="start">연습 시작</button>
           <p class="co-note">말소리는 브라우저 음성 인식(크롬·엣지는 구글, 사파리는 애플)으로 글자가 된 뒤 AI로 갑니다. 실제 고객 이름과 번호는 말하지 마세요. 서버는 대화를 남기지 않습니다.</p>
@@ -166,23 +192,79 @@
       function 음절(t) { return String(t || "").replace(/[^가-힣a-zA-Z0-9]/g, "").length; }
       function ai(body) { return window.mgAuth.api("/ai/coach", { method: "POST", body: body }); }
 
-      $("sit").addEventListener("change", function () { $("sit-custom-wrap").hidden = !!this.value; });
+      $("sit").addEventListener("change", function () {
+        $("sit-custom-wrap").hidden = !!this.value;
+        인물채우기(this.options[this.selectedIndex].getAttribute("data-person"));
+      });
       document.querySelectorAll('input[name="way"]').forEach(function (r) {
         r.addEventListener("change", function () { $("talk").hidden = 값("way") !== "대화"; $("read").hidden = 값("way") !== "읽기"; });
       });
 
       // ── 목소리 — 이 기기에 있는 한국어 목소리 중 자연스러운 것(엣지 Natural·Online, 구글)을 먼저 고른다
+      // 목소리 — 이 기기의 한국어 목소리 중 상대 성별에 맞는 것, 그중 자연스러운 것(엣지 Natural·Online, 구글)을 먼저.
+      // 남녀는 목소리 이름으로 가른다(엣지 InJoon·Hyunsu 등은 남성). 나이는 높낮이와 빠르기로 맞춘다.
+      var 남자이름 = /InJoon|Hyunsu|BongJin|GookMin|Minsu|Jinho|male|남/i;
+      var 손댄목소리 = false;
+      function 한국어목소리() { return 소리 ? 소리.getVoices().filter(function (v) { return /^ko/i.test(v.lang); }) : []; }
       function 목소리목록() {
-        var vs = 소리 ? 소리.getVoices().filter(function (v) { return /^ko/i.test(v.lang); }) : [];
-        var 점수 = function (v) { return /Natural|Online/i.test(v.name) ? 0 : /Google/i.test(v.name) ? 1 : 2; };
+        var 성별 = 값("sex"), vs = 한국어목소리();
+        var 점수 = function (v) {
+          var 맞음 = (성별 === "남성") === 남자이름.test(v.name);
+          return (맞음 ? 0 : 10) + (/Natural|Online/i.test(v.name) ? 0 : /Google/i.test(v.name) ? 1 : 2);
+        };
         vs.sort(function (a, b) { return 점수(a) - 점수(b); });
         var sel = $("voice"), 전 = sel.value;
         sel.textContent = "";
         vs.forEach(function (v) { var o = el("option", null, v.name); o.value = v.name; sel.appendChild(o); });
         if (!vs.length) { var o = el("option", null, "한국어 목소리 없음 — 글로만 보입니다"); o.value = ""; sel.appendChild(o); }
-        if (전) sel.value = 전;
+        if (손댄목소리 && 전) sel.value = 전;
+        var 남자있음 = vs.some(function (v) { return 남자이름.test(v.name); });
+        $("voice-note").hidden = !(성별 === "남성" && vs.length && !남자있음);
+        $("voice-note").textContent = "이 기기에는 남자 한국어 목소리가 없어 낮춘 여자 목소리로 읽습니다. 엣지 브라우저로 열면 남자 목소리(InJoon 등)가 있습니다.";
+      }
+      function 나이소리() {
+        var a = $("p-age").value;
+        var 나이 = parseInt(a, 10) || 40;
+        var 높이 = 나이 < 30 ? 1.08 : 나이 < 40 ? 1.0 : 나이 < 50 ? 0.96 : 나이 < 60 ? 0.9 : 0.85;
+        var 빠르기 = 나이 < 40 ? 1.04 : 나이 < 60 ? 1.0 : 0.92;
+        var v = 한국어목소리().filter(function (x) { return x.name === $("voice").value; })[0];
+        if (값("sex") === "남성" && v && !남자이름.test(v.name)) 높이 *= 0.72;   // 남자 목소리가 없을 때
+        return { 높이: 높이, 빠르기: 빠르기 };
       }
       if (소리) { 목소리목록(); 소리.onvoiceschanged = 목소리목록; }
+      $("voice").addEventListener("change", function () { 손댄목소리 = true; });
+      document.querySelectorAll('input[name="sex"]').forEach(function (r) { r.addEventListener("change", function () { 손댄목소리 = false; 목소리목록(); }); });
+
+      // 상대 인물 — 상황을 고르면 어울리는 인물로 채우고, 「무작위」는 칸마다 하나씩 뽑는다
+      function 인물채우기(s) {
+        var p = String(s || "").split("|");
+        if (p.length < 6) return;
+        document.querySelector('input[name="sex"][value="' + p[0] + '"]').checked = true;
+        $("p-age").value = p[1]; $("p-job").value = p[2]; $("p-income").value = p[3]; $("p-family").value = p[4]; $("p-note").value = p[5];
+        손댄목소리 = false; 목소리목록();
+      }
+      function 하나(list) { return list[Math.floor(Math.random() * list.length)]; }
+      function 보기들(id) { return Array.prototype.map.call($(id).options, function (o) { return o.value || o.textContent; }); }
+      // 나이와 안 맞는 조합(30대 은퇴·연금, 20대 자녀 독립·사별)은 뺀다
+      $("dice").addEventListener("click", function () {
+        var 나이 = 하나(보기들("p-age")), n = parseInt(나이, 10);
+        var 직업 = 보기들("job-list").filter(function (x) {
+          if (n >= 60) return /은퇴|자영업|택시|대표|의사|주부/.test(x);
+          if (n < 30) return !/대표|의사|은퇴/.test(x);
+          return x !== "은퇴";
+        });
+        var 소득 = 보기들("income-list").filter(function (x) { return n >= 60 ? true : x !== "연금 생활"; });
+        var 가족 = 보기들("family-list").filter(function (x) {
+          return n < 40 ? !/독립|사별/.test(x) : n >= 60 ? !/미혼|자녀 하나$|자녀 둘$/.test(x) : true;
+        });
+        var j = 하나(직업);
+        인물채우기([하나(["남성", "여성"]), 나이, j, j === "은퇴" ? "연금 생활" : 하나(소득), 하나(가족), ""].join("|"));
+      });
+      function 인물() {
+        return { 성별: 값("sex"), 나이: $("p-age").value, 직업: $("p-job").value.trim(), 소득: $("p-income").value.trim(),
+          가족: $("p-family").value.trim(), 특이사항: $("p-note").value.trim() };
+      }
+      인물채우기($("sit").options[0].getAttribute("data-person"));
 
       function 말하기(text) {
         return new Promise(function (resolve) {
@@ -191,7 +273,9 @@
           var u = new SpeechSynthesisUtterance(text);
           u.lang = "ko-KR";
           u.voice = 소리.getVoices().filter(function (v) { return v.name === $("voice").value; })[0] || null;
-          u.rate = Number($("rate").value) || 1;
+          var 나 = 나이소리();
+          u.rate = (Number($("rate").value) || 1) * 나.빠르기;
+          u.pitch = 나.높이;
           u.onend = u.onerror = function () { resolve(); };
           소리.speak(u);
         });
@@ -242,7 +326,7 @@
       function 상대차례() {
         상태("상대가 생각하는 중입니다.");
         $("mic").disabled = true;
-        return ai({ 방식: "대화", 상황: 상황(), 성향: 값("tone"), 대화: 대화 }).then(function (r) {
+        return ai({ 방식: "대화", 상황: 상황(), 성향: 값("tone"), 인물: 인물(), 대화: 대화 }).then(function (r) {
           if (!진행) return;
           대화.push({ 누가: "상대", 말: r.말 });
           기록("상대", r.말);
@@ -305,7 +389,7 @@
         btn.disabled = true;
         box.textContent = "";
         box.appendChild(el("p", "co-note", "코칭을 만드는 중입니다. 30초 남짓 걸립니다."));
-        ai({ 방식: "평가", 상황: 상황(), 성향: 값("tone"), 대화: 대화, 지표: m }).then(function (r) {
+        ai({ 방식: "평가", 상황: 상황(), 성향: 값("tone"), 인물: 인물(), 대화: 대화, 지표: m }).then(function (r) {
           box.textContent = "";
           box.appendChild(el("h3", null, "코칭"));
           box.appendChild(el("p", "lead", r.한줄));
@@ -354,7 +438,7 @@
       function 문장받기() {
         $("lines").textContent = "";
         $("read-status").textContent = "문장을 만드는 중입니다.";
-        return ai({ 방식: "문장", 상황: 상황(), 성향: 값("tone") }).then(function (r) {
+        return ai({ 방식: "문장", 상황: 상황(), 성향: 값("tone"), 인물: 인물() }).then(function (r) {
           $("read-status").textContent = SR ? "「들어 보기」로 듣고 「읽기」를 눌러 소리 내어 읽습니다. 다 읽고 잠깐 쉬면 맞대 봅니다."
             : "이 브라우저는 음성 인식이 없어 「들어 보기」만 됩니다. 크롬·엣지·사파리에서 여세요.";
           r.문장.forEach(function (s) {
