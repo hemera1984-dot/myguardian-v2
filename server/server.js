@@ -2459,6 +2459,30 @@ async function route(req, res, url) {
     return send(res, 404, { error: "없는 경로입니다." });
   }
 
+  // 내 대본 — 팀 라이브러리 자료의 대본을 내 것만 고쳐 둔다. 팀 원본과 다른 팀원 대본은 그대로다.
+  // 목록에서 그 자료를 열면 화면이 내 대본을 받아 원본 대신 쓴다. 스크립트를 null로 보내면 지워 원본으로 돌아간다.
+  if (path === "/brief/my-script") {
+    const 자료 = String((req.method === "GET" ? url.searchParams.get("id") : null) || "").slice(0, 80);
+    if (req.method === "GET") {
+      const r = db.prepare("SELECT script, updated FROM brief_my_scripts WHERE owner_id = ? AND item_id = ?").get(me.id, 자료);
+      return send(res, 200, r ? { 스크립트: JSON.parse(r.script), 고친날: r.updated } : { 스크립트: null });
+    }
+    if (req.method !== "POST") return send(res, 405, { error: "허용되지 않은 방식입니다." });
+    const b = await readJson(req, 1024 * 1024);
+    const id = String(b.id || "").slice(0, 80);
+    if (!id) return send(res, 400, { error: "자료가 없습니다." });
+    if (b.스크립트 === null) {
+      db.prepare("DELETE FROM brief_my_scripts WHERE owner_id = ? AND item_id = ?").run(me.id, id);
+      return send(res, 200, { ok: true });
+    }
+    if (!Array.isArray(b.스크립트) || b.스크립트.length > 500 || b.스크립트.some((s) => typeof s !== "string" || s.length > 20000)) {
+      return send(res, 400, { error: "대본 형식이 올바르지 않습니다." });
+    }
+    db.prepare("INSERT INTO brief_my_scripts (owner_id, item_id, script, updated) VALUES (?, ?, ?, ?) ON CONFLICT(owner_id, item_id) DO UPDATE SET script = excluded.script, updated = excluded.updated")
+      .run(me.id, id, JSON.stringify(b.스크립트), new Date().toISOString());
+    return send(res, 200, { ok: true });
+  }
+
   if (req.method === "GET" && path === "/brief/library") {
     // 소유 판정용 메일은 서버 안에서만 쓴다. 목록에는 이름만 내보내고,
     // 화면이 "내가 올린 것"을 가릴 수 있게 그 여부만 알려 준다.

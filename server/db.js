@@ -146,6 +146,15 @@ export function openDb(file) {
       transcript TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_coach_records_owner ON coach_records(owner_id);
+
+    -- 내 대본(2026-10-30 발표자: 「사람마다 자기 입맛에 맞게 수정」) — 팀 자료의 대본을 고친 사람마다 따로 둔다
+    CREATE TABLE IF NOT EXISTS brief_my_scripts (
+      owner_id INTEGER NOT NULL REFERENCES accounts(id),
+      item_id  TEXT NOT NULL,
+      script   TEXT NOT NULL,
+      updated  TEXT NOT NULL,
+      PRIMARY KEY (owner_id, item_id)
+    );
     CREATE INDEX IF NOT EXISTS idx_brief_notes_talk ON brief_notes(talk_id);
   `);
 

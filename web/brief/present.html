@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="brief.css">
   <script src="../assets/auth.js"></script>
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="brief.js?v=20261029c"></script>
+  <script src="brief.js?v=20261030a"></script>
 </head>
 <body class="brief-present">
   <header class="pr-topbar" id="topbar" hidden>
@@ -68,6 +68,7 @@
           <div class="pr-script-editor-row">
             <button type="button" class="pr-button primary" id="script-save">저장</button>
             <button type="button" class="pr-button" id="script-cancel">취소</button>
+            <button type="button" class="pr-button" id="script-reset" hidden>팀 원본으로</button>
             <span id="script-msg"></span>
           </div>
         </div>
@@ -527,8 +528,11 @@
           고치는구간 = 지금구간();
           var ta = document.getElementById("script-text");
           ta.value = 구간들[고치는구간 - 1] || "";
-          document.getElementById("script-msg").textContent = 고치는구간 + "번째 구간"
-            + (briefRecord.__출처 ? "" : " · 목록에 올리지 않은 자료라 이 기기 발표에서만 바뀝니다");
+          document.getElementById("script-msg").textContent = 고치는구간 + "번째 구간 · "
+            + (briefRecord.__출처 === "내대본" ? "내 대본으로 저장됩니다. 팀 원본과 다른 팀원 대본은 그대로입니다"
+              : briefRecord.__출처 === "브라우저" ? "이 브라우저 라이브러리에 저장됩니다"
+              : "목록에 올리지 않은 자료라 이 기기 발표에서만 바뀝니다");
+          document.getElementById("script-reset").hidden = !(briefRecord.__내대본 && briefRecord.__원본스크립트);
           document.getElementById("script-body").hidden = true;
           document.getElementById("script-editor").hidden = false;
           this.hidden = true;
@@ -548,6 +552,17 @@
             btn.disabled = false;
             msg.textContent = "저장하지 못했습니다: " + (err && err.message ? err.message : err);
           });
+        });
+        // 팀 원본으로 — 내 대본을 지우고 팀이 올린 대본으로 돌아간다(모든 구간)
+        document.getElementById("script-reset").addEventListener("click", function () {
+          if (!window.confirm("내가 고친 대본을 모두 지우고 팀 원본으로 돌아갈까요?")) return;
+          var msg = document.getElementById("script-msg");
+          B.스크립트다시싣기(briefRecord, null).then(function () {
+            구간들.length = 0;
+            Array.prototype.push.apply(구간들, briefRecord["스크립트"]);
+            briefRecord["스크립트"] = 구간들;
+            고치기닫기();
+          }).catch(function (err) { msg.textContent = "되돌리지 못했습니다: " + (err && err.message ? err.message : err); });
         });
         if (driver.kind !== "html") protocol.sendState(current, videoState(), scrollRatio());
 

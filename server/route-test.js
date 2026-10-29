@@ -200,5 +200,13 @@ await check("약한 반론 — 마지막 점수가 3점 이하인 것만, 다시
   assert.deepEqual(약한.map((x) => x.반론), ["생각해 볼게요"]);
   assert.equal(약한[0].상황, "거절 대응");
 });
+await check("내 대본 — 사람마다 따로, null이면 지워 원본으로", async () => {
+  assert.equal((await call("fc", "POST", "/brief/my-script", { id: "자료-1", 스크립트: ["가", "나"] })).status, 200);
+  assert.deepEqual((await (await call("fc", "GET", "/brief/my-script?id=" + encodeURIComponent("자료-1"))).json()).스크립트, ["가", "나"]);
+  assert.equal((await (await call("fc2", "GET", "/brief/my-script?id=" + encodeURIComponent("자료-1"))).json()).스크립트, null, "남의 대본은 안 보인다");
+  assert.equal((await call("fc", "POST", "/brief/my-script", { id: "자료-1", 스크립트: [1] })).status, 400);
+  await call("fc", "POST", "/brief/my-script", { id: "자료-1", 스크립트: null });
+  assert.equal((await (await call("fc", "GET", "/brief/my-script?id=" + encodeURIComponent("자료-1"))).json()).스크립트, null);
+});
 console.log(`\n결과: ${n} 통과`);
 process.exit(0);
