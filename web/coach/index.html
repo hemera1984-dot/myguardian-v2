@@ -308,7 +308,8 @@
         var 남자있음 = vs.some(function (v) { return 남자이름.test(v.name); });
         // 엣지 안내(2026-10-30 발표자: 클로바는 월 9만 원이라 엣지의 무료 Natural 목소리로) — 자연스러운 목소리가 없고 엣지가 아닐 때만
         var 자연스러움 = vs.some(function (v) { return /Natural|Online/i.test(v.name); });
-        $("edge-note").hidden = 네이버 || 자연스러움 || /Edg\//.test(navigator.userAgent);
+        // 폰은 엣지로 열어도 그 목소리가 없다(기기 목소리를 쓴다) — 컴퓨터에서만 안내
+        $("edge-note").hidden = 네이버 || 자연스러움 || /Edg\/|Android|iPhone|iPad|Mobile/.test(navigator.userAgent);
         $("voice-note").hidden = 네이버 || !(성별 === "남성" && vs.length && !남자있음);
         $("voice-note").textContent = "이 기기에는 남자 한국어 목소리가 없어 낮춘 여자 목소리로 읽습니다. 엣지 브라우저로 열면 남자 목소리(InJoon 등)가 있습니다.";
       }
