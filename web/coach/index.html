@@ -38,6 +38,8 @@
     .co-stage { border-top: 2px solid var(--platform-ink); padding-top: 12px; min-width: 0; }
     /* 통화 화면 — 말이 주인이다. 지금 누가 말하는지만 크게, 글은 「대화 글 보기」 안에 */
     .co-call { padding: 18px 0 22px; min-height: 150px; }
+    .co-voice { margin: 0; font-size: 14px; line-height: 1.6; word-break: keep-all; }
+    .co-field .co-dice { justify-self: start; }
     .co-edge { margin: 0 0 4px; padding: 10px 12px; background: var(--platform-surface); border: 1px solid var(--platform-line-strong); border-radius: 4px; font-size: 14px; line-height: 1.6; word-break: keep-all; }
     .co-edge[hidden] { display: none; }
     .co-edge .co-dice { margin-left: 6px; }
@@ -182,9 +184,10 @@
               <label><input type="radio" name="tone" value="까다로움">까다로움</label>
             </div>
           </div>
-          <label class="co-field"><span>상대 목소리 — 성별·나이에 맞춰 고릅니다</span><select id="voice"></select></label>
-          <p class="co-note" id="voice-note" hidden></p>
-          <label class="co-field"><span>상대 말 빠르기</span><input type="range" id="rate" min="0.8" max="1.3" step="0.05" value="1"></label>
+          <div class="co-field"><span>목소리 — 위 인물에 맞춰 자동으로 고릅니다</span>
+            <p class="co-voice" id="voice-auto"></p>
+            <button class="co-dice" type="button" id="voice-try">들어 보기</button>
+          </div>
           </div>
           <div class="co-group">
             <h2 class="co-h">3 연습 방식</h2>
@@ -285,42 +288,50 @@
         });
       });
 
-      // ── 목소리 — 이 기기에 있는 한국어 목소리 중 자연스러운 것(엣지 Natural·Online, 구글)을 먼저 고른다
-      // 목소리 — 이 기기의 한국어 목소리 중 상대 성별에 맞는 것, 그중 자연스러운 것(엣지 Natural·Online, 구글)을 먼저.
-      // 남녀는 목소리 이름으로 가른다(엣지 InJoon·Hyunsu 등은 남성). 나이는 높낮이와 빠르기로 맞춘다.
-      var 남자이름 = /InJoon|Hyunsu|BongJin|GookMin|Minsu|Jinho|male|남/i;
-      var 손댄목소리 = false;
+      // ── 목소리 — 사람이 고르지 않는다(2026-10-30 발표자: 「직업·나이·특이사항 등으로 판단해서 너가 해 줘야」).
+      // 성별로 이 기기의 자연스러운 목소리(엣지 Natural·Online)를 고르고, 같은 성별 목소리가 여럿이면 인물마다 다른 것을 쓴다.
+      // 목소리가 몇 개 없으므로(엣지 한국어: 여 선희 · 남 인준·현수) 나이·성향·직업·특이사항으로 높낮이와 빠르기를 바꿔 사람마다 달리 들리게 한다.
+      // 엣지는 이름이 한글로도 나온다(「Microsoft 인준 Online」) — 남자 이름은 영문·한글 둘 다 본다.
+      var 남자이름 = /InJoon|인준|Hyunsu|현수|BongJin|봉진|GookMin|국민|Minsu|민수|Jinho|진호|male|남자/i;
       var 네이버 = false;     // 서버에 네이버 목소리 키가 있는가
       function 한국어목소리() { return 소리 ? 소리.getVoices().filter(function (v) { return /^ko/i.test(v.lang); }) : []; }
+      function 짧은이름(v) { var m = /Microsoft\s+(\S+)/.exec(v.name); return m ? m[1] : v.name.replace(/\s*\(.*$/, ""); }
+      function 글씨값(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
+      function 목소리고르기() {
+        var p = 인물(), 남 = p.성별 === "남성", 나이 = parseInt(p.나이, 10) || 40;
+        var 글 = [p.직업, p.특이사항, p.가족, p.소득].join(" "), 씨 = 글씨값(p.성별 + p.나이 + 글);
+        var vs = 한국어목소리(), 자연 = function (v) { return /Natural|Online/i.test(v.name); };
+        var 같은 = vs.filter(function (v) { return 남자이름.test(v.name) === 남; });
+        var 후보 = 같은.filter(자연);
+        if (!후보.length) 후보 = 같은;
+        var 낮춤 = false;
+        if (!후보.length) { 후보 = vs.filter(자연); if (!후보.length) 후보 = vs; 낮춤 = 남; }
+        var v = 후보.length ? 후보[씨 % 후보.length] : null;
+        // 높낮이(1이 보통, 높을수록 가늘다) · 빠르기(1이 보통)
+        var 높이 = 나이 < 30 ? 1.1 : 나이 < 40 ? 1.03 : 나이 < 50 ? 0.97 : 나이 < 60 ? 0.92 : 0.86;
+        var 빠르기 = 나이 < 40 ? 1.05 : 나이 < 60 ? 1.0 : 0.9;
+        var 성향 = 값("tone");
+        if (성향 === "까다로움") { 빠르기 += 0.05; 높이 -= 0.03; }
+        if (성향 === "호의적") { 높이 += 0.03; 빠르기 -= 0.02; }
+        if (/영업|자영업|택시|쇼핑몰|장사|식당/.test(글)) 빠르기 += 0.05;
+        if (/은퇴|연금|교사|공무원|간호사/.test(글)) 빠르기 -= 0.03;
+        if (/대표|의사|과장|부장/.test(글)) 높이 -= 0.03;
+        if (/바쁘|급하|빠듯/.test(글)) 빠르기 += 0.05;
+        높이 += ((씨 >> 3) % 9 - 4) * 0.01;          // 같은 조건이어도 사람마다 조금씩
+        빠르기 += ((씨 >> 7) % 7 - 3) * 0.01;
+        if (낮춤) 높이 *= 0.72;                      // 남자 목소리가 없는 기기
+        높이 = Math.max(0.6, Math.min(1.4, 높이)); 빠르기 = Math.max(0.8, Math.min(1.25, 빠르기));
+        var 결 = (높이 < 0.9 ? "낮고 " : 높이 > 1.05 ? "높고 " : "") + (빠르기 < 0.95 ? "느리게" : 빠르기 > 1.06 ? "빠르게" : "보통 빠르기로");
+        return { voice: v, 높이: 높이, 빠르기: 빠르기,
+          설명: v ? 짧은이름(v) + " · " + 결 + (낮춤 ? " (남자 목소리가 없어 낮춘 여자 목소리)" : "") : "이 기기에 한국어 목소리가 없습니다 — 글로만 보입니다" };
+      }
       function 목소리목록() {
-        var 성별 = 값("sex"), vs = 한국어목소리();
-        var 점수 = function (v) {
-          var 맞음 = (성별 === "남성") === 남자이름.test(v.name);
-          return (맞음 ? 0 : 10) + (/Natural|Online/i.test(v.name) ? 0 : /Google/i.test(v.name) ? 1 : 2);
-        };
-        vs.sort(function (a, b) { return 점수(a) - 점수(b); });
-        var sel = $("voice"), 전 = sel.value;
-        sel.textContent = "";
-        if (네이버) { var nv = el("option", null, "네이버 목소리 — 성별·나이에 맞춘 사람 목소리"); nv.value = "__naver"; sel.appendChild(nv); }
-        vs.forEach(function (v) { var o = el("option", null, v.name); o.value = v.name; sel.appendChild(o); });
-        if (!vs.length && !네이버) { var o = el("option", null, "한국어 목소리 없음 — 글로만 보입니다"); o.value = ""; sel.appendChild(o); }
-        if (손댄목소리 && 전) sel.value = 전;
-        var 남자있음 = vs.some(function (v) { return 남자이름.test(v.name); });
+        var vs = 한국어목소리();
+        $("voice-auto").textContent = 네이버 ? "네이버 목소리 · 성별·나이에 맞춤" : 목소리고르기().설명;
         // 엣지 안내(2026-10-30 발표자: 클로바는 월 9만 원이라 엣지의 무료 Natural 목소리로) — 자연스러운 목소리가 없고 엣지가 아닐 때만
         var 자연스러움 = vs.some(function (v) { return /Natural|Online/i.test(v.name); });
         // 폰은 엣지로 열어도 그 목소리가 없다(기기 목소리를 쓴다) — 컴퓨터에서만 안내
         $("edge-note").hidden = 네이버 || 자연스러움 || /Edg\/|Android|iPhone|iPad|Mobile/.test(navigator.userAgent);
-        $("voice-note").hidden = 네이버 || !(성별 === "남성" && vs.length && !남자있음);
-        $("voice-note").textContent = "이 기기에는 남자 한국어 목소리가 없어 낮춘 여자 목소리로 읽습니다. 엣지 브라우저로 열면 남자 목소리(InJoon 등)가 있습니다.";
-      }
-      function 나이소리() {
-        var a = $("p-age").value;
-        var 나이 = parseInt(a, 10) || 40;
-        var 높이 = 나이 < 30 ? 1.08 : 나이 < 40 ? 1.0 : 나이 < 50 ? 0.96 : 나이 < 60 ? 0.9 : 0.85;
-        var 빠르기 = 나이 < 40 ? 1.04 : 나이 < 60 ? 1.0 : 0.92;
-        var v = 한국어목소리().filter(function (x) { return x.name === $("voice").value; })[0];
-        if (값("sex") === "남성" && v && !남자이름.test(v.name)) 높이 *= 0.72;   // 남자 목소리가 없을 때
-        return { 높이: 높이, 빠르기: 빠르기 };
       }
       if (소리) { 목소리목록(); 소리.onvoiceschanged = 목소리목록; }
       $("edge-copy").addEventListener("click", function () {
@@ -329,8 +340,9 @@
           .catch(function () { btn.textContent = location.href; });
       });
       window.mgAuth.api("/ai/voice").then(function (r) { 네이버 = !!r.켜짐; if (네이버) 목소리목록(); }).catch(function () {});
-      $("voice").addEventListener("change", function () { 손댄목소리 = true; });
-      document.querySelectorAll('input[name="sex"]').forEach(function (r) { r.addEventListener("change", function () { 손댄목소리 = false; 목소리목록(); }); });
+      ["p-age", "p-job", "p-income", "p-family", "p-note"].forEach(function (id) { $(id).addEventListener("change", 목소리목록); });
+      document.querySelectorAll('input[name="sex"], input[name="tone"]').forEach(function (r) { r.addEventListener("change", 목소리목록); });
+      $("voice-try").addEventListener("click", function () { 말하기("안녕하세요. 이런 목소리로 대답하겠습니다."); });
 
       // 상대 인물 — 상황을 고르면 어울리는 인물로 채우고, 「무작위」는 칸마다 하나씩 뽑는다
       function 인물채우기(s) {
@@ -338,7 +350,7 @@
         if (p.length < 6) return;
         document.querySelector('input[name="sex"][value="' + p[0] + '"]').checked = true;
         $("p-age").value = p[1]; $("p-job").value = p[2]; $("p-income").value = p[3]; $("p-family").value = p[4]; $("p-note").value = p[5];
-        손댄목소리 = false; 목소리목록(); 상대줄();
+        목소리목록(); 상대줄();
       }
       function 하나(list) { return list[Math.floor(Math.random() * list.length)]; }
       function 보기들(id) { return Array.prototype.map.call($(id).options, function (o) { return o.value || o.textContent; }); }
@@ -395,7 +407,7 @@
       }
       function 말하기(text, 이어서) {
         if (!이어서) 멈추기();
-        return $("voice").value === "__naver" ? 네이버말하기(text) : 브라우저말하기(text);
+        return 네이버 ? 네이버말하기(text) : 브라우저말하기(text);
       }
       function 브라우저말하기(text) {
         return new Promise(function (resolve) {
@@ -403,10 +415,9 @@
           소리.cancel();
           var u = new SpeechSynthesisUtterance(text);
           u.lang = "ko-KR";
-          u.voice = 소리.getVoices().filter(function (v) { return v.name === $("voice").value; })[0]
-            || 한국어목소리().sort(function (a, b) { return (남자이름.test(b.name) === (값("sex") === "남성")) - (남자이름.test(a.name) === (값("sex") === "남성")); })[0] || null;
-          var 나 = 나이소리();
-          u.rate = (Number($("rate").value) || 1) * 나.빠르기;
+          var 나 = 목소리고르기();
+          u.voice = 나.voice;
+          u.rate = 나.빠르기;
           u.pitch = 나.높이;
           u.onend = u.onerror = function () { resolve(); };
           소리.speak(u);
