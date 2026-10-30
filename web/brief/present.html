@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="brief.css">
   <script src="../assets/auth.js"></script>
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="brief.js?v=20261030a"></script>
+  <script src="brief.js?v=20261030b"></script>
 </head>
 <body class="brief-present">
   <header class="pr-topbar" id="topbar" hidden>
@@ -352,6 +352,40 @@
         applyScriptZoom();
       }
 
+      // 대본 그리기 — 「# 」 줄은 장 머리(작고 흐리게), 문단 앞 「[…]」은 박자 꼬리표, 「**…**」는 굵게.
+      // 말할 문장이 한눈에 들어오게 꼬리표·머리는 작게 떼어 둔다(2026-10-30 당근 방 부탁). 표시가 없는 글은 예전 그대로다.
+      function 대본그리기(box, text) {
+        box.textContent = "";
+        String(text).split(/\n{2,}/).forEach(function (문단) {
+          문단 = 문단.trim();
+          if (!문단) return;
+          var 줄들 = 문단.split("\n");
+          while (줄들.length && /^# /.test(줄들[0])) {
+            var h = document.createElement("div");
+            h.className = "pr-s-head";
+            h.textContent = 줄들.shift().slice(2);
+            box.appendChild(h);
+          }
+          if (!줄들.length) return;
+          var p = document.createElement("p");
+          p.className = "pr-s-p";
+          var 글 = 줄들.join("\n"), m = /^\[([^\]\n]{1,40})\]\s*/.exec(글);
+          if (m) {
+            var tag = document.createElement("span");
+            tag.className = "pr-s-beat";
+            tag.textContent = m[1];
+            p.appendChild(tag);
+            글 = 글.slice(m[0].length);
+          }
+          글.split(/(\*\*[^*]+\*\*)/).forEach(function (조각) {
+            if (!조각) return;
+            if (/^\*\*[^*]+\*\*$/.test(조각)) { var b = document.createElement("b"); b.textContent = 조각.slice(2, -2); p.appendChild(b); }
+            else p.appendChild(document.createTextNode(조각));
+          });
+          box.appendChild(p);
+        });
+      }
+
       function updateScript() {
         // 스크립트 PDF는 슬라이드와 분리 — 페이지를 넘겨도 그대로 둔다(직접 스크롤).
         if (scriptPdf) return;
@@ -363,7 +397,7 @@
         보인스크립트 = text || "";
         scriptBody.scrollTop = 0; // 다른 구간으로 바뀌었을 때만 맨 위부터
         if (text) {
-          scriptBody.textContent = text;
+          대본그리기(scriptBody, text);
           scriptBody.classList.remove("empty");
         } else {
           scriptBody.textContent = "이 페이지의 스크립트가 없습니다.";

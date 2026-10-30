@@ -531,6 +531,14 @@ body.brief-present {
   scrollbar-color: var(--brief-line-strong) transparent;
 }
 
+/* 대본 생김새 — 장 머리는 작고 흐리게, 박자 이름은 꼬리표, 말할 문장이 주인 */
+.pr-s-head { font-size: 0.62em; font-weight: 700; color: var(--brief-faint); letter-spacing: 0.02em; line-height: 1.6;
+  padding-bottom: 0.5em; margin-bottom: 0.9em; border-bottom: 1px solid var(--brief-line); white-space: normal; }
+.pr-s-p { margin: 0 0 1.1em; white-space: pre-wrap; word-break: keep-all; }
+.pr-s-beat { display: inline-block; font-size: 0.58em; font-weight: 700; line-height: 1.5; color: #f3c969;
+  border: 1px solid rgba(243, 201, 105, 0.45); border-radius: 3px; padding: 0.05em 0.5em; margin-right: 0.6em; vertical-align: 0.25em; white-space: nowrap; }
+.pr-s-p b { color: #ffffff; font-weight: 800; }
+
 .pr-script-body.empty {
   color: var(--brief-faint);
   font-size: 14px;

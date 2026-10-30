@@ -928,7 +928,13 @@
           if (child.tagName === "HR") { out.push("\n---\n"); return; }
           if (child.tagName === "BR") { out.push("\n"); return; }
           if (child.tagName === "SCRIPT" || child.tagName === "STYLE") return;
+          var cls = " " + (child.getAttribute("class") || "") + " ";
+          if (/ beat /.test(cls)) { out.push("[" + child.textContent.replace(/\s+/g, " ").trim() + "] "); return; }
+          if (/^(B|STRONG)$/.test(child.tagName)) { out.push("**" + child.textContent.replace(/\s+/g, " ").trim() + "**"); return; }
+          if (/^H[1-6]$/.test(child.tagName) || / sh /.test(cls)) out.push("\n# ");
+          if (/ (n|num) /.test(cls)) { out.push(child.textContent.trim() + " "); return; }   // 장 번호 칩 — 「2ABOUT ME」가 되지 않게
           walk(child);
+          if (/ sh /.test(cls)) { out.push("\n\n"); return; }
           if (문단.test(child.tagName)) out.push("\n\n");
           else if (BLOCK.test(child.tagName)) out.push("\n");
           else if (요소만) out.push(" ");
