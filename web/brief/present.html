@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="brief.css">
   <script src="../assets/auth.js"></script>
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="brief.js?v=20261030b"></script>
+  <script src="brief.js?v=20261030c"></script>
 </head>
 <body class="brief-present">
   <header class="pr-topbar" id="topbar" hidden>
@@ -274,8 +274,10 @@
               lastDoneSent = d.done !== false;
               기억({ slide: d.slide });
               protocol.sendPage(d.slide, lastBeatSent, lastDoneSent);
-              // 장이 바뀌면 그 장의 스크립트 구간으로 — 박자만 바뀔 때는 읽던 자리를 두고 간다
+              // 장이 바뀌면 그 장의 스크립트 구간으로 — 박자만 바뀔 때는 읽던 자리를 두고 간다(지금 박자 문단만 밝힌다)
+              지금박자 = d.beat || 0; 지금박자수 = d.beats || 0;
               if (장바뀜) { 스크립트장 = d.slide + 1; updateScript(); }
+              박자강조();
             }
           }
           if (typeof d.scroll === "number") {
@@ -386,6 +388,20 @@
         });
       }
 
+      // 지금 박자 문단 밝히기(2026-10-30 당근 방이 덱 엔진으로 확인한 규칙) — 클릭으로 넘기는 박자(data-beats N)가 있는 장에서,
+      // 대본의 박자 꼬리표 문단이 N+1개로 딱 맞을 때만 k번째(0부터) 문단 = beat k. 안 맞는 장(시간으로 저절로 켜지는 장)은 장 단위로만 둔다.
+      var 지금박자 = 0, 지금박자수 = 0;
+      function 박자강조() {
+        var box = document.getElementById("script-body");
+        var ps = Array.prototype.filter.call(box.querySelectorAll(".pr-s-p"), function (p) { return p.querySelector(".pr-s-beat"); });
+        var 맞음 = 지금박자수 > 0 && ps.length === 지금박자수 + 1;
+        ps.forEach(function (p, k) { p.classList.toggle("now", 맞음 && k === 지금박자); p.classList.toggle("dim", 맞음 && k !== 지금박자); });
+        if (맞음 && ps[지금박자]) {
+          var p = ps[지금박자], 위 = p.offsetTop - box.offsetTop;
+          if (위 < box.scrollTop || 위 + p.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = Math.max(0, 위 - 40);
+        }
+      }
+
       function updateScript() {
         // 스크립트 PDF는 슬라이드와 분리 — 페이지를 넘겨도 그대로 둔다(직접 스크롤).
         if (scriptPdf) return;
@@ -399,6 +415,7 @@
         if (text) {
           대본그리기(scriptBody, text);
           scriptBody.classList.remove("empty");
+          박자강조();
         } else {
           scriptBody.textContent = "이 페이지의 스크립트가 없습니다.";
           scriptBody.classList.add("empty");

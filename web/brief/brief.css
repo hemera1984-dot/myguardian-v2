@@ -538,6 +538,9 @@ body.brief-present {
 .pr-s-beat { display: inline-block; font-size: 0.58em; font-weight: 700; line-height: 1.5; color: #f3c969;
   border: 1px solid rgba(243, 201, 105, 0.45); border-radius: 3px; padding: 0.05em 0.5em; margin-right: 0.6em; vertical-align: 0.25em; white-space: nowrap; }
 .pr-s-p b { color: #ffffff; font-weight: 800; }
+.pr-s-p.dim { color: #8f8a80; }
+.pr-s-p.dim .pr-s-beat { color: #a8905a; border-color: rgba(168, 144, 90, 0.4); }
+.pr-s-p.now { color: #ffffff; }
 
 .pr-script-body.empty {
   color: var(--brief-faint);

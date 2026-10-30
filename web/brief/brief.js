@@ -337,7 +337,8 @@
     + "return !(s&&s.querySelector('[data-step]:not(.on)'));}\n"
     + "function ratio(){var e=document.scrollingElement||document.documentElement;"
     + "var r=e.scrollHeight-e.clientHeight;return r>0?Math.min(1,Math.max(0,e.scrollTop/r)):0;}\n"
-    + "function tell(){try{parent.postMessage({mgb:'state',slide:idx(),beat:박자(),done:다됨(),count:all().length,scroll:ratio()},'*');}catch(e){}}\n"
+    + "function 박자수(){var s=all()[idx()];return s&&s.dataset.beats?(+s.dataset.beats|0):0;}\n"
+    + "function tell(){try{parent.postMessage({mgb:'state',slide:idx(),beat:박자(),beats:박자수(),done:다됨(),count:all().length,scroll:ratio()},'*');}catch(e){}}\n"
     + "function key(k){document.body.dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true,cancelable:true}));}\n"
     // 목표 장까지 한 걸음씩 간다. 움직이지 않으면 그 문서가 화살표를 안 받는 것이므로 멈추고 알린다.
     // 한 번 눌러 안 움직여도 한 번은 더 눌러 본다 — 모션이 도는 중의 첫 누름은 「모션 즉시 완료」로
@@ -535,10 +536,11 @@
         if (d.scroll < 0 || d.scroll > 1) return;
         var beat = num(d.beat) && d.beat >= 0 && d.beat <= 999 ? Math.round(d.beat) : 0;
         var done = d.done !== false;
+        var beats = num(d.beats) && d.beats >= 0 && d.beats <= 999 ? Math.round(d.beats) : 0;
         frameState.set(win, {
           slide: Math.round(d.slide), beat: beat, done: done, count: Math.round(d.count), scroll: d.scroll
         });
-        if (onState) onState({ mgb: "state", slide: Math.round(d.slide), beat: beat, done: done, count: Math.round(d.count), scroll: d.scroll });
+        if (onState) onState({ mgb: "state", slide: Math.round(d.slide), beat: beat, beats: beats, done: done, count: Math.round(d.count), scroll: d.scroll });
         return;
       }
       if (d.mgb === "key") {
