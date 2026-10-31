@@ -344,7 +344,9 @@
     + "function ratio(){var e=document.scrollingElement||document.documentElement;"
     + "var r=e.scrollHeight-e.clientHeight;return r>0?Math.min(1,Math.max(0,e.scrollTop/r)):0;}\n"
     + "function 박자수(){var s=all()[idx()];return s&&s.dataset.beats?(+s.dataset.beats|0):0;}\n"
-    + "function tell(){try{parent.postMessage({mgb:'state',slide:idx(),beat:박자(),beats:박자수(),done:다됨(),count:all().length,scroll:ratio()},'*');}catch(e){}}\n"
+    + "function 확대글(){var j=document.querySelector('.cbj .j.pop');if(!j)return null;if(j.dataset.say)return [j.dataset.say];var o=[];"
+    + "j.querySelectorAll('*').forEach(function(e){if(e.children.length)return;var s=(e.textContent||'').replace(/\\s+/g,' ').trim();if(s&&s.length<=20&&o.indexOf(s)<0&&o.length<30)o.push(s);});return o;}\n"
+    + "function tell(){try{parent.postMessage({mgb:'state',slide:idx(),beat:박자(),beats:박자수(),done:다됨(),count:all().length,scroll:ratio(),확대:확대글()},'*');}catch(e){}}\n"
     + "function key(k){document.body.dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true,cancelable:true}));}\n"
     // 목표 장까지 한 걸음씩 간다. 움직이지 않으면 그 문서가 화살표를 안 받는 것이므로 멈추고 알린다.
     // 한 번 눌러 안 움직여도 한 번은 더 눌러 본다 — 모션이 도는 중의 첫 누름은 「모션 즉시 완료」로
@@ -378,7 +380,7 @@
     + "var 카드=t.closest('.cbj .j.on[data-step]');"
     + "var 연다=t.closest('[data-zoom]')||(카드&&카드.querySelector('.zw'));"
     + "var 열림=document.querySelector('.cbj .j.pop,.zbox.on,.zbox.open,.lb.open');"
-    + "if(!연다&&!열림)return;var p=길(t);if(p)try{parent.postMessage({mgb:'누름',path:p},'*');}catch(x){}},true);\n"
+    + "if(!연다&&!열림)return;var p=길(t);if(p)try{parent.postMessage({mgb:'누름',path:p},'*');}catch(x){}setTimeout(tell,60);setTimeout(tell,500);},true);\n"
     // 자료(하이퍼프레임)는 자기 발표자·청중 동기화를 갖고 있다 — 영상 재생·정지·위치까지
     // 맞추고, 청중 쪽은 음소거로 자동재생한다(막히면 풀기 단추). 다만 통로 이름을
     // location.pathname으로 짓는데 blob 문서는 그 값이 제각각이라 두 자료가 서로를 못 찾는다.
@@ -552,10 +554,11 @@
         var beat = num(d.beat) && d.beat >= 0 && d.beat <= 999 ? Math.round(d.beat) : 0;
         var done = d.done !== false;
         var beats = num(d.beats) && d.beats >= 0 && d.beats <= 999 ? Math.round(d.beats) : 0;
+        var 확대 = Array.isArray(d.확대) && d.확대.length <= 30 && d.확대.every(function (s) { return typeof s === "string" && s.length <= 40; }) ? d.확대.slice() : null;
         frameState.set(win, {
           slide: Math.round(d.slide), beat: beat, done: done, count: Math.round(d.count), scroll: d.scroll
         });
-        if (onState) onState({ mgb: "state", slide: Math.round(d.slide), beat: beat, beats: beats, done: done, count: Math.round(d.count), scroll: d.scroll });
+        if (onState) onState({ mgb: "state", slide: Math.round(d.slide), beat: beat, beats: beats, done: done, count: Math.round(d.count), scroll: d.scroll, 확대: 확대 });
         return;
       }
       if (d.mgb === "누름") {

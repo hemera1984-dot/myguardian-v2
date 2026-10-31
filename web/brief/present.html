@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="brief.css">
   <script src="../assets/auth.js"></script>
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="brief.js?v=20261031a"></script>
+  <script src="brief.js?v=20261031b"></script>
 </head>
 <body class="brief-present">
   <header class="pr-topbar" id="topbar" hidden>
@@ -284,6 +284,9 @@
               if (장바뀜) { 스크립트장 = d.slide + 1; updateScript(); }
               박자강조();
             }
+            // 카드 확대·닫힘은 장·박자가 그대로라 위 조건에 안 걸린다 — 따로 본다
+            var 확대글 = JSON.stringify(d.확대 || null);
+            if (확대글 !== 지난확대) { 지난확대 = 확대글; 지금확대 = d.확대 || null; 박자강조(); }
           }
           if (typeof d.scroll === "number") {
             var now = Date.now();
@@ -395,14 +398,19 @@
 
       // 지금 박자 문단 밝히기(2026-10-30 당근 방이 덱 엔진으로 확인한 규칙) — 클릭으로 넘기는 박자(data-beats N)가 있는 장에서,
       // 대본의 박자 꼬리표 문단이 N+1개로 딱 맞을 때만 k번째(0부터) 문단 = beat k. 안 맞는 장(시간으로 저절로 켜지는 장)은 장 단위로만 둔다.
-      var 지금박자 = 0, 지금박자수 = 0;
+      // 카드를 크게 띄웠으면(판례 카드) 그 카드 글과 박자 이름이 같은 문단을 밝힌다 — 클릭 박자보다 먼저
+      var 지금박자 = 0, 지금박자수 = 0, 지금확대 = null, 지난확대 = "null";
       function 박자강조() {
         var box = document.getElementById("script-body");
         var ps = Array.prototype.filter.call(box.querySelectorAll(".pr-s-p"), function (p) { return p.querySelector(".pr-s-beat"); });
-        var 맞음 = 지금박자수 > 0 && ps.length === 지금박자수 + 1;
-        ps.forEach(function (p, k) { p.classList.toggle("now", 맞음 && k === 지금박자); p.classList.toggle("dim", 맞음 && k !== 지금박자); });
-        if (맞음 && ps[지금박자]) {
-          var p = ps[지금박자], 위 = p.offsetTop - box.offsetTop;
+        var 고른 = -1;
+        if (지금확대) {
+          고른 = ps.findIndex(function (p) { return 지금확대.indexOf(p.querySelector(".pr-s-beat").textContent.trim()) >= 0; });
+        }
+        if (고른 < 0 && 지금박자수 > 0 && ps.length === 지금박자수 + 1) 고른 = 지금박자;
+        ps.forEach(function (p, k) { p.classList.toggle("now", 고른 >= 0 && k === 고른); p.classList.toggle("dim", 고른 >= 0 && k !== 고른); });
+        if (고른 >= 0 && ps[고른]) {
+          var p = ps[고른], 위 = p.offsetTop - box.offsetTop;
           if (위 < box.scrollTop || 위 + p.offsetHeight > box.scrollTop + box.clientHeight) box.scrollTop = Math.max(0, 위 - 40);
         }
       }
