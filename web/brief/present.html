@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="brief.css">
   <script src="../assets/auth.js"></script>
   <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="brief.js?v=20261030c"></script>
+  <script src="brief.js?v=20261031a"></script>
 </head>
 <body class="brief-present">
   <header class="pr-topbar" id="topbar" hidden>
@@ -251,6 +251,11 @@
             // 자료가 장 목록을 자기 안에 감추면 쪽 번호로 못 맞춘다 — 키를 그대로 넘긴다.
             // 내가 방금 넣은 키가 되돌아온 것이면 버린다. 두 번 보내면 두 장씩 넘어간다.
             if (Date.now() - 마지막넘김 > 400) 넘김방송(d.key);
+            return;
+          }
+          if (d.mgb === "누름") {
+            // 자료 안 확대 카드 누름 — 청중 자료의 같은 자리도 누른다
+            if (protocol) protocol.send누름(d.path);
             return;
           }
           if (d.mgb === "key") {

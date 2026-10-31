@@ -240,6 +240,9 @@
     // 몇 쪽인지 셀 수 없을 때 쓴다. 두 화면이 같은 장에서 시작해 같은 키를 받는다.
     "키": function (m) { return 넘김키.indexOf(m.key) >= 0; },
     // 자료가 알려 준 절대 위치. 어긋나도 다음 신호에 제자리로 온다.
+    "누름": function (m) {
+      return Array.isArray(m.path) && m.path.length <= 40 && m.path.every(function (n) { return isNum(n) && n >= 0 && n <= 5000 && n % 1 === 0; });
+    },
     "자리": function (m) {
       var p = m.pos;
       return !!p && typeof p.sequenceId === "string"
@@ -296,6 +299,9 @@
       },
       send가림: function (on) {
         transport.send({ v: 1, type: "가림", on: on });
+      },
+      send누름: function (path) {
+        transport.send({ v: 1, type: "누름", path: path });
       }
     };
   }
@@ -363,7 +369,16 @@
     + "if(d.크기)흔들기();"
     + "if(d.자리){if(컨)자리맞추기(d.자리);else 대기자리=d.자리;}"
     + "if(d.연결){연결=d.연결;잇기();}"
+    + "if(Array.isArray(d.누름)){var el=찾기(d.누름);if(el)el.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));}"
     + "if(d.ask)tell();});\n"
+    + "function 길(el){var p=[];while(el&&el!==document.body&&el.parentElement){p.unshift([].indexOf.call(el.parentElement.children,el));el=el.parentElement;}return el===document.body&&p.length<=40?p:null;}\n"
+    + "function 찾기(p){var el=document.body;for(var i=0;i<p.length&&el;i++)el=el.children[p[i]];return el||null;}\n"
+    // 창(window) 잡는 단계에서 듣는다 — 자료가 문서 잡는 단계에서 누름을 먹어도(카드 확대) 그보다 먼저 본다
+    + "window.addEventListener('click',function(e){if(!e.isTrusted||!e.target||!e.target.closest)return;var t=e.target;"
+    + "var 카드=t.closest('.cbj .j.on[data-step]');"
+    + "var 연다=t.closest('[data-zoom]')||(카드&&카드.querySelector('.zw'));"
+    + "var 열림=document.querySelector('.cbj .j.pop,.zbox.on,.zbox.open,.lb.open');"
+    + "if(!연다&&!열림)return;var p=길(t);if(p)try{parent.postMessage({mgb:'누름',path:p},'*');}catch(x){}},true);\n"
     // 자료(하이퍼프레임)는 자기 발표자·청중 동기화를 갖고 있다 — 영상 재생·정지·위치까지
     // 맞추고, 청중 쪽은 음소거로 자동재생한다(막히면 풀기 단추). 다만 통로 이름을
     // location.pathname으로 짓는데 blob 문서는 그 값이 제각각이라 두 자료가 서로를 못 찾는다.
@@ -543,6 +558,11 @@
         if (onState) onState({ mgb: "state", slide: Math.round(d.slide), beat: beat, beats: beats, done: done, count: Math.round(d.count), scroll: d.scroll });
         return;
       }
+      if (d.mgb === "누름") {
+        if (!Array.isArray(d.path) || d.path.length > 40 || !d.path.every(function (n) { return num(n) && n >= 0 && n <= 5000 && n % 1 === 0; })) return;
+        if (onState) onState({ mgb: "누름", path: d.path.slice() });
+        return;
+      }
       if (d.mgb === "key") {
         // 올려보낼 수 있는 키는 스크립트 조작용뿐이다. 장 넘김 키는 받지 않는다.
         if (KEYS_UP.indexOf(d.key) < 0) return;
@@ -613,6 +633,11 @@
     }
     [0, 1200, 3000, 6000, 10000, 15000, 22000].forEach(function (ms) { setTimeout(send, ms); });
     다리서면(win, send);
+  }
+
+  function html누름(win, path) {
+    if (!win) return;
+    try { win.postMessage({ mgb: "cmd", "누름": path }, "*"); } catch (e) { /* 닫힌 창 */ }
   }
 
   function htmlSendKey(win, key) {
@@ -1132,6 +1157,7 @@
     htmlSlideGoTo: htmlSlideGoTo,
     htmlScrollRatio: htmlScrollRatio,
     htmlSendKey: htmlSendKey,
+    html누름: html누름,
     html자리: html자리,
     html연결: html연결,
     htmlSetScroll: htmlSetScroll,
