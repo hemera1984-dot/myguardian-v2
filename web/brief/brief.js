@@ -336,14 +336,15 @@
     + "if(장기록>=0)return 장기록;"
     + "for(i=0;i<s.length;i++)if(s[i].classList.contains('on'))return i;"
     + "return s.length>1?0:-1;}\n"
-    // 박자 — 연구회 덱은 s._beat, 단계를 data-k로 적는 덱은 그 값
-    + "function 박자(){var s=all()[idx()];if(!s)return 0;if(s._beat!=null)return s._beat|0;return s.dataset.k!=null?(+s.dataset.k|0):0;}\n"
+    // 박자 — 연구회 덱은 s._beat, 단계를 data-k로 적는 덱은 그 값, 교육 덱은 켜진(.in) data-step 중 가장 큰 값.
+    // 박자 수는 data-beats(연구회)나 data-steps(교육) — 둘 다 「N이면 장 안 상태 N+1개」라 대본 박자 문단도 N+1개다
+    + "function 박자(){var s=all()[idx()];if(!s)return 0;if(s._beat!=null)return s._beat|0;if(s.dataset.k!=null)return +s.dataset.k|0;var m=0;s.querySelectorAll('[data-step].in').forEach(function(e){m=Math.max(m,+e.dataset.step|0);});return m;}\n"
     + "window.addEventListener('beat',function(){setTimeout(tell,0);},true);\n"
     + "function 다됨(){var s=all()[idx()];if(s&&s.dataset.k!=null)return s.classList.contains('done');"
-    + "return !(s&&s.querySelector('[data-step]:not(.on)'));}\n"
+    + "return !(s&&s.querySelector('[data-step]:not(.on):not(.in)'));}\n"
     + "function ratio(){var e=document.scrollingElement||document.documentElement;"
     + "var r=e.scrollHeight-e.clientHeight;return r>0?Math.min(1,Math.max(0,e.scrollTop/r)):0;}\n"
-    + "function 박자수(){var s=all()[idx()];return s&&s.dataset.beats?(+s.dataset.beats|0):0;}\n"
+    + "function 박자수(){var s=all()[idx()];var n=s&&(s.dataset.beats||s.dataset.steps);return n?(+n|0):0;}\n"
     + "function 확대글(){var j=document.querySelector('.cbj .j.pop');if(!j)return null;if(j.dataset.say)return [j.dataset.say];var o=[];"
     + "j.querySelectorAll('*').forEach(function(e){if(e.children.length)return;var s=(e.textContent||'').replace(/\\s+/g,' ').trim();if(s&&s.length<=20&&o.indexOf(s)<0&&o.length<30)o.push(s);});return o;}\n"
     + "function tell(){try{parent.postMessage({mgb:'state',slide:idx(),beat:박자(),beats:박자수(),done:다됨(),count:all().length,scroll:ratio(),확대:확대글()},'*');}catch(e){}}\n"
@@ -934,8 +935,9 @@
 
   // 스크립트 파일(.txt/.md): 줄 단독 "---"로 페이지 구간을 나눈다. 순서대로 1,2,3…페이지
   function parseScriptText(text) {
-    return String(text)
-      .split(/\r?\n\s*-{3,}\s*(?:\r?\n|$)/)
+    // 윈도에서 쓴 .md는 줄 끝이 \r\n — 그대로 두면 빈 줄로 문단을 못 나눠 박자 꼬리표가 글자로 남는다
+    return String(text).replace(/\r\n?/g, "\n")
+      .split(/\n\s*-{3,}\s*(?:\n|$)/)
       .map(function (s) { return s.trim(); });
   }
 
