@@ -15,6 +15,7 @@ import {
 } from "./db.js";
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { cleanArt, artPrompt, artAccent, artReviewPrompt, ART_SCHEMA, ART_REVIEW_SCHEMA } from "./artwork.js";
+import { chartSvg } from "./chart.js";
 
 const FILE = "./test-auth.db";
 rmSync(FILE, { force: true });
@@ -280,6 +281,22 @@ check("수정 요청 — 캡처는 올린 사람 것만 붙고, 표는 다시 �
   assert.deepEqual(purgeLooseReqShots(db, new Date(Date.now() + 1000).toISOString()), ["b.png"]);
   assert.deepEqual(deleteReqPost(db, id), ["a.png"]);
   assert.equal(listReqPosts(db, a.id).some((r) => r.id === id), false);
+});
+
+check("수치 그림 — 긴 칸 이름·이름표도 글을 버리지 않고, 맨 위 눈금은 최댓값 이상", () => {
+  const 글 = (svg) => [...svg.matchAll(/>([^<>]*)<\/text>/g)].map((m) => m[1]).join("").replace(/\s/g, "");
+  // 월간 8호: 「계약 종료까지 요건 유지」가 한 줄로 그려져 칸 밖으로 잘렸다
+  const 흐름 = chartSvg({ 종류: "흐름", 제목: "흐름", 칸: [
+    { 이름: "보험차익 발생", 설명: "짧은 설명" }, { 이름: "법률상 비과세 단서" }, { 이름: "시행령의 세 갈래" },
+    { 이름: "계약 종료까지 요건 유지", 설명: "요건을 하나라도 놓치면 보험차익은 다시 이자소득으로 과세됩니다" }] });
+  assert.ok(글(흐름).includes("계약종료까지요건유지") && 글(흐름).includes("다시이자소득으로과세됩니다"));
+  assert.ok(!흐름.includes(">계약 종료까지 요건 유지<"), "긴 칸 이름은 줄을 나눠야 한다");
+  const 막대 = chartSvg({ 종류: "막대", 제목: "열두 달", 항목: Array.from({ length: 12 }, (_, i) => ({ 이름: "2026년 " + (i + 1) + "월 신고 건수", 값: 10 + i })) });
+  assert.ok(글(막대).includes("2026년12월신고건수"));
+  // 3400에서 눈금이 3000에 멈춰 점이 그림 위로 뚫고 나갔다
+  const 선 = chartSvg({ 종류: "선", 제목: "선", 항목: [{ 이름: "가", 값: 3400 }, { 이름: "나", 값: 2850 }] });
+  const 눈금 = [...선.matchAll(/text-anchor="end">([\d,]+)</g)].map((m) => Number(m[1].replace(/,/g, "")));
+  assert.ok(Math.max(...눈금) >= 3400, "맨 위 눈금 " + Math.max(...눈금));
 });
 
 db.close();

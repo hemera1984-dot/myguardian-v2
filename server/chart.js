@@ -12,7 +12,7 @@
 // 강조는 chartSvg가 부를 때마다 기사 색으로 바꾼다(동기 함수라 요청끼리 섞이지 않는다).
 const 색 = { 강조: "#16296a", 기본: "#4f4f4f", 잉크: "#191919", 종이: "#FFFFFF" };
 const W = 1600, H = 900;
-const 여백 = { 좌: 150, 우: 90, 상: 190, 하: 150 };
+const 여백 = { 좌: 150, 우: 90, 상: 230, 하: 150 };   // 상 230: 가장 큰 값 글자가 「단위」 줄에 닿지 않게(190일 때 「100억」이 겹쳤다)
 
 // 진입 모션 — 한 번만 돈다(2026-08-31 결정). 끝난 모습이 그림의 완성형이므로
 // 늦게 도착해 모션을 놓쳐도 읽는 데 지장이 없다. 무한 반복하지 않는다.
@@ -41,7 +41,8 @@ function 눈금(최대) {
   const 자리 = Math.pow(10, Math.floor(Math.log10(최대)));
   const 단 = [1, 2, 2.5, 5, 10].map((m) => m * 자리).find((v) => 최대 <= v * 4) || 자리 * 10;
   const out = [];
-  for (let v = 0; v <= 최대 + 단 / 2; v += 단) out.push(v);
+  // 맨 위 눈금은 최댓값 이상 — 3400에서 3000에 멈춰 점·막대가 그림 위로 뚫고 나갔다
+  for (let v = 0; ; v += 단) { out.push(v); if (v >= 최대) break; }
   return out.length > 1 ? out : [0, 최대];
 }
 
@@ -58,7 +59,7 @@ function 머리(제목, 단위) {
 }
 
 function 꼬리(출처) {
-  return 출처 ? `<text x="${여백.좌}" y="${H - 46}" font-size="26" fill="#7a7a7a">${esc(출처)}</text>` : "";
+  return 출처 ? `<text x="${여백.좌}" y="${H - 24}" font-size="26" fill="#7a7a7a">${esc(출처)}</text>` : "";
 }
 
 // 막대 — 몇 개를 나란히 견줄 때
@@ -100,7 +101,8 @@ function 선(항목, 강조) {
   const 폭 = W - 여백.좌 - 여백.우;
   const 높 = H - 여백.상 - 여백.하;
   const y0 = 여백.상 + 높;
-  const X = (i) => 여백.좌 + (항목.length === 1 ? 폭 / 2 : (폭 * i) / (항목.length - 1));
+  // 점은 칸 가운데 — 양 끝 점이 축에 붙으면 값 글자가 축 눈금과 겹치고 이름표가 그림 밖으로 나갔다
+  const X = (i) => 여백.좌 + 폭 * (i + 0.5) / 항목.length;
   const Y = (v) => y0 - ((v - 최소) / (상한 - 최소 || 1)) * 높;
 
   let out = ticks.map((t) => {
@@ -122,7 +124,7 @@ function 선(항목, 강조) {
     return `<circle class="g-점" style="animation-delay:${늦}" cx="${n1(X(i))}" cy="${n1(Y(it.값))}" r="${r}" fill="${c}"/>`
       + ((강조 === i || i === 0 || i === 항목.length - 1)
           ? `<text class="g-값" style="animation-delay:${늦}" x="${n1(X(i))}" y="${n1(Y(it.값) - 32)}" font-size="34" font-weight="700" fill="${c}" text-anchor="middle">${esc(it.표기 || 축표기(it.값))}</text>` : "")
-      + 이름표(it.이름, X(i), y0 + 46, 항목.length === 1 ? 폭 : 폭 / (항목.length - 1) - 16);
+      + 이름표(it.이름, X(i), y0 + 46, 폭 / 항목.length - 16);
   }).join("");
   return out;
 }
@@ -224,12 +226,12 @@ function 맞춤(글, 폭, 크기, 최대줄, 최소) {
     const 줄 = 줄나눔(글, 폭, k);
     if (줄.length <= 최대줄) return { 크기: k, 줄 };
   }
-  return { 크기: 최소, 줄: 줄나눔(글, 폭, 최소).slice(0, 최대줄) };
+  return { 크기: 최소, 줄: 줄나눔(글, 폭, 최소) };   // 그래도 넘치면 줄을 늘린다 — 글을 버리지 않는다
 }
 
 // 축 아래 이름표 — 칸 폭 안에서 두 줄까지
 function 이름표(이름, x, y, 폭) {
-  const m = 맞춤(이름, 폭, 28, 2, 18);
+  const m = 맞춤(이름, 폭, 28, 2, 16);
   return m.줄.map((줄, k) => `<text x="${n1(x)}" y="${n1(y + k * m.크기 * 1.2)}" font-size="${m.크기}" fill="${색.잉크}" text-anchor="middle">${esc(줄)}</text>`).join("");
 }
 
