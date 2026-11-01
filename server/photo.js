@@ -2,7 +2,7 @@
 //
 // 기사 소재에 따라 사진 갈래가 다르다(헌법 「지면 이미지」):
 //   제품·작품 → 제작사 공식 페이지의 홍보 이미지(og:image) / 현장·사건·제도·개념 → 상업 이용·수정 허용 사진
-//   (위키미디어 공용 + Pexels — 11-01 「삽화보다 실제 사진」). Openverse는 이 PC·운영 서버 둘 다 응답이 없어 걷었다.
+//   (위키미디어 공용 + Pixabay·Pexels — 11-01 「삽화보다 실제 사진」). Openverse는 이 PC·운영 서버 둘 다 응답이 없어 걷었다.
 // 서버가 바깥 주소를 받아 오므로 내부망으로 새지 않게 막는다(안전받기).
 import { lookup } from "node:dns/promises";
 import { BlockList, isIP } from "node:net";
@@ -93,6 +93,20 @@ export function 대표그림(html, 페이지) {
 
 // ── 공용 사진(현장·사건) — 위키미디어 공용 + Openverse, 키 없이. 상업 이용·수정 허용만(cc0·pdm·by·by-sa) ──
 // Pexels — 상업 이용·수정 허용(Pexels 라이선스). 키가 서버 환경변수에 있을 때만 찾는다. 개념 기사의 일반 장면 사진은 위키미디어에 거의 없다
+// Pixabay — 상업 이용·수정 허용(Pixabay 콘텐츠 라이선스). 오래 걸어 두는 핫링크는 안 되고 받아서 쓰라는 규칙 — 우리는 미디어 창고에 받는다.
+// Pexels가 새 API 키 발급을 멈춰서(2026-11-01) 개념 기사의 일반 장면은 이쪽이 주력이다. 키(PIXABAY_KEY)가 있을 때만 찾는다.
+const PB = "https://pixabay.com/api/";
+async function 픽사베이(q) {
+  const key = process.env.PIXABAY_KEY;
+  if (!key) return [];
+  const r = await fetch(PB + "?" + new URLSearchParams({ key, q, image_type: "photo", orientation: "horizontal", safesearch: "true",
+    min_width: "1000", per_page: "10", lang: "en" }), { headers: UA, signal: AbortSignal.timeout(10000) });
+  if (!r.ok) throw new Error("Pixabay 응답 " + r.status);
+  return ((await r.json()).hits || []).filter((p) => p.largeImageURL && p.webformatURL).map((p) => ({
+    받을주소: p.largeImageURL, 미리보기: p.webformatURL, 가로: p.imageWidth, 세로: p.imageHeight, 제목: 글만(p.tags) || "Pixabay 사진", 원본: p.pageURL,
+    라이선스: "pixabay", 출처문구: `사진 ${글만(p.user) || "작자 미상"} · Pixabay`
+  }));
+}
 const PX = "https://api.pexels.com/v1/search";
 async function 펙셀(q) {
   const key = process.env.PEXELS_KEY;
@@ -124,10 +138,11 @@ async function 받아JSON(url) {
 export async function 공용사진(검색어) {
   const q = String(검색어 || "").trim().slice(0, 100);
   if (!q) return [];
-  const [wm, px] = await Promise.allSettled([
+  const [wm, px, pb] = await Promise.allSettled([
     받아JSON(WM + "?" + new URLSearchParams({ action: "query", format: "json", prop: "imageinfo", iiprop: "url|size|extmetadata",
       generator: "search", gsrsearch: q + " filetype:bitmap", gsrnamespace: "6", gsrlimit: "12", iiurlwidth: "1600" })),
-    펙셀(q)
+    펙셀(q),
+    픽사베이(q)
   ]);
   const 위키 = wm.status === "fulfilled" ? Object.values(wm.value.query?.pages || {}).sort((a, b) => (a.index || 0) - (b.index || 0)).map((p) => {
     const ii = p.imageinfo?.[0] || {}, m = ii.extmetadata || {};
@@ -139,12 +154,13 @@ export async function 공용사진(검색어) {
       제목: 글만(p.title).replace(/^File:|\.\w+$/g, ""), 원본: ii.descriptionurl, 라이선스: lic,
       출처문구: `사진 ${이름} · ${(라이선스이름[lic] + " " + (lic.startsWith("by") ? 판(m.LicenseShortName?.value) : "")).trim()} · 위키미디어 공용` };
   }).filter(Boolean) : [];
-  const 펙 = px.status === "fulfilled" ? px.value : [];
+  const 펙 = px.status === "fulfilled" ? px.value : [], 픽 = pb.status === "fulfilled" ? pb.value : [];
   if (px.status === "rejected") console.warn("Pexels 검색 실패:", px.reason.message);
-  if (!위키.length && !펙.length && wm.status === "rejected") throw new Error(wm.reason.message);
+  if (pb.status === "rejected") console.warn("Pixabay 검색 실패:", pb.reason.message);
+  if (!위키.length && !펙.length && !픽.length && wm.status === "rejected") throw new Error(wm.reason.message);
   // 번갈아 놓는다 — 눈 확인은 앞 12장만 보므로 한쪽이 앞을 다 차지하지 않게
   const 섞음 = [];
-  for (let i = 0; i < Math.max(위키.length, 펙.length); i++) { if (위키[i]) 섞음.push(위키[i]); if (펙[i]) 섞음.push(펙[i]); }
+  for (let i = 0; i < Math.max(위키.length, 펙.length, 픽.length); i++) [위키[i], 픽[i], 펙[i]].forEach((x) => x && 섞음.push(x));
   return 섞음.filter((x) => !금지된곳(x.받을주소));
 }
 
