@@ -7,9 +7,10 @@
   <link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700;900&display=swap">
   <link rel="stylesheet" href="../assets/platform.css">
   <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/care-time.css">
   <script src="../assets/platform.js"></script>
   <script src="../assets/auth.js"></script>
   <script src="../assets/care.js"></script>
@@ -340,7 +341,8 @@
             "요약": a["요약"] || [], "한마디": a["한마디"] || [], "본문": a["본문"] || [],
             "이미지": a["이미지"] || ""
           };
-          if (a["이미지캡션"]) o["이미지캡션"] = a["이미지캡션"];   // 데스크에 칸은 없지만 재발행 때 지우지 않는다
+          // 데스크에 칸은 없지만 재발행 때 지우지 않는다(캡션·사진 출처·편집장 선택 칸)
+          ["이미지캡션", "이미지출처", "형광", "뽑은글", "틀"].forEach(function (k) { if (a[k]) o[k] = a[k]; });
           return o;
         });
         var 목록항목 = {
@@ -354,6 +356,7 @@
           "본문파일": "data/care/issues/" + d.id + ".json"
         };
         if (d["커버이미지"]) 목록항목["커버이미지"] = d["커버이미지"];
+        ["커버제목", "커버덱", "커버위치", "커버출처"].forEach(function (k) { if (d[k]) 목록항목[k] = d[k]; });
         // 호마다 맞춘 카톡 인사·옛 사이트 원문 주소 — 발행된 호를 다시 열었을 때만 실려 있다
         if (d["인사"]) 목록항목["인사"] = d["인사"];
         if (d["원문링크"]) 목록항목["원문링크"] = d["원문링크"];
@@ -656,10 +659,11 @@
                 "부제": a["부제"] || "", "요약": a["요약"] || [], "한마디": a["한마디"] || [],
                 "본문": a["본문"] || [], "이미지": a["이미지"] || "", "방향": ""
               };
-              if (a["이미지캡션"]) o["이미지캡션"] = a["이미지캡션"];
+              ["이미지캡션", "이미지출처", "형광", "뽑은글", "틀"].forEach(function (k) { if (a[k]) o[k] = a[k]; });
               return o;
             })
           };
+          ["커버제목", "커버덱", "커버위치", "커버출처"].forEach(function (k) { if (meta[k]) d2[k] = meta[k]; });
           // 데스크에 칸이 없는 목록 필드도 옮긴다 — 안 옮기면 재발행 때 사라진다
           if (meta["인사"]) d2["인사"] = meta["인사"];
           if (meta["원문링크"]) d2["원문링크"] = meta["원문링크"];

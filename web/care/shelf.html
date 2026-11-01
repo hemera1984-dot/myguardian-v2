@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css">
   <link rel="stylesheet" href="../assets/platform.css">
   <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&display=swap">
+  <link rel="stylesheet" href="../assets/care-time.css">
   <script src="../assets/platform.js"></script>
   <script src="../assets/auth.js"></script>
   <script src="../assets/care.js"></script>
@@ -103,7 +105,7 @@
         return m ? m[1] + "년 " + Number(m[2]) + "월 " + Number(m[3]) + "일" : String(iso || "");
       }
 
-      // 표지 카드 한 장 — 표지가 없는 호는 care.coverHtml이 바우하우스 표지를 만든다
+      // 표지 카드 한 장 — 표지가 없는 호는 care.coverHtml이 타임지풍 표지를 만든다
       function coverCard(i, latest) {
         return '<article class="shelf__item' + (latest ? " is-latest" : "") + '">'
           + '<a class="shelf__link" href="' + issueHref(i.id) + '">'
