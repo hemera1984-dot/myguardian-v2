@@ -19,7 +19,7 @@ import {
   listReqPosts, getReqPost, addReqPost, editReqPost, answerReqPost, deleteReqPost, toggleReqVote,
   addReqShot, getReqShot, looseReqShots, attachReqShots, purgeLooseReqShots
 } from "./db.js";
-import { cleanArt, artPrompt, ART_SCHEMA, svgToPng, artReviewPrompt, ART_REVIEW_SCHEMA } from "./artwork.js";
+import { cleanArt, artPrompt, artAccent, ART_SCHEMA, svgToPng, artReviewPrompt, ART_REVIEW_SCHEMA } from "./artwork.js";
 import { chartSvg } from "./chart.js";
 import { 번호가리기 } from "./mask.js";
 import { 안전받기, 대표그림, 공용사진, 금지된곳, 그림인가 } from "./photo.js";
@@ -1584,7 +1584,7 @@ async function route(req, res, url) {
     if (!spec["그릴수있나"]) {
       return send(res, 200, { "그림없음": true, "사유": spec["사유"] || "쓸 수치가 없습니다." });
     }
-    const svg = chartSvg(spec);
+    const svg = chartSvg(spec, artAccent(body["섹션색"], body["채널"]));
     if (!svg) return send(res, 200, { "그림없음": true, "사유": "그릴 것이 둘 미만입니다." });
     const 저장 = saveMedia(Buffer.from(svg, "utf8"), ".svg");
     const 개수 = spec["종류"] === "흐름" ? (spec["칸"] || []).length : (spec["항목"] || []).length;
@@ -1608,8 +1608,8 @@ async function route(req, res, url) {
     }
 
     const 양식 = [
-      "이 잡지의 지면 양식은 바우하우스다: 삼원색(빨강 #E63329, 파랑 #005BBB, 노랑 #F5C518)과",
-      "검정·아이보리, 원·사각·삼각 같은 기하 도형, 평면적이고 절제된 구성.",
+      "이 잡지의 지면은 흰 종이 위 고급 잡지 칼럼이다: 흰 바탕, 먹선, 강조색은 한 가지만,",
+      "평면적이고 절제된 구성, 여백이 넉넉한 에디토리얼 일러스트.",
       "사진이 아니라 그래픽·일러스트 계열이어야 지면과 어울린다."
     ].join(" ");
 
@@ -1673,7 +1673,8 @@ async function route(req, res, url) {
       return send(res, 400, { error: 종류 === "표지" ? "칼럼 제목이 먼저 필요합니다." : "제목이 먼저 필요합니다." });
     }
     const 지난 = 지난장면(채널);
-    const prompt = artPrompt({ 종류, 채널, 제목, 카테고리, 요약, 본문, 제목들, 지난 });
+    const 섹션색 = artAccent(body["섹션색"], 채널);    // 기사 섹션 색 · 표지는 채널 테두리 색
+    const prompt = artPrompt({ 종류, 채널, 제목, 카테고리, 요약, 본문, 제목들, 지난, 섹션색 });
     // 그린 뒤 PNG로 바꿔 AI가 눈으로 본다 — 글과 겉돌거나 버릇 구도면 이유를 붙여 한 번만 다시 그린다.
     // 빈 그림(마크업 무너짐)은 다시 그림으로 세지 않고 한 번 더 그린다. 검수가 실패해도 그림은 낸다.
     let 고칠 = "", 판 = null, 다시그림 = 0;
@@ -1685,7 +1686,7 @@ async function route(req, res, url) {
         if (r.error === 422) return send(res, 422, { error: "이 내용으로는 삽화를 만들 수 없습니다." });
         return send(res, 502, { error: "삽화를 만들지 못했습니다. 잠시 후 다시 시도하세요." });
       }
-      const svg = cleanArt(r.value["svg"], 종류);
+      const svg = cleanArt(r.value["svg"], 종류, 섹션색);
       if (!svg) { console.warn(`삽화 비어 다시 그림(${시도 + 1}) — ${me.email}`); continue; }
       const png = await svgToPng(svg);
       let 검수 = null;

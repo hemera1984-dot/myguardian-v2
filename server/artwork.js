@@ -7,10 +7,18 @@
 
 import { spawn } from "node:child_process";
 
-export const ART_COLORS = {
-  "빨강": "#E63329", "파랑": "#005BBB", "노랑": "#F5C518",
-  "잉크": "#111111", "종이": "#F4F1EA"
+// 흰 종이 + 먹 + 그 기사의 섹션 색 하나(2026-11-01 「케어센터 고도화」 — 바우하우스 삼원색을 걷었다)
+export const ART_COLORS = { "잉크": "#191919", "회색": "#8c8c8c", "종이": "#FFFFFF" };
+// 섹션 색(web/assets/care.js SEC_COLORS) + 표지 테두리 색(주간 네이비·월간 버건디) → 옅은 짝
+export const ART_ACCENTS = {
+  "#b3261e": "#f7dcd8", "#1f4e9c": "#dbe6f7", "#5b3f8c": "#e7def4", "#1d6b4c": "#d6eee2",
+  "#16296a": "#e8ebf5", "#7a1f2b": "#f2e1e3"
 };
+export function artAccent(v, 채널) {
+  const s = String(v || "").toLowerCase();
+  if (Object.hasOwn(ART_ACCENTS, s)) return s;
+  return String(채널 || "").startsWith("월간") ? "#7a1f2b" : "#16296a";
+}
 export const ART_SIZE = { "칼럼": [1600, 900], "표지": [1200, 1600] };
 // 되풀이된 구도 — 운영 삽화에서 실제로 반복된 것(2026-10-19 주간 21·22호 6장 확인)
 const ART_HABITS = ["오른쪽 위 모서리에 걸쳐 잘린 큰 원", "왼쪽 위의 세로로 긴 색 기둥", "왼쪽 아래 파란 네모"];
@@ -32,7 +40,8 @@ export function svgToPng(svg) {
   });
 }
 
-const PALETTE = Object.values(ART_COLORS).map((h) => [h, parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+const rgb = (h) => [h, parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const palette = (accent) => [...Object.values(ART_COLORS), accent, ART_ACCENTS[accent]].map(rgb);
 const TAGS = new Set(["g", "path", "rect", "circle", "ellipse", "line", "polyline", "polygon",
   "defs", "clipPath", "linearGradient", "radialGradient", "stop"]);
 const DRAWN = new Set(["path", "rect", "circle", "ellipse", "line", "polyline", "polygon"]);
@@ -52,10 +61,11 @@ const ATTRS = {
   "clip-path": /^url\(#[A-Za-z][\w-]{0,40}\)$/
 };
 const COLOR_ATTRS = new Set(["fill", "stroke", "stop-color"]);
-const NAMED = { black: "#111111", white: "#F4F1EA", red: "#E63329", blue: "#005BBB", yellow: "#F5C518" };
+const NAMED = { black: "#000000", white: "#ffffff", red: "#ff0000", blue: "#0000ff", yellow: "#ffff00",
+  green: "#008000", gray: "#808080", grey: "#808080" };
 
 // 팔레트 밖 색은 가장 가까운 팔레트 색으로 끌어온다 — 거부하면 그림이 통째로 비어 버린다
-function paletteColor(v) {
+function paletteColor(v, PALETTE) {
   const s = String(v).trim();
   if (s === "none" || s === "transparent") return "none";
   if (/^url\(#[A-Za-z][\w-]{0,40}\)$/.test(s)) return s;
@@ -74,8 +84,9 @@ function paletteColor(v) {
 }
 
 // AI가 쓴 SVG를 받아 안전한 SVG로 다시 쓴다. 그릴 것이 셋 미만이면 null.
-export function cleanArt(raw, 종류) {
+export function cleanArt(raw, 종류, accent = artAccent()) {
   const [W, H] = ART_SIZE[종류] || ART_SIZE["칼럼"];
+  const PALETTE = palette(artAccent(accent));
   const src = String(raw || "").slice(0, 300000)
     .replace(/<!--[\s\S]*?-->/g, "").replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, "")
     .replace(/<\?[\s\S]*?\?>/g, "").replace(/<!DOCTYPE[\s\S]*?>/gi, "");
@@ -97,7 +108,7 @@ export function cleanArt(raw, 종류) {
     let a;
     while ((a = aRe.exec(attrText))) {
       const k = a[1], v = (a[2] ?? a[3] ?? "").trim();
-      if (COLOR_ATTRS.has(k)) { attrs.push(`${k}="${paletteColor(v)}"`); continue; }
+      if (COLOR_ATTRS.has(k)) { attrs.push(`${k}="${paletteColor(v, PALETTE)}"`); continue; }
       const rule = ATTRS[k];
       if (rule && rule.test(v)) attrs.push(`${k}="${v}"`);
     }
@@ -115,12 +126,13 @@ export function cleanArt(raw, 종류) {
 // 채널마다 무게를 다르게 준다 — 일간은 가볍게, 월간은 공들여
 const CHANNEL_TONE = {
   "일간": "일간은 매일 나가는 한 꼭지다. 사물 하나를 크게, 요소는 적게(15~30개) 가볍게 그린다.",
-  "주간": "주간은 바우하우스 포스터처럼 그린다. 사물 하나에 큰 색면 둘셋을 받쳐 강하게(20~50개).",
+  "주간": "주간은 잡지 칼럼 일러스트처럼 그린다. 사물 하나를 크게, 강조색 한 곳으로 또렷하게(20~50개).",
   "월간": "월간은 유통기한이 긴 주제를 다룬다. 사물 둘셋이 관계를 이루는 장면으로 공들여(30~70개)."
 };
 
-export function artPrompt({ 종류, 채널, 제목, 카테고리, 요약, 본문, 제목들, 지난 }) {
+export function artPrompt({ 종류, 채널, 제목, 카테고리, 요약, 본문, 제목들, 지난, 섹션색 }) {
   const [W, H] = ART_SIZE[종류] || ART_SIZE["칼럼"];
+  const 강조 = artAccent(섹션색, 채널), 옅은 = ART_ACCENTS[강조];
   const 톤 = CHANNEL_TONE[Object.keys(CHANNEL_TONE).find((k) => String(채널).startsWith(k))] || CHANNEL_TONE["주간"];
   const 표지 = 종류 === "표지";
   return [
@@ -142,11 +154,13 @@ export function artPrompt({ 종류, 채널, 제목, 카테고리, 요약, 본문
     "돋보기·전구·물음표·체크 표시·톱니바퀴처럼 어느 글에나 붙는 소품은 쓰지 않는다 — 이 글에만 있는 사물을 찾는다.",
     "사물은 한눈에 그것으로 읽혀야 한다(뇌는 나무처럼 보이지 않게, 주름진 뇌 모양 그대로).",
     "",
-    "양식 — 바우하우스 평면 그래픽:",
-    "- 색은 다섯뿐: 빨강 #E63329, 파랑 #005BBB, 노랑 #F5C518, 잉크 #111111, 종이 #F4F1EA. 다른 색을 쓰지 않는다.",
-    "- 사물은 원·사각·삼각·굵은 선으로 짓는다. 평면이다(그림자·질감·원근 없음). 윤곽선을 쓰면 잉크색, 굵기 8~16.",
-    "- 사람은 얼굴 없는 기하 인형이다(원 머리 + 사다리꼴 몸). 실존 인물을 닮게 그리지 않는다.",
-    "- 주인공 사물이 화면의 40~60%를 차지한다. 비대칭으로 앉히고, 큰 색면 하나는 화면 밖으로 걸쳐 나가게 한다.",
+    "양식 — 흰 종이 위 고급 잡지 칼럼 일러스트:",
+    `- 색은 다섯뿐: 종이 #FFFFFF, 먹 #191919, 회색 #8c8c8c, 이 기사의 색 ${강조}, 그 옅은 색 ${옅은}. 다른 색을 쓰지 않는다.`,
+    "- 바탕은 흰 종이다. 화면을 색으로 덮지 않는다 — 색면은 주인공을 받치는 한두 곳만.",
+    "- 사물은 먹선과 단순한 면으로 짓는다. 평면이다(그림자·질감·원근 없음). 선 굵기 6~12.",
+    `- 강조색 ${강조}은 주인공의 핵심 한 곳에만 쓴다. 나머지는 먹·회색·옅은 색.`,
+    "- 사람은 얼굴 없는 단순한 인형이다(원 머리 + 사다리꼴 몸). 실존 인물을 닮게 그리지 않는다.",
+    "- 주인공 사물이 화면의 40~60%를 차지한다. 비대칭으로 앉히고 흰 여백을 넉넉히 둔다.",
     "- 받침 색면의 자리·모양은 장면에 맞춰 매번 새로 정한다. 이런 버릇을 되풀이하지 않는다: " + ART_HABITS.join(", ") + ".",
     ...(지난 && 지난.length
       ? ["- 최근 호에 이미 그린 것이다. 같은 사물, 같은 자리·모양의 받침 색면을 다시 쓰지 않는다:",
@@ -161,7 +175,7 @@ export function artPrompt({ 종류, 채널, 제목, 카테고리, 요약, 본문
     "속성은 좌표·fill·stroke·stroke-width·opacity·transform·clip-path 정도만. 좌표는 viewBox 기준 정수.",
     "쓰지 않는 것: 글자(text)·숫자·로고·통화 기호, image, filter, style, script, use, 외부 참조. 넣어도 서버가 지운다.",
     `svg 칸에는 <svg viewBox="0 0 ${W} ${H}"> 로 시작하는 완결된 SVG 원문만 넣는다. 배경은 첫 요소로 화면 전체를 덮는 rect.`,
-    "구도 칸에는 주인공 사물의 자리와 받침 색면의 자리·모양을 한국어 한 줄로(예: 주인공 왼쪽 가운데, 노랑 반원이 아래 가장자리에 걸침).",
+    "구도 칸에는 주인공 사물의 자리와 받침 색면의 자리·모양을 한국어 한 줄로(예: 주인공 왼쪽 가운데, 옅은 색 반원이 아래에 받침).",
     "의도 칸에는 무엇을 왜 그렸는지 한국어 한 줄."
   ].filter((l) => l !== "").join("\n");
 }

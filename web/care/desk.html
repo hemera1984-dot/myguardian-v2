@@ -1041,7 +1041,8 @@
         var a = S.draft["기사"][Number(target.slice(4))];
         // 본문 앞부분까지 넘긴다 — 제목만으로 그리면 글과 겉돈다
         var 본문 = (a["본문"] || []).map(function (b) { return String(b.x || ""); }).join("\n").slice(0, 4000);
-        return { "종류": "칼럼", "채널": chFull(), "제목": a["제목"],
+        var 색 = window.care.sectionColors(S.draft["기사"])[Number(target.slice(4))];
+        return { "종류": "칼럼", "채널": chFull(), "제목": a["제목"], "섹션색": 색 ? 색.c : "",
           "카테고리": a["카테고리"] || "", "요약": fromLines(a["요약"]) || a["부제"] || "", "본문": 본문 };
       }
 
@@ -1115,7 +1116,8 @@
         var id = S.draft.id, old = btn.textContent;
         btn.disabled = true; btn.textContent = "그리는 중";
         slotNote(target, "기사 속 수치를 찾아 그리고 있습니다.");
-        window.mgAuth.api("/ai/chart", { method: "POST", body: { "제목": a["제목"], "본문": a["본문"] } })
+        window.mgAuth.api("/ai/chart", { method: "POST", body: { "제목": a["제목"], "본문": a["본문"], "채널": chFull(),
+          "섹션색": (window.care.sectionColors(S.draft["기사"])[Number(target.slice(4))] || {}).c || "" } })
           .then(function (d) {
             if (d["그림없음"]) { slotNote(target, "그릴 수치가 없습니다 — " + (d["사유"] || ""), true); return; }
             var ok = setImage(target, d["주소"], id);

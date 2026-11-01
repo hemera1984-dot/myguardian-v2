@@ -863,6 +863,7 @@
   window.care = {
     CAT_LABEL: CAT_LABEL,
     quietRuns: quietRuns,
+    sectionColors: sectionColors,
     initDeck: initDeck,
     displayCat: displayCat,
     mediaSrc: mediaSrc,

@@ -8,7 +8,9 @@
 // 색은 팔레트 밖으로 나가지 못한다(헌법). 값이 둘 미만이면 아예 그리지 않는다 —
 // 가짜 수치로 채운 그림을 만들지 않는다(헌법: 밀도는 실데이터로만).
 
-const 색 = { 빨강: "#E63329", 파랑: "#005BBB", 노랑: "#F5C518", 잉크: "#111111", 종이: "#F4F1EA" };
+// 흰 종이 + 먹 + 그 기사의 섹션 색 하나(2026-11-01 「케어센터 고도화」 — 바우하우스 삼원색을 걷었다).
+// 강조는 chartSvg가 부를 때마다 기사 색으로 바꾼다(동기 함수라 요청끼리 섞이지 않는다).
+const 색 = { 강조: "#16296a", 기본: "#4f4f4f", 잉크: "#191919", 종이: "#FFFFFF" };
 const W = 1600, H = 900;
 const 여백 = { 좌: 150, 우: 90, 상: 190, 하: 150 };
 
@@ -79,7 +81,7 @@ function 막대(항목, 강조) {
     const h = (it.값 / 상한) * 높;
     const x = 여백.좌 + 칸 * i + (칸 - 막) / 2;
     const y = y0 - h;
-    const c = (강조 === i) ? 색.빨강 : 색.파랑;
+    const c = (강조 === i) ? 색.강조 : 색.기본;
     const 늦 = (0.07 * i).toFixed(2) + "s";
     return `<rect class="g-막대" style="animation-delay:${늦};transform-origin:${n1(x + 막 / 2)}px ${n1(y0)}px" x="${n1(x)}" y="${n1(y)}" width="${n1(막)}" height="${n1(h)}" fill="${c}"/>`
       + `<text class="g-값" style="animation-delay:${(0.07 * i + 0.5).toFixed(2)}s" x="${n1(x + 막 / 2)}" y="${n1(y - 20)}" font-size="34" font-weight="700" fill="${c}" text-anchor="middle">${esc(it.표기 || 축표기(it.값))}</text>`
@@ -111,9 +113,9 @@ function 선(항목, 강조) {
   for (let i = 1; i < 항목.length; i++) {
     길이 += Math.hypot(X(i) - X(i - 1), Y(항목[i].값) - Y(항목[i - 1].값));
   }
-  out += `<polyline class="g-선" style="--len:${n1(길이)}" points="${항목.map((it, i) => `${n1(X(i))},${n1(Y(it.값))}`).join(" ")}" fill="none" stroke="${색.파랑}" stroke-width="7" stroke-linejoin="round"/>`;
+  out += `<polyline class="g-선" style="--len:${n1(길이)}" points="${항목.map((it, i) => `${n1(X(i))},${n1(Y(it.값))}`).join(" ")}" fill="none" stroke="${색.기본}" stroke-width="7" stroke-linejoin="round"/>`;
   out += 항목.map((it, i) => {
-    const c = (강조 === i) ? 색.빨강 : 색.파랑;
+    const c = (강조 === i) ? 색.강조 : 색.기본;
     const r = (강조 === i) ? 18 : 12;
     const 늦 = (0.9 * (i / Math.max(1, 항목.length - 1)) + 0.2).toFixed(2) + "s";
     return `<circle class="g-점" style="animation-delay:${늦}" cx="${n1(X(i))}" cy="${n1(Y(it.값))}" r="${r}" fill="${c}"/>`
@@ -133,7 +135,7 @@ function 견줌(항목) {
   const y = 여백.상 + 60;
   return [a, b].map((it, i) => {
     const w = (it.값 / 최대) * 폭;
-    const c = i === 0 ? 색.파랑 : 색.빨강;
+    const c = i === 0 ? 색.기본 : 색.강조;
     const ty = y + i * (줄높 + 110);
     const 늦 = (0.18 * i).toFixed(2) + "s";
     return `<text x="${여백.좌}" y="${n1(ty - 22)}" font-size="34" fill="${색.잉크}">${esc(it.이름)}</text>`
@@ -158,7 +160,7 @@ function 흐름(칸들, 강조) {
     const x = 여백.좌 + (칸폭 + 화살) * i;
     const 막힘 = !!c.막힘;
     const 켬 = 강조 === i;
-    const 면 = 막힘 ? 색.빨강 : (켬 ? 색.파랑 : 색.종이);
+    const 면 = 막힘 ? 색.강조 : (켬 ? 색.기본 : 색.종이);
     const 글 = (막힘 || 켬) ? 색.종이 : 색.잉크;
     const 늦 = (0.16 * i).toFixed(2) + "s";
     out += `<g class="g-칸" style="animation-delay:${늦}">`
@@ -189,7 +191,8 @@ function 줄나눔(글, 폭) {
   return 줄.slice(0, 3);
 }
 
-export function chartSvg(spec) {
+export function chartSvg(spec, 강조색 = "#16296a") {
+  색.강조 = 강조색;
   // 흐름은 값이 없다 — 칸 이름만으로 그린다. 둘 미만이면 그리지 않는 것은 같다.
   if (spec && spec["종류"] === "흐름") {
     const 칸들 = (Array.isArray(spec["칸"]) ? spec["칸"] : [])

@@ -14,7 +14,7 @@ import {
   addReqShot, attachReqShots, looseReqShots, purgeLooseReqShots
 } from "./db.js";
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { cleanArt, artPrompt, artReviewPrompt, ART_SCHEMA, ART_REVIEW_SCHEMA } from "./artwork.js";
+import { cleanArt, artPrompt, artAccent, artReviewPrompt, ART_SCHEMA, ART_REVIEW_SCHEMA } from "./artwork.js";
 
 const FILE = "./test-auth.db";
 rmSync(FILE, { force: true });
@@ -139,12 +139,16 @@ check("삽화 — AI가 쓴 SVG는 허용 목록으로 다시 조립한다", () 
     <g transform="rotate(12 800 450)"><path d="M0 0 L100 100 Z" fill="white"/>
     <image href="http://evil/x.png"/><use href="#a"/><polygon points="1,2 3,4 5,6" fill="#005bbb"/>
     <foreignObject><div>x</div></foreignObject>`;
-  const svg = cleanArt(raw, "칼럼");
+  const svg = cleanArt(raw, "칼럼", "#1f4e9c");
   assert.ok(svg, "그릴 것이 있으면 나온다");
   assert.ok(!/script|onload|onclick|style=|javascript|http|<text|<image|<use|foreignObject|글자/i.test(svg.replace('xmlns="http://www.w3.org/2000/svg"', "")), svg);
-  assert.ok(svg.includes('fill="#E63329"'), "팔레트 밖 빨강은 가장 가까운 빨강으로");
-  assert.ok(svg.includes('fill="#F4F1EA"') && svg.includes('fill="#005BBB"'), "white·소문자 hex도 팔레트로");
-  assert.ok(svg.includes('stroke="#111111"'), "어두운 색은 잉크로");
+  assert.ok(!/E63329|F5C518|F4F1EA/i.test(svg), "바우하우스 색은 남지 않는다");
+  assert.ok(svg.includes('fill="#1f4e9c"'), "파랑 계열은 그 기사의 섹션 색으로");
+  assert.ok(svg.includes('fill="#FFFFFF"'), "white·크림 바탕은 흰 종이로");
+  assert.ok(svg.includes('stroke="#191919"'), "어두운 색은 먹으로");
+  assert.equal(artAccent("#1F4E9C", "주간"), "#1f4e9c", "섹션 색은 받는다");
+  assert.equal(artAccent("#ff00ff", "월간 안창민"), "#7a1f2b", "모르는 색이면 채널 테두리 색(월간 버건디)");
+  assert.equal(artAccent("", "주간 안창민"), "#16296a", "없으면 주간 네이비");
   assert.ok(svg.includes("</g></svg>"), "닫히지 않은 g는 서버가 닫는다");
   assert.ok(svg.includes('width="1600" height="900"'), "칼럼은 16:9 판형");
   assert.ok(cleanArt("<svg><rect/><rect/></svg>", "표지") === null, "그릴 것이 셋 미만이면 없다");
@@ -153,7 +157,8 @@ check("삽화 — AI가 쓴 SVG는 허용 목록으로 다시 조립한다", () 
 
 check("삽화 — 지난 호 장면을 그리는 쪽·검수하는 쪽에 보여 주고, 검수는 추측부터 쓴다", () => {
   const 지난 = [{ "장면": "모래시계와 동전", "구도": "주인공 왼쪽, 노랑 원 오른쪽 위" }];
-  const p = artPrompt({ 종류: "칼럼", 채널: "주간 안창민", 제목: "연금 언제 받나", 지난 });
+  const p = artPrompt({ 종류: "칼럼", 채널: "주간 안창민", 제목: "연금 언제 받나", 지난, 섹션색: "#1d6b4c" });
+  assert.ok(p.includes("#1d6b4c") && p.includes("#d6eee2") && !p.includes("바우하우스"), "섹션 색·옅은 짝으로 그리라고 한다");
   assert.ok(p.includes("모래시계와 동전") && p.includes("노랑 원 오른쪽 위"), "지난 장면·구도가 그림 요청에 들어간다");
   assert.ok(p.includes("오른쪽 위 모서리에 걸쳐 잘린 큰 원"), "실제로 반복된 버릇을 피하라고 한다");
   assert.ok(!artPrompt({ 종류: "칼럼", 채널: "주간", 제목: "x" }).includes("최근 호에 이미"), "지난 장면이 없으면 그 줄도 없다");
