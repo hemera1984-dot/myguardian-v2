@@ -157,6 +157,10 @@ await check("사진 올리기 — 크기를 넘으면 끊지 않고 413", async 
   });
   assert.match(raw, /^HTTP\/1\.1 413/, raw.slice(0, 80));
 });
+await check("사진 받기 — 사진 찾기가 낸 토큰만 받는다(주소를 직접 넣을 수 없다)", async () => {
+  assert.equal((await call("fc", "POST", "/care/photo-get", { 토큰: "deadbeef", 주소: "https://127.0.0.1/a.jpg" })).status, 404);
+  assert.equal((await call("fc", "POST", "/care/photo-find", { 제목: "x" })).status, 503, "AI 키가 없으면 끈다");
+});
 await check("강의 자료 지우기 — 깨진 %인코딩은 400", async () => {
   assert.equal((await call("fc", "DELETE", "/brief/library/%E0")).status, 400);
 });

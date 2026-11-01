@@ -188,6 +188,7 @@ body.magazine :focus-visible { outline: 3px solid #16296a; outline-offset: 2px; 
 .ct .colophon { max-width: 680px; margin: 0 auto; padding: 32px 22px 56px; border-top: 1px solid var(--rule); font-size: 13px; line-height: 1.8; color: var(--gray); }
 .ct .colophon__title { font-family: var(--serif); font-size: 22px; font-weight: 900; color: var(--ink); letter-spacing: -.03em; }
 .ct .colophon__credits { margin-top: 14px; list-style: none; display: grid; gap: 2px; }
+.ct .colophon__credits a { text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; overflow-wrap: anywhere; }
 .ct .colophon__note { margin-top: 16px; font-size: 13px; }
 .ct .next-issue { display: grid; gap: 4px; margin-top: 22px; padding: 18px 20px; background: var(--frame); color: #fff; }
 .ct .next-label { font-size: 13px; font-weight: 800; color: var(--gold-soft); }

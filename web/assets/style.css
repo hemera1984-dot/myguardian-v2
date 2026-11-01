@@ -1819,6 +1819,35 @@ body.magazine :focus-visible {
   white-space: nowrap;
 }
 
+/* ── 사진 찾기 후보(2026-11-01) — 슬롯 아래 줄 전체를 쓴다 */
+.img-slot { flex-wrap: wrap; }
+.img-slot .photo-pick { flex: 1 0 100%; font-size: 0.85rem; color: var(--ink-sub); }
+.img-slot .photo-pick[hidden] { display: none; }
+.photo-pick .pp-why { margin: 0 0 6px; color: var(--ink); }
+.photo-pick .pp-why b { margin-right: 6px; }
+.photo-pick .pp-note { margin: 0 0 8px; }
+.photo-pick .pp-pages { margin: 0; padding-left: 18px; word-break: break-all; }
+.photo-pick .pp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.photo-pick .pp-cand { margin: 0; }
+.photo-pick .pp-cand button {
+  display: block; width: 100%; aspect-ratio: 3 / 2; padding: 0; cursor: pointer;
+  border: 1px solid var(--line-strong); background: var(--bg); overflow: hidden;
+  transition: border-color 0.14s ease;
+}
+.photo-pick .pp-cand button:hover, .photo-pick .pp-cand button:focus-visible { border-color: var(--accent); }
+.photo-pick .pp-cand button:disabled { opacity: 0.5; cursor: progress; }
+.photo-pick .pp-cand img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-pick .pp-cand figcaption { margin-top: 4px; font-size: 0.75rem; line-height: 1.45; color: var(--ink-sub); }
+
+/* 표지 칸 넷 — 넓은 화면은 두 줄 두 칸 */
+.fld-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); column-gap: 16px; }
+.fld select {
+  font: inherit; font-size: 0.92rem; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: 4px; padding: 8px 10px;
+}
+.fld select:focus { border-color: var(--accent); outline: none; }
+.quiet-warn { color: #b45309; }
+
 /* ── 편집장의 말 · 칼럼 입력 */
 .fld { padding: 12px 0 0; }
 

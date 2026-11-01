@@ -699,12 +699,16 @@
     h.push('<p class="colophon__title">' + esc(mast) + "</p>");
     h.push("<p>통권 " + esc(meta["호수"]) + "호 · " + esc(meta["주차라벨"] || "") + " · " + esc(dateText) + " 발행</p>");
     h.push("<p>" + esc(editorLine) + " · " + esc(edition ? (edition["소속"] || "") : "신한라이프 하랑지점") + "</p>");
+    // 원본 주소가 있으면 출처를 원본으로 잇는다 — CC BY 계열은 원본·라이선스 링크가 조건이다
     var credits = [];
-    if (meta["커버출처"]) credits.push("표지 — " + meta["커버출처"]);
-    arts.forEach(function (a, i) { if (a["이미지출처"]) credits.push((i + 1) + "번 기사 — " + a["이미지출처"]); });
+    if (meta["커버출처"]) credits.push(["표지 — " + meta["커버출처"], meta["커버원본"]]);
+    arts.forEach(function (a, i) { if (a["이미지출처"]) credits.push([(i + 1) + "번 기사 — " + a["이미지출처"], a["이미지원본"]]); });
     if (credits.length) {
       h.push('<ul class="colophon__credits">');
-      credits.forEach(function (c) { h.push("<li>" + esc(c) + "</li>"); });
+      credits.forEach(function (c) {
+        h.push("<li>" + (/^https:\/\//.test(c[1] || "")
+          ? '<a href="' + esc(c[1]) + '" target="_blank" rel="noopener noreferrer">' + esc(c[0]) + "</a>" : esc(c[0])) + "</li>");
+      });
       h.push("</ul>");
     }
 
@@ -840,8 +844,25 @@
     return function () { document.removeEventListener("keydown", onKey); };
   }
 
+  // 글만 이어지는 구간의 글자 수 — 멈출 자리(소제목·수치·인용·표·상자·뽑은 인용) 사이 평문. 발행 데스크의 「졸리면 실패다」 경고가 쓴다
+  function quietRuns(a) {
+    var pulls = (Array.isArray(a["뽑은글"]) ? a["뽑은글"] : []).filter(Boolean);
+    var runs = [], run = 0;
+    tokenize(a["본문"] || []).forEach(function (t) {
+      if (t.k === "p") {
+        run += t.x.length;
+        if (!pulls.some(function (q) { return t.x.indexOf(q) >= 0; })) return;
+      }
+      if (run) runs.push(run);
+      run = 0;
+    });
+    if (run) runs.push(run);
+    return runs;
+  }
+
   window.care = {
     CAT_LABEL: CAT_LABEL,
+    quietRuns: quietRuns,
     initDeck: initDeck,
     displayCat: displayCat,
     mediaSrc: mediaSrc,

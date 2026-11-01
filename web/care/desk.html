@@ -342,7 +342,7 @@
             "이미지": a["이미지"] || ""
           };
           // 데스크에 칸은 없지만 재발행 때 지우지 않는다(캡션·사진 출처·편집장 선택 칸)
-          ["이미지캡션", "이미지출처", "형광", "뽑은글", "틀"].forEach(function (k) { if (a[k]) o[k] = a[k]; });
+          ["이미지캡션", "이미지출처", "이미지원본", "형광", "뽑은글", "틀"].forEach(function (k) { if (a[k]) o[k] = a[k]; });
           return o;
         });
         var 목록항목 = {
@@ -356,7 +356,7 @@
           "본문파일": "data/care/issues/" + d.id + ".json"
         };
         if (d["커버이미지"]) 목록항목["커버이미지"] = d["커버이미지"];
-        ["커버제목", "커버덱", "커버위치", "커버출처"].forEach(function (k) { if (d[k]) 목록항목[k] = d[k]; });
+        ["커버제목", "커버덱", "커버위치", "커버출처", "커버원본"].forEach(function (k) { if (d[k]) 목록항목[k] = d[k]; });
         // 호마다 맞춘 카톡 인사·옛 사이트 원문 주소 — 발행된 호를 다시 열었을 때만 실려 있다
         if (d["인사"]) 목록항목["인사"] = d["인사"];
         if (d["원문링크"]) 목록항목["원문링크"] = d["원문링크"];
@@ -456,12 +456,71 @@
           + '<div class="slot-acts">'
           + '<button class="btn btn-primary" type="button" data-artwork="' + esc(target) + '">'
           + (path ? "다시 만들기" : (target === "cover" ? "표지 만들기" : "삽화 만들기")) + "</button>"
+          + '<button class="btn" type="button" data-photo="' + esc(target) + '">사진 찾기</button>'
           + (target === "cover" ? "" : '<button class="btn" type="button" data-chart="' + esc(target) + '">수치 그림</button>')
           + '<button class="btn" type="button" data-imgai="' + esc(target) + '">프롬프트만</button>'
           + (path ? '<button class="btn" type="button" data-imgdel="' + esc(target) + '">지우기</button>' : "")
           + "</div>"
           + '<div class="img-prompt" data-prompt="' + esc(target) + '" hidden></div>'
+          + '<div class="photo-pick" data-photos="' + esc(target) + '" hidden></div>'
           + "</div>";
+      }
+
+      // 지면 칸 — 편집장이 고르는 것(헌법 「졸리면 실패다」 ⑤: 큰 수치·인용은 기계가 아니라 편집장이 고른다)
+      function inputFld(id, key, col, label, val, hint, extra) {
+        return '<div class="fld"><label for="' + id + '">' + label + "</label>"
+          + '<input type="text" id="' + id + '" data-f="' + key + '"' + (col === "cover" ? ' data-cover="1"' : ' data-col="' + col + '"')
+          + ' value="' + esc(val || "") + '"' + (extra || "") + ">"
+          + (hint ? '<p class="hint">' + hint + "</p>" : "") + "</div>";
+      }
+      function coverFieldsHtml(d) {
+        return '<div class="fld-grid">'
+          + inputFld("f-cv-title", "커버제목", "cover", "표지 제목 <span class=\"opt\">선택</span>", d["커버제목"], "비우면 1번 기사 제목. 표지에 맞게 짧게 줄일 때 씁니다.")
+          + inputFld("f-cv-dek", "커버덱", "cover", "표지 덱 <span class=\"opt\">선택</span>", d["커버덱"], "제목 아래 한 줄. 비우면 1번 기사 부제.")
+          + inputFld("f-cv-pos", "커버위치", "cover", "사진 초점 <span class=\"opt\">선택</span>", d["커버위치"], "예: 30% 50% (가로 세로). 사진 속 로고·얼굴이 제호에 가릴 때 옮깁니다.", ' placeholder="50% 50%"')
+          + inputFld("f-cv-credit", "커버출처", "cover", "표지 사진 출처", d["커버출처"], "사진 찾기로 넣으면 저절로 채워집니다. 판권에 실립니다.")
+          + "</div>";
+      }
+      function pageLines(v) { return (v || []).join("\n"); }
+      function photoFieldsHtml(a, i) {
+        var hl = a["형광"] || [], pq = a["뽑은글"] || [];
+        return inputFld("f-cap-" + i, "이미지캡션", i, "사진 설명 <span class=\"opt\">선택</span>", a["이미지캡션"], "사진 아래 한 줄. 무엇을 찍은 사진인지.")
+          + inputFld("f-credit-" + i, "이미지출처", i, "사진 출처", a["이미지출처"], "사진 찾기로 넣으면 저절로 채워집니다. 직접 올린 사진은 여기에 출처를 씁니다.")
+          + '<details class="manual"><summary>지면 꾸미기 · 형광 ' + hl.length + "곳 · 뽑은 인용 " + pq.length + "개</summary>"
+          + '<div class="fld"><label for="f-frame-' + i + '">머리 틀</label>'
+          + '<select id="f-frame-' + i + '" data-f="틀" data-col="' + i + '">'
+          + ["", "사진", "오프너", "색면"].map(function (k) {
+              return '<option value="' + k + '"' + ((a["틀"] || "") === k ? " selected" : "") + ">" + (k || "자동(기사 순서대로)") + "</option>";
+            }).join("") + "</select>"
+          + '<p class="hint">사진 = 큰 사진 위 제목 · 오프너 = 사진 위에 제목을 얹음 · 색면 = 섹션 색 바탕. 이웃 기사와 다르게 고릅니다.</p></div>'
+          + '<div class="fld"><label for="f-hl-' + i + '">형광 구절 <span class="cnt" data-cnt="형광-' + i + '"></span></label>'
+          + '<textarea id="f-hl-' + i + '" data-f="형광" data-col="' + i + '" placeholder="본문에서 그대로 복사해 한 줄에 하나씩">' + esc(pageLines(hl)) + "</textarea>"
+          + '<p class="hint">문단당 한 곳까지 칠해집니다. 비워 두면 문단 걸러 자동으로 칠합니다.</p></div>'
+          + '<div class="fld"><label for="f-pq-' + i + '">뽑은 인용 <span class="cnt" data-cnt="뽑은글-' + i + '"></span></label>'
+          + '<textarea id="f-pq-' + i + '" data-f="뽑은글" data-col="' + i + '" placeholder="본문 문장을 그대로 한 줄에 하나씩">' + esc(pageLines(pq)) + "</textarea>"
+          + '<p class="hint">그 문장이 든 문단 바로 뒤에 큰 인용으로 실립니다. 한두 개가 알맞습니다.</p></div>'
+          + "</details>"
+          + '<p class="hint quiet-warn" data-quiet="' + i + '" hidden></p>';
+      }
+      // 형광·뽑은 인용이 본문에 없으면 지면에 안 나온다 — 고른 자리에서 바로 알린다
+      function missingLines(a, key) {
+        var text = (a["본문"] || []).map(function (b) { return b.x; }).join("\n");
+        return (a[key] || []).filter(function (q) { return text.indexOf(q) < 0; }).length;
+      }
+      function syncPageHints(a, i) {
+        ["형광", "뽑은글"].forEach(function (key) {
+          var c = document.querySelector('[data-cnt="' + key + "-" + i + '"]');
+          if (!c) return;
+          var miss = missingLines(a, key);
+          c.textContent = miss ? "본문에 없는 줄 " + miss + "개" : ((a[key] || []).length ? (a[key] || []).length + "개" : "");
+          c.classList.toggle("warn", miss > 0);
+        });
+        // 폰 한 화면 약 440자 — 두 화면(880자) 넘게 글만 이어지면 경고(헌법 「졸리면 실패다」 ①)
+        var q = document.querySelector('[data-quiet="' + i + '"]');
+        if (!q) return;
+        var long = care.quietRuns(a).filter(function (n) { return n > 880; });
+        q.textContent = long.length ? "글만 이어지는 구간 " + long.length + "곳(가장 긴 곳 " + Math.max.apply(null, long) + "자) — 폰으로 두 화면이 넘습니다. 형광·뽑은 인용·소제목으로 멈출 자리를 만드세요." : "";
+        q.hidden = !long.length;
       }
 
       function renderReady() {
@@ -542,6 +601,7 @@
           + "</div>"
           + '<details class="manual"><summary>손보기</summary>' + colFieldsHtml(a, i) + "</details>"
           + '<div class="fld"><label>이미지</label>' + slotHtml("col-" + i, a["이미지"], target + " 이미지 올리기") + "</div>"
+          + photoFieldsHtml(a, i)
           + "</div>";
       }
 
@@ -592,7 +652,8 @@
             + "</div>";
         }).join("");
         // 화면을 새로 그리면 진행·실패 문구가 사라진다. 아직 도는 편과 실패로 남은 편은 되살린다.
-        arts.forEach(function (_, i) {
+        arts.forEach(function (a, i) {
+          syncPageHints(a, i);
           var box = aiBox(i);
           if (!box) return;
           var k = 칸(S.draft.id, i);
@@ -616,7 +677,7 @@
           + "<span>" + esc(d["주차라벨"] + " · " + d["발행일"] + " 발행 · " + d.id) + "</span>";
         el("preface").value = fromLines(d["편집장의말"]);
         el("preface-cnt").textContent = linesLen(d["편집장의말"]) + "자";
-        el("cover-box").innerHTML = slotHtml("cover", d["커버이미지"], "표지 이미지 올리기");
+        el("cover-box").innerHTML = slotHtml("cover", d["커버이미지"], "표지 이미지 올리기") + coverFieldsHtml(d);
         renderReady();
         renderCols();
         syncKakao();
@@ -659,11 +720,11 @@
                 "부제": a["부제"] || "", "요약": a["요약"] || [], "한마디": a["한마디"] || [],
                 "본문": a["본문"] || [], "이미지": a["이미지"] || "", "방향": ""
               };
-              ["이미지캡션", "이미지출처", "형광", "뽑은글", "틀"].forEach(function (k) { if (a[k]) o[k] = a[k]; });
+              ["이미지캡션", "이미지출처", "이미지원본", "형광", "뽑은글", "틀"].forEach(function (k) { if (a[k]) o[k] = a[k]; });
               return o;
             })
           };
-          ["커버제목", "커버덱", "커버위치", "커버출처"].forEach(function (k) { if (meta[k]) d2[k] = meta[k]; });
+          ["커버제목", "커버덱", "커버위치", "커버출처", "커버원본"].forEach(function (k) { if (meta[k]) d2[k] = meta[k]; });
           // 데스크에 칸이 없는 목록 필드도 옮긴다 — 안 옮기면 재발행 때 사라진다
           if (meta["인사"]) d2["인사"] = meta["인사"];
           if (meta["원문링크"]) d2["원문링크"] = meta["원문링크"];
@@ -1136,19 +1197,82 @@
           .then(function () { btn.disabled = false; btn.textContent = old; });
       }
 
+      // ══ 사진 찾기 (2026-11-01 케어센터 고도화) ═══════════════════════
+      // 서버가 기사 소재를 가른다 — 제품·작품은 제작사 공식 홍보 이미지, 현장·사건은 상업 이용 가능한 공용 사진, 제도·개념은 삽화.
+      // 후보를 보고 편집장이 하나를 누르면 서버가 받아 미디어 창고에 넣고, 출처 문구가 출처 칸에 들어간다.
+      function findPhoto(target, btn) {
+        var box = document.querySelector('[data-photos="' + target + '"]');
+        if (!box) return;
+        var a = target === "cover" ? (S.draft["기사"] || [])[0] : S.draft["기사"][Number(target.slice(4))];
+        box.hidden = false;
+        if (!a || !a["제목"]) { box.textContent = "기사 제목이 먼저 필요합니다."; return; }
+        if (!window.mgAuth || !window.mgAuth.token()) {
+          box.textContent = "로그인이 필요합니다. 진입 화면에서 구글 계정으로 로그인하세요.";
+          return;
+        }
+        var old = btn.textContent;
+        btn.disabled = true; btn.textContent = "찾는 중";
+        box.textContent = "기사 소재를 보고 사진 갈래를 정하는 중입니다. 30초 안팎 걸립니다.";
+        var 찾은호 = S.draft.id;
+        window.mgAuth.api("/care/photo-find", { method: "POST", body: {
+          "제목": a["제목"], "요약": fromLines(a["요약"]) || a["부제"] || "", "카테고리": a["카테고리"] || "" } })
+          .then(function (d) {
+            if (!S.draft || S.draft.id !== 찾은호) return;
+            var 후보 = d["후보"] || [], 페이지 = d["페이지"] || [];
+            box.dataset.draft = 찾은호;
+            box.innerHTML = '<p class="pp-why"><b>' + esc(d["소재"] === "제품" ? "제품·작품" : d["소재"] === "현장" ? "현장·사건" : "제도·개념") + "</b> "
+              + esc(d["이유"] || "") + "</p>"
+              + (d["안내"] ? '<p class="pp-note">' + esc(d["안내"]) + "</p>" : "")
+              + (페이지.length && !후보.length
+                  ? '<ul class="pp-pages">' + 페이지.map(function (u) {
+                      return '<li><a href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' + esc(u) + "</a></li>";
+                    }).join("") + "</ul>" : "")
+              + (후보.length ? '<div class="pp-grid">' + 후보.map(function (h) {
+                  return '<figure class="pp-cand"><button type="button" data-photopick="' + esc(h["토큰"]) + '" aria-label="이 사진 쓰기 — ' + esc(h["출처문구"]) + '">'
+                    + '<img src="' + esc(h["미리보기"]) + '" alt="" loading="lazy" referrerpolicy="no-referrer"></button>'
+                    + "<figcaption>" + esc(h["출처문구"])
+                    + (h["가로"] ? " · " + h["가로"] + "×" + h["세로"] : "")
+                    + (h["원본"] ? ' · <a href="' + esc(h["원본"]) + '" target="_blank" rel="noopener noreferrer">원본</a>' : "")
+                    + "</figcaption></figure>";
+                }).join("") + "</div>" : "");
+          })
+          .catch(function (err) { box.textContent = (err && err.message) || "사진을 찾지 못했습니다."; })
+          .then(function () { btn.disabled = false; btn.textContent = old; });
+      }
+
+      function getPhoto(target, btn) {
+        var box = btn.closest("[data-photos]");
+        var 넣을호 = box.dataset.draft || (S.draft && S.draft.id);
+        btn.disabled = true;
+        publishNote("고른 사진을 받는 중입니다…");
+        window.mgAuth.api("/care/photo-get", { method: "POST", body: { "토큰": btn.dataset.photopick } })
+          .then(function (d) {
+            if (setImage(target, d["주소"], 넣을호, d) === false) return;
+            publishNote("사진을 넣었습니다. 출처 칸을 확인하세요.");
+          })
+          .catch(function (err) {
+            btn.disabled = false;
+            publishNote((err && err.message) || "사진을 받지 못했습니다.", true);
+          });
+      }
+
       // ══ 이미지 업로드 ══════════════════════════════════════════════
       var imgTarget = null;
 
       // 이미지도 호를 따라간다. 만드는 사이 다른 호로 옮기면 그 호에 붙어 버린다.
       // draftId를 주면 그 호에, 안 주면 지금 보고 있는 호에 넣는다.
-      function setImage(target, path, draftId) {
+      // 출처를 주면(사진 찾기) 출처 칸과 원본 주소도 같은 초안에 쓴다. 출처 없이 바꾸면(직접 올림·삽화·수치 그림·지우기)
+      // 앞 사진의 출처를 비운다 — 새 그림이 앞 작가의 것으로 표기되지 않게. 직접 올린 사진은 편집장이 출처 칸에 쓴다.
+      function setImage(target, path, draftId, 출처) {
         var 대상 = !draftId || (S.draft && S.draft.id === draftId) ? S.draft : readDraft(draftId);
         if (!대상) return;                       // 초안이 지워졌다
-        if (target === "cover") 대상["커버이미지"] = path;
-        else {
+        var 문구 = 출처 ? 출처["출처문구"] || "" : "", 원본 = 출처 ? 출처["원본"] || "" : "";
+        if (target === "cover") {
+          대상["커버이미지"] = path; 대상["커버출처"] = 문구; 대상["커버원본"] = 원본;
+        } else {
           var a = 대상["기사"][Number(target.slice(4))];
           if (!a) return false;
-          a["이미지"] = path;
+          a["이미지"] = path; a["이미지출처"] = 문구; a["이미지원본"] = 원본;
         }
         var ok = saveDraft(대상);
         if (S.draft && S.draft.id === 대상.id) renderEdit();
@@ -1565,6 +1689,10 @@
 
         var art = t.closest("button[data-artwork]");
         if (art) { makeArtwork(art.dataset.artwork, art); return; }
+        var ph = t.closest("button[data-photo]");
+        if (ph) { findPhoto(ph.dataset.photo, ph); return; }
+        var pick = t.closest("button[data-photopick]");
+        if (pick) { getPhoto(pick.closest("[data-photos]").dataset.photos, pick); return; }
         var chartBtn = t.closest("button[data-chart]");
         if (chartBtn) { makeChart(chartBtn.dataset.chart, chartBtn); return; }
         var gen = t.closest("button[data-imgai]");
@@ -1668,11 +1796,17 @@
         if (key === "편집장의말") {
           S.draft["편집장의말"] = toLines(v);
           el("preface-cnt").textContent = linesLen(S.draft["편집장의말"]) + "자";
+        } else if (f.dataset.cover) {
+          S.draft[key] = v.trim();
+          if (key === "커버출처" && !S.draft[key]) S.draft["커버원본"] = "";
         } else {
           var a = S.draft["기사"][Number(f.dataset.col)];
           if (key === "요약" || key === "한마디") a[key] = toLines(v);
           else if (key === "본문") a[key] = textToBlocks(v);
+          else if (key === "형광" || key === "뽑은글") a[key] = v.split("\n").map(function (x) { return x.trim(); }).filter(Boolean);
           else a[key] = v;
+          if (key === "이미지출처" && !v.trim()) a["이미지원본"] = "";
+          if (key === "형광" || key === "뽑은글" || key === "본문") syncPageHints(a, Number(f.dataset.col));
 
           var cnt = f.parentNode.querySelector('[data-cnt]');
           if (cnt && key === "요약") {

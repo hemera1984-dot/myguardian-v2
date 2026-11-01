@@ -22,6 +22,7 @@ import {
 import { cleanArt, artPrompt, ART_SCHEMA, svgToPng, artReviewPrompt, ART_REVIEW_SCHEMA } from "./artwork.js";
 import { chartSvg } from "./chart.js";
 import { 번호가리기 } from "./mask.js";
+import { 안전받기, 대표그림, 공용사진, 금지된곳, 그림인가 } from "./photo.js";
 import vm from "node:vm";
 
 const PORT = Number(process.env.PORT || 8787);
@@ -165,6 +166,23 @@ const IMAGE_TYPES = {
   "image/gif": ".gif"
 };
 const MAX_IMAGE = 12 * 1024 * 1024;
+
+// 사진 찾기 후보(2026-11-01) — 받을 주소는 브라우저에 맡기지 않고 서버가 토큰으로 쥔다(아무 주소나 받아 오는 창구가 되지 않게). 메모리, 한 시간
+const 사진후보 = new Map();
+const 사진찾기횟수 = new Map();   // 계정|날짜 — 소재 가르기에 웹 검색이 붙어 따로 센다
+const PHOTO_LOG = () => join(CARE_DIR, "photo-sources.json");
+const PHOTO_SCHEMA = {
+  type: "object",
+  properties: {
+    소재: { type: "string", enum: ["제품", "현장", "개념"] },
+    이유: { type: "string" },
+    제작사: { type: "string" },
+    공식페이지: { type: "array", items: { type: "string" } },
+    검색어: { type: "array", items: { type: "string" } }
+  },
+  required: ["소재", "이유", "제작사", "공식페이지", "검색어"],
+  additionalProperties: false
+};
 
 // 강의 자료 라이브러리 — 팀이 함께 쓰는 발표 자료 목차(2026-08-05).
 // 파일은 웹서버가 서빙하지 않는 전용 폴더에 둔다(2026-08-11 교정). 종전에는 사진과 같은
@@ -2660,6 +2678,94 @@ async function route(req, res, url) {
     const bytes = await readBytes(req, MAX_IMAGE);
     if (!bytes.length) return send(res, 400, { error: "빈 파일입니다." });
     return send(res, 200, saveMedia(bytes, ext));
+  }
+
+  // ── 지면 사진 찾기 (2026-11-01 케어센터 고도화 3단계 — 「실제 이미지 자동으로 찾아서」) ──
+  // 소재를 먼저 가른다(헌법 「지면 이미지」): 제품·작품 → 제작사 공식 홍보 이미지 / 현장·사건 → 상업 이용·수정 허용 공용 사진 / 제도·개념 → 삽화.
+  // 고르는 것은 편집장이다 — 여기는 후보만 낸다. 받기(/care/photo-get)는 여기서 낸 토큰만 받는다.
+  if (req.method === "POST" && path === "/care/photo-find") {
+    if (!ANTHROPIC_KEY) return send(res, 503, { error: "AI 기능이 설정되지 않았습니다." });
+    const b = await readJson(req);
+    const 제목 = String(b["제목"] || "").slice(0, 200).trim();
+    const 요약 = String(b["요약"] || "").slice(0, 800);
+    const 카테고리 = String(b["카테고리"] || "").slice(0, 40);
+    if (!제목) return send(res, 400, { error: "제목이 먼저 필요합니다." });
+    const 키 = me.id + "|" + new Date(Date.now() + 9 * 36e5).toISOString().slice(0, 10);
+    const 쓴 = 사진찾기횟수.get(키) || 0;
+    if (쓴 >= 40) return send(res, 429, { error: "오늘 사진 찾기 횟수(40번)를 다 썼습니다." });
+    사진찾기횟수.set(키, 쓴 + 1);
+    const prompt = [
+      "너는 잡지 사진 데스크다. 아래 기사의 첫 사진을 어느 갈래에서 구할지 정한다.",
+      "- 제품: 기사 소재가 게임·영화·드라마·책·자동차·전자제품·앱처럼 만든 회사가 있는 특정 작품·제품이면. 웹 검색으로 그 제작사(또는 배급사)를 찾고,",
+      "  제작사 자기 도메인의 공식 페이지 주소(그 작품 전용 페이지·공식 뉴스룸·보도자료) 최대 4개를 적는다.",
+      "  게임 매체·언론사·위키·팬 사이트·쇼핑몰·동영상 사이트 주소는 적지 않는다. 확인하지 못한 주소를 지어내지 않는다.",
+      "- 현장: 실제 장소·사건·사람들의 현장(시위·재난·도시·병원·시장·행사 등)이 소재면. 위키미디어 공용에서 찾을 영어 검색어 1~3개",
+      "  (구체적인 장소·사건 이름이 든 것 먼저, 마지막에 일반어 하나). 웹 검색은 쓰지 않는다.",
+      "- 개념: 제도·세금·보험 구조·법·통계처럼 사진으로 찍을 대상이 없으면. 웹 검색은 쓰지 않는다.",
+      "해당하지 않는 칸은 빈 문자열·빈 배열로 둔다. 이유는 한 문장, 한국어로.",
+      "",
+      "섹션: " + 카테고리,
+      "제목: " + 제목,
+      "요약: " + 요약
+    ].join("\n");
+    const r = await claudeWeb(prompt, PHOTO_SCHEMA, { effort: "low", maxTokens: 4000, maxUses: 4, timeout: 180000 });
+    if (r.error) return send(res, r.error, { error: "소재를 가르지 못했습니다. 잠시 뒤 다시 눌러 주세요." });
+    const v = r.value;
+    let 후보 = [], 안내 = "", 페이지 = [];
+    if (v["소재"] === "제품") {
+      const 제작사 = String(v["제작사"] || "").slice(0, 40) || "제작사";
+      페이지 = (v["공식페이지"] || []).map(String).filter((u) => /^https:\/\//.test(u) && !금지된곳(u)).slice(0, 4);
+      const 받음 = await Promise.allSettled(페이지.map((u) => 안전받기(u, 3 * 1048576, (t) => /html/.test(t))));
+      받음.forEach((x) => {
+        if (x.status !== "fulfilled") return;
+        대표그림(x.value.bytes.toString("utf8"), x.value.주소).slice(0, 2).forEach((그림) => {
+          if (금지된곳(그림) || 후보.some((h) => h.받을주소 === 그림)) return;
+          후보.push({ 받을주소: 그림, 미리보기: 그림, 원본: x.value.주소, 라이선스: "공식", 제목: new URL(x.value.주소).hostname,
+            출처문구: `이미지 ${제작사} · 공식 홍보 이미지` });
+        });
+      });
+      if (!후보.length) 안내 = "공식 페이지에서 대표 그림을 받지 못했습니다. 아래 페이지를 열어 홍보 이미지를 받은 뒤 「사진 올리기」로 넣어 주세요.";
+    } else if (v["소재"] === "현장") {
+      for (const q of (v["검색어"] || []).slice(0, 3)) {
+        try { 후보 = 후보.concat(await 공용사진(q)); } catch (e) { console.warn("공용 사진 검색 실패:", e.message); }
+        if (후보.length >= 12) break;
+      }
+      후보 = 후보.filter((h, i) => 후보.findIndex((x) => x.받을주소 === h.받을주소) === i).slice(0, 16);
+      if (!후보.length) 안내 = "상업 이용이 되는 사진을 찾지 못했습니다. 「삽화 만들기」를 쓰거나 직접 올려 주세요.";
+    } else {
+      안내 = "제도·개념 기사라 사진 대신 삽화가 맞습니다. 「삽화 만들기」를 눌러 주세요.";
+    }
+    const 지금 = Date.now();
+    if (사진후보.size > 500) for (const [k, h] of 사진후보) if (h.만료 < 지금) 사진후보.delete(k);
+    const 낼것 = 후보.map((h) => {
+      const 토큰 = randomBytes(9).toString("hex");
+      사진후보.set(토큰, { ...h, 계정: me.id, 만료: 지금 + 36e5 });
+      return { 토큰, 미리보기: h.미리보기, 제목: h.제목, 출처문구: h.출처문구, 원본: h.원본, 라이선스: h.라이선스, 가로: h.가로, 세로: h.세로 };
+    });
+    console.log(`사진 찾기: 「${제목.slice(0, 30)}」 ${v["소재"]} — 후보 ${낼것.length}장 — ${me.email}`);
+    return send(res, 200, { 소재: v["소재"], 이유: v["이유"], 안내, 후보: 낼것, 페이지 });
+  }
+
+  // 고른 후보 받기 — 우리 미디어 창고에 넣고(발행 검사 「우리그림」을 통과하게) 어디서 왔는지 기록에 남긴다
+  if (req.method === "POST" && path === "/care/photo-get") {
+    const b = await readJson(req);
+    const h = 사진후보.get(String(b["토큰"] || ""));
+    if (!h || h.계정 !== me.id || h.만료 < Date.now()) return send(res, 404, { error: "후보가 만료됐습니다. 「사진 찾기」를 다시 눌러 주세요." });
+    let 받음;
+    try {
+      받음 = await 안전받기(h.받을주소, MAX_IMAGE, (t) => !!IMAGE_TYPES[t]);
+    } catch (e) {
+      return send(res, 502, { error: "사진을 받지 못했습니다 — " + e.message });
+    }
+    if (!그림인가(받음.bytes, 받음.형식)) return send(res, 502, { error: "받은 파일이 그림이 아닙니다. 다른 후보를 고르거나 직접 올려 주세요." });
+    const 저장 = saveMedia(받음.bytes, IMAGE_TYPES[받음.형식]);
+    let 기록 = [];
+    try { 기록 = JSON.parse(readFileSync(PHOTO_LOG(), "utf8")); } catch { /* 처음 */ }
+    기록.push({ 날: new Date().toISOString(), 파일: 저장.파일명, 원본: h.원본, 받은주소: 받음.주소, 라이선스: h.라이선스, 출처문구: h.출처문구, 계정: me.id });
+    try { writeFileSync(PHOTO_LOG(), JSON.stringify(기록.slice(-3000), null, 1)); } catch (e) { console.warn("사진 출처 기록 실패:", e.message); }
+    사진후보.delete(String(b["토큰"]));
+    console.log(`사진 받기: ${저장.파일명} ← ${h.원본} (${h.라이선스}) — ${me.email}`);
+    return send(res, 200, { 주소: 저장.주소, 출처문구: h.출처문구, 원본: h.원본 });
   }
 
   // ── 조직도 ──
