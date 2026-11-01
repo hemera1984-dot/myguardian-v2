@@ -52,7 +52,8 @@ const 축표기 = (v) => {
 };
 
 function 머리(제목, 단위) {
-  return `<text x="${여백.좌}" y="96" font-size="52" font-weight="700" fill="${색.잉크}">${esc(제목)}</text>`
+  const m = 맞춤(제목, W - 여백.좌 - 여백.우, 52, 1, 30);
+  return `<text x="${여백.좌}" y="96" font-size="${m.크기}" font-weight="700" fill="${색.잉크}">${esc(m.줄.join(" ") || 제목)}</text>`
     + (단위 ? `<text x="${여백.좌}" y="146" font-size="30" fill="#5b5b5b">단위: ${esc(단위)}</text>` : "");
 }
 
@@ -85,7 +86,7 @@ function 막대(항목, 강조) {
     const 늦 = (0.07 * i).toFixed(2) + "s";
     return `<rect class="g-막대" style="animation-delay:${늦};transform-origin:${n1(x + 막 / 2)}px ${n1(y0)}px" x="${n1(x)}" y="${n1(y)}" width="${n1(막)}" height="${n1(h)}" fill="${c}"/>`
       + `<text class="g-값" style="animation-delay:${(0.07 * i + 0.5).toFixed(2)}s" x="${n1(x + 막 / 2)}" y="${n1(y - 20)}" font-size="34" font-weight="700" fill="${c}" text-anchor="middle">${esc(it.표기 || 축표기(it.값))}</text>`
-      + `<text x="${n1(x + 막 / 2)}" y="${n1(y0 + 46)}" font-size="28" fill="${색.잉크}" text-anchor="middle">${esc(it.이름)}</text>`;
+      + 이름표(it.이름, x + 막 / 2, y0 + 46, 칸 - 16);
   }).join("");
   return out;
 }
@@ -121,7 +122,7 @@ function 선(항목, 강조) {
     return `<circle class="g-점" style="animation-delay:${늦}" cx="${n1(X(i))}" cy="${n1(Y(it.값))}" r="${r}" fill="${c}"/>`
       + ((강조 === i || i === 0 || i === 항목.length - 1)
           ? `<text class="g-값" style="animation-delay:${늦}" x="${n1(X(i))}" y="${n1(Y(it.값) - 32)}" font-size="34" font-weight="700" fill="${c}" text-anchor="middle">${esc(it.표기 || 축표기(it.값))}</text>` : "")
-      + `<text x="${n1(X(i))}" y="${n1(y0 + 46)}" font-size="28" fill="${색.잉크}" text-anchor="middle">${esc(it.이름)}</text>`;
+      + 이름표(it.이름, X(i), y0 + 46, 항목.length === 1 ? 폭 : 폭 / (항목.length - 1) - 16);
   }).join("");
   return out;
 }
@@ -145,14 +146,31 @@ function 견줌(항목) {
 }
 const 저 = (h) => h / 2 + 24;
 
+// 칸 안 글 — 이름 줄들 아래 설명 줄들, 칸 가운데에 세운다
+function 칸글(g, cx, top, 이름색, 설명색) {
+  const 이줄 = g.이름.크기 * 1.25;
+  let out = g.이름.줄.map((줄, k) => `<text x="${n1(cx)}" y="${n1(top + k * 이줄 + g.이름.크기 * 0.9)}" font-size="${g.이름.크기}" font-weight="700" fill="${이름색}" text-anchor="middle">${esc(줄)}</text>`).join("");
+  if (g.설명) {
+    const 시작 = top + g.이름.줄.length * 이줄 + 22, 설줄 = g.설명.크기 * 1.45;
+    out += g.설명.줄.map((줄, k) => `<text x="${n1(cx)}" y="${n1(시작 + k * 설줄 + g.설명.크기 * 0.9)}" font-size="${g.설명.크기}" fill="${설명색}" text-anchor="middle">${esc(줄)}</text>`).join("");
+  }
+  return out;
+}
+
 // 흐름 — 절차를 칸과 화살표로 그리고 순서대로 켠다.
 // 제도·절차를 설명하는 기사에는 숫자보다 이쪽이 맞다(상속예금이 은행 창구에서 멈추는 과정 같은).
 function 흐름(칸들, 강조) {
   const 폭 = W - 여백.좌 - 여백.우;
   const 화살 = 64;
   const 칸폭 = (폭 - 화살 * (칸들.length - 1)) / 칸들.length;
-  const 칸높 = 260;
   const y = 여백.상 + 90;
+  const 글들 = 칸들.map((c) => {
+    const 이름 = 맞춤(c.이름, 칸폭 - 32, 36, 2, 24);
+    const 설명 = c.설명 ? 맞춤(c.설명, 칸폭 - 40, 27, 4, 20) : null;
+    const 높 = 이름.줄.length * 이름.크기 * 1.25 + (설명 ? 22 + 설명.줄.length * 설명.크기 * 1.45 : 0);
+    return { 이름, 설명, 높 };
+  });
+  const 칸높 = Math.min(H - 여백.하 - y, Math.max(260, ...글들.map((g) => g.높 + 100)));
   let out = `<defs><marker id="ar" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto">`
     + `<path d="M0,0 L12,6 L0,12 z" fill="#9a958a"/></marker></defs>`;
 
@@ -165,9 +183,7 @@ function 흐름(칸들, 강조) {
     const 늦 = (0.16 * i).toFixed(2) + "s";
     out += `<g class="g-칸" style="animation-delay:${늦}">`
       + `<rect x="${n1(x)}" y="${y}" width="${n1(칸폭)}" height="${칸높}" rx="4" fill="${면}" stroke="${막힘 || 켬 ? 면 : "#c9c3b6"}" stroke-width="3"/>`
-      + `<text x="${n1(x + 칸폭 / 2)}" y="${y + 96}" font-size="36" font-weight="700" fill="${글}" text-anchor="middle">${esc(c.이름)}</text>`
-      + (c.설명 ? 줄나눔(c.설명, 칸폭 - 40).map((줄, k) =>
-          `<text x="${n1(x + 칸폭 / 2)}" y="${y + 154 + k * 40}" font-size="27" fill="${막힘 || 켬 ? 색.종이 : "#5b5b5b"}" text-anchor="middle">${esc(줄)}</text>`).join("") : "")
+      + 칸글(글들[i], x + 칸폭 / 2, y + (칸높 - 글들[i].높) / 2, 글, 막힘 || 켬 ? 색.종이 : "#5b5b5b")
       + `</g>`;
     if (i < 칸들.length - 1) {
       const ax = x + 칸폭 + 10;
@@ -177,18 +193,44 @@ function 흐름(칸들, 강조) {
   return out;
 }
 
-// 칸 안에서 줄을 나눈다 — 글자당 대략 폭으로 잡는다(한글 기준)
-function 줄나눔(글, 폭) {
-  const 한줄 = Math.max(6, Math.floor(폭 / 27));
-  const 말 = String(글).split(" ");
+// 글자 폭 어림 — 한글·한자는 글자 크기만큼, 영숫자·기호는 그 절반 남짓
+const 글폭 = (글, 크기) => [...String(글)].reduce((n, ch) => n + (ch.charCodeAt(0) < 0x2e80 ? 0.56 : 1), 0) * 크기;
+
+// 폭 안에서 줄을 나눈다. 띄어쓰기 없는 긴 낱말은 글자 단위로 자른다.
+function 줄나눔(글, 폭, 크기) {
   const 줄 = [];
   let cur = "";
-  for (const w of 말) {
-    if ((cur + " " + w).trim().length > 한줄) { if (cur) 줄.push(cur); cur = w; }
-    else cur = (cur + " " + w).trim();
+  for (let w of String(글).split(" ").filter(Boolean)) {
+    while (글폭(w, 크기) > 폭) {
+      let k = 1;
+      while (k < w.length && 글폭(w.slice(0, k + 1), 크기) <= 폭) k++;
+      if (cur) { 줄.push(cur); cur = ""; }
+      줄.push(w.slice(0, k)); w = w.slice(k);
+    }
+    const 이음 = cur ? cur + " " + w : w;
+    if (글폭(이음, 크기) > 폭) { 줄.push(cur); cur = w; } else cur = 이음;
   }
   if (cur) 줄.push(cur);
-  return 줄.slice(0, 3);
+  return 줄;
+}
+
+// 최대 줄 수 안에 들 때까지 글자를 줄인다 — 칸 밖으로 넘치거나 옆 글과 겹치지 않게(2026-11-01 월간 8호 흐름도 「약 종료까지 요건 유」 잘림)
+function 맞춤(글, 폭, 크기, 최대줄, 최소) {
+  // 조금 줄여 한 줄에 들면 그쪽이 낫다 — 「시행령의 세 / 갈래」처럼 꺾지 않게
+  for (let k = 크기; k >= Math.max(최소, 크기 * 0.8); k -= 2) {
+    if (글폭(글, k) <= 폭) return { 크기: k, 줄: [String(글)] };
+  }
+  for (let k = 크기; k > 최소; k -= 2) {
+    const 줄 = 줄나눔(글, 폭, k);
+    if (줄.length <= 최대줄) return { 크기: k, 줄 };
+  }
+  return { 크기: 최소, 줄: 줄나눔(글, 폭, 최소).slice(0, 최대줄) };
+}
+
+// 축 아래 이름표 — 칸 폭 안에서 두 줄까지
+function 이름표(이름, x, y, 폭) {
+  const m = 맞춤(이름, 폭, 28, 2, 18);
+  return m.줄.map((줄, k) => `<text x="${n1(x)}" y="${n1(y + k * m.크기 * 1.2)}" font-size="${m.크기}" fill="${색.잉크}" text-anchor="middle">${esc(줄)}</text>`).join("");
 }
 
 export function chartSvg(spec, 강조색 = "#16296a") {
