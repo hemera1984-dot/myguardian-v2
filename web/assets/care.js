@@ -313,7 +313,8 @@
 
   // 자동 형광 대상 절 — 편집장이 고른 형광이 없는 호(지난 호)에서만 쓴다
   function keyPhrase(text) {
-    var clauses = (text.match(/[^,.;:!?。]+(?:[,.;:!?。]|$)/g) || [text])
+    // 숫자 안의 점·쉼표(21.5%, 5,000)에서는 끊지 않는다 — 형광이 숫자 중간에서 끝났다(2026-11-01 월간 8호)
+    var clauses = (text.match(/(?:\d[.,](?=\d)|[^,.;:!?。])+(?:[,.;:!?。]|$)/g) || [text])
       .map(function (v) { return v.trim(); })
       .filter(function (v) { return v.length >= 8; });
     var best = clauses[0] || text.trim();
