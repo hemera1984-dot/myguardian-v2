@@ -316,7 +316,8 @@
   // 장 맞추기는 여기서 한다 — 자기 DOM을 바로 볼 수 있어 도달 여부를 확인하고 멈출 수 있다.
   var BRIDGE = "\n<script>(function(){\n"
     + "if(window.__mgBridge)return; window.__mgBridge=1;\n"
-    + "function all(){return document.querySelectorAll('.slide');}\n"
+    // 장은 .slide(연구회·교육 상품 덱), 없으면 section.s(교육 공용 엔진 팀교육_공통/덱.js — 2026-11-01까지 못 찾아 장 맞추기·대본 밝히기가 안 됐다)
+    + "function all(){var s=document.querySelectorAll('.slide');return s.length?s:document.querySelectorAll('section.s');}\n"
     // 장 번호를 아는 길은 둘이다. ① .active가 붙는 자료 ② 장을 세로로 쌓고 scrollIntoView로
     // 넘기는 자료(연구회 슬라이드) — 이쪽은 자료가 장을 옮기는 순간을 가로채 번호를 적어 둔다.
     // 화면 위치로 재면 부드러운 스크롤 도중에 값이 흔들려 청중 맞추기가 헛돈다(2026-09-19).
@@ -336,9 +337,9 @@
     + "if(장기록>=0)return 장기록;"
     + "for(i=0;i<s.length;i++)if(s[i].classList.contains('on'))return i;"
     + "return s.length>1?0:-1;}\n"
-    // 박자 — 연구회 덱은 s._beat, 단계를 data-k로 적는 덱은 그 값, 교육 덱은 켜진(.in) data-step 중 가장 큰 값.
+    // 박자 — 연구회 덱은 s._beat, 단계를 data-k로 적는 덱은 그 값, 교육 덱은 켜진(.in) data-step 중 가장 큰 값, 옛 교육 공용 엔진은 켜진 단계 점(.dots>i.on) 수.
     // 박자 수는 data-beats(연구회)나 data-steps(교육) — 둘 다 「N이면 장 안 상태 N+1개」라 대본 박자 문단도 N+1개다
-    + "function 박자(){var s=all()[idx()];if(!s)return 0;if(s._beat!=null)return s._beat|0;if(s.dataset.k!=null)return +s.dataset.k|0;var m=0;s.querySelectorAll('[data-step].in').forEach(function(e){m=Math.max(m,+e.dataset.step|0);});return m;}\n"
+    + "function 박자(){var s=all()[idx()];if(!s)return 0;if(s._beat!=null)return s._beat|0;if(s.dataset.k!=null)return +s.dataset.k|0;var m=0;s.querySelectorAll('[data-step].in').forEach(function(e){m=Math.max(m,+e.dataset.step|0);});return Math.max(m,s.querySelectorAll('.dots>i.on').length);}\n"
     + "window.addEventListener('beat',function(){setTimeout(tell,0);},true);\n"
     + "function 다됨(){var s=all()[idx()];if(s&&s.dataset.k!=null)return s.classList.contains('done');"
     + "return !(s&&s.querySelector('[data-step]:not(.on):not(.in)'));}\n"
@@ -357,9 +358,10 @@
     + "function goTo(n,b,dn){b=b|0;var 내=++세대,tries=0,헛=0;(function step(){if(내!==세대)return;var cur=idx(),cb=박자();"
     + "if(cur===n&&cb===b&&dn&&!다됨()){key('ArrowRight');setTimeout(tell,0);return;}"
     + "if(cur<0||(cur===n&&cb===b)||tries++>5000){tell();return;}"
-    + "key(n>cur||(n===cur&&b>cb)?'ArrowRight':'ArrowLeft');"
-    + "if(idx()===cur&&박자()===cb){if(헛++<1){setTimeout(step,0);return;}tell();return;}"
-    + "헛=0;setTimeout(step,0);})();}\n"
+    // 누른 뒤 바뀔 때까지 0.3초까지 기다린다 — 교육 엔진은 단계를 다음 화면 그리기 때 적어, 바로 보면 「제자리」로 읽혀 한 번 더 누르거나 멈췄다(2026-11-01)
+    + "key(n>cur||(n===cur&&b>cb)?'ArrowRight':'ArrowLeft');var w=0;"
+    + "(function chk(){if(내!==세대)return;if(idx()!==cur||박자()!==cb){헛=0;setTimeout(step,0);return;}"
+    + "if(w++<15){setTimeout(chk,20);return;}if(헛++<1){step();return;}tell();})();})();}\n"
     // 명령은 이 자료를 담은 앱 창에서 온 것만 받는다 — 자료 안의 다른 틀이 흉내 내지 못하게.
     + "window.addEventListener('message',function(e){if(e.source!==parent)return;var d=e.data;if(!d||d.mgb!=='cmd')return;"
     + "if(d.key){key(d.key);tell();}"

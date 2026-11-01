@@ -322,7 +322,8 @@ def check_deck_sync(ctx, base: str, deck: Path, label: str, errors: list, script
 
     pe.wait_for_timeout(1800)
     s = view_state()
-    check(f"{label} 청중 위치 표시 — {'연결됨' if edu else '맞음'}", ("연결됨" if edu else "맞음") in s, s)
+    # 교육 덱도 2026-11-01부터 다리가 section.s 장·단계 점을 읽어 장 번호까지 맞춘다(전에는 「연결됨」만)
+    check(f"{label} 청중 위치 표시 — 맞음", "맞음" in s, s)
     if not edu:
         # 청중 덱이 키를 못 받으면 따라오지 못한다 — 발표자 화면이 그걸 알려야 한다
         vf.evaluate("window.addEventListener('keydown', e => e.stopImmediatePropagation(), true)")
