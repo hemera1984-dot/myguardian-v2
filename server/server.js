@@ -1993,7 +1993,10 @@ async function route(req, res, url) {
       && /^[\w.\/:-]{1,300}$/.test(v)
       && (v.startsWith("/media/") || v.startsWith("data/care/")
         || (MEDIA_BASE && v.startsWith(MEDIA_BASE.replace(/\/$/, "") + "/"))));
-    if (!우리그림(목록항목["커버이미지"]) || 본문["기사"].some((a) => !a || typeof a !== "object" || !우리그림(a["이미지"]))) {
+    const 중간그림들 = (a) => a["중간그림"] === undefined
+      || (Array.isArray(a["중간그림"]) && a["중간그림"].length <= 20
+        && a["중간그림"].every((f) => f && typeof f === "object" && 우리그림(f["이미지"])));
+    if (!우리그림(목록항목["커버이미지"]) || 본문["기사"].some((a) => !a || typeof a !== "object" || !우리그림(a["이미지"]) || !중간그림들(a))) {
       return send(res, 400, { error: "이미지는 이 서버에 올린 것만 쓸 수 있습니다." });
     }
     const entry = { ...목록항목 };

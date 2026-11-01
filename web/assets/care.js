@@ -441,10 +441,22 @@
     var first = true;
     var h = [];
     hlTurn = 0;
+    // 중간 그림 — 소제목 글(뒤)을 열쇠로, 그 소제목 다음 첫 문단 뒤에 놓는다(2026-11-01 「글만 많아 재미없다」)
+    var figs = (Array.isArray(a["중간그림"]) ? a["중간그림"] : []).filter(function (f) { return f && f["이미지"]; });
+    var pendingFig = null;
+    function figHtml(f) {
+      return '<figure class="in-fig"><img src="' + esc(mediaSrc(f["이미지"])) + '" alt="' + esc(f["캡션"] || f["뒤"] || "") + '" loading="lazy">'
+        + figcaptionHtml(f["캡션"], f["출처"]) + "</figure>";
+    }
 
     toks.forEach(function (t) {
       if (t.k === "table") { h.push(tableHtml(t.headers, t.rows)); return; }
-      if (t.k === "h") { h.push('<h3 class="ct-h">' + esc(t.x) + "</h3>"); return; }
+      if (t.k === "h") {
+        if (pendingFig) { h.push(figHtml(pendingFig)); pendingFig = null; }
+        h.push('<h3 class="ct-h">' + esc(t.x) + "</h3>");
+        pendingFig = figs.filter(function (f) { return f["뒤"] === t.x; })[0] || null;
+        return;
+      }
       if (t.k === "stat") { h.push(statHtml(t.x)); return; }
       if (t.k === "statement") { h.push('<blockquote class="pull">' + esc(t.x) + "</blockquote>"); return; }
       if (t.k === "note") { h.push('<aside class="ct-note">' + proseHtml(t.x, marks) + "</aside>"); return; }
@@ -459,7 +471,9 @@
         h.push('<blockquote class="pull">' + esc(q) + "</blockquote>");
         return false;
       });
+      if (pendingFig) { h.push(figHtml(pendingFig)); pendingFig = null; }
     });
+    if (pendingFig) h.push(figHtml(pendingFig));
     // 마지막 문단 끝에 끝 표시
     for (var i = h.length - 1; i >= 0; i--) {
       if (/^<p class="t/.test(h[i])) { h[i] = h[i].replace(/<\/p>$/, '<span class="end" aria-hidden="true"></span></p>'); break; }
@@ -848,12 +862,17 @@
   // 글만 이어지는 구간의 글자 수 — 멈출 자리(소제목·수치·인용·표·상자·뽑은 인용) 사이 평문. 발행 데스크의 「졸리면 실패다」 경고가 쓴다
   function quietRuns(a) {
     var pulls = (Array.isArray(a["뽑은글"]) ? a["뽑은글"] : []).filter(Boolean);
-    var runs = [], run = 0;
+    var figHeads = (Array.isArray(a["중간그림"]) ? a["중간그림"] : []).filter(function (f) { return f && f["이미지"]; })
+      .map(function (f) { return f["뒤"]; });
+    var runs = [], run = 0, figNext = false;   // 중간 그림은 소제목 다음 첫 문단 뒤에서 멈춘다(bodyHtml과 같은 자리)
     tokenize(a["본문"] || []).forEach(function (t) {
       if (t.k === "p") {
         run += t.x.length;
-        if (!pulls.some(function (q) { return t.x.indexOf(q) >= 0; })) return;
+        var stop = figNext || pulls.some(function (q) { return t.x.indexOf(q) >= 0; });
+        figNext = false;
+        if (!stop) return;
       }
+      if (t.k === "h") figNext = figHeads.indexOf(t.x) >= 0;
       if (run) runs.push(run);
       run = 0;
     });

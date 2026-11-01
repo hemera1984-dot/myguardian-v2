@@ -2206,6 +2206,8 @@ a.latest-card {
   min-height: 32px; display: flex; align-items: center;
 }
 .manual[open] > summary { margin-bottom: 10px; }
+.mid-row { padding-top: 14px; }
+.mid-h { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
 .result { margin: 4px 0 0; padding: 14px 0 0; border-top: 1px solid var(--line); }
 .result-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .result-head .r-cat { font-size: 12px; font-weight: 700; color: var(--accent); }

@@ -342,7 +342,7 @@
             "이미지": a["이미지"] || ""
           };
           // 데스크에 칸은 없지만 재발행 때 지우지 않는다(캡션·사진 출처·편집장 선택 칸)
-          ["이미지캡션", "이미지출처", "이미지원본", "형광", "뽑은글", "틀"].forEach(function (k) { if (a[k]) o[k] = a[k]; });
+          ["이미지캡션", "이미지출처", "이미지원본", "형광", "뽑은글", "틀", "중간그림"].forEach(function (k) { if (a[k]) o[k] = a[k]; });
           return o;
         });
         var 목록항목 = {
@@ -448,22 +448,120 @@
 
       // ══ 호 편집 화면 ═══════════════════════════════════════════════
       function slotHtml(target, path, label) {
+        var mid = /^mid-/.test(target);   // 중간 그림 자리 — 삽화 생성·프롬프트는 칼럼·표지 전용
         return '<div class="img-slot">'
           + '<div class="slot-view' + (path ? " has" : "") + '" data-slot="' + esc(target) + '"'
           + (path ? bgUrl(path) : "")
           + ' tabindex="0" role="button" aria-label="' + esc(label) + '">' + (path ? "" : "이미지 없음") + "</div>"
           + '<div class="slot-meta">' + (path ? esc(path) : "눌러서 고르거나, 끌어다 놓거나, 복사한 이미지를 붙여넣습니다.") + "</div>"
           + '<div class="slot-acts">'
-          + '<button class="btn btn-primary" type="button" data-artwork="' + esc(target) + '">'
-          + (path ? "다시 만들기" : (target === "cover" ? "표지 만들기" : "삽화 만들기")) + "</button>"
+          + (mid ? "" : '<button class="btn btn-primary" type="button" data-artwork="' + esc(target) + '">'
+            + (path ? "다시 만들기" : (target === "cover" ? "표지 만들기" : "삽화 만들기")) + "</button>")
           + '<button class="btn" type="button" data-photo="' + esc(target) + '">사진 찾기</button>'
           + (target === "cover" ? "" : '<button class="btn" type="button" data-chart="' + esc(target) + '">수치 그림</button>')
-          + '<button class="btn" type="button" data-imgai="' + esc(target) + '">프롬프트만</button>'
+          + (mid ? "" : '<button class="btn" type="button" data-imgai="' + esc(target) + '">프롬프트만</button>')
           + (path ? '<button class="btn" type="button" data-imgdel="' + esc(target) + '">지우기</button>' : "")
           + "</div>"
           + '<div class="img-prompt" data-prompt="' + esc(target) + '" hidden></div>'
           + '<div class="photo-pick" data-photos="' + esc(target) + '" hidden></div>'
           + "</div>";
+      }
+
+      // ══ 중간 그림 (2026-11-01 「글만 많아 재미없다 — 신문·잡지는 중간중간 그림을 넣는다」) ══
+      // 본문 소제목마다 자리 하나. 지면은 그 소제목 다음 첫 문단 뒤에 싣는다(care.js bodyHtml).
+      // 대상 이름은 "mid-<칼럼>-<소제목 순번>", 초안에는 a.중간그림 = [{뒤: 소제목 글, 이미지, 출처, 원본}].
+      var NAV_HEADS = { "다음 칼럼": 1, "이전 칼럼": 1, "목록으로": 1 };
+      function midHeads(a) {
+        var out = [];
+        (a["본문"] || []).forEach(function (b, j) {
+          if (b.t === "h" && b.x.indexOf("\t") < 0 && !NAV_HEADS[b.x]) out.push({ x: b.x, at: j });
+        });
+        return out;
+      }
+      function midSection(a, hd) {
+        var bl = a["본문"] || [], out = [];
+        for (var j = hd.at + 1; j < bl.length && !(bl[j].t === "h" && bl[j].x.indexOf("\t") < 0); j++) out.push(bl[j]);
+        return out;
+      }
+      function midTarget(target) {
+        var m = /^mid-(\d+)-(\d+)$/.exec(target);
+        return m ? { col: Number(m[1]), k: Number(m[2]) } : null;
+      }
+      function colOf(target) { var mt = midTarget(target); return mt ? mt.col : Number(target.slice(4)); }
+      function midFig(a, x) { return (a["중간그림"] || []).filter(function (f) { return f["뒤"] === x; })[0]; }
+      var midBusy = {};   // "호|칼럼" → 진행 안내. 다시 그려도 채우는 중임을 잃지 않게
+      function midSlotsHtml(a, i) {
+        var hs = midHeads(a);
+        if (!hs.length) return "";
+        var n = 0, busy = midBusy[S.draft.id + "|" + i];
+        var rows = hs.map(function (hd, k) {
+          var f = midFig(a, hd.x);
+          if (f) n++;
+          return '<div class="mid-row"><p class="mid-h">' + esc(hd.x) + "</p>"
+            + slotHtml("mid-" + i + "-" + k, f && f["이미지"], hd.x + " 뒤 그림") + "</div>";
+        }).join("");
+        return '<details class="manual mid-figs"' + (n || busy ? " open" : "") + '><summary>중간 그림 ' + n + " / " + hs.length + "</summary>"
+          + '<p class="hint">소제목 다음 첫 문단 뒤에 실립니다. 빈 자리 채우기는 그 단락의 수치로 그림을 그려 보고, 수치가 없으면 사진을 찾아 넣습니다.</p>'
+          + '<button class="btn btn-primary" type="button" data-midfill="' + i + '"' + (busy ? " disabled" : "") + ">"
+          + (busy ? "채우는 중" : "빈 자리 채우기") + "</button>"
+          + '<p class="hint" data-midnote="' + i + '"' + (busy ? "" : " hidden") + ">" + esc(busy || "") + "</p>"
+          + rows + "</details>";
+      }
+
+      // 빈 자리 채우기 — 소제목마다 차례로(사진 찾기 하루 40번을 아낀다). 수치 그림은 한 번에 하나까지(같은 꼴이 줄줄이 나오지 않게),
+      // 나머지는 사진 찾기의 첫 후보. 대표 그림·이미 넣은 그림과 같은 사진은 건너뛴다.
+      function fillMids(i) {
+        var id = S.draft.id, key = id + "|" + i;
+        if (midBusy[key]) return;
+        function art() { var d = S.draft && S.draft.id === id ? S.draft : readDraft(id); return d && d["기사"][i]; }
+        function note(t, bad) {
+          if (midBusy[key]) midBusy[key] = t;
+          var p = document.querySelector('[data-midnote="' + i + '"]');
+          if (p && S.draft && S.draft.id === id) { p.hidden = !t; p.textContent = t; p.classList.toggle("bad", !!bad); }
+        }
+        var a = art(), hs = midHeads(a);
+        var 쓴원본 = [a["이미지원본"]].concat((a["중간그림"] || []).map(function (f) { return f["원본"]; })).filter(Boolean);
+        var 색 = (window.care.sectionColors(S.draft["기사"])[i] || {}).c || "";
+        var 차트씀 = false, 넣음 = 0, 실패 = "";
+        function api(path, body) { return window.mgAuth.api(path, { method: "POST", body: body }); }
+        midBusy[key] = "시작합니다.";
+        renderEdit();
+        var chain = Promise.resolve();
+        hs.forEach(function (hd, k) {
+          chain = chain.then(function () {
+            var cur = art();
+            if (!cur || midFig(cur, hd.x)) return;
+            var sec = midSection(cur, hd), t = "mid-" + i + "-" + k;
+            if (!blocksLen(sec)) return;
+            var 제목 = cur["제목"] + " — " + hd.x;
+            function 사진() {
+              note("「" + hd.x + "」 사진을 찾는 중입니다.");
+              return api("/care/photo-find", { "제목": 제목, "요약": "", "카테고리": cur["카테고리"] || "",
+                "본문": sec.map(function (x) { return String(x.x || ""); }).join("\n").slice(0, 1500) })
+                .then(function (d) {
+                  var c = (d["후보"] || []).filter(function (h) { return !h["원본"] || 쓴원본.indexOf(h["원본"]) < 0; })[0];
+                  if (!c) return;
+                  return api("/care/photo-get", { "토큰": c["토큰"] }).then(function (g) {
+                    쓴원본.push(g["원본"] || c["원본"]);
+                    if (setImage(t, g["주소"], id, g) !== false) 넣음++;
+                  });
+                });
+            }
+            var 그림 = 차트씀 ? 사진() : (note("「" + hd.x + "」 수치를 찾는 중입니다."),
+              api("/ai/chart", { "제목": 제목, "본문": sec, "채널": chFull(), "섹션색": 색 }).then(function (d) {
+                if (d["그림없음"]) return 사진();
+                차트씀 = true;
+                if (setImage(t, d["주소"], id) !== false) 넣음++;
+              }));
+            return 그림.catch(function (e) { 실패 = (e && e.message) || "실패"; });
+          });
+        });
+        chain.then(function () {
+          delete midBusy[key];
+          if (S.draft && S.draft.id === id) renderEdit();
+          note(넣음 ? "그림 " + 넣음 + "장을 넣었습니다. 맞지 않는 것은 지우거나 다시 찾으세요." + (실패 ? " (일부 실패: " + 실패 + ")" : "")
+            : (실패 || "넣을 만한 그림을 찾지 못했습니다."), !넣음);
+        });
       }
 
       // 지면 칸 — 편집장이 고르는 것(헌법 「졸리면 실패다」 ⑤: 큰 수치·인용은 기계가 아니라 편집장이 고른다)
@@ -602,6 +700,7 @@
           + '<details class="manual"><summary>손보기</summary>' + colFieldsHtml(a, i) + "</details>"
           + '<div class="fld"><label>이미지</label>' + slotHtml("col-" + i, a["이미지"], target + " 이미지 올리기") + "</div>"
           + photoFieldsHtml(a, i)
+          + midSlotsHtml(a, i)
           + "</div>";
       }
 
@@ -720,7 +819,7 @@
                 "부제": a["부제"] || "", "요약": a["요약"] || [], "한마디": a["한마디"] || [],
                 "본문": a["본문"] || [], "이미지": a["이미지"] || "", "방향": ""
               };
-              ["이미지캡션", "이미지출처", "이미지원본", "형광", "뽑은글", "틀"].forEach(function (k) { if (a[k]) o[k] = a[k]; });
+              ["이미지캡션", "이미지출처", "이미지원본", "형광", "뽑은글", "틀", "중간그림"].forEach(function (k) { if (a[k]) o[k] = a[k]; });
               return o;
             })
           };
@@ -1111,13 +1210,15 @@
 
       // 수치 그림 — 기사에 실제로 적힌 숫자로 그래프·흐름도를 그린다. 숫자가 둘 미만이면 안 그린다.
       function makeChart(target, btn) {
-        var a = S.draft["기사"][Number(target.slice(4))];
-        if (!blocksLen(a["본문"])) { slotNote(target, "본문을 먼저 써 주세요.", true); return; }
+        var a = S.draft["기사"][colOf(target)];
+        var mt = midTarget(target), hd = mt && midHeads(a)[mt.k];
+        var 본문 = hd ? midSection(a, hd) : a["본문"];   // 중간 그림은 그 단락의 수치만
+        if (!blocksLen(본문)) { slotNote(target, "본문을 먼저 써 주세요.", true); return; }
         var id = S.draft.id, old = btn.textContent;
         btn.disabled = true; btn.textContent = "그리는 중";
         slotNote(target, "기사 속 수치를 찾아 그리고 있습니다.");
-        window.mgAuth.api("/ai/chart", { method: "POST", body: { "제목": a["제목"], "본문": a["본문"], "채널": chFull(),
-          "섹션색": (window.care.sectionColors(S.draft["기사"])[Number(target.slice(4))] || {}).c || "" } })
+        window.mgAuth.api("/ai/chart", { method: "POST", body: { "제목": hd ? a["제목"] + " — " + hd.x : a["제목"], "본문": 본문, "채널": chFull(),
+          "섹션색": (window.care.sectionColors(S.draft["기사"])[colOf(target)] || {}).c || "" } })
           .then(function (d) {
             if (d["그림없음"]) { slotNote(target, "그릴 수치가 없습니다 — " + (d["사유"] || ""), true); return; }
             var ok = setImage(target, d["주소"], id);
@@ -1206,7 +1307,8 @@
       function findPhoto(target, btn) {
         var box = document.querySelector('[data-photos="' + target + '"]');
         if (!box) return;
-        var a = target === "cover" ? (S.draft["기사"] || [])[0] : S.draft["기사"][Number(target.slice(4))];
+        var a = target === "cover" ? (S.draft["기사"] || [])[0] : S.draft["기사"][colOf(target)];
+        var mt = midTarget(target), hd = a && mt && midHeads(a)[mt.k];
         box.hidden = false;
         if (!a || !a["제목"]) { box.textContent = "기사 제목이 먼저 필요합니다."; return; }
         if (!window.mgAuth || !window.mgAuth.token()) {
@@ -1218,9 +1320,9 @@
         box.textContent = "기사 소재를 보고 사진을 찾은 뒤, 맞는 사진만 고르는 중입니다. 1분 안팎 걸립니다.";
         var 찾은호 = S.draft.id;
         window.mgAuth.api("/care/photo-find", { method: "POST", body: {
-          "제목": a["제목"], "요약": fromLines(a["요약"]) || a["부제"] || "", "카테고리": a["카테고리"] || "",
-          // 본문 앞부분 — 사건 이름·장소·날짜가 여기 있어야 검색어가 구체적이 된다
-          "본문": (a["본문"] || []).map(function (x) { return String(x.x || ""); }).join("\n").slice(0, 1500) } })
+          "제목": hd ? a["제목"] + " — " + hd.x : a["제목"], "요약": hd ? "" : fromLines(a["요약"]) || a["부제"] || "", "카테고리": a["카테고리"] || "",
+          // 본문 앞부분 — 사건 이름·장소·날짜가 여기 있어야 검색어가 구체적이 된다. 중간 그림은 그 단락만
+          "본문": (hd ? midSection(a, hd) : a["본문"] || []).map(function (x) { return String(x.x || ""); }).join("\n").slice(0, 1500) } })
           .then(function (d) {
             if (!S.draft || S.draft.id !== 찾은호) return;
             var 후보 = d["후보"] || [], 페이지 = d["페이지"] || [];
@@ -1272,8 +1374,15 @@
         var 대상 = !draftId || (S.draft && S.draft.id === draftId) ? S.draft : readDraft(draftId);
         if (!대상) return;                       // 초안이 지워졌다
         var 문구 = 출처 ? 출처["출처문구"] || "" : "", 원본 = 출처 ? 출처["원본"] || "" : "";
+        var mt = midTarget(target);
         if (target === "cover") {
           대상["커버이미지"] = path; 대상["커버출처"] = 문구; 대상["커버원본"] = 원본;
+        } else if (mt) {
+          var ma = 대상["기사"][mt.col], hd = ma && midHeads(ma)[mt.k];
+          if (!hd) return false;
+          var figs = (ma["중간그림"] || []).filter(function (f) { return f["뒤"] !== hd.x; });
+          if (path) figs.push({ "뒤": hd.x, "이미지": path, "출처": 문구, "원본": 원본 });
+          if (figs.length) ma["중간그림"] = figs; else delete ma["중간그림"];
         } else {
           var a = 대상["기사"][Number(target.slice(4))];
           if (!a) return false;
@@ -1710,6 +1819,8 @@
         }
         var rm = t.closest("button[data-imgdel]");
         if (rm) { setImage(rm.dataset.imgdel, ""); return; }
+        var mf = t.closest("button[data-midfill]");
+        if (mf) { fillMids(Number(mf.dataset.midfill)); return; }
 
         if (t.closest("#btn-preview")) { openPreview(); return; }
         if (t.closest("#btn-publish")) { doPublish(t.closest("#btn-publish")); return; }
