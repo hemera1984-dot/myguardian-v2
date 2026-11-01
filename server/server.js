@@ -174,13 +174,15 @@ const PHOTO_LOG = () => join(CARE_DIR, "photo-sources.json");
 const PHOTO_SCHEMA = {
   type: "object",
   properties: {
-    소재: { type: "string", enum: ["제품", "인물", "현장", "개념"] },
+    소재: { type: "string", enum: ["제품", "현장", "개념"] },
     이유: { type: "string" },
     제작사: { type: "string" },
     공식페이지: { type: "array", items: { type: "string" } },
-    검색어: { type: "array", items: { type: "string" } }
+    검색어: { type: "array", items: { type: "string" } },
+    인물이름: { type: "string" },
+    인물검색어: { type: "array", items: { type: "string" } }
   },
-  required: ["소재", "이유", "제작사", "공식페이지", "검색어"],
+  required: ["소재", "이유", "제작사", "공식페이지", "검색어", "인물이름", "인물검색어"],
   additionalProperties: false
 };
 
@@ -2698,7 +2700,7 @@ async function route(req, res, url) {
       if (!그림인가(r.bytes, r.형식)) throw new Error("그림 아님");
       return { h, r };
     }))).filter((x) => x.status === "fulfilled").map((x) => x.value);
-    if (!받은.length) return 후보;
+    if (!받은.length) return 인물 ? [] : 후보;   // 인물은 눈으로 못 가리면 내지 않는다 — 다른 사람 얼굴이 실리는 것보다 빈 자리가 낫다
     const 내용 = [];
     받은.forEach(({ r }, i) => {
       내용.push({ type: "text", text: `사진 ${i + 1}` });
@@ -2724,7 +2726,7 @@ async function route(req, res, url) {
         properties: { 번호: { type: "integer" }, 보인것: { type: "string" } }, required: ["번호", "보인것"], additionalProperties: false } } },
       required: ["고른것"], additionalProperties: false
     }, { effort: "low", maxTokens: 4000, timeout: 120000 });
-    if (v.error) { console.warn("사진 눈 확인 실패 — 거르지 않고 낸다"); return 후보; }
+    if (v.error) { console.warn("사진 눈 확인 실패 — " + (인물 ? "인물 후보는 내지 않는다" : "거르지 않고 낸다")); return 인물 ? [] : 후보; }
     const 남김 = [];
     for (const g of v.value["고른것"] || []) {
       const x = 받은[Number(g["번호"]) - 1];
@@ -2751,14 +2753,14 @@ async function route(req, res, url) {
       "  제작사 자기 도메인의 공식 페이지 주소(그 작품 전용 페이지·공식 뉴스룸·보도자료) 최대 4개를 적는다.",
       "  게임 매체·언론사·위키·팬 사이트·쇼핑몰·동영상 사이트 주소는 적지 않는다. 확인하지 못한 주소를 지어내지 않는다.",
       "  검색어 칸에는 그 제품을 위키미디어 공용에서 찾을 영어 이름 1~2개(공식 그림을 못 받을 때 쓴다).",
-      "- 인물: 글의 중심이 이름이 나온 실존 인물(연예인·운동선수·기업인·정치인 등)이면. 웹 검색으로 그 사람의 영어 표기를 확인하고,",
-      "  검색어 칸에 위키미디어 공용에서 찾을 이름 1~2개(동명이인을 가르는 말을 붙여서, 예: Kim Dong-hyun fighter). 제작사 칸에는 그 사람 이름을 한국어로.",
-      "  글에 이름이 나와도 제도·사건 설명이 중심이면 인물로 가르지 않는다.",
       "- 현장: 실제 장소·사건·사람들의 현장(시위·재난·도시·병원·시장·행사 등)이 소재면.",
       "- 개념: 제도·세금·보험 구조·법·통계처럼 그 자체로는 찍을 대상이 없으면. 그래도 사진을 쓴다 — 글의 핵심을",
       "  실제로 찍을 수 있는 장면 하나로 바꾼다(예: 상속 → 서류에 서명하는 노부부의 손, 실손 청구 → 병원 접수 창구, 연금 → 은퇴한 노부부의 산책).",
       "현장·개념의 검색어: 위키미디어 공용·Pixabay에서 찾을 영어 검색어 2~3개. 본문에 나온 사건 이름·도시·연도가 든 구체적인 것을 먼저,",
       "  마지막에 장면을 묘사하는 일반어 하나(예: 2026 Paris pension reform protest / Paris protest crowd). 현장·개념은 웹 검색을 쓰지 않는다.",
+      "인물(소재와 따로 정한다): 제목에 이름이 나온 실존 인물(연예인·운동선수·기업인·정치인 등)이 있으면, 글이 제도 설명 중심이어도",
+      "  인물이름 칸에 그 사람 한국어 이름, 인물검색어 칸에 위키미디어 공용에서 찾을 영어 표기 1~2개(웹 검색으로 확인, 동명이인을 가르는 말을 붙여서,",
+      "  예: Kim Dong-hyun fighter). 제목에 실존 인물 이름이 없으면 둘 다 비운다. 독자는 그 사람 얼굴을 보고 싶어 한다.",
       "해당하지 않는 칸은 빈 문자열·빈 배열로 둔다. 이유는 한 문장, 한국어로.",
       "",
       "섹션: " + 카테고리,
@@ -2783,22 +2785,32 @@ async function route(req, res, url) {
         });
       });
     }
+    // 기사에 이름이 나온 실존 인물 — 위키미디어에서 그 사람 사진을 따로 찾아 맨 앞에 둔다(11-01 「김동현 얘기면 김동현 얼굴은 있어야」)
+    const 인물 = String(v["인물이름"] || "").slice(0, 40);
+    let 인물후보 = [];
+    if (인물) {
+      for (const q of (v["인물검색어"] || []).slice(0, 2)) {
+        try { 인물후보 = 인물후보.concat(await 공용사진(q, { 인물: true })); } catch (e) { console.warn("인물 사진 검색 실패:", e.message); }
+      }
+      인물후보 = 인물후보.filter((h, i) => 인물후보.findIndex((x) => x.받을주소 === h.받을주소) === i).slice(0, 12);
+      if (인물후보.length) 인물후보 = await 눈으로고르기(인물후보, { 제목, 요약, 카테고리, 인물 });
+    }
     // 공식 그림이 없으면(제품) · 현장 · 개념 — 상업 이용이 되는 공용 사진
     if (!후보.length) {
       for (const q of (v["검색어"] || []).slice(0, 3)) {
-        try { 후보 = 후보.concat(await 공용사진(q, { 인물: v["소재"] === "인물" })); } catch (e) { console.warn("공용 사진 검색 실패:", e.message); }
+        try { 후보 = 후보.concat(await 공용사진(q)); } catch (e) { console.warn("공용 사진 검색 실패:", e.message); }
         if (후보.length >= 16) break;
       }
       후보 = 후보.filter((h, i) => 후보.findIndex((x) => x.받을주소 === h.받을주소) === i).slice(0, 16);
     }
     // 검색이 맞힌 것은 낱말이지 사진이 아니다 — AI가 미리보기를 직접 보고 기사와 맞는 것만 남긴다(로댕 조각이 시위 기사에 뜬 일, 11-01)
     const 본수 = 후보.length;
-    if (후보.length) 후보 = await 눈으로고르기(후보, { 제목, 요약, 카테고리, 인물: v["소재"] === "인물" ? String(v["제작사"] || "").slice(0, 40) : "" });
+    if (후보.length) 후보 = await 눈으로고르기(후보, { 제목, 요약, 카테고리 });
+    후보 = 인물후보.concat(후보.filter((h) => !인물후보.some((x) => x.받을주소 === h.받을주소)));
     if (!후보.length) {
       안내 = v["소재"] === "제품" && 페이지.length
         ? "공식 페이지에서 대표 그림을 받지 못했습니다. 아래 페이지를 열어 홍보 이미지를 받은 뒤 「사진 올리기」로 넣어 주세요."
         : 본수 ? `사진 ${본수}장을 찾았지만 기사와 맞는 것이 없었습니다. 다시 누르거나 직접 올려 주세요.`
-        : v["소재"] === "인물" ? "위키미디어 공용에서 이 인물의 사진을 찾지 못했습니다. 소속사·방송사가 배포한 사진을 받아 「사진 올리기」로 넣어 주세요."
         : "상업 이용이 되는 사진을 찾지 못했습니다. 다시 누르거나 직접 올려 주세요.";
     }
     const 지금 = Date.now();
@@ -2808,7 +2820,7 @@ async function route(req, res, url) {
       사진후보.set(토큰, { ...h, 계정: me.id, 만료: 지금 + 36e5 });
       return { 토큰, 미리보기: h.미리보기, 제목: h.제목, 출처문구: h.출처문구, 원본: h.원본, 라이선스: h.라이선스, 가로: h.가로, 세로: h.세로, 보인것: h.보인것 || "" };
     });
-    console.log(`사진 찾기: 「${제목.slice(0, 30)}」 ${v["소재"]} — 찾음 ${본수} · 남김 ${낼것.length}장 — ${me.email}`);
+    console.log(`사진 찾기: 「${제목.slice(0, 30)}」 ${v["소재"]}${인물 ? " · 인물 " + 인물 + " " + 인물후보.length + "장" : ""} — 찾음 ${본수} · 남김 ${낼것.length}장 — ${me.email}`);
     return send(res, 200, { 소재: v["소재"], 이유: v["이유"], 안내, 후보: 낼것, 페이지 });
   }
 
