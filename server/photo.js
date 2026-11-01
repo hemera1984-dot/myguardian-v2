@@ -27,7 +27,10 @@ export const 금지된곳 = (주소) => { try { return 금지호스트.test(호�
 
 // 한 번 받기 — 검사한 주소로 연결을 고정한다(DNS를 다시 물어 내부망 주소로 바뀌는 것을 막는다). 인증서·SNI는 원래 호스트 이름 그대로
 function 한번받기(u, 고정, 한도, 형식검사) {
-  return new Promise((ok, no) => {
+  return new Promise((끝, 실패) => {
+    // 소켓 timeout은 무응답만 본다 — 조금씩 흘려 보내는 응답도 끊기게 전체 시간을 따로 잰다
+    const 시계 = setTimeout(() => req.destroy(new Error("응답이 늦습니다.")), 20000);
+    const ok = (v) => { clearTimeout(시계); 끝(v); }, no = (e) => { clearTimeout(시계); 실패(e); };
     const 고정주소 = (_h, opts, cb) => (opts && opts.all ? cb(null, [고정]) : cb(null, 고정.address, 고정.family));
     const req = request(u, { headers: UA, lookup: 고정주소, timeout: 15000 }, (res) => {
       const 끊기 = (e) => { res.destroy(); no(e); };
