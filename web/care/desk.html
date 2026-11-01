@@ -469,7 +469,7 @@
 
       // ══ 중간 그림 (2026-11-01 「글만 많아 재미없다 — 신문·잡지는 중간중간 그림을 넣는다」) ══
       // 본문 소제목마다 자리 하나. 지면은 그 소제목 다음 첫 문단 뒤에 싣는다(care.js bodyHtml).
-      // 대상 이름은 "mid-<칼럼>-<소제목 순번>", 초안에는 a.중간그림 = [{뒤: 소제목 글, 이미지, 출처, 원본}].
+      // 대상 이름은 "mid-<칼럼>-<소제목 순번>", 초안에는 a.중간그림 = [{뒤: 소제목 글, 이미지, 출처, 원본, 캡션?}].
       var NAV_HEADS = { "다음 칼럼": 1, "이전 칼럼": 1, "목록으로": 1 };
       function midHeads(a) {
         var out = [];
@@ -498,7 +498,11 @@
           var f = midFig(a, hd.x);
           if (f) n++;
           return '<div class="mid-row"><p class="mid-h">' + esc(hd.x) + "</p>"
-            + slotHtml("mid-" + i + "-" + k, f && f["이미지"], hd.x + " 뒤 그림") + "</div>";
+            + slotHtml("mid-" + i + "-" + k, f && f["이미지"], hd.x + " 뒤 그림")
+            + (f ? '<div class="fld"><label for="f-midcap-' + i + "-" + k + '">사진 설명 <span class="opt">선택</span></label>'
+              + '<input type="text" id="f-midcap-' + i + "-" + k + '" data-f="중간캡션" data-col="' + i + '" data-mid="' + esc(hd.x) + '" value="' + esc(f["캡션"] || "") + '">'
+              + '<p class="hint">그림 아래 출처 앞에 실립니다. 인물 사진이면 누구인지, 언제 찍었는지.</p></div>' : "")
+            + "</div>";
         }).join("");
         return '<details class="manual mid-figs"' + (n || busy ? " open" : "") + '><summary>중간 그림 ' + n + " / " + hs.length + "</summary>"
           + '<p class="hint">소제목 다음 첫 문단 뒤에 실립니다. 빈 자리 채우기는 그 단락의 수치로 그림을 그려 보고, 수치가 없으면 사진을 찾아 넣습니다.</p>'
@@ -1912,6 +1916,9 @@
         if (key === "편집장의말") {
           S.draft["편집장의말"] = toLines(v);
           el("preface-cnt").textContent = linesLen(S.draft["편집장의말"]) + "자";
+        } else if (key === "중간캡션") {
+          var mf = midFig(S.draft["기사"][Number(f.dataset.col)], f.dataset.mid);
+          if (mf) { if (v.trim()) mf["캡션"] = v.trim(); else delete mf["캡션"]; }
         } else if (f.dataset.cover) {
           S.draft[key] = v.trim();
           if (key === "커버출처" && !S.draft[key]) S.draft["커버원본"] = "";
