@@ -1327,7 +1327,7 @@
             if (!S.draft || S.draft.id !== 찾은호) return;
             var 후보 = d["후보"] || [], 페이지 = d["페이지"] || [];
             box.dataset.draft = 찾은호;
-            box.innerHTML = '<p class="pp-why"><b>' + esc(d["소재"] === "제품" ? "제품·작품" : d["소재"] === "현장" ? "현장·사건" : "제도·개념") + "</b> "
+            box.innerHTML = '<p class="pp-why"><b>' + esc(d["소재"] === "제품" ? "제품·작품" : d["소재"] === "인물" ? "실존 인물" : d["소재"] === "현장" ? "현장·사건" : "제도·개념") + "</b> "
               + esc(d["이유"] || "") + "</p>"
               + (d["안내"] ? '<p class="pp-note">' + esc(d["안내"]) + "</p>" : "")
               + (페이지.length && !후보.length

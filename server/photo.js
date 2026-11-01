@@ -135,20 +135,24 @@ async function 받아JSON(url) {
   }
 }
 
-export async function 공용사진(검색어) {
+// 인물: 실존 인물 사진은 스톡에 없다 — 위키미디어만 찾고, 초상은 작은 세로 사진이 많아 폭 기준을 400으로 낮춘다
+export async function 공용사진(검색어, { 인물 = false } = {}) {
   const q = String(검색어 || "").trim().slice(0, 100);
   if (!q) return [];
+  const 최소폭 = 인물 ? 400 : 1000;
   const [wm, px, pb] = await Promise.allSettled([
     받아JSON(WM + "?" + new URLSearchParams({ action: "query", format: "json", prop: "imageinfo", iiprop: "url|size|extmetadata",
       generator: "search", gsrsearch: q + " filetype:bitmap", gsrnamespace: "6", gsrlimit: "12", iiurlwidth: "1600" })),
-    펙셀(q),
-    픽사베이(q)
+    인물 ? [] : 펙셀(q),
+    인물 ? [] : 픽사베이(q)
   ]);
   const 위키 = wm.status === "fulfilled" ? Object.values(wm.value.query?.pages || {}).sort((a, b) => (a.index || 0) - (b.index || 0)).map((p) => {
     const ii = p.imageinfo?.[0] || {}, m = ii.extmetadata || {};
     const lic = wmLic(m.License?.value || m.LicenseShortName?.value);
-    if (!lic || (ii.width || 0) < 1000 || !ii.thumburl) return null;
-    const 이름 = 글만(m.Artist?.value) || "작자 미상";
+    if (!lic || (ii.width || 0) < 최소폭 || !ii.thumburl) return null;
+    // 작가 칸이 각주 번호([1])뿐이면 제공처(Credit) 도메인을 쓴다 — 아크로팬 사진이 「사진 [1]」로 나왔다(11-01)
+    const 작가 = 글만(m.Artist?.value).replace(/^\[\d+\]$/, ""), 제공 = (/\/\/(?:www\.)?([^/]+)/.exec(글만(m.Credit?.value)) || [])[1];
+    const 이름 = 작가 || 제공 || "작자 미상";
     // 미리보기는 500px — 위키미디어는 정해진 폭(250·330·500·960…)만 준다. 480은 400으로 거절(2026-11-01)
     return { 받을주소: ii.thumburl, 미리보기: ii.thumburl.replace(/\/\d+px-/, "/500px-"), 가로: ii.width, 세로: ii.height,
       제목: 글만(p.title).replace(/^File:|\.\w+$/g, ""), 원본: ii.descriptionurl, 라이선스: lic,
