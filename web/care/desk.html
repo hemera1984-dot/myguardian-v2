@@ -1200,7 +1200,8 @@
       }
 
       // ══ 사진 찾기 (2026-11-01 케어센터 고도화) ═══════════════════════
-      // 서버가 기사 소재를 가른다 — 제품·작품은 제작사 공식 홍보 이미지, 현장·사건은 상업 이용 가능한 공용 사진, 제도·개념은 삽화.
+      // 서버가 기사 소재를 가른다 — 제품·작품은 제작사 공식 홍보 이미지, 현장·사건·제도·개념은 상업 이용 가능한 공용 사진(11-01 「삽화보다 실제 사진」).
+      // 후보는 서버에서 AI가 눈으로 보고 기사와 맞는 것만 남긴다.
       // 후보를 보고 편집장이 하나를 누르면 서버가 받아 미디어 창고에 넣고, 출처 문구가 출처 칸에 들어간다.
       function findPhoto(target, btn) {
         var box = document.querySelector('[data-photos="' + target + '"]');
@@ -1214,10 +1215,12 @@
         }
         var old = btn.textContent;
         btn.disabled = true; btn.textContent = "찾는 중";
-        box.textContent = "기사 소재를 보고 사진 갈래를 정하는 중입니다. 30초 안팎 걸립니다.";
+        box.textContent = "기사 소재를 보고 사진을 찾은 뒤, 맞는 사진만 고르는 중입니다. 1분 안팎 걸립니다.";
         var 찾은호 = S.draft.id;
         window.mgAuth.api("/care/photo-find", { method: "POST", body: {
-          "제목": a["제목"], "요약": fromLines(a["요약"]) || a["부제"] || "", "카테고리": a["카테고리"] || "" } })
+          "제목": a["제목"], "요약": fromLines(a["요약"]) || a["부제"] || "", "카테고리": a["카테고리"] || "",
+          // 본문 앞부분 — 사건 이름·장소·날짜가 여기 있어야 검색어가 구체적이 된다
+          "본문": (a["본문"] || []).map(function (x) { return String(x.x || ""); }).join("\n").slice(0, 1500) } })
           .then(function (d) {
             if (!S.draft || S.draft.id !== 찾은호) return;
             var 후보 = d["후보"] || [], 페이지 = d["페이지"] || [];
@@ -1232,7 +1235,7 @@
               + (후보.length ? '<div class="pp-grid">' + 후보.map(function (h) {
                   return '<figure class="pp-cand"><button type="button" data-photopick="' + esc(h["토큰"]) + '" aria-label="이 사진 쓰기 — ' + esc(h["출처문구"]) + '">'
                     + '<img src="' + esc(h["미리보기"]) + '" alt="" loading="lazy" referrerpolicy="no-referrer"></button>'
-                    + "<figcaption>" + esc(h["출처문구"])
+                    + "<figcaption>" + (h["보인것"] ? "<b>" + esc(h["보인것"]) + "</b> " : "") + esc(h["출처문구"])
                     + (h["가로"] ? " · " + h["가로"] + "×" + h["세로"] : "")
                     + (h["원본"] ? ' · <a href="' + esc(h["원본"]) + '" target="_blank" rel="noopener noreferrer">원본</a>' : "")
                     + "</figcaption></figure>";

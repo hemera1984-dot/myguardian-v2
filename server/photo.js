@@ -1,8 +1,8 @@
 // 지면 사진 찾기 (2026-11-01 케어센터 고도화 3단계 — 「실제 이미지 자동으로 찾아서 넣을 수 있게」)
 //
 // 기사 소재에 따라 사진 갈래가 다르다(헌법 「지면 이미지」):
-//   제품·작품 → 제작사 공식 페이지의 홍보 이미지(og:image) / 현장·사건 → 상업 이용·수정 허용 사진(위키미디어 공용·Openverse)
-//   제도·개념 → 사진을 찾지 않는다(삽화 만들기).
+//   제품·작품 → 제작사 공식 페이지의 홍보 이미지(og:image) / 현장·사건·제도·개념 → 상업 이용·수정 허용 사진
+//   (위키미디어 공용 + Pexels — 11-01 「삽화보다 실제 사진」). Openverse는 이 PC·운영 서버 둘 다 응답이 없어 걷었다.
 // 서버가 바깥 주소를 받아 오므로 내부망으로 새지 않게 막는다(안전받기).
 import { lookup } from "node:dns/promises";
 import { BlockList, isIP } from "node:net";
@@ -92,7 +92,19 @@ export function 대표그림(html, 페이지) {
 }
 
 // ── 공용 사진(현장·사건) — 위키미디어 공용 + Openverse, 키 없이. 상업 이용·수정 허용만(cc0·pdm·by·by-sa) ──
-const OV = "https://api.openverse.org/v1/images/";
+// Pexels — 상업 이용·수정 허용(Pexels 라이선스). 키가 서버 환경변수에 있을 때만 찾는다. 개념 기사의 일반 장면 사진은 위키미디어에 거의 없다
+const PX = "https://api.pexels.com/v1/search";
+async function 펙셀(q) {
+  const key = process.env.PEXELS_KEY;
+  if (!key) return [];
+  const r = await fetch(PX + "?" + new URLSearchParams({ query: q, per_page: "10", orientation: "landscape" }),
+    { headers: { ...UA, Authorization: key }, signal: AbortSignal.timeout(10000) });
+  if (!r.ok) throw new Error("Pexels 응답 " + r.status);
+  return ((await r.json()).photos || []).filter((p) => p.width >= 1000 && p.src?.large2x).map((p) => ({
+    받을주소: p.src.large2x, 미리보기: p.src.medium, 가로: p.width, 세로: p.height, 제목: 글만(p.alt) || "Pexels 사진", 원본: p.url,
+    라이선스: "pexels", 출처문구: `사진 ${글만(p.photographer) || "작자 미상"} · Pexels`
+  }));
+}
 const WM = "https://commons.wikimedia.org/w/api.php";
 const 라이선스이름 = { cc0: "CC0", pdm: "퍼블릭 도메인", by: "CC BY", "by-sa": "CC BY-SA" };
 const wmLic = (s) => { s = String(s || "").toLowerCase(); return /^(pd|public domain)/.test(s) ? "pdm" : /^cc0/.test(s) ? "cc0" : /^cc-by-sa-\d/.test(s) ? "by-sa" : /^cc-by-\d/.test(s) ? "by" : null; };
@@ -112,27 +124,28 @@ async function 받아JSON(url) {
 export async function 공용사진(검색어) {
   const q = String(검색어 || "").trim().slice(0, 100);
   if (!q) return [];
-  const [wm, ov] = await Promise.allSettled([
+  const [wm, px] = await Promise.allSettled([
     받아JSON(WM + "?" + new URLSearchParams({ action: "query", format: "json", prop: "imageinfo", iiprop: "url|size|extmetadata",
       generator: "search", gsrsearch: q + " filetype:bitmap", gsrnamespace: "6", gsrlimit: "12", iiurlwidth: "1600" })),
-    받아JSON(OV + "?" + new URLSearchParams({ q, license: "cc0,pdm,by,by-sa", category: "photograph", size: "large", page_size: "12", mature: "false" }))
+    펙셀(q)
   ]);
   const 위키 = wm.status === "fulfilled" ? Object.values(wm.value.query?.pages || {}).sort((a, b) => (a.index || 0) - (b.index || 0)).map((p) => {
     const ii = p.imageinfo?.[0] || {}, m = ii.extmetadata || {};
     const lic = wmLic(m.License?.value || m.LicenseShortName?.value);
     if (!lic || (ii.width || 0) < 1000 || !ii.thumburl) return null;
     const 이름 = 글만(m.Artist?.value) || "작자 미상";
-    return { 받을주소: ii.thumburl, 미리보기: ii.thumburl.replace(/\/\d+px-/, "/480px-"), 가로: ii.width, 세로: ii.height,
+    // 미리보기는 500px — 위키미디어는 정해진 폭(250·330·500·960…)만 준다. 480은 400으로 거절(2026-11-01)
+    return { 받을주소: ii.thumburl, 미리보기: ii.thumburl.replace(/\/\d+px-/, "/500px-"), 가로: ii.width, 세로: ii.height,
       제목: 글만(p.title).replace(/^File:|\.\w+$/g, ""), 원본: ii.descriptionurl, 라이선스: lic,
       출처문구: `사진 ${이름} · ${(라이선스이름[lic] + " " + (lic.startsWith("by") ? 판(m.LicenseShortName?.value) : "")).trim()} · 위키미디어 공용` };
   }).filter(Boolean) : [];
-  const 오픈 = ov.status === "fulfilled" ? (ov.value.results || []).filter((r) => 라이선스이름[r.license] && /^https:\/\//.test(r.url || "")).map((r) => ({
-    받을주소: r.url, 미리보기: OV + r.id + "/thumb/", 가로: r.width, 세로: r.height, 제목: 글만(r.title), 원본: r.foreign_landing_url,
-    라이선스: r.license,
-    출처문구: `사진 ${글만(r.creator) || "작자 미상"} · ${(라이선스이름[r.license] + " " + (r.license.startsWith("by") ? r.license_version || "" : "")).trim()} · ${r.source || "Openverse"}`
-  })) : [];
-  if (!위키.length && !오픈.length && wm.status === "rejected" && ov.status === "rejected") throw new Error(wm.reason.message);
-  return [...위키, ...오픈].filter((x) => !금지된곳(x.받을주소));
+  const 펙 = px.status === "fulfilled" ? px.value : [];
+  if (px.status === "rejected") console.warn("Pexels 검색 실패:", px.reason.message);
+  if (!위키.length && !펙.length && wm.status === "rejected") throw new Error(wm.reason.message);
+  // 번갈아 놓는다 — 눈 확인은 앞 12장만 보므로 한쪽이 앞을 다 차지하지 않게
+  const 섞음 = [];
+  for (let i = 0; i < Math.max(위키.length, 펙.length); i++) { if (위키[i]) 섞음.push(위키[i]); if (펙[i]) 섞음.push(펙[i]); }
+  return 섞음.filter((x) => !금지된곳(x.받을주소));
 }
 
 // 직접 실행: node photo.js — 주소 막기·대표그림 뽑기 점검(네트워크 없이)

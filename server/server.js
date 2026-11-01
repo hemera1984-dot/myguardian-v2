@@ -2684,12 +2684,50 @@ async function route(req, res, url) {
   // ── 지면 사진 찾기 (2026-11-01 케어센터 고도화 3단계 — 「실제 이미지 자동으로 찾아서」) ──
   // 소재를 먼저 가른다(헌법 「지면 이미지」): 제품·작품 → 제작사 공식 홍보 이미지 / 현장·사건 → 상업 이용·수정 허용 공용 사진 / 제도·개념 → 삽화.
   // 고르는 것은 편집장이다 — 여기는 후보만 낸다. 받기(/care/photo-get)는 여기서 낸 토큰만 받는다.
+  // 후보 미리보기를 받아 AI에게 보여 주고, 기사 첫 사진으로 맞는 것만 맞는 순서로 남긴다.
+  // 미리보기를 못 받은 후보는 빠진다. AI 호출이 실패하면 거르지 않고 그대로 낸다(찾기 자체를 막지 않게).
+  async function 눈으로고르기(후보, { 제목, 요약, 카테고리 }) {
+    const 받은 = (await Promise.allSettled(후보.slice(0, 12).map(async (h) => {
+      const r = await 안전받기(h.미리보기, 3 * 1048576, (t) => /^image\/(jpeg|png|webp|gif)$/.test(t));
+      if (!그림인가(r.bytes, r.형식)) throw new Error("그림 아님");
+      return { h, r };
+    }))).filter((x) => x.status === "fulfilled").map((x) => x.value);
+    if (!받은.length) return 후보;
+    const 내용 = [];
+    받은.forEach(({ r }, i) => {
+      내용.push({ type: "text", text: `사진 ${i + 1}` });
+      내용.push({ type: "image", source: { type: "base64", media_type: r.형식, data: r.bytes.toString("base64") } });
+    });
+    내용.push({ type: "text", text: [
+      "위 사진들은 고객에게 보내는 잡지 기사의 첫 사진 후보다. 기사:",
+      "섹션: " + 카테고리, "제목: " + 제목, 요약 ? "요약: " + 요약 : "",
+      "",
+      "사진마다 실제로 무엇이 찍혔는지 보고, 이 기사 첫 사진으로 독자가 보자마자 기사 내용과 이어지는 것만 고른다.",
+      "낱말만 겹치고 내용이 다른 사진(예: 시위 기사에 조각상·건물만 나온 사진), 흐리거나 작은 사진, 지도·문서 스캔·로고, 한 사람 얼굴이 크게 나온 사진은 뺀다.",
+      "고른것 칸에 맞는 순서(가장 좋은 것 먼저)로 번호와, 사진에 보이는 것을 한국어 짧은 구(15자 안팎)로 적는다. 맞는 것이 없으면 빈 배열."
+    ].filter(Boolean).join("\n") });
+    const v = await claude(내용, {
+      type: "object",
+      properties: { 고른것: { type: "array", items: { type: "object",
+        properties: { 번호: { type: "integer" }, 보인것: { type: "string" } }, required: ["번호", "보인것"], additionalProperties: false } } },
+      required: ["고른것"], additionalProperties: false
+    }, { effort: "low", maxTokens: 4000, timeout: 120000 });
+    if (v.error) { console.warn("사진 눈 확인 실패 — 거르지 않고 낸다"); return 후보; }
+    const 남김 = [];
+    for (const g of v.value["고른것"] || []) {
+      const x = 받은[Number(g["번호"]) - 1];
+      if (x && !남김.includes(x.h)) { x.h.보인것 = String(g["보인것"] || "").slice(0, 40); 남김.push(x.h); }
+    }
+    return 남김;
+  }
+
   if (req.method === "POST" && path === "/care/photo-find") {
     if (!ANTHROPIC_KEY) return send(res, 503, { error: "AI 기능이 설정되지 않았습니다." });
     const b = await readJson(req);
     const 제목 = String(b["제목"] || "").slice(0, 200).trim();
     const 요약 = String(b["요약"] || "").slice(0, 800);
     const 카테고리 = String(b["카테고리"] || "").slice(0, 40);
+    const 본문 = String(b["본문"] || "").slice(0, 1500);
     if (!제목) return send(res, 400, { error: "제목이 먼저 필요합니다." });
     const 키 = me.id + "|" + new Date(Date.now() + 9 * 36e5).toISOString().slice(0, 10);
     const 쓴 = 사진찾기횟수.get(키) || 0;
@@ -2700,14 +2738,18 @@ async function route(req, res, url) {
       "- 제품: 기사 소재가 게임·영화·드라마·책·자동차·전자제품·앱처럼 만든 회사가 있는 특정 작품·제품이면. 웹 검색으로 그 제작사(또는 배급사)를 찾고,",
       "  제작사 자기 도메인의 공식 페이지 주소(그 작품 전용 페이지·공식 뉴스룸·보도자료) 최대 4개를 적는다.",
       "  게임 매체·언론사·위키·팬 사이트·쇼핑몰·동영상 사이트 주소는 적지 않는다. 확인하지 못한 주소를 지어내지 않는다.",
-      "- 현장: 실제 장소·사건·사람들의 현장(시위·재난·도시·병원·시장·행사 등)이 소재면. 위키미디어 공용에서 찾을 영어 검색어 1~3개",
-      "  (구체적인 장소·사건 이름이 든 것 먼저, 마지막에 일반어 하나). 웹 검색은 쓰지 않는다.",
-      "- 개념: 제도·세금·보험 구조·법·통계처럼 사진으로 찍을 대상이 없으면. 웹 검색은 쓰지 않는다.",
+      "  검색어 칸에는 그 제품을 위키미디어 공용에서 찾을 영어 이름 1~2개(공식 그림을 못 받을 때 쓴다).",
+      "- 현장: 실제 장소·사건·사람들의 현장(시위·재난·도시·병원·시장·행사 등)이 소재면.",
+      "- 개념: 제도·세금·보험 구조·법·통계처럼 그 자체로는 찍을 대상이 없으면. 그래도 사진을 쓴다 — 글의 핵심을",
+      "  실제로 찍을 수 있는 장면 하나로 바꾼다(예: 상속 → 서류에 서명하는 노부부의 손, 실손 청구 → 병원 접수 창구, 연금 → 은퇴한 노부부의 산책).",
+      "현장·개념의 검색어: 위키미디어 공용·Pexels에서 찾을 영어 검색어 2~3개. 본문에 나온 사건 이름·도시·연도가 든 구체적인 것을 먼저,",
+      "  마지막에 장면을 묘사하는 일반어 하나(예: 2026 Paris pension reform protest / Paris protest crowd). 현장·개념은 웹 검색을 쓰지 않는다.",
       "해당하지 않는 칸은 빈 문자열·빈 배열로 둔다. 이유는 한 문장, 한국어로.",
       "",
       "섹션: " + 카테고리,
       "제목: " + 제목,
-      "요약: " + 요약
+      "요약: " + 요약,
+      본문 ? "본문(앞부분):\n" + 본문 : ""
     ].join("\n");
     const r = await claudeWeb(prompt, PHOTO_SCHEMA, { effort: "low", maxTokens: 4000, maxUses: 4, timeout: 180000 });
     if (r.error) return send(res, r.error, { error: "소재를 가르지 못했습니다. 잠시 뒤 다시 눌러 주세요." });
@@ -2725,25 +2767,32 @@ async function route(req, res, url) {
             출처문구: `이미지 ${제작사} · 공식 홍보 이미지` });
         });
       });
-      if (!후보.length) 안내 = "공식 페이지에서 대표 그림을 받지 못했습니다. 아래 페이지를 열어 홍보 이미지를 받은 뒤 「사진 올리기」로 넣어 주세요.";
-    } else if (v["소재"] === "현장") {
+    }
+    // 공식 그림이 없으면(제품) · 현장 · 개념 — 상업 이용이 되는 공용 사진
+    if (!후보.length) {
       for (const q of (v["검색어"] || []).slice(0, 3)) {
         try { 후보 = 후보.concat(await 공용사진(q)); } catch (e) { console.warn("공용 사진 검색 실패:", e.message); }
-        if (후보.length >= 12) break;
+        if (후보.length >= 16) break;
       }
       후보 = 후보.filter((h, i) => 후보.findIndex((x) => x.받을주소 === h.받을주소) === i).slice(0, 16);
-      if (!후보.length) 안내 = "상업 이용이 되는 사진을 찾지 못했습니다. 「삽화 만들기」를 쓰거나 직접 올려 주세요.";
-    } else {
-      안내 = "제도·개념 기사라 사진 대신 삽화가 맞습니다. 「삽화 만들기」를 눌러 주세요.";
+    }
+    // 검색이 맞힌 것은 낱말이지 사진이 아니다 — AI가 미리보기를 직접 보고 기사와 맞는 것만 남긴다(로댕 조각이 시위 기사에 뜬 일, 11-01)
+    const 본수 = 후보.length;
+    if (후보.length) 후보 = await 눈으로고르기(후보, { 제목, 요약, 카테고리 });
+    if (!후보.length) {
+      안내 = v["소재"] === "제품" && 페이지.length
+        ? "공식 페이지에서 대표 그림을 받지 못했습니다. 아래 페이지를 열어 홍보 이미지를 받은 뒤 「사진 올리기」로 넣어 주세요."
+        : 본수 ? `사진 ${본수}장을 찾았지만 기사와 맞는 것이 없었습니다. 다시 누르거나 직접 올려 주세요.`
+        : "상업 이용이 되는 사진을 찾지 못했습니다. 다시 누르거나 직접 올려 주세요.";
     }
     const 지금 = Date.now();
     if (사진후보.size > 500) for (const [k, h] of 사진후보) if (h.만료 < 지금) 사진후보.delete(k);
     const 낼것 = 후보.map((h) => {
       const 토큰 = randomBytes(9).toString("hex");
       사진후보.set(토큰, { ...h, 계정: me.id, 만료: 지금 + 36e5 });
-      return { 토큰, 미리보기: h.미리보기, 제목: h.제목, 출처문구: h.출처문구, 원본: h.원본, 라이선스: h.라이선스, 가로: h.가로, 세로: h.세로 };
+      return { 토큰, 미리보기: h.미리보기, 제목: h.제목, 출처문구: h.출처문구, 원본: h.원본, 라이선스: h.라이선스, 가로: h.가로, 세로: h.세로, 보인것: h.보인것 || "" };
     });
-    console.log(`사진 찾기: 「${제목.slice(0, 30)}」 ${v["소재"]} — 후보 ${낼것.length}장 — ${me.email}`);
+    console.log(`사진 찾기: 「${제목.slice(0, 30)}」 ${v["소재"]} — 찾음 ${본수} · 남김 ${낼것.length}장 — ${me.email}`);
     return send(res, 200, { 소재: v["소재"], 이유: v["이유"], 안내, 후보: 낼것, 페이지 });
   }
 
