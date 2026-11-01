@@ -445,8 +445,10 @@
     var figs = (Array.isArray(a["중간그림"]) ? a["중간그림"] : []).filter(function (f) { return f && f["이미지"]; });
     var pendingFig = null;
     function figHtml(f) {
-      return '<figure class="in-fig"><img src="' + esc(mediaSrc(f["이미지"])) + '" alt="' + esc(f["캡션"] || f["뒤"] || "") + '" loading="lazy">'
-        + figcaptionHtml(f["캡션"], f["출처"]) + "</figure>";
+      // 수치 그림은 폰 폭(540px 이하)에서 세로 배치 그림으로 바꿔 싣는다 — 넓은 그림은 폰에서 글자가 7px이 된다(11-02)
+      var 폰 = f["폰이미지"] ? '<picture><source media="(max-width: 540px)" srcset="' + esc(mediaSrc(f["폰이미지"])) + '">' : "";
+      return '<figure class="in-fig' + (폰 ? " chart" : "") + '">' + 폰 + '<img src="' + esc(mediaSrc(f["이미지"])) + '" alt="' + esc(f["캡션"] || f["뒤"] || "") + '" loading="lazy">'
+        + (폰 ? "</picture>" : "") + figcaptionHtml(f["캡션"], f["출처"]) + "</figure>";
     }
 
     toks.forEach(function (t) {

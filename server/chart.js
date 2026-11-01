@@ -235,7 +235,121 @@ function 이름표(이름, x, y, 폭) {
   return m.줄.map((줄, k) => `<text x="${n1(x)}" y="${n1(y + k * m.크기 * 1.2)}" font-size="${m.크기}" fill="${색.잉크}" text-anchor="middle">${esc(줄)}</text>`).join("");
 }
 
-export function chartSvg(spec, 강조색 = "#16296a") {
+// ── 폰 — 세로 배치(2026-11-02 「폰용 세로 배치로」) ──
+// 지면 폭 390px에 1600px 그림이 들어가면 0.24배라 설명 글이 7px이 됐다(헌법: 폰 13px 미만 금지).
+// 폰 그림은 폭 900 — 0.43배로 줄므로 글자 30px이 폰에서 13px이다. 높이는 내용만큼.
+const PW = 900, P좌 = 60, P폭 = PW - 120, 폰최소 = 30;
+
+function 폰머리(제목, 단위) {
+  const m = 맞춤(제목, P폭, 54, 2, 40);
+  let y = 30, out = "";
+  m.줄.forEach((줄) => { y += m.크기 * 1.3; out += `<text x="${P좌}" y="${n1(y)}" font-size="${m.크기}" font-weight="700" fill="${색.잉크}">${esc(줄)}</text>`; });
+  if (단위) { y += 52; out += `<text x="${P좌}" y="${n1(y)}" font-size="32" fill="#5b5b5b">단위: ${esc(단위)}</text>`; }
+  return { out, y: y + 56 };
+}
+
+function 폰꼬리(출처, y) {
+  if (!출처) return { out: "", y: y + 20 };
+  const m = 맞춤(출처, P폭, 폰최소, 3, 폰최소);
+  let out = "";
+  y += 16;
+  m.줄.forEach((줄) => { y += 40; out += `<text x="${P좌}" y="${n1(y)}" font-size="${m.크기}" fill="#6d6d6d">${esc(줄)}</text>`; });
+  return { out, y: y + 36 };
+}
+
+// 흐름 — 칸을 위에서 아래로 쌓는다
+function 폰흐름(칸들, 강조, top) {
+  const 화살 = 76;
+  let y = top;
+  let out = `<defs><marker id="ar" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto">`
+    + `<path d="M0,0 L12,6 L0,12 z" fill="#9a958a"/></marker></defs>`;
+  칸들.forEach((c, i) => {
+    const 이름 = 맞춤(c.이름, P폭 - 60, 46, 2, 34);
+    const 설명 = c.설명 ? 맞춤(c.설명, P폭 - 60, 34, 4, 폰최소) : null;
+    const g = { 이름, 설명, 높: 이름.줄.length * 이름.크기 * 1.25 + (설명 ? 22 + 설명.줄.length * 설명.크기 * 1.45 : 0) };
+    const 칸높 = g.높 + 72;
+    const 막힘 = !!c.막힘, 켬 = 강조 === i;
+    const 면 = 막힘 ? 색.강조 : (켬 ? 색.기본 : 색.종이);
+    const 글 = (막힘 || 켬) ? 색.종이 : 색.잉크;
+    out += `<g class="g-칸" style="animation-delay:${(0.16 * i).toFixed(2)}s">`
+      + `<rect x="${P좌}" y="${n1(y)}" width="${P폭}" height="${n1(칸높)}" rx="4" fill="${면}" stroke="${막힘 || 켬 ? 면 : "#c9c3b6"}" stroke-width="3"/>`
+      + 칸글(g, PW / 2, y + 36, 글, 막힘 || 켬 ? 색.종이 : "#5b5b5b")
+      + `</g>`;
+    y += 칸높;
+    if (i < 칸들.length - 1) {
+      out += `<line class="g-칸" style="animation-delay:${(0.16 * i + 0.1).toFixed(2)}s" x1="${PW / 2}" y1="${n1(y + 10)}" x2="${PW / 2}" y2="${n1(y + 화살 - 22)}" stroke="#9a958a" stroke-width="5" marker-end="url(#ar)"/>`;
+      y += 화살;
+    }
+  });
+  return { out, y };
+}
+
+// 막대 — 가로 막대로 눕힌다(이름 위, 값은 막대 끝). 견줌도 이것으로 그린다
+function 폰막대(항목, 강조, top) {
+  const 최대 = Math.max(0, ...항목.map((i) => i.값)) || 1;
+  let y = top, out = "";
+  항목.forEach((it, i) => {
+    const c = 강조 === i ? 색.강조 : 색.기본;
+    const m = 맞춤(it.이름, P폭, 34, 2, 폰최소);
+    m.줄.forEach((줄) => { y += m.크기 * 1.3; out += `<text x="${P좌}" y="${n1(y)}" font-size="${m.크기}" fill="${색.잉크}">${esc(줄)}</text>`; });
+    y += 18;
+    const 값 = it.표기 || 축표기(it.값), 값폭 = 글폭(값, 40) + 24;
+    const w = Math.max(6, (Math.max(0, it.값) / 최대) * (P폭 - 값폭));
+    const 늦 = (0.07 * i).toFixed(2) + "s";
+    out += `<rect class="g-줄" style="animation-delay:${늦};transform-origin:${P좌}px ${n1(y)}px" x="${P좌}" y="${n1(y)}" width="${n1(w)}" height="56" fill="${c}"/>`
+      + `<text class="g-값" style="animation-delay:${(0.07 * i + 0.5).toFixed(2)}s" x="${n1(P좌 + w + 16)}" y="${n1(y + 42)}" font-size="40" font-weight="700" fill="${c}">${esc(값)}</text>`;
+    y += 56 + 44;
+  });
+  return { out, y };
+}
+
+// 선 — 세로로 긴 판에 그리고, 이름표는 겹치지 않을 만큼 건너뛰어 단다
+function 폰선(항목, 강조, top) {
+  const 값들 = 항목.map((i) => i.값);
+  const 최대 = Math.max(...값들), 최소 = Math.min(0, Math.min(...값들));
+  const ticks = 눈금(최대), 상한 = ticks[ticks.length - 1];
+  const 좌 = P좌 + Math.max(...ticks.map((t) => 글폭(축표기(t), 폰최소))) + 20, 우 = PW - P좌;
+  const 높 = 560, y0 = top + 60 + 높, 칸 = (우 - 좌) / 항목.length;
+  const X = (i) => 좌 + 칸 * (i + 0.5);
+  const Y = (v) => y0 - ((v - 최소) / (상한 - 최소 || 1)) * 높;
+  let out = ticks.map((t) => `<line x1="${n1(좌)}" y1="${n1(Y(t))}" x2="${우}" y2="${n1(Y(t))}" stroke="#d8d3c8" stroke-width="${t === 0 ? 3 : 1}"/>`
+    + `<text x="${n1(좌 - 14)}" y="${n1(Y(t) + 10)}" font-size="${폰최소}" fill="#6d6d6d" text-anchor="end">${축표기(t)}</text>`).join("");
+  let 길이 = 0;
+  for (let i = 1; i < 항목.length; i++) 길이 += Math.hypot(X(i) - X(i - 1), Y(값들[i]) - Y(값들[i - 1]));
+  out += `<polyline class="g-선" style="--len:${n1(길이)}" points="${항목.map((it, i) => `${n1(X(i))},${n1(Y(it.값))}`).join(" ")}" fill="none" stroke="${색.기본}" stroke-width="7" stroke-linejoin="round"/>`;
+  // 이름표 하나에 폭 170은 있어야 30px 두 줄로 읽힌다 — 그보다 좁으면 건너뛴다(처음·끝·강조는 늘 단다)
+  const 걸음 = Math.max(1, Math.ceil(170 / 칸));
+  const 단다 = (i) => i === 0 || i === 항목.length - 1 || i === 강조 || (i % 걸음 === 0 && i + 걸음 <= 항목.length - 1);
+  let 아래 = y0;
+  out += 항목.map((it, i) => {
+    const c = 강조 === i ? 색.강조 : 색.기본;
+    let s = `<circle class="g-점" cx="${n1(X(i))}" cy="${n1(Y(it.값))}" r="${강조 === i ? 18 : 12}" fill="${c}"/>`;
+    if (강조 === i || i === 0 || i === 항목.length - 1) {
+      const 값 = it.표기 || 축표기(it.값), w = 글폭(값, 38) * 1.1;   // 굵은 글자는 어림보다 넓다
+      const x = Math.min(Math.max(X(i), 좌 + w / 2), PW - w / 2 - 14);   // 왼쪽 눈금 글자·오른쪽 끝에 닿지 않게
+      // 점이 촘촘하면 이웃 점이 글자 밑으로 들어온다 — 글자 폭 안에 든 점들 중 가장 높은 점보다 위에 단다
+      const 위 = Math.min(...항목.map((o, j) => Math.abs(X(j) - x) <= w / 2 + 20 ? Y(o.값) : Infinity), Y(it.값));
+      s += `<text class="g-값" x="${n1(x)}" y="${n1(위 - 32)}" font-size="38" font-weight="700" fill="${c}" text-anchor="middle">${esc(값)}</text>`;
+    }
+    if (단다(i)) {
+      const 폭 = Math.min(240, 칸 * 걸음 - 10), m = 맞춤(it.이름, Math.max(폭, 120), 폰최소, 2, 폰최소);
+      const w = Math.max(...m.줄.map((줄) => 글폭(줄, m.크기)));
+      const x = Math.min(Math.max(X(i), w / 2 + 14), PW - w / 2 - 14);
+      m.줄.forEach((줄, k) => { s += `<text x="${n1(x)}" y="${n1(y0 + 50 + k * m.크기 * 1.25)}" font-size="${m.크기}" fill="${색.잉크}" text-anchor="middle">${esc(줄)}</text>`; });
+      아래 = Math.max(아래, y0 + 50 + m.줄.length * m.크기 * 1.25);
+    }
+    return s;
+  }).join("");
+  return { out, y: 아래 + 10 };
+}
+
+function 폰판(머, 몸, 꼬) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${PW}" height="${n1(꼬.y)}" viewBox="0 0 ${PW} ${n1(꼬.y)}">`
+    + 모션 + `<rect width="${PW}" height="${n1(꼬.y)}" fill="${색.종이}"/>` + 머.out + 몸.out + 꼬.out + `</svg>`;
+}
+
+// 폰 = true면 세로 배치(폭 900). 지면은 폰 폭에서 이 그림을 쓴다(care.js 중간 그림 <picture>).
+export function chartSvg(spec, 강조색 = "#16296a", 폰 = false) {
   색.강조 = 강조색;
   // 흐름은 값이 없다 — 칸 이름만으로 그린다. 둘 미만이면 그리지 않는 것은 같다.
   if (spec && spec["종류"] === "흐름") {
@@ -245,6 +359,10 @@ export function chartSvg(spec, 강조색 = "#16296a") {
     if (칸들.length < 2) return null;
     let 강 = Number(spec["강조"]);
     강 = Number.isInteger(강) && 강 >= 0 && 강 < 칸들.length ? 강 : -1;
+    if (폰) {
+      const 머 = 폰머리(String(spec["제목"] || "").slice(0, 60), ""), 몸 = 폰흐름(칸들, 강, 머.y);
+      return 폰판(머, 몸, 폰꼬리(String(spec["출처"] || "").slice(0, 80), 몸.y));
+    }
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`
       + 모션 + `<rect width="${W}" height="${H}" fill="${색.종이}"/>`
       + 머리(String(spec["제목"] || "").slice(0, 60), "")
@@ -261,6 +379,14 @@ export function chartSvg(spec, 강조색 = "#16296a") {
   const 종류 = ["막대", "선", "견줌", "흐름"].includes(spec["종류"]) ? spec["종류"] : "막대";
   let 강조 = Number(spec["강조"]);
   강조 = Number.isInteger(강조) && 강조 >= 0 && 강조 < 항목.length ? 강조 : -1;
+
+  if (폰) {
+    const 머 = 폰머리(String(spec["제목"] || "").slice(0, 60), String(spec["단위"] || "").slice(0, 20));
+    const 몸 = 종류 === "선" ? 폰선(항목, 강조, 머.y)
+      : 종류 === "견줌" ? 폰막대(항목.slice(0, 2), 1, 머.y)   // 넓은 그림의 견줌처럼 둘째가 강조색
+      : 폰막대(항목, 강조, 머.y);
+    return 폰판(머, 몸, 폰꼬리(String(spec["출처"] || "").slice(0, 80), 몸.y));
+  }
 
   const 몸 = 종류 === "선" ? 선(항목, 강조)
     : 종류 === "견줌" && 항목.length >= 2 ? 견줌(항목.slice(0, 2))

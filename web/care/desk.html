@@ -469,7 +469,7 @@
 
       // ══ 중간 그림 (2026-11-01 「글만 많아 재미없다 — 신문·잡지는 중간중간 그림을 넣는다」) ══
       // 본문 소제목마다 자리 하나. 지면은 그 소제목 다음 첫 문단 뒤에 싣는다(care.js bodyHtml).
-      // 대상 이름은 "mid-<칼럼>-<소제목 순번>", 초안에는 a.중간그림 = [{뒤: 소제목 글, 이미지, 출처, 원본, 캡션?}].
+      // 대상 이름은 "mid-<칼럼>-<소제목 순번>", 초안에는 a.중간그림 = [{뒤: 소제목 글, 이미지, 출처, 원본, 캡션?, 폰이미지?}].
       var NAV_HEADS = { "다음 칼럼": 1, "이전 칼럼": 1, "목록으로": 1 };
       function midHeads(a) {
         var out = [];
@@ -555,7 +555,7 @@
               api("/ai/chart", { "제목": 제목, "본문": sec, "채널": chFull(), "섹션색": 색 }).then(function (d) {
                 if (d["그림없음"]) return 사진();
                 차트씀 = true;
-                if (setImage(t, d["주소"], id) !== false) 넣음++;
+                if (setImage(t, d["주소"], id, null, d["폰주소"]) !== false) 넣음++;
               }));
             return 그림.catch(function (e) { 실패 = (e && e.message) || "실패"; });
           });
@@ -1225,7 +1225,7 @@
           "섹션색": (window.care.sectionColors(S.draft["기사"])[colOf(target)] || {}).c || "" } })
           .then(function (d) {
             if (d["그림없음"]) { slotNote(target, "그릴 수치가 없습니다 — " + (d["사유"] || ""), true); return; }
-            var ok = setImage(target, d["주소"], id);
+            var ok = setImage(target, d["주소"], id, null, d["폰주소"]);
             if (S.draft && S.draft.id === id) {
               slotNote(target, ok === false ? "그림은 만들었지만 저장 공간이 부족해 저장하지 못했습니다."
                 : "수치 그림을 넣었습니다(" + d["종류"] + (d["출처"] ? " · 출처 " + d["출처"] : "") + ").", ok === false);
@@ -1374,7 +1374,7 @@
       // draftId를 주면 그 호에, 안 주면 지금 보고 있는 호에 넣는다.
       // 출처를 주면(사진 찾기) 출처 칸과 원본 주소도 같은 초안에 쓴다. 출처 없이 바꾸면(직접 올림·삽화·수치 그림·지우기)
       // 앞 사진의 출처를 비운다 — 새 그림이 앞 작가의 것으로 표기되지 않게. 직접 올린 사진은 편집장이 출처 칸에 쓴다.
-      function setImage(target, path, draftId, 출처) {
+      function setImage(target, path, draftId, 출처, 폰) {   // 폰: 수치 그림의 폰용 세로 그림(중간 그림 자리만)
         var 대상 = !draftId || (S.draft && S.draft.id === draftId) ? S.draft : readDraft(draftId);
         if (!대상) return;                       // 초안이 지워졌다
         var 문구 = 출처 ? 출처["출처문구"] || "" : "", 원본 = 출처 ? 출처["원본"] || "" : "";
@@ -1385,7 +1385,7 @@
           var ma = 대상["기사"][mt.col], hd = ma && midHeads(ma)[mt.k];
           if (!hd) return false;
           var figs = (ma["중간그림"] || []).filter(function (f) { return f["뒤"] !== hd.x; });
-          if (path) figs.push({ "뒤": hd.x, "이미지": path, "출처": 문구, "원본": 원본 });
+          if (path) figs.push(Object.assign({ "뒤": hd.x, "이미지": path, "출처": 문구, "원본": 원본 }, 폰 ? { "폰이미지": 폰 } : {}));
           if (figs.length) ma["중간그림"] = figs; else delete ma["중간그림"];
         } else {
           var a = 대상["기사"][Number(target.slice(4))];

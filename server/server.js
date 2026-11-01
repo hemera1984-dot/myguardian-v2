@@ -1592,9 +1592,12 @@ async function route(req, res, url) {
     const svg = chartSvg(spec, artAccent(body["섹션색"], body["채널"]));
     if (!svg) return send(res, 200, { "그림없음": true, "사유": "그릴 것이 둘 미만입니다." });
     const 저장 = saveMedia(Buffer.from(svg, "utf8"), ".svg");
+    // 폰 폭에서는 넓은 그림의 글자가 7px로 준다 — 세로 배치 그림을 같이 만들어 지면이 폰에서 이쪽을 쓴다(11-02)
+    const 폰svg = chartSvg(spec, artAccent(body["섹션색"], body["채널"]), true);
+    const 폰 = 폰svg ? saveMedia(Buffer.from(폰svg, "utf8"), ".svg") : null;
     const 개수 = spec["종류"] === "흐름" ? (spec["칸"] || []).length : (spec["항목"] || []).length;
     console.log(`데이터 그림: ${spec["종류"]} ${개수}개 — ${me.email}`);
-    return send(res, 200, { ...저장, "종류": spec["종류"], "항목수": 개수, "출처": spec["출처"] });
+    return send(res, 200, { ...저장, "폰주소": 폰 ? 폰["주소"] : "", "종류": spec["종류"], "항목수": 개수, "출처": spec["출처"] });
   }
 
   // 이미지 프롬프트 — 표지·칼럼 그림을 생성기에 넣을 지시문으로 만들어 준다.
@@ -1997,7 +2000,7 @@ async function route(req, res, url) {
         || (MEDIA_BASE && v.startsWith(MEDIA_BASE.replace(/\/$/, "") + "/"))));
     const 중간그림들 = (a) => a["중간그림"] === undefined
       || (Array.isArray(a["중간그림"]) && a["중간그림"].length <= 20
-        && a["중간그림"].every((f) => f && typeof f === "object" && 우리그림(f["이미지"])));
+        && a["중간그림"].every((f) => f && typeof f === "object" && 우리그림(f["이미지"]) && (f["폰이미지"] === undefined || 우리그림(f["폰이미지"]))));
     if (!우리그림(목록항목["커버이미지"]) || 본문["기사"].some((a) => !a || typeof a !== "object" || !우리그림(a["이미지"]) || !중간그림들(a))) {
       return send(res, 400, { error: "이미지는 이 서버에 올린 것만 쓸 수 있습니다." });
     }
